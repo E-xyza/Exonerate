@@ -2,6 +2,10 @@ defmodule Exonerate.Codesynth do
   def buildmodule_string(modulename, schemaname, schema) do
     """
       defmodule #{modulename} do
+
+        require Exonerate.Checkers
+        require Exonerate
+
         #{validator_string(schemaname, schema)}
       end
     """

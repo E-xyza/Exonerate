@@ -1,4 +1,4 @@
-# Exaggerate
+# Exonerate
 
 **A JSONSchema -> Elixir module code generator**
 
@@ -11,6 +11,7 @@ because it is impossible for a floating point to guarantee sane results
 
 Works in progress:
 
+- more user-friendly usage surface
 - support for ref and remoteref
 - code sanitization for degenerate forms, e.g. `{"properties":{}}`
 - better error and warning handling during validation and code synthesis
@@ -27,10 +28,19 @@ Add the following lines to your mix.exs
 ```elixir
   defp deps do
     [
-      {:cowboy, "~> 1.0.0"},
+      # -- your favorite dependencies here
       {:exonerate, git: "https://github.com/rstorsauce/exonerate.git", tag: "master"},
     ]
   end
+```
+
+The following code will create an elixir file from a JSONSchema file:
+```elixir
+  filename
+  |> File.open!
+  |> Poison.decode!
+  |> &Exonerate.buildmodule_string("modulename", "schemaname", &1).()
+  |> &File.write("filename",&1).()
 ```
 
 ## Installation
