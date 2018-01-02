@@ -35,6 +35,8 @@ defmodule Mix.Tasks.Exoneratebuildtests do
     "uniqueItems"
   ]
 
+  @localtests ["custom_object_test"]
+
   @exclude %{
     "by number" => " multipleof should not be used on floating point values ",
     "by small number" => " multipleof should not be used on floating point values "
@@ -45,6 +47,15 @@ defmodule Mix.Tasks.Exoneratebuildtests do
     file_uri = @remoteroot <> suite <> ".json"
     # fetch the uri and convert it from json to elixir
     HTTPoison.get!(file_uri).body
+    |> Poison.decode!()
+  end
+
+  #have a way of getting a local test file
+  def fetch_file(suite, :local) do
+    # generate the full uri from the suite name.
+    file_path = Path.join([@rootdir, "test", suite <> ".json"])
+    # fetch the uri and convert it from json to elixir
+    File.read!(file_path)
     |> Poison.decode!()
   end
 
@@ -145,6 +156,11 @@ defmodule Mix.Tasks.Exoneratebuildtests do
 
     for testsuite <- @tests do
       testsuite |> fetch_file
+      |> buildtestmodules(testsuite)
+    end
+
+    for testsuite <- @localtests do
+      testsuite |> fetch_file(:local)
       |> buildtestmodules(testsuite)
     end
   end

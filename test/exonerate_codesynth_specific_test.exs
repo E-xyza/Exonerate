@@ -22,4 +22,5 @@ defmodule ExonerateCodesynthSpecificTest do
     def validate_test(val), do: :ok
     """)
   end
+  
 end

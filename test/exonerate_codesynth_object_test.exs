@@ -18,7 +18,7 @@ defmodule ExonerateCodesynthObjectTest do
         def validate_test_test1(val) when is_binary(val), do: :ok
         def validate_test_test1(val), do: {:error, "\#{inspect val} does not conform to JSON schema"}
 
-        def validate_test(val) when is_map(val), do: validate_test_test1(val["test1"])
+        def validate_test(val) when is_map(val), do: (if Map.has_key?(val, \"test1\"), do: validate_test_test1(val[\"test1\"]), else: :ok)
         def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
       """
     )

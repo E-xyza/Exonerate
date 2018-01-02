@@ -281,9 +281,7 @@ imum"))
   ## the triplet type actually passes critical type information on to subcomponents
   def validatorfn_string(name, schema = %{"required" => _}, type = "object") do
     """
-      def validate_#{name}(val #{requiredstring(schema, type)}) when is_map(val), do: #{
-      bodystring(name, schema, type)
-    }
+      def validate_#{name}(val #{requiredstring(schema, type)}) when is_map(val), do: #{bodystring(name, schema, type)}
       def validate_#{name}(val) when is_map(val), do: {:error, \"\#{inspect val} does not conform to JSON schema\"}
     """
   end
@@ -844,7 +842,7 @@ imum"))
 
   def bodyfns(name, schema = %{"properties" => p}, "object") do
     if p |> Map.keys() |> length == 1 && simpleobject(schema) do
-      (p |> Enum.map(fn {k, v} -> "validate_#{name}_#{k}(val[\"#{k}\"])" end)) ++
+      (p |> Enum.map(fn {k, v} -> "(if Map.has_key?(val, \"#{k}\"), do: validate_#{name}_#{k}(val[\"#{k}\"]), else: :ok)" end)) ++
         bodyfns(name, Map.delete(schema, "properties"), "object")
     else
       bodyfns(name, Map.delete(schema, "properties"), "object")
