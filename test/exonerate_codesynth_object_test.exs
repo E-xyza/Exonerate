@@ -6,7 +6,7 @@ defmodule ExonerateCodesynthObjectTest do
   test "object with no restrictions" do
     codesynth_match(%{"type" => "object"}, """
       def validate_test(val) when is_map(val), do: :ok
-      def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+      def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
     """)
   end
 
@@ -19,7 +19,7 @@ defmodule ExonerateCodesynthObjectTest do
         def validate_test_test1(val), do: {:error, "\#{inspect val} does not conform to JSON schema"}
 
         def validate_test(val) when is_map(val), do: (if Map.has_key?(val, \"test1\"), do: validate_test_test1(val[\"test1\"]), else: :ok)
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end
@@ -48,7 +48,7 @@ defmodule ExonerateCodesynthObjectTest do
         end
 
         def validate_test(val) when is_map(val), do: Enum.map(val, &__MODULE__.validate_test__each/1) |> Exonerate.error_reduction
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end
@@ -76,7 +76,7 @@ defmodule ExonerateCodesynthObjectTest do
         end
 
         def validate_test(val) when is_map(val), do: Enum.map(val, &__MODULE__.validate_test__each/1) |> Exonerate.error_reduction
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end
@@ -108,7 +108,7 @@ defmodule ExonerateCodesynthObjectTest do
         end
 
         def validate_test(val) when is_map(val), do: Enum.map(val, &__MODULE__.validate_test__each/1) |> Exonerate.error_reduction
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end
@@ -138,7 +138,7 @@ defmodule ExonerateCodesynthObjectTest do
 
         def validate_test(val=%{"test1" => _}) when is_map(val), do: Enum.map(val, &__MODULE__.validate_test__each/1) |> Exonerate.error_reduction
         def validate_test(val) when is_map(val), do: {:error, "\#{inspect val} does not conform to JSON schema"}
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end
@@ -147,7 +147,7 @@ defmodule ExonerateCodesynthObjectTest do
   test "object with properties count restriction" do
     codesynth_match(%{"type" => "object", "minProperties" => 3, "maxProperties" => 5}, """
       def validate_test(val) when is_map(val), do: [Exonerate.Checkers.check_minproperties(val, 3), Exonerate.Checkers.check_maxproperties(val, 5)] |> Exonerate.error_reduction
-      def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+      def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
     """)
   end
 
@@ -165,14 +165,14 @@ defmodule ExonerateCodesynthObjectTest do
           actual_key_list = Map.keys(val)
 
           is_valid = required_key_list |> Enum.all?(fn k -> k in actual_key_list end)
-          if is_valid, do: :ok, else: {:error, "\#{inspect(val)} does not conform to JSON schema"}
+          if is_valid, do: :ok, else: {:error, "\#{Poison.encode! val} does not conform to JSON schema"}
         end
 
         def validate_test_test1(val) when is_binary(val), do: :ok
-        def validate_test_test1(val), do: {:error, "\#{inspect(val)} does not conform to JSON schema"}
+        def validate_test_test1(val), do: {:error, "\#{Poison.encode! val} does not conform to JSON schema"}
 
         def validate_test_test2(val) when is_integer(val), do: :ok
-        def validate_test_test2(val), do: {:error, "\#{inspect(val)} does not conform to JSON schema"}
+        def validate_test_test2(val), do: {:error, "\#{Poison.encode! val} does not conform to JSON schema"}
 
         def validate_test__deps(val) do
           depsmap = %{"test1" => &__MODULE__.validate_test__deps_test1/1}
@@ -194,7 +194,7 @@ defmodule ExonerateCodesynthObjectTest do
 
         def validate_test(val) when is_map(val), do: [validate_test__deps(val) | Enum.map(val, &__MODULE__.validate_test__each/1)] |> Exonerate.error_reduction()
 
-        def validate_test(val), do: {:error, "\#{inspect(val)} does not conform to JSON schema"}
+        def validate_test(val), do: {:error, "\#{Poison.encode! val} does not conform to JSON schema"}
       """
     )
   end
@@ -229,7 +229,7 @@ defmodule ExonerateCodesynthObjectTest do
         end
 
         def validate_test(val) when is_map(val), do: Enum.map(val, &__MODULE__.validate_test__each/1) |> Exonerate.error_reduction
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end
@@ -266,7 +266,7 @@ defmodule ExonerateCodesynthObjectTest do
         end
 
         def validate_test(val) when is_map(val), do: Enum.map(val, &__MODULE__.validate_test__each/1) |> Exonerate.error_reduction
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end
@@ -306,7 +306,7 @@ defmodule ExonerateCodesynthObjectTest do
         end
 
         def validate_test(val) when is_map(val), do: Enum.map(val, &__MODULE__.validate_test__each/1) |> Exonerate.error_reduction
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end

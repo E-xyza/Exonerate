@@ -12,32 +12,32 @@ defmodule Exonerate.Checkers do
 
   def check_maxproperties(val, p) do
     if val |> Map.keys() |> length > p,
-      do: {:error, "#{inspect(val)} does not conform to JSON schema"},
+      do: {:error, "#{Poison.encode! val} does not conform to JSON schema"},
       else: :ok
   end
 
   def check_minproperties(val, p) do
     if val |> Map.keys() |> length < p,
-      do: {:error, "#{inspect(val)} does not conform to JSON schema"},
+      do: {:error, "#{Poison.encode! val} does not conform to JSON schema"},
       else: :ok
   end
 
   def check_minlength(val, l) do
     if String.length(val) < l,
-      do: {:error, "#{inspect(val)} does not conform to JSON schema"},
+      do: {:error, "#{Poison.encode! val} does not conform to JSON schema"},
       else: :ok
   end
 
   def check_maxlength(val, l) do
     if String.length(val) > l,
-      do: {:error, "#{inspect(val)} does not conform to JSON schema"},
+      do: {:error, "#{Poison.encode! val} does not conform to JSON schema"},
       else: :ok
   end
 
   def check_regex(re, val) do
     if Regex.match?(re, val),
       do: :ok,
-      else: {:error, "#{inspect(val)} does not conform to JSON schema"}
+      else: {:error, "#{Poison.encode! val} does not conform to JSON schema"}
   end
 
   #for now, pass all checking functions.

@@ -12,7 +12,7 @@ defmodule ExonerateCodesynthArrayTest do
   test "basic array validation works" do
     codesynth_match(%{"type" => "array"}, """
       def validate_test(val) when is_list(val), do: :ok
-      def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+      def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
     """)
   end
 
@@ -23,7 +23,7 @@ defmodule ExonerateCodesynthArrayTest do
       def validate_test__forall(val), do: {:error, "\#{inspect val} does not conform to JSON schema"}
 
       def validate_test(val) when is_list(val), do: Enum.map(val, &__MODULE__.validate_test__forall/1) |> Exonerate.error_reduction
-      def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+      def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
     """)
   end
 
@@ -45,7 +45,7 @@ defmodule ExonerateCodesynthArrayTest do
         end
 
         def validate_test(val) when is_list(val), do: validate_test__all(val)
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end
@@ -53,18 +53,18 @@ defmodule ExonerateCodesynthArrayTest do
   @tag :exonerate_codesynth
   test "arrays can validate with minimum item count specification" do
     codesynth_match(%{"type" => "array", "minItems" => 3}, """
-      def validate_test(val) when is_list(val) and length(val) < 3, do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+      def validate_test(val) when is_list(val) and length(val) < 3, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       def validate_test(val) when is_list(val), do: :ok
-      def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+      def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
     """)
   end
 
   @tag :exonerate_codesynth
   test "arrays can validate with maximum item count specification" do
     codesynth_match(%{"type" => "array", "maxItems" => 7}, """
-      def validate_test(val) when is_list(val) and length(val) > 7, do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+      def validate_test(val) when is_list(val) and length(val) > 7, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       def validate_test(val) when is_list(val), do: :ok
-      def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+      def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
     """)
   end
 
@@ -72,7 +72,7 @@ defmodule ExonerateCodesynthArrayTest do
   test "arrays can validate with uniqueitem specification" do
     codesynth_match(%{"type" => "array", "uniqueItems" => true}, """
       def validate_test(val) when is_list(val), do: Exonerate.Checkers.check_unique(val)
-      def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+      def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
     """)
   end
 
@@ -97,9 +97,9 @@ defmodule ExonerateCodesynthArrayTest do
               |> Exonerate.error_reduction
         end
 
-        def validate_test(val) when is_list(val) and (length(val) > 2), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val) when is_list(val) and (length(val) > 2), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
         def validate_test(val) when is_list(val), do: validate_test__all(val)
-        def validate_test(val), do: {:error, \"\#{inspect(val)} does not conform to JSON schema\"}
+        def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       """
     )
   end
