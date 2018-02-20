@@ -40,6 +40,14 @@ defmodule Exonerate.Checkers do
       else: {:error, "#{inspect(val)} does not conform to JSON schema"}
   end
 
+  #for now, pass all checking functions.
+  def check_format_datetime(str), do: :ok
+  def check_format_email(str), do: :ok
+  def check_format_hostname(str), do: :ok
+  def check_format_ipv4(str), do: :ok
+  def check_format_ipv6(str), do: :ok
+  def check_format_uri(str), do: :ok
+
   def check_unique([]), do: :ok
   def check_unique([singleton]), do: :ok
   def check_unique([head | tail]), do: check_unique(tail, tail, head)
