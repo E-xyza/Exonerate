@@ -51,7 +51,7 @@ defmodule Exonerate.Codesynth do
 
   def validatorfn_string(name, false),
     do:
-      "def validate_#{name}(val), do: {:error, \"\#{inspect val} does not conform to JSON schema\"}"
+      "def validate_#{name}(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}"
 
   # nil requires a special handler.
   def validatorfn_string(name, %{"type" => "null"}) do
@@ -65,19 +65,19 @@ defmodule Exonerate.Codesynth do
   # special case when we have minItems/maxItems in the array spec:
 
   def validatorfn_string(name, schema = %{"multipleOf" => v, "type" => "integer"}) do
-    "def validate_#{name}(val) when is_integer(val) and (rem(val,#{v}) != 0), do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_integer(val) and (rem(val,#{v}) != 0), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "multipleOf"))
   end
 
   def validatorfn_string(name, schema = %{"multipleOf" => v, "type" => "number"}) do
-    "def validate_#{name}(val) when is_integer(val) and (rem(val,#{v}) != 0), do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_integer(val) and (rem(val,#{v}) != 0), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "multipleOf"))
   end
 
   def validatorfn_string(name, schema = %{"multipleOf" => v, "type" => typelist})
       when is_list(typelist) do
     if "number" in typelist || "integer" in typelist do
-      "def validate_#{name}(val) when is_integer(val) and (rem(val,#{v}) != 0), do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+      "def validate_#{name}(val) when is_integer(val) and (rem(val,#{v}) != 0), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
         validatorfn_string(name, Map.delete(schema, "multipleOf"))
     else
       validatorfn_string(name, Map.delete(schema, "multipleOf"))
@@ -85,7 +85,7 @@ defmodule Exonerate.Codesynth do
   end
 
   def validatorfn_string(name, schema = %{"multipleOf" => v}) do
-    "def validate_#{name}(val) when is_integer(val) and (rem(val,#{v}) != 0), do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_integer(val) and (rem(val,#{v}) != 0), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "multipleOf"))
   end
 
@@ -95,7 +95,7 @@ defmodule Exonerate.Codesynth do
         name,
         schema = %{"minimum" => v, "exclusiveMinimum" => true, "type" => "integer"}
       ) do
-    "def validate_#{name}(val) when is_integer(val) and val <= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_integer(val) and val <= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "minimum"))
   end
 
@@ -103,7 +103,7 @@ defmodule Exonerate.Codesynth do
         name,
         schema = %{"minimum" => v, "exclusiveMinimum" => true, "type" => "number"}
       ) do
-    "def validate_#{name}(val) when is_number(val) and val <= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_number(val) and val <= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "minimum"))
   end
 
@@ -114,11 +114,11 @@ defmodule Exonerate.Codesynth do
       when is_list(typelist) do
     cond do
       "number" in typelist ->
-        "def validate_#{name}(val) when is_number(val) and val <= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+        "def validate_#{name}(val) when is_number(val) and val <= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
           validatorfn_string(name, Map.delete(schema, "minimum"))
 
       "integer" in typelist ->
-        "def validate_#{name}(val) when is_integer(val) and val <= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+        "def validate_#{name}(val) when is_integer(val) and val <= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
           validatorfn_string(name, Map.delete(schema, "minimum"))
 
       true ->
@@ -127,7 +127,7 @@ defmodule Exonerate.Codesynth do
   end
 
   def validatorfn_string(name, schema = %{"minimum" => v, "exclusiveMinimum" => true}) do
-    "def validate_#{name}(val) when is_number(val) and val <= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_number(val) and val <= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "minimum"))
   end
 
@@ -137,7 +137,7 @@ defmodule Exonerate.Codesynth do
         name,
         schema = %{"maximum" => v, "exclusiveMaximum" => true, "type" => "integer"}
       ) do
-    "def validate_#{name}(val) when is_integer(val) and val >= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_integer(val) and val >= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "maximum"))
   end
 
@@ -145,7 +145,7 @@ defmodule Exonerate.Codesynth do
         name,
         schema = %{"maximum" => v, "exclusiveMaximum" => true, "type" => "number"}
       ) do
-    "def validate_#{name}(val) when is_number(val) and val >= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_number(val) and val >= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "maximum"))
   end
 
@@ -156,11 +156,11 @@ defmodule Exonerate.Codesynth do
       when is_list(typelist) do
     cond do
       "number" in typelist ->
-        "def validate_#{name}(val) when is_number(val) and val >= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+        "def validate_#{name}(val) when is_number(val) and val >= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
           validatorfn_string(name, Map.delete(schema, "maximum"))
 
       "integer" in typelist ->
-        "def validate_#{name}(val) when is_integer(val) and val >= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+        "def validate_#{name}(val) when is_integer(val) and val >= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
           validatorfn_string(name, Map.delete(schema, "maximum"))
 
       true ->
@@ -169,19 +169,19 @@ defmodule Exonerate.Codesynth do
   end
 
   def validatorfn_string(name, schema = %{"maximum" => v, "exclusiveMaximum" => true}) do
-    "def validate_#{name}(val) when is_number(val) and val >= #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_number(val) and val >= #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "maximum"))
   end
 
   ##############################################################################
 
   def validatorfn_string(name, schema = %{"minimum" => v, "type" => "integer"}) do
-    "def validate_#{name}(val) when is_integer(val) and val < #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_integer(val) and val < #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "minimum"))
   end
 
   def validatorfn_string(name, schema = %{"minimum" => v, "type" => "number"}) do
-    "def validate_#{name}(val) when is_number(val) and val < #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_number(val) and val < #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "minimum"))
   end
 
@@ -189,11 +189,11 @@ defmodule Exonerate.Codesynth do
       when is_list(typelist) do
     cond do
       "number" in typelist ->
-        "def validate_#{name}(val) when is_number(val) and val < #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+        "def validate_#{name}(val) when is_number(val) and val < #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
           validatorfn_string(name, Map.delete(schema, "minimum"))
 
       "integer" in typelist ->
-        "def validate_#{name}(val) when is_integer(val) and val < #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+        "def validate_#{name}(val) when is_integer(val) and val < #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
           validatorfn_string(name, Map.delete(schema, "minimum"))
 
       true ->
@@ -202,19 +202,19 @@ defmodule Exonerate.Codesynth do
   end
 
   def validatorfn_string(name, schema = %{"minimum" => v}) do
-    "def validate_#{name}(val) when is_number(val) and val < #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_number(val) and val < #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "minimum"))
   end
 
   ##############################################################################
 
   def validatorfn_string(name, schema = %{"maximum" => v, "type" => "integer"}) do
-    "def validate_#{name}(val) when is_integer(val) and val > #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_integer(val) and val > #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "maximum"))
   end
 
   def validatorfn_string(name, schema = %{"maximum" => v, "type" => "number"}) do
-    "def validate_#{name}(val) when is_number(val) and val > #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_number(val) and val > #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "maxno need to exchange info personally.
 
 imum"))
@@ -224,11 +224,11 @@ imum"))
       when is_list(typelist) do
     cond do
       "number" in typelist ->
-        "def validate_#{name}(val) when is_number(val) and val > #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+        "def validate_#{name}(val) when is_number(val) and val > #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
           validatorfn_string(name, Map.delete(schema, "maximum"))
 
       "integer" in typelist ->
-        "def validate_#{name}(val) when is_integer(val) and val > #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+        "def validate_#{name}(val) when is_integer(val) and val > #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
           validatorfn_string(name, Map.delete(schema, "maximum"))
 
       true ->
@@ -237,19 +237,19 @@ imum"))
   end
 
   def validatorfn_string(name, schema = %{"maximum" => v}) do
-    "def validate_#{name}(val) when is_number(val) and val > #{v}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_number(val) and val > #{v}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "maximum"))
   end
 
   ##############################################################################
 
   def validatorfn_string(name, schema = %{"minItems" => l}) do
-    "def validate_#{name}(val) when is_list(val) and length(val) < #{l}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_list(val) and length(val) < #{l}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "minItems"))
   end
 
   def validatorfn_string(name, schema = %{"maxItems" => l}) do
-    "def validate_#{name}(val) when is_list(val) and length(val) > #{l}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_list(val) and length(val) > #{l}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "maxItems"))
   end
 
@@ -257,7 +257,7 @@ imum"))
       when is_list(array) do
     l = length(array)
 
-    "def validate_#{name}(val) when is_list(val) and length(val) > #{l}, do: {:error, \"\#{inspect val} does not conform to JSON schema\"}\n" <>
+    "def validate_#{name}(val) when is_list(val) and length(val) > #{l}, do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}\n" <>
       validatorfn_string(name, Map.delete(schema, "additionalItems"))
   end
 
@@ -282,7 +282,7 @@ imum"))
   def validatorfn_string(name, schema = %{"required" => _}, type = "object") do
     """
       def validate_#{name}(val #{requiredstring(schema, type)}) when is_map(val), do: #{bodystring(name, schema, type)}
-      def validate_#{name}(val) when is_map(val), do: {:error, \"\#{inspect val} does not conform to JSON schema\"}
+      def validate_#{name}(val) when is_map(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
     """
   end
 
@@ -298,7 +298,7 @@ imum"))
 
   def finalizer_string(name, %{"type" => _}),
     do:
-      "def validate_#{name}(val), do: {:error, \"\#{inspect val} does not conform to JSON schema\"}"
+      "def validate_#{name}(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}"
 
   def finalizer_string(name, _), do: ""
 
@@ -454,7 +454,7 @@ imum"))
       def validate_#{name}__anyof(val) do
         cond do
           #{validation_list}
-          true -> {:error, \"\#{inspect val} does not conform to JSON schema\"}
+          true -> {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
         end
       end
 
@@ -473,7 +473,7 @@ imum"))
         count = [#{validation_list}]
           |> Enum.map(fn f -> f.(val) end)
           |> Enum.count(fn res -> res == :ok end)
-        if count == 1, do: :ok, else: {:error, \"\#{inspect val} does not conform to JSON schema\"}
+        if count == 1, do: :ok, else: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       end
 
     """ <> validate_qualifier_string(name, Map.delete(schema, "oneOf"))
@@ -487,7 +487,7 @@ imum"))
 
     """
       def validate_#{name}__enum(val) do
-        if val in [#{validation_list}], do: :ok, else: {:error, \"\#{inspect val} does not conform to JSON schema\"}
+        if val in [#{validation_list}], do: :ok, else: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       end
 
     """ <> validate_qualifier_string(name, Map.delete(schema, "enum"))
@@ -528,7 +528,7 @@ imum"))
         actual_key_list = Map.keys(val)
 
         is_valid = required_key_list |> Enum.all?(fn k -> k in actual_key_list end)
-        if is_valid, do: :ok, else: {:error, \"\#{inspect val} does not conform to JSON schema\"}
+        if is_valid, do: :ok, else: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
       end
     """
   end
