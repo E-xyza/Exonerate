@@ -36,11 +36,11 @@ Add the following lines to your mix.exs
 
 The following code will create an elixir file from a JSONSchema file:
 ```elixir
-  filename
+  jsonchema_file_name
   |> File.open!
-  |> Poison.decode!
+  |> Jason.decode!
   |> &Exonerate.buildmodule_string("modulename", "schemaname", &1).()
-  |> &File.write("filename",&1).()
+  |> &File.write("result_file.ex",&1).()
 ```
 
 ## Installation
@@ -65,4 +65,4 @@ test/ that features automatically generated code and code testing.
 
 ## response encoding.
 
-the default response encoding for JSON is Poison.
+the default response encoding for JSON is Jason.

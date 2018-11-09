@@ -5,7 +5,7 @@ defmodule Exonerate.MixProject do
     [
       app: :exonerate,
       version: "0.1.0",
-      elixir: "~> 1.6-dev",
+      elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       preferred_cli_env: [exoneratebuildtests: :test]
@@ -23,7 +23,7 @@ defmodule Exonerate.MixProject do
   defp deps do
     [
       {:httpoison, "~> 0.13", only: [:test]},
-      {:poison, "~> 3.1"},
+      {:jason, "~> 1.1"},
     ]
   end
 end

@@ -15,7 +15,7 @@ defmodule ExonerateCodesynthBooleanNilTest do
   test "boolean json false is always an error" do
     codesynth_match(
       false,
-      "def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}"
+      "def validate_test(val), do: {:error, \"\#{Jason.encode! val} does not conform to JSON schema\"}"
     )
   end
 
@@ -23,7 +23,7 @@ defmodule ExonerateCodesynthBooleanNilTest do
   test "nil json schemas generate correct code" do
     codesynth_match(%{"type" => "null"}, """
       def validate_test(nil), do: :ok
-      def validate_test(val), do: {:error, \"\#{Poison.encode! val} does not conform to JSON schema\"}
+      def validate_test(val), do: {:error, \"\#{Jason.encode! val} does not conform to JSON schema\"}
     """)
   end
 end

@@ -47,7 +47,7 @@ defmodule Mix.Tasks.Exoneratebuildtests do
     file_uri = @remoteroot <> suite <> ".json"
     # fetch the uri and convert it from json to elixir
     HTTPoison.get!(file_uri).body
-    |> Poison.decode!()
+    |> Jason.decode!()
   end
 
   #have a way of getting a local test file
@@ -56,7 +56,7 @@ defmodule Mix.Tasks.Exoneratebuildtests do
     file_path = Path.join([@rootdir, "test", suite <> ".json"])
     # fetch the uri and convert it from json to elixir
     File.read!(file_path)
-    |> Poison.decode!()
+    |> Jason.decode!()
   end
 
   def singletest(%{"description" => description, "data" => data, "valid" => valid}, function) do
@@ -104,7 +104,7 @@ defmodule Mix.Tasks.Exoneratebuildtests do
 
             JSON Schema being tested:
 
-            #{Poison.encode!(schema)}
+            #{Jason.encode!(schema)}
 
           \"""
 

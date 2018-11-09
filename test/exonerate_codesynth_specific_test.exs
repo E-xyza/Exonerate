@@ -10,7 +10,7 @@ defmodule ExonerateCodesynthSpecificTest do
   test "json schemas that don't specify array with array parameters build properly" do
     codesynth_match(%{"items" => [%{}], "additionalItems" => %{"type" => "integer"}}, """
     def validate_test__additionalItems(val) when is_integer(val), do: :ok
-    def validate_test__additionalItems(val), do: {:error, "\#{inspect val} does not conform to JSON schema"}
+    def validate_test__additionalItems(val), do: {:error, "\#{Jason.encode! val} does not conform to JSON schema"}
 
     def validate_test_0(val), do: :ok
 
@@ -22,5 +22,5 @@ defmodule ExonerateCodesynthSpecificTest do
     def validate_test(val), do: :ok
     """)
   end
-  
+
 end
