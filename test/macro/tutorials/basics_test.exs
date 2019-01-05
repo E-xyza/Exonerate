@@ -63,4 +63,38 @@ defmodule ExonerateTest.Macro.Tutorials.BasicsTest do
       assert {:mismatch, {ExonerateTest.Macro.Tutorials.BasicsTest.TypeKeyword, "type"}, 42} = TypeKeyword.type(42)
     end
   end
+
+  defmodule JsonSchema do
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/basics.html#declaring-a-json-schema
+    """
+    import Exonerate.Macro
+
+    defschema type: ~s({"$schema": "http://json-schema.org/schema#"})
+  end
+
+  describe "the schema keyword test" do
+    test "schema can be retrieved" do
+      assert "http://json-schema.org/schema#" = JsonSchema.schema()
+    end
+  end
+
+  defmodule ID do
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/basics.html#declaring-a-unique-identifier
+    """
+    import Exonerate.Macro
+
+    defschema type: ~s({"$id": "http://yourdomain.com/schemas/myschema.json"})
+  end
+
+  describe "the id keyword test" do
+    test "id can be retrieved" do
+      assert "http://yourdomain.com/schemas/myschema.json" = ID.id()
+    end
+  end
 end
