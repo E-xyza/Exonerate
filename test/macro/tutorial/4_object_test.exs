@@ -119,7 +119,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     end
 
     test "mismatched inner property doesn't match" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Properties, :address1, @addr2}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Properties, :address1, [@addr2]}} =
         @addr2
         |> Jason.decode!
         |> Properties.address1

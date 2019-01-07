@@ -32,7 +32,7 @@ defmodule ExonerateTest.Macro.Tutorial.StringTest do
     end
 
     test "number mismatches a string" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.String, :string, 42}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.String, :string, [42]}} =
         String.string(42)
     end
   end
@@ -62,10 +62,10 @@ defmodule ExonerateTest.Macro.Tutorial.StringTest do
     end
 
     test "string of incorrect sizes don't match" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.Length, :string, "A"}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.Length, :string, ["A"]}} =
         Length.string("A")
 
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.Length, :string, "ABCD"}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.Length, :string, ["ABCD"]}} =
         Length.string("ABCD")
     end
   end
@@ -94,10 +94,10 @@ defmodule ExonerateTest.Macro.Tutorial.StringTest do
     end
 
     test "string of incorrect sizes don't match" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.Pattern, :string, "(888)555-1212 ext. 532"}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.Pattern, :string, ["(888)555-1212 ext. 532"]}} =
         Pattern.string("(888)555-1212 ext. 532")
 
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.Pattern, :string, "(800)FLOWERS"}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.StringTest.Pattern, :string, ["(800)FLOWERS"]}} =
         Pattern.string("(800)FLOWERS")
     end
   end

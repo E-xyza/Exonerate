@@ -28,7 +28,7 @@ defmodule ExonerateTest.Macro.Tutorial.TypeSpecificTest do
     end
 
     test "number mismatches a string" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.TypeSpecificTest.Type, :one_type, "42"}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.TypeSpecificTest.Type, :one_type, ["42"]}} =
         Type.one_type("42")
     end
   end
@@ -41,7 +41,7 @@ defmodule ExonerateTest.Macro.Tutorial.TypeSpecificTest do
 
     @struct_list ["Life", "the universe", "and everything"]
     test "number mismatches a structured type" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.TypeSpecificTest.Type, :two_types, @struct_list}
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.TypeSpecificTest.Type, :two_types, [@struct_list]}
        } =
         Type.two_types(@struct_list)
     end
