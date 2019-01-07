@@ -325,7 +325,7 @@ defmodule Exonerate.Macro do
       new_method = generate_submethod(method, k)
       {
         quote do
-          parse_recurse = unquote(new_method)(val[unquote(k)])
+          parse_recurse = val[unquote(k)] && unquote(new_method)(val[unquote(k)])
         end,
         quote do parse_recurse end
       }

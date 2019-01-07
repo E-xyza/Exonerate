@@ -58,10 +58,10 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     @badarray ["An", "array", "not", "an", "object"]
 
     test "objects mismatches a string or array" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Object, :object, "Not an object"}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Object, :object, ["Not an object"]}} =
         Object.object("Not an object")
 
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Object, :object, @badarray}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Object, :object, [@badarray]}} =
         Object.object(@badarray)
     end
   end
@@ -119,7 +119,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     end
 
     test "mismatched inner property doesn't match" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Properties, :address1, [@addr2]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Properties, :address1__number, ["1600"]}} =
         @addr2
         |> Jason.decode!
         |> Properties.address1

@@ -27,8 +27,6 @@ defmodule Exonerate.Macro.BuildCond do
     #   end
     # end
 
-    IO.inspect(cond_clauses, label: "COND CLAUSES")
-
     {:cond, [], [[do: right_arrow_list_from(cond_clauses)]]}
   end
 

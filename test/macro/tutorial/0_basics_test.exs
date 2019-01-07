@@ -36,7 +36,7 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
     end
 
     test "false matches nothing" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.BasicsTest.HelloWorld, :helloworld3, "Resistance is futile...  This will always fail!!!"}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.BasicsTest.HelloWorld, :helloworld3, ["Resistance is futile...  This will always fail!!!"]}} =
         HelloWorld.helloworld3("Resistance is futile...  This will always fail!!!")
     end
   end
@@ -58,7 +58,7 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
     end
 
     test "string type does not match nonstring" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.BasicsTest.TypeKeyword, :type, 42}} = TypeKeyword.type(42)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.BasicsTest.TypeKeyword, :type, [42]}} = TypeKeyword.type(42)
     end
   end
 
