@@ -9,6 +9,7 @@ defmodule Exonerate.Macro do
   @type defblock :: {:def, any, any}
 
   defmacro defschema([{method, json} | _opts]) do
+
     code = json
     |> maybe_desigil
     |> Jason.decode!
@@ -199,7 +200,7 @@ defmodule Exonerate.Macro do
     {bin, _} = Code.eval_quoted(s)
     bin
   end
-  defp maybe_desigil(b) when is_binary(b), do: b
+  defp maybe_desigil(any), do: any
 
   @spec mismatch(module, atom, any) :: {:mismatch, {module, atom, [any]}}
   def mismatch(m, f, a) do
@@ -320,6 +321,82 @@ defmodule Exonerate.Macro do
     builds the conditional structure for filtering objects based on their jsonschema
     parameters
   """
+  def build_object_cond(spec = %{"minProperties" => min}, method) do
+    [{
+      quote do
+        Enum.count(val) < unquote(min)
+      end,
+      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+    }
+    | spec
+    |> Map.delete("minProperties")
+    |> build_object_cond(method)
+    ]
+  end
+  def build_object_cond(spec = %{"maxProperties" => max}, method) do
+    [{
+      quote do
+        Enum.count(val) > unquote(max)
+      end,
+      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+    }
+    | spec
+    |> Map.delete("maxProperties")
+    |> build_object_cond(method)
+    ]
+  end
+  def build_object_cond(spec = %{"required" => plist}, method) do
+    [{
+      quote do
+        ! Enum.all?(unquote(plist), &Map.has_key?(val, &1))
+      end,
+      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+    }
+    | spec
+    |> Map.delete("required")
+    |> build_object_cond(method)
+    ]
+  end
+  def build_object_cond(spec = %{"propertyNames" => _}, method) do
+    pn_method = generate_submethod(method, "propertyNames")
+    [{
+      quote do
+        parse_properties = Exonerate.Macro.check_property_names(
+          val,
+          __MODULE__,
+          unquote(pn_method)
+        )
+      end,
+      quote do
+        parse_properties
+      end
+    }
+    | spec
+    |> Map.delete("propertyNames")
+    |> build_object_cond(method)
+    ]
+  end
+  def build_object_cond(spec = %{"additionalProperties" => _}, method) do
+    props = if spec["properties"] do
+      Map.keys(spec["properties"])
+    else
+      []
+    end
+    ap_method = generate_submethod(method, "additionalProperties")
+    [{
+      quote do
+        parse_additional = Exonerate.Macro.check_additional_properties(
+                    val,
+                    unquote(props),
+                    __MODULE__,
+                    unquote(ap_method))
+      end,
+      quote do parse_additional end
+    }] ++
+    (spec
+    |> Map.delete("additionalProperties")
+    |> build_object_cond(method))
+  end
   def build_object_cond(spec = %{"properties" => pobj}, method) do
     Enum.map(pobj, fn {k, _v} ->
       new_method = generate_submethod(method, k)
@@ -337,8 +414,18 @@ defmodule Exonerate.Macro do
   def build_object_cond(_, _), do: []
 
   @spec build_object_deps(Exonerate.schema, atom) :: [defblock]
-  def build_object_deps(%{"properties" => pobj}, method) do
-    Enum.flat_map(pobj, &object_dep(&1, method))
+  def build_object_deps(spec = %{"properties" => pobj}, method) do
+    Enum.flat_map(pobj, &object_dep(&1, method)) ++
+    build_object_deps(Map.delete(spec, "properties"), method)
+  end
+  def build_object_deps(spec = %{"propertyNames" => pobj}, method) do
+    obj_string = Map.put(pobj, "type", "string")
+    object_dep({"propertyNames", obj_string}, method) ++
+    build_object_deps(Map.delete(spec, "propertyNames"), method)
+  end
+  def build_object_deps(spec = %{"additionalProperties" => pobj}, method) do
+    object_dep({"additionalProperties", pobj}, method) ++
+    build_object_deps(Map.delete(spec, "additionalProperties"), method)
   end
   def build_object_deps(_, _), do: []
 
@@ -357,5 +444,42 @@ defmodule Exonerate.Macro do
     |> Kernel.<>(sub)
     |> String.to_atom
   end
+
+  def check_property_names(obj, module, pn_method) do
+    try do
+      Enum.each(obj, &check_property_name(&1, module, pn_method))
+      false
+    catch
+      any -> any
+    end
+  end
+
+  def check_property_name({k, _v}, module, pn_method) do
+    module
+    |> apply(pn_method, [k])
+    |> throw_if_invalid
+  end
+
+  def check_additional_properties(obj, list, module, ap_method) do
+    try do
+      Enum.each(obj, &check_additional_property(&1, list, module, ap_method))
+      false
+    catch
+      any -> any
+    end
+  end
+
+  def check_additional_property({k, v}, list, module, ap_method) do
+    if k in list do
+      :ok
+    else
+      module
+      |> apply(ap_method, [v])
+      |> throw_if_invalid
+    end
+  end
+
+  def throw_if_invalid(:ok), do: :ok
+  def throw_if_invalid(any), do: throw any
 
 end

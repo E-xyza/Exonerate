@@ -76,24 +76,56 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     """
     import Exonerate.Macro
 
-    defschema address1: """
-                        {
-                          "type": "object",
-                          "properties": {
-                            "number":      { "type": "number" },
-                            "street_name": { "type": "string" },
-                            "street_type": { "type": "string",
-                                             "enum": ["Street", "Avenue", "Boulevard"]
-                                           }
-                          }
-                        }
-                        """
+    defschema address1:
+    """
+    {
+      "type": "object",
+      "properties": {
+        "number":      { "type": "number" },
+        "street_name": { "type": "string" },
+        "street_type": { "type": "string",
+                         "enum": ["Street", "Avenue", "Boulevard"]
+                       }
+      }
+    }
+    """
+
+    defschema address2:
+    """
+    {
+      "type": "object",
+      "properties": {
+        "number":      { "type": "number" },
+        "street_name": { "type": "string" },
+        "street_type": { "type": "string",
+                         "enum": ["Street", "Avenue", "Boulevard"]
+                       }
+      },
+      "additionalProperties": false
+    }
+    """
+
+    defschema address3:
+    """
+    {
+      "type": "object",
+      "properties": {
+        "number":      { "type": "number" },
+        "street_name": { "type": "string" },
+        "street_type": { "type": "string",
+                         "enum": ["Street", "Avenue", "Boulevard"]
+                       }
+      },
+      "additionalProperties": { "type": "string" }
+    }
+    """
   end
 
   @addr1 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue" })
   @addr2 ~s({ "number": "1600", "street_name": "Pennsylvania", "street_type": "Avenue" })
   @addr3 ~s({ "number": 1600, "street_name": "Pennsylvania" })
   @addr4 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue", "direction": "NW" })
+  @addr5 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue","office_number": 201  })
 
   describe "matching simple addresses" do
     test "explicit addresses match correctly" do
@@ -123,6 +155,202 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
         @addr2
         |> Jason.decode!
         |> Properties.address1
+    end
+  end
+
+  describe "matching addresses with additionalProperties forbidden" do
+    test "explicit addresses match correctly" do
+      assert :ok = @addr1
+      |> Jason.decode!
+      |> Properties.address2
+    end
+
+    test "extra properties matches correctly" do
+      addr4 = Jason.decode(@addr4)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Properties, :address2, [addr4]}} =
+        Properties.address2(addr4)
+    end
+  end
+
+  describe "matching addresses with additionalProperties as an object" do
+    test "explicit addresses match correctly" do
+      assert :ok = @addr1
+      |> Jason.decode!
+      |> Properties.address3
+    end
+
+    test "matching additionalProperties matches correctly" do
+      assert :ok = @addr4
+      |> Jason.decode!
+      |> Properties.address3
+    end
+
+    test "extra nonstring property doesn't matche" do
+      addr5 = Jason.decode(@addr5)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Properties, :address2, [addr5]}} =
+        Properties.address2(addr5)
+    end
+  end
+
+  defmodule RequiredProperties do
+
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/reference/object.html#required-properties
+
+    """
+    import Exonerate.Macro
+
+    defschema contactinfo:
+    """
+    {
+      "type": "object",
+      "properties": {
+        "name":      { "type": "string" },
+        "email":     { "type": "string" },
+        "address":   { "type": "string" },
+        "telephone": { "type": "string" }
+      },
+      "required": ["name", "email"]
+    }
+    """
+  end
+
+  @contact1 """
+  {
+    "name": "William Shakespeare",
+    "email": "bill@stratford-upon-avon.co.uk"
+  }
+  """
+  @contact2 """
+  {
+    "name": "William Shakespeare",
+    "email": "bill@stratford-upon-avon.co.uk",
+    "address": "Henley Street, Stratford-upon-Avon, Warwickshire, England",
+    "authorship": "in question"
+  }
+  """
+  @contact3 """
+  {
+    "name": "William Shakespeare",
+    "address": "Henley Street, Stratford-upon-Avon, Warwickshire, England"
+  }
+  """
+
+  describe "matching required properties" do
+    test "basic contact matches correctly" do
+      assert :ok = @contact1
+      |> Jason.decode!
+      |> RequiredProperties.contactinfo
+    end
+
+    test "extra info doesn't invalidate match" do
+      assert :ok = @contact2
+      |> Jason.decode!
+      |> RequiredProperties.contactinfo
+    end
+
+    test "deficient info is a problem" do
+      contact3 = Jason.decode!(@contact3)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.RequiredProperties, :contactinfo, [contact3]}} =
+        RequiredProperties.contactinfo(contact3)
+    end
+  end
+
+  defmodule PropertyNames do
+
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/reference/object.html#property-names
+
+    """
+    import Exonerate.Macro
+
+    defschema token:
+    """
+    {
+      "type": "object",
+      "propertyNames": {
+       "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+      }
+    }
+    """
+  end
+
+  @token1 ~s({ "_a_proper_token_001": "value" })
+  @token2 ~s({ "001 invalid": "value" })
+
+  describe "matching property names" do
+    test "basic contact matches correctly" do
+      assert :ok = @token1
+      |> Jason.decode!
+      |> PropertyNames.token
+    end
+
+    test "not matching the property name doesn't match" do
+      token2 = Jason.decode!(@token2)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyNames, :token__propertyNames, ["001 invalid"]}} =
+        PropertyNames.token(token2)
+    end
+  end
+
+  defmodule Size do
+
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/reference/object.html#size
+
+    """
+    import Exonerate.Macro
+
+    defschema object:
+    """
+    {
+      "type": "object",
+      "minProperties": 2,
+      "maxProperties": 3
+    }
+    """
+  end
+
+  @objsize1 ~s({})
+  @objsize2 ~s({ "a": 0 })
+  @objsize3 ~s({ "a": 0, "b": 1 })
+  @objsize4 ~s({ "a": 0, "b": 1, "c": 2 })
+  @objsize5 ~s({ "a": 0, "b": 1, "c": 2, "d": 3 })
+
+  describe "matching property size" do
+    test "empty object mismatches" do
+      objsize1 = Jason.decode!(@objsize1)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Size, :object, [objsize1]}} =
+        Size.object(objsize1)
+    end
+
+    test "too small object mismatches" do
+      objsize2 = Jason.decode!(@objsize1)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Size, :object, [objsize2]}} =
+        Size.object(objsize2)
+    end
+
+    test "small goldilocks matches correctly" do
+      assert :ok = @objsize3
+      |> Jason.decode!
+      |> Size.object
+    end
+
+    test "big goldilocks matches correctly" do
+      assert :ok = @objsize4
+      |> Jason.decode!
+      |> Size.object
+    end
+
+    test "too large object mismatches" do
+      objsize5 = Jason.decode!(@objsize5)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Size, :object, [objsize5]}} =
+        Size.object(objsize5)
     end
   end
 
