@@ -42,6 +42,7 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"type" => "integer"}, method), do: match_integer(spec, method)
   def matcher(spec = %{"type" => "number"}, method), do: match_number(spec, method)
   def matcher(spec = %{"type" => "object"}, method), do: match_object(spec, method)
+  def matcher(spec = %{"type" => "array"}, method), do: match_array(spec, method)
   def matcher(spec = %{"type" => list}, method) when is_list(list), do: match_list(spec, list, method)
 
   @spec always_matches(atom) :: defblock
@@ -116,16 +117,16 @@ defmodule Exonerate.Macro do
     |> build_integer_cond(method)
     |> BuildCond.build
 
-    num_match = quote do
+    int_match = quote do
       def unquote(method)(val) when is_integer(val) do
         unquote(cond_stmt)
       end
     end
 
     if terminal do
-      [num_match | never_matches(method)]
+      [int_match | never_matches(method)]
     else
-      [num_match]
+      [int_match]
     end
   end
 
@@ -160,16 +161,39 @@ defmodule Exonerate.Macro do
     # build the extra dependencies on the object type
     dependencies = build_object_deps(spec, method)
 
-    num_match = quote do
+    obj_match = quote do
       def unquote(method)(val) when is_map(val) do
         unquote(cond_stmt)
       end
     end
 
     if terminal do
-      [num_match | never_matches(method)] ++ dependencies
+      [obj_match | never_matches(method)] ++ dependencies
     else
-      [num_match] ++ dependencies
+      [obj_match] ++ dependencies
+    end
+  end
+
+  @spec match_array(map, atom, boolean) :: [defblock]
+  defp match_array(spec, method, terminal \\ true) do
+
+    cond_stmt = spec
+    |> build_array_cond(method)
+    |> BuildCond.build
+
+    # build the extra dependencies on the array type
+    dependencies = build_array_deps(spec, method)
+
+    arr_match = quote do
+      def unquote(method)(val) when is_list(val) do
+        unquote(cond_stmt)
+      end
+    end
+
+    if terminal do
+      [arr_match | never_matches(method)] ++ dependencies
+    else
+      [arr_match] ++ dependencies
     end
   end
 
@@ -245,7 +269,7 @@ defmodule Exonerate.Macro do
       |> build_string_cond(method)
     ]
   end
-  def build_string_cond(_, _), do: []
+  def build_string_cond(spec, method), do: build_enum_cond(spec, method)
 
   @spec build_integer_cond(Exonerate.schema, atom) :: condlist
   @doc """
@@ -314,7 +338,7 @@ defmodule Exonerate.Macro do
       |> build_number_cond(method)
     ]
   end
-  def build_number_cond(_, _), do: []
+  def build_number_cond(spec, method), do: build_enum_cond(spec, method)
 
   @spec build_object_cond(Exonerate.schema, atom) :: condlist
   @doc """
@@ -485,7 +509,81 @@ defmodule Exonerate.Macro do
     |> Map.delete("properties")
     |> build_object_cond(method))
   end
-  def build_object_cond(_, _), do: []
+  def build_object_cond(spec, method), do: build_enum_cond(spec, method)
+
+  def build_array_cond(spec = %{"items" => pobj}, method) when is_map(pobj) do
+    new_method = generate_submethod(method, "items")
+    [
+      {
+        quote do
+          parse_recurse = Exonerate.Macro.check_items(
+            val,
+            __MODULE__,
+            unquote(new_method)
+          )
+        end,
+        quote do parse_recurse end
+      }
+      |
+      spec
+      |> Map.delete("items")
+      |> build_object_cond(method)
+    ]
+  end
+  def build_array_cond(spec = %{"items" => parr}, method) when is_list(parr) do
+    for idx <- 0..(Enum.count(parr) - 1) do
+      new_method = generate_submethod(method, "item_#{idx}")
+      {
+        quote do
+          parse_recurse = Exonerate.Macro.check_tuple(
+            val,
+            unquote(idx),
+            __MODULE__,
+            unquote(new_method)
+          )
+        end,
+        quote do
+          parse_recurse
+        end
+      }
+    end
+    ++
+    (spec
+      |> Map.delete("items")
+      |> build_object_cond(method))
+  end
+  def build_array_cond(spec = %{"contains" => _pobj}, method) do
+    new_method = generate_submethod(method, "contains")
+    [
+      {
+        quote do
+          parse_recurse = Exonerate.Macro.check_contains(
+            val,
+            __MODULE__,
+            unquote(new_method)
+          )
+        end,
+        quote do parse_recurse end
+      }
+      |
+      spec
+      |> Map.delete("contains")
+      |> build_object_cond(method)
+    ]
+  end
+  def build_array_cond(spec, method), do: build_enum_cond(spec, method)
+
+  def build_enum_cond(%{"enum" => elist}, method) do
+    esc_elist = Macro.escape(elist)
+    [{quote do
+        val not in unquote(esc_elist)
+      end,
+      quote do
+        Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
+      end
+    }]
+  end
+  def build_enum_cond(_, _), do: []
 
   @spec build_object_deps(Exonerate.schema, atom) :: [defblock]
   def build_object_deps(spec = %{"patternProperties" => pobj}, method) do
@@ -514,6 +612,16 @@ defmodule Exonerate.Macro do
     build_object_deps(Map.delete(spec, "dependencies"), method)
   end
   def build_object_deps(_, _), do: []
+
+  def build_array_deps(spec = %{"items" => iobj}, method) do
+    array_items_dep(iobj, method) ++
+    build_array_deps(Map.delete(spec, "items"), method)
+  end
+  def build_array_deps(spec = %{"contains" => cobj}, method) do
+    array_contains_dep(cobj, method) ++
+    build_array_deps(Map.delete(spec, "contains"), method)
+  end
+  def build_array_deps(_,_), do: []
 
   def object_property_dep(dobj, method) do
     Enum.flat_map(dobj, &property_dep(&1, method))
@@ -561,6 +669,25 @@ defmodule Exonerate.Macro do
   def patt_prop(v, idx, method) do
     patt_method = generate_submethod(method, "pattern_#{idx}")
     matcher(v, patt_method)
+  end
+
+  def array_items_dep(iobj, method) when is_map(iobj) do
+    items_method = generate_submethod(method, "items")
+    matcher(iobj, items_method)
+  end
+
+  def array_items_dep(iarr, method) when is_list(iarr) do
+    iarr
+    |> Enum.with_index
+    |> Enum.flat_map(fn {spec, idx} ->
+      item_method = generate_submethod(method, "item_#{idx}")
+      matcher(spec, item_method)
+    end)
+  end
+
+  def array_contains_dep(cobj, method) do
+    contains_method = generate_submethod(method, "contains")
+    matcher(cobj, contains_method)
   end
 
   @spec generate_submethod(atom, String.t) :: atom
@@ -655,7 +782,41 @@ defmodule Exonerate.Macro do
     end
   end
 
+  def check_items(val, module, item_method) do
+    try do
+      Enum.each(val, &check_item(&1, module, item_method))
+      false
+    catch
+      any -> any
+    end
+  end
+  def check_item(val, module, item_method) do
+    module
+    |> apply(item_method, [val])
+    |> throw_if_invalid
+  end
+
+  def check_tuple(val, idx, module, item_method) do
+    check_val = Enum.at(val, idx)
+    check_val && (
+      module
+      |> apply(item_method, [check_val])
+      |> continue_if_ok
+    )
+  end
+
+  def check_contains(val, module, cont_method) do
+    if Enum.any?(val, &(apply(module, cont_method, [&1]) == :ok)) do
+      :ok
+    else
+      Exonerate.Macro.mismatch(module, cont_method, val)
+    end
+  end
+
   def throw_if_invalid(:ok), do: :ok
   def throw_if_invalid(any), do: throw any
+
+  def continue_if_ok(:ok), do: false
+  def continue_if_ok(any), do: any
 
 end

@@ -493,6 +493,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
       }
     }
     """
+
   end
 
   @schemadependency1 """
