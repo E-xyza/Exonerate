@@ -291,7 +291,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "not matching the property name doesn't match" do
       token2 = Jason.decode!(@token2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyNames, :token__propertyNames, ["001 invalid"]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyNames, :token__property_names, ["001 invalid"]}} =
         PropertyNames.token(token2)
     end
   end
@@ -588,7 +588,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "additional properties shouldn't match" do
       patternmatch5 = Jason.decode!(@patternmatch5)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1__additionalProperties, ["value"]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1__additional_properties, ["value"]}} =
         PatternProperties.patternprop1(patternmatch5)
     end
   end

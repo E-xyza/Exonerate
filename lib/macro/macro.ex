@@ -356,7 +356,7 @@ defmodule Exonerate.Macro do
     |> Map.keys
     |> Enum.map(fn v -> quote do sigil_r(<<unquote(v)>>,'') end end)
 
-    ap_method = generate_submethod(method, "additionalProperties")
+    ap_method = generate_submethod(method, "additional_properties")
 
     [{
       quote do
@@ -454,7 +454,7 @@ defmodule Exonerate.Macro do
     ]
   end
   def build_object_cond(spec = %{"propertyNames" => _}, method) do
-    pn_method = generate_submethod(method, "propertyNames")
+    pn_method = generate_submethod(method, "property_names")
     [{
       quote do
         parse_properties = Exonerate.Macro.check_property_names(
@@ -476,7 +476,7 @@ defmodule Exonerate.Macro do
     else
       []
     end
-    ap_method = generate_submethod(method, "additionalProperties")
+    ap_method = generate_submethod(method, "additional_properties")
     [{
       quote do
         parse_additional = Exonerate.Macro.check_additional_properties(
@@ -529,6 +529,24 @@ defmodule Exonerate.Macro do
       |> Map.delete("items")
       |> build_object_cond(method)
     ]
+  end
+  def build_array_cond(spec = %{"additionalItems" => _props, "items" => parr}, method) when is_list(parr) do
+    #this only gets triggered when we have a tuple list.
+    ap_method = generate_submethod(method, "additional_items")
+    length = Enum.count(parr)
+    [{
+      quote do
+        parse_additional = Exonerate.Macro.check_additional_array(
+                    val,
+                    unquote(length),
+                    __MODULE__,
+                    unquote(ap_method))
+      end,
+      quote do parse_additional end
+    }] ++
+    (spec
+    |> Map.delete("additionalItems")
+    |> build_object_cond(method))
   end
   def build_array_cond(spec = %{"items" => parr}, method) when is_list(parr) do
     for idx <- 0..(Enum.count(parr) - 1) do
@@ -600,11 +618,11 @@ defmodule Exonerate.Macro do
   end
   def build_object_deps(spec = %{"propertyNames" => pobj}, method) do
     obj_string = Map.put(pobj, "type", "string")
-    object_dep({"propertyNames", obj_string}, method) ++
+    object_dep({"property_names", obj_string}, method) ++
     build_object_deps(Map.delete(spec, "propertyNames"), method)
   end
   def build_object_deps(spec = %{"additionalProperties" => pobj}, method) do
-    object_dep({"additionalProperties", pobj}, method) ++
+    object_dep({"additional_properties", pobj}, method) ++
     build_object_deps(Map.delete(spec, "additionalProperties"), method)
   end
   def build_object_deps(spec = %{"dependencies" => dobj}, method) do
@@ -613,6 +631,10 @@ defmodule Exonerate.Macro do
   end
   def build_object_deps(_, _), do: []
 
+  def build_array_deps(spec = %{"additionalItems" => props, "items" => parr}, method) when is_list(parr) do
+    array_additional_dep(props, method) ++
+    build_array_deps(Map.delete(spec, "additionalItems"), method)
+  end
   def build_array_deps(spec = %{"items" => iobj}, method) do
     array_items_dep(iobj, method) ++
     build_array_deps(Map.delete(spec, "items"), method)
@@ -669,6 +691,11 @@ defmodule Exonerate.Macro do
   def patt_prop(v, idx, method) do
     patt_method = generate_submethod(method, "pattern_#{idx}")
     matcher(v, patt_method)
+  end
+
+  def array_additional_dep(prop, method) do
+    add_method = generate_submethod(method, "additional_items")
+    matcher(prop, add_method)
   end
 
   def array_items_dep(iobj, method) when is_map(iobj) do
@@ -769,6 +796,34 @@ defmodule Exonerate.Macro do
         module
         |> apply(ap_method, [v])
         |> throw_if_invalid
+    end
+  end
+
+  def check_additional_property({k, v}, list, module, ap_method) do
+    if k in list do
+      :ok
+    else
+      module
+      |> apply(ap_method, [v])
+      |> throw_if_invalid
+    end
+  end
+
+
+  def check_additional_array(arr, tuple_count, module, ap_method) do
+    try do
+      arr
+      |> Enum.with_index
+      |> Enum.each(fn
+        {_, idx} when idx < tuple_count -> :ok
+        {val, _} ->
+          module
+          |> apply(ap_method, [val])
+          |> throw_if_invalid
+      end)
+      false
+    catch
+      any -> any
     end
   end
 
