@@ -321,6 +321,27 @@ defmodule Exonerate.Macro do
     builds the conditional structure for filtering objects based on their jsonschema
     parameters
   """
+  def build_object_cond(spec = %{"dependencies" => dobj}, method) do
+    Enum.map(dobj, fn {k, _v} ->
+      dep_method = generate_submethod(method, k <> "_dependency")
+      {
+        quote do
+          parse_prop_dep = Exonerate.Macro.check_property_dependency(
+            val,
+            unquote(k),
+            __MODULE__,
+            unquote(dep_method)
+          )
+        end,
+        quote do
+          parse_prop_dep
+        end
+      }
+    end) ++
+    (spec
+    |> Map.delete("dependencies")
+    |> build_object_cond(method))
+  end
   def build_object_cond(spec = %{"minProperties" => min}, method) do
     [{
       quote do
@@ -367,9 +388,7 @@ defmodule Exonerate.Macro do
           unquote(pn_method)
         )
       end,
-      quote do
-        parse_properties
-      end
+      quote do parse_properties end
     }
     | spec
     |> Map.delete("propertyNames")
@@ -402,7 +421,11 @@ defmodule Exonerate.Macro do
       new_method = generate_submethod(method, k)
       {
         quote do
-          parse_recurse = val[unquote(k)] && unquote(new_method)(val[unquote(k)])
+          parse_recurse = Exonerate.Macro.check_property(
+            val[unquote(k)],
+            __MODULE__,
+            unquote(new_method)
+          )
         end,
         quote do parse_recurse end
       }
@@ -427,7 +450,47 @@ defmodule Exonerate.Macro do
     object_dep({"additionalProperties", pobj}, method) ++
     build_object_deps(Map.delete(spec, "additionalProperties"), method)
   end
+  def build_object_deps(spec = %{"dependencies" => dobj}, method) do
+    object_property_dep(dobj, method) ++
+    build_object_deps(Map.delete(spec, "dependencies"), method)
+  end
   def build_object_deps(_, _), do: []
+
+  def object_property_dep(dobj, method) do
+    Enum.flat_map(dobj, &property_dep(&1, method))
+  end
+
+  def check_property_dependency(map, key, module, method) do
+    Map.has_key?(map, key) &&
+    (
+      module
+      |> apply(method, [map])
+      |> case do
+        :ok -> false
+        any -> any
+      end
+    )
+  end
+
+  def property_dep({k, v}, method) when is_list(v) do
+    dep_method = generate_submethod(method, k <> "_dependency")
+    [quote do
+      def unquote(dep_method)(val) do
+        prop_list = unquote(v)
+        if Enum.all?(prop_list, &Map.has_key?(val, &1)) do
+          :ok
+        else
+          Exonerate.Macro.mismatch(__MODULE__, unquote(dep_method), val)
+        end
+      end
+    end]
+  end
+  def property_dep({k, v}, method) when is_map(v) do
+    dep_method = generate_submethod(method, k <> "_dependency")
+    v
+    |> Map.put("type", "object")
+    |> matcher(dep_method)
+  end
 
   #TODO: rename this thing.
   @spec object_dep({String.t, Exonerate.schema}, atom) :: [defblock]
@@ -476,6 +539,16 @@ defmodule Exonerate.Macro do
       module
       |> apply(ap_method, [v])
       |> throw_if_invalid
+    end
+  end
+
+  def check_property(nil, _, _), do: nil
+  def check_property(obj, module, property_method) do
+    module
+    |> apply(property_method, [obj])
+    |> case do
+      :ok -> false
+      any -> any
     end
   end
 
