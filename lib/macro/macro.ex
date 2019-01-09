@@ -321,6 +321,57 @@ defmodule Exonerate.Macro do
     builds the conditional structure for filtering objects based on their jsonschema
     parameters
   """
+  def build_object_cond(spec = %{"additionalProperties" => _, "patternProperties" => patts}, method) do
+    props = if spec["properties"] do
+      Map.keys(spec["properties"])
+    else
+      []
+    end
+
+    regexes = patts
+    |> Map.keys
+    |> Enum.map(fn v -> quote do sigil_r(<<unquote(v)>>,'') end end)
+
+    ap_method = generate_submethod(method, "additionalProperties")
+
+    [{
+      quote do
+        parse_additional = Exonerate.Macro.check_additional_properties(
+                    val,
+                    unquote(props),
+                    unquote(regexes),
+                    __MODULE__,
+                    unquote(ap_method))
+      end,
+      quote do parse_additional end
+    }] ++
+    (spec
+    |> Map.drop(["additionalProperties"])
+    |> build_object_cond(method))
+  end
+  def build_object_cond(spec = %{"patternProperties" => pobj}, method) do
+    (pobj
+    |> Enum.with_index
+    |> Enum.map(fn {{k, _v}, idx} ->
+      patt_method = generate_submethod(method, "pattern_#{idx}")
+      {
+        quote do
+          parse_pattern_prop = Exonerate.Macro.check_pattern_properties(
+            val,
+            sigil_r(<<unquote(k)>>, ''),
+            __MODULE__,
+            unquote(patt_method)
+          )
+        end,
+        quote do
+          parse_pattern_prop
+        end
+      }
+    end)) ++
+    (spec
+    |> Map.delete("patternProperties")
+    |> build_object_cond(method))
+  end
   def build_object_cond(spec = %{"dependencies" => dobj}, method) do
     Enum.map(dobj, fn {k, _v} ->
       dep_method = generate_submethod(method, k <> "_dependency")
@@ -437,6 +488,14 @@ defmodule Exonerate.Macro do
   def build_object_cond(_, _), do: []
 
   @spec build_object_deps(Exonerate.schema, atom) :: [defblock]
+  def build_object_deps(spec = %{"patternProperties" => pobj}, method) do
+    (pobj
+    |> Enum.with_index
+    |> Enum.flat_map(fn {{_k, v}, idx} ->
+      patt_prop(v, idx, method)
+    end)) ++
+    build_object_deps(Map.delete(spec, "patternProperties"), method)
+  end
   def build_object_deps(spec = %{"properties" => pobj}, method) do
     Enum.flat_map(pobj, &object_dep(&1, method)) ++
     build_object_deps(Map.delete(spec, "properties"), method)
@@ -499,6 +558,11 @@ defmodule Exonerate.Macro do
     matcher(v, new_method)
   end
 
+  def patt_prop(v, idx, method) do
+    patt_method = generate_submethod(method, "pattern_#{idx}")
+    matcher(v, patt_method)
+  end
+
   @spec generate_submethod(atom, String.t) :: atom
   defp generate_submethod(method, sub) do
     method
@@ -506,6 +570,24 @@ defmodule Exonerate.Macro do
     |> Kernel.<>("__")
     |> Kernel.<>(sub)
     |> String.to_atom
+  end
+
+  def check_pattern_properties(obj, regex, module, pp_method) do
+    try do
+      obj
+      |> Map.keys
+      |> Enum.filter(&Regex.match?(regex, &1))
+      |> Enum.each(&check_pattern_property(obj[&1], module, pp_method))
+      false
+    catch
+      any -> any
+    end
+  end
+
+  def check_pattern_property(value, module, pp_method) do
+    module
+    |> apply(pp_method, [value])
+    |> throw_if_invalid
   end
 
   def check_property_names(obj, module, pn_method) do
@@ -531,6 +613,14 @@ defmodule Exonerate.Macro do
       any -> any
     end
   end
+  def check_additional_properties(obj, list, regexes, module, ap_method) do
+    try do
+      Enum.each(obj, &check_additional_property(&1, list, regexes, module, ap_method))
+      false
+    catch
+      any -> any
+    end
+  end
 
   def check_additional_property({k, v}, list, module, ap_method) do
     if k in list do
@@ -539,6 +629,19 @@ defmodule Exonerate.Macro do
       module
       |> apply(ap_method, [v])
       |> throw_if_invalid
+    end
+  end
+
+  def check_additional_property({k, v}, list, regexes, module, ap_method) do
+    cond do
+      k in list -> :ok
+      regexes
+      |> Enum.map(&Regex.match?(&1, k))
+      |> Enum.any? -> :ok
+      true ->
+        module
+        |> apply(ap_method, [v])
+        |> throw_if_invalid
     end
   end
 

@@ -402,29 +402,6 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
       }
     }
     """
-
-    defschema schemadependency:
-    """
-    {
-      "type": "object",
-
-      "properties": {
-        "name": { "type": "string" },
-        "credit_card": { "type": "number" }
-      },
-
-      "required": ["name"],
-
-      "dependencies": {
-        "credit_card": {
-          "properties": {
-            "billing_address": { "type": "string" }
-          },
-          "required": ["billing_address"]
-        }
-      }
-    }
-    """
   end
 
   @propdependency1 """
@@ -484,6 +461,40 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     end
   end
 
+  defmodule SchemaDependencies do
+
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/reference/object.html#schema-dependencies
+
+    """
+    import Exonerate.Macro
+
+    defschema schemadependency:
+    """
+    {
+      "type": "object",
+
+      "properties": {
+        "name": { "type": "string" },
+        "credit_card": { "type": "number" }
+      },
+
+      "required": ["name"],
+
+      "dependencies": {
+        "credit_card": {
+          "properties": {
+            "billing_address": { "type": "string" }
+          },
+          "required": ["billing_address"]
+        }
+      }
+    }
+    """
+  end
+
   @schemadependency1 """
   {
     "name": "John Doe",
@@ -508,18 +519,76 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     test "full compliance works" do
       assert :ok = @schemadependency1
       |> Jason.decode!
-      |> PropertyDependencies.schemadependency
+      |> SchemaDependencies.schemadependency
     end
     test "partial compliance does not work" do
       schemadependency2 = Jason.decode!(@schemadependency2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :schemadependency__credit_card_dependency, [schemadependency2]}} =
-        PropertyDependencies.schemadependency(schemadependency2)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.SchemaDependencies, :schemadependency__credit_card_dependency, [schemadependency2]}} =
+        SchemaDependencies.schemadependency(schemadependency2)
     end
     test "omitting a trigger works" do
       assert :ok = @schemadependency3
       |> Jason.decode!
-      |> PropertyDependencies.schemadependency
+      |> SchemaDependencies.schemadependency
     end
   end
 
+  defmodule PatternProperties do
+
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/reference/object.html#pattern-properties
+
+    """
+    import Exonerate.Macro
+
+    defschema patternprop1:
+    """
+    {
+      "type": "object",
+      "patternProperties": {
+        "^S_": { "type": "string" },
+        "^I_": { "type": "integer" }
+      },
+      "additionalProperties": false
+    }
+    """
+  end
+
+  @patternmatch1 ~s({ "S_25": "This is a string" })
+  @patternmatch2 ~s({ "I_0": 42 })
+  @patternmatch3 ~s({ "S_0": 42 })
+  @patternmatch4 ~s({ "I_42": "This is a string" })
+  @patternmatch5 ~s({ "keyword": "value" })
+
+  describe "matching pattern properties without additionals" do
+    test "string pattern works" do
+      assert :ok = @patternmatch1
+      |> Jason.decode!
+      |> PatternProperties.patternprop1
+    end
+    test "integer pattern works" do
+      assert :ok = @patternmatch2
+      |> Jason.decode!
+      |> PatternProperties.patternprop1
+    end
+
+    test "integers shouldn't match string pattern" do
+      patternmatch3 = Jason.decode!(@patternmatch3)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_1, [42]}} =
+        PatternProperties.patternprop1(patternmatch3)
+    end
+    test "strings shouldn't match integer pattern" do
+      patternmatch4 = Jason.decode!(@patternmatch4)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_0, ["This is a string"]}} =
+        PatternProperties.patternprop1(patternmatch4)
+    end
+
+    test "additional properties shouldn't match" do
+      patternmatch5 = Jason.decode!(@patternmatch5)
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1__additionalProperties, ["value"]}} =
+        PatternProperties.patternprop1(patternmatch5)
+    end
+  end
 end
