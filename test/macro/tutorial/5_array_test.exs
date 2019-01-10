@@ -169,6 +169,31 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
       "additionalItems": false
     }
     """
+
+
+    defschema tuple_additional_with_property:
+    """
+    {
+      "type": "array",
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "string",
+          "enum": ["Street", "Avenue", "Boulevard"]
+        },
+        {
+          "type": "string",
+          "enum": ["NW", "NE", "SW", "SE"]
+        }
+      ],
+      "additionalItems": { "type": "string" }
+    }
+    """
   end
 
   describe "tuple validation is a thing" do
@@ -206,7 +231,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
     end
   end
 
-  describe "tuple validation can happen with additionalProperties" do
+  describe "tuple validation can happen with additionalItems" do
     test "the basic still passes" do
       assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW"])
       |> Jason.decode!
@@ -226,4 +251,93 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
       = TupleValidation.tuple_noadditional([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
     end
   end
+
+  describe "tuple validation can happen with additionalItems and properties" do
+    test "extra strings are ok" do
+      assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+      |> Jason.decode!
+      |> TupleValidation.tuple_additional_with_property
+    end
+
+    test "but not extra numbers" do
+      assert  {:mismatch,
+      {ExonerateTest.Macro.Tutorial.ArrayTest.TupleValidation,
+      :tuple_additional_with_property__additional_items, [20500]}}
+      = TupleValidation.tuple_additional_with_property([1600, "Pennsylvania", "Avenue", "NW", 20500])
+    end
+  end
+
+  defmodule Length do
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/reference/array.html#length
+
+    """
+    import Exonerate.Macro
+
+    defschema length: """
+    {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3
+    }
+    """
+  end
+
+  describe "array length works" do
+    test "by length" do
+      assert  {:mismatch,
+      {ExonerateTest.Macro.Tutorial.ArrayTest.Length,
+      :length, [[]]}}
+      = Length.length([])
+
+      assert  {:mismatch,
+      {ExonerateTest.Macro.Tutorial.ArrayTest.Length,
+      :length, [[1]]}}
+      = Length.length([1])
+
+      assert :ok = Length.length([1, 2])
+
+      assert :ok = Length.length([1, 2, 3])
+
+      assert  {:mismatch,
+      {ExonerateTest.Macro.Tutorial.ArrayTest.Length,
+      :length, [[1, 2, 3, 4]]}}
+      = Length.length([1, 2, 3, 4])
+    end
+  end
+
+  defmodule Uniqueness do
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/reference/array.html#uniqueness
+
+    """
+    import Exonerate.Macro
+
+    defschema unique: """
+    {
+      "type": "array",
+      "uniqueItems": true
+    }
+    """
+  end
+
+  describe "array uniqueness works" do
+    test "for arrays" do
+      assert :ok = Uniqueness.unique([1, 2, 3, 4, 5])
+
+      assert  {:mismatch,
+      {ExonerateTest.Macro.Tutorial.ArrayTest.Uniqueness,
+      :unique, [[1, 2, 3, 3, 4]]}}
+      = Uniqueness.unique([1, 2, 3, 3, 4])
+    end
+
+    test "empty array always passes" do
+      assert :ok = Uniqueness.unique([])
+    end
+  end
+
 end

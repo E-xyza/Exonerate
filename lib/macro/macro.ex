@@ -22,14 +22,14 @@ defmodule Exonerate.Macro do
     # TODO:
     # remove this block.  It's only for checking it out.
 
-    IO.puts("")
-    code2
-    |> Macro.to_string
-    |> Code.format_string!
-    |> Enum.join
-    |> IO.puts
-
-    code2
+    #IO.puts("")
+    #code2
+    #|> Macro.to_string
+    #|> Code.format_string!
+    #|> Enum.join
+    #|> IO.puts
+#
+    #code2
   end
 
   @spec matcher(any, any)::[defblock | {:__block__, any, any}]
@@ -586,7 +586,43 @@ defmodule Exonerate.Macro do
       |
       spec
       |> Map.delete("contains")
-      |> build_object_cond(method)
+      |> build_array_cond(method)
+    ]
+  end
+  def build_array_cond(spec = %{"minItems" => items}, method) do
+    [
+      {
+        quote do Enum.count(val) < unquote(items) end,
+        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+      }
+      |
+      spec
+      |> Map.delete("minItems")
+      |> build_array_cond(method)
+    ]
+  end
+  def build_array_cond(spec = %{"maxItems" => items}, method) do
+    [
+      {
+        quote do Enum.count(val) > unquote(items) end,
+        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+      }
+      |
+      spec
+      |> Map.delete("maxItems")
+      |> build_array_cond(method)
+    ]
+  end
+  def build_array_cond(spec = %{"uniqueItems" => true}, method) do
+    [
+      {
+        quote do Exonerate.Macro.contains_duplicate?(val) end,
+        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+      }
+      |
+      spec
+      |> Map.delete("uniqueItems")
+      |> build_array_cond(method)
     ]
   end
   def build_array_cond(spec, method), do: build_enum_cond(spec, method)
@@ -865,6 +901,16 @@ defmodule Exonerate.Macro do
       :ok
     else
       Exonerate.Macro.mismatch(module, cont_method, val)
+    end
+  end
+
+  def contains_duplicate?(array), do: contains_duplicate?(array, MapSet.new())
+  def contains_duplicate?([], _), do: false
+  def contains_duplicate?([head | tail], set) do
+    if MapSet.member?(set, head) do
+      true
+    else
+      contains_duplicate?(tail, MapSet.put(set, head))
     end
   end
 
