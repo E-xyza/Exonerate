@@ -22,22 +22,30 @@ defmodule Exonerate.Macro do
     # TODO:
     # remove this block.  It's only for checking it out.
 
-    #IO.puts("")
-    #code2
-    #|> Macro.to_string
-    #|> Code.format_string!
-    #|> Enum.join
-    #|> IO.puts
-#
-    #code2
+    IO.puts("")
+    code2
+    |> Macro.to_string
+    |> Code.format_string!
+    |> Enum.join
+    |> IO.puts
+
+    code2
   end
 
+  @all_types ["string", "number", "boolean", "null", "object", "array"]
+
   @spec matcher(any, any)::[defblock | {:__block__, any, any}]
-  def matcher(map, method) when map == %{}, do: [always_matches(method)]
-  def matcher(true, method), do: [always_matches(method)]
+  def matcher(true, method), do: always_matches(method)
   def matcher(false, method), do: never_matches(method)
+  # metadata things
+  def matcher(spec = %{"title" => title}, method), do: set_title(spec, title, method)
+  def matcher(spec = %{"description" => desc}, method), do: set_description(spec, desc, method)
+  def matcher(spec = %{"default" => default}, method), do: set_default(spec, default, method)
+  def matcher(spec = %{"examples" => examples}, method), do: set_examples(spec, examples, method)
   def matcher(spec = %{"$schema" => schema}, method), do: match_schema(spec, schema, method)
   def matcher(spec = %{"$id" => id}, method), do: match_id(spec, id, method)
+  # type matching things
+  def matcher(spec, method) when spec == %{}, do: always_matches(method)
   def matcher(spec = %{"type" => "string"}, method), do: match_string(spec, method)
   def matcher(spec = %{"type" => "integer"}, method), do: match_integer(spec, method)
   def matcher(spec = %{"type" => "number"}, method), do: match_number(spec, method)
@@ -46,14 +54,15 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"type" => "object"}, method), do: match_object(spec, method)
   def matcher(spec = %{"type" => "array"}, method), do: match_array(spec, method)
   def matcher(spec = %{"type" => list}, method) when is_list(list), do: match_list(spec, list, method)
+  def matcher(spec, method), do: match_list(spec, @all_types, method)
 
   @spec always_matches(atom) :: defblock
   defp always_matches(method) do
-    quote do
+    [quote do
       def unquote(method)(_val) do
         :ok
       end
-    end
+    end]
   end
 
   @spec never_matches(atom) :: [defblock]
@@ -65,15 +74,58 @@ defmodule Exonerate.Macro do
     end]
   end
 
+  @spec set_title(map, String.t, atom) :: [defblock]
+  def set_title(spec, title, method) do
+    rest = spec
+    |> Map.delete("title")
+    |> matcher(method)
+
+    [quote do
+      def unquote(method)(:title), do: unquote(title)
+    end | rest]
+  end
+
+  @spec set_description(map, String.t, atom) :: [defblock]
+  def set_description(spec, description, method) do
+    rest = spec
+    |> Map.delete("description")
+    |> matcher(method)
+
+    [quote do
+      def unquote(method)(:description), do: unquote(description)
+    end | rest]
+  end
+
+  @spec set_default(map, any, atom) :: [defblock]
+  def set_default(spec, default, method) do
+    rest = spec
+    |> Map.delete("default")
+    |> matcher(method)
+
+    [quote do
+      def unquote(method)(:default), do: unquote(default)
+    end | rest]
+  end
+
+  @spec set_examples(map, [any], atom) :: [defblock]
+  def set_examples(spec, examples, method) do
+    rest = spec
+    |> Map.delete("examples")
+    |> matcher(method)
+
+    [quote do
+      def unquote(method)(:examples), do: unquote(examples)
+    end | rest]
+  end
+
   @spec match_schema(map, String.t, atom) :: [defblock]
   def match_schema(map, schema, module) do
     rest = map
     |> Map.delete("$schema")
     |> matcher(module)
 
-
     [quote do
-       def schema, do: unquote(schema)
+       def unquote(module)(:schema), do: unquote(schema)
      end | rest]
   end
 
@@ -83,9 +135,8 @@ defmodule Exonerate.Macro do
     |> Map.delete("$id")
     |> matcher(module)
 
-
     [quote do
-      def id, do: unquote(id)
+      def unquote(module)(:id), do: unquote(id)
      end | rest]
   end
 
@@ -248,8 +299,23 @@ defmodule Exonerate.Macro do
     tail_code = match_list(spec, tail, method)
     head_code ++ tail_code
   end
+  defp match_list(spec, ["array" | tail], method) do
+    head_code = match_array(spec, method, false)
+    tail_code = match_list(spec, tail, method)
+    head_code ++ tail_code
+  end
   defp match_list(spec, ["integer" | tail], method) do
     head_code = match_integer(spec, method, false)
+    tail_code = match_list(spec, tail, method)
+    head_code ++ tail_code
+  end
+  defp match_list(spec, ["boolean" | tail], method) do
+    head_code = match_boolean(spec, method, false)
+    tail_code = match_list(spec, tail, method)
+    head_code ++ tail_code
+  end
+  defp match_list(spec, ["null" | tail], method) do
+    head_code = match_null(spec, method, false)
     tail_code = match_list(spec, tail, method)
     head_code ++ tail_code
   end

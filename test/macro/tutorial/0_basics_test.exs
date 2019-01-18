@@ -70,12 +70,12 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
     """
     import Exonerate.Macro
 
-    defschema type: ~s({"$schema": "http://json-schema.org/schema#"})
+    defschema schema: ~s({"$schema": "http://json-schema.org/schema#"})
   end
 
   describe "the schema keyword test" do
     test "schema can be retrieved" do
-      assert "http://json-schema.org/schema#" = JsonSchema.schema()
+      assert "http://json-schema.org/schema#" = JsonSchema.schema(:schema)
     end
   end
 
@@ -87,12 +87,12 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
     """
     import Exonerate.Macro
 
-    defschema type: ~s({"$id": "http://yourdomain.com/schemas/myschema.json"})
+    defschema id: ~s({"$id": "http://yourdomain.com/schemas/myschema.json"})
   end
 
   describe "the id keyword test" do
     test "id can be retrieved" do
-      assert "http://yourdomain.com/schemas/myschema.json" = ID.id()
+      assert "http://yourdomain.com/schemas/myschema.json" = ID.id(:id)
     end
   end
 end
