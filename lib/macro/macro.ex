@@ -41,6 +41,8 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"type" => "string"}, method), do: match_string(spec, method)
   def matcher(spec = %{"type" => "integer"}, method), do: match_integer(spec, method)
   def matcher(spec = %{"type" => "number"}, method), do: match_number(spec, method)
+  def matcher(spec = %{"type" => "boolean"}, method), do: match_boolean(spec, method)
+  def matcher(spec = %{"type" => "null"}, method), do: match_null(spec, method)
   def matcher(spec = %{"type" => "object"}, method), do: match_object(spec, method)
   def matcher(spec = %{"type" => "array"}, method), do: match_array(spec, method)
   def matcher(spec = %{"type" => list}, method) when is_list(list), do: match_list(spec, list, method)
@@ -147,6 +149,38 @@ defmodule Exonerate.Macro do
       [num_match | never_matches(method)]
     else
       [num_match]
+    end
+  end
+
+  @spec match_boolean(map, atom, boolean) :: [defblock]
+  defp match_boolean(_spec, method, terminal \\ true) do
+
+    bool_match = quote do
+      def unquote(method)(val) when is_boolean(val) do
+        :ok
+      end
+    end
+
+    if terminal do
+      [bool_match | never_matches(method)]
+    else
+      [bool_match]
+    end
+  end
+
+  @spec match_null(map, atom, boolean) :: [defblock]
+  defp match_null(_spec, method, terminal \\ true) do
+
+    null_match = quote do
+      def unquote(method)(val) when is_nil(val) do
+        :ok
+      end
+    end
+
+    if terminal do
+      [null_match | never_matches(method)]
+    else
+      [null_match]
     end
   end
 
