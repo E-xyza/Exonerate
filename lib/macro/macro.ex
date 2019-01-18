@@ -22,14 +22,14 @@ defmodule Exonerate.Macro do
     # TODO:
     # remove this block.  It's only for checking it out.
 
-    #IO.puts("")
-    #code2
-    #|> Macro.to_string
-    #|> Code.format_string!
-    #|> Enum.join
-    #|> IO.puts
-#
-    #code2
+    IO.puts("===================")
+    code2
+    |> Macro.to_string
+    |> Code.format_string!
+    |> Enum.join
+    |> IO.puts
+
+    code2
   end
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
@@ -48,7 +48,10 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"enum" => elist}, method), do: match_enum(spec, elist, method)
   def matcher(spec = %{"const" => const}, method), do: match_const(spec, const, method)
   # match combining elements
+  def matcher(spec = %{"allOf" => clist}, method), do: match_allof(spec, clist, method)
   def matcher(spec = %{"anyOf" => clist}, method), do: match_anyof(spec, clist, method)
+  def matcher(spec = %{"oneOf" => clist}, method), do: match_oneof(spec, clist, method)
+  def matcher(spec = %{"not" => inv}, method), do: match_not(spec, inv, method)
   # type matching things
   def matcher(spec, method) when spec == %{}, do: always_matches(method)
   def matcher(spec = %{"type" => "string"}, method), do: match_string(spec, method)
@@ -145,12 +148,40 @@ defmodule Exonerate.Macro do
      end | rest]
   end
 
-  @spec match_anyof(map, list(any), atom) :: [defblock]
-  defp match_anyof(spec, spec_list, method) do
+  @spec match_allof(map, list(any), atom) :: [defblock]
+  defp match_allof(_spec, spec_list, method) do
 
     idx_range = 0..(Enum.count(spec_list) - 1)
 
-    submethod_name = &generate_submethod(method, "__anyof_" <> inspect &1)
+    submethod_name = &generate_submethod(method, "_allof_" <> inspect &1)
+
+    comb_list = Enum.map(idx_range, submethod_name)
+
+    dependencies = spec_list
+    |> Enum.with_index
+    |> Enum.map(
+      fn {spec, idx} ->
+        submethod = submethod_name.(idx)
+        matcher(spec, submethod)
+      end
+    )
+    [quote do
+      def unquote(method)(val) do
+        Exonerate.Macro.reduce_all(
+          __MODULE__,
+          unquote(comb_list),
+          [val],
+          unquote(method))
+      end
+    end] ++ dependencies
+  end
+
+  @spec match_anyof(map, list(any), atom) :: [defblock]
+  defp match_anyof(_spec, spec_list, method) do
+
+    idx_range = 0..(Enum.count(spec_list) - 1)
+
+    submethod_name = &generate_submethod(method, "_anyof_" <> inspect &1)
 
     comb_list = Enum.map(idx_range, submethod_name)
 
@@ -172,6 +203,50 @@ defmodule Exonerate.Macro do
           unquote(method))
       end
     end] ++ dependencies
+  end
+
+  @spec match_oneof(map, list(any), atom) :: [defblock]
+  defp match_oneof(_spec, spec_list, method) do
+
+    idx_range = 0..(Enum.count(spec_list) - 1)
+
+    submethod_name = &generate_submethod(method, "_oneof_" <> inspect &1)
+
+    comb_list = Enum.map(idx_range, submethod_name)
+
+    dependencies = spec_list
+    |> Enum.with_index
+    |> Enum.map(
+      fn {spec, idx} ->
+        submethod = submethod_name.(idx)
+        matcher(spec, submethod)
+      end
+    )
+
+    [quote do
+      def unquote(method)(val) do
+        Exonerate.Macro.reduce_one(
+          __MODULE__,
+          unquote(comb_list),
+          [val],
+          unquote(method))
+      end
+    end] ++ dependencies
+  end
+
+  @spec match_not(map, any, atom) :: [defblock]
+  defp match_not(_spec, inv_spec, method) do
+
+    not_method = generate_submethod(method, "_not")
+
+    [quote do
+      def unquote(method)(val) do
+        Exonerate.Macro.apply_not(
+          __MODULE__,
+          unquote(not_method),
+          [val])
+      end
+    end] ++ matcher(inv_spec, not_method)
   end
 
   @spec match_enum(map, list(any), atom) :: [defblock]
@@ -468,6 +543,22 @@ defmodule Exonerate.Macro do
     builds the conditional structure for filtering numbers based on their jsonschema
     parameters
   """
+  def build_number_cond(spec = %{"multipleOf" => base}, method) do
+    [
+      #disallow multipleOf on non-integer values
+      {
+        quote do !is_integer(val) end,
+        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+      },
+      {
+        quote do rem(val, unquote(base)) != 0 end,
+        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+      }
+      | spec
+      |> Map.delete("multipleOf")
+      |> build_integer_cond(method)
+    ]
+  end
   def build_number_cond(spec = %{"minimum" => cmp}, method) do
     [
       {
@@ -936,6 +1027,35 @@ defmodule Exonerate.Macro do
     end
   end
 
+  def reduce_all(module, functions, args, method) do
+    functions
+    |> Enum.map(&apply(module, &1, args))
+    |> Enum.all?(&(&1 == :ok))
+    |> if do
+      :ok
+    else
+      {:mismatch, {module, method, args}}
+    end
+  end
+
+  def reduce_one(module, functions, args, method) do
+    functions
+    |> Enum.map(&apply(module, &1, args))
+    |> Enum.count(&(&1 == :ok))
+    |> case do
+      1 -> :ok
+      _ -> {:mismatch, {module, method, args}}
+    end
+  end
+
+  def apply_not(module, method, args) do
+    module
+    |> apply(method, args)
+    |> case do
+      :ok -> {:mismatch, {module, method, args}}
+      {:mismatch, _} -> :ok
+    end
+  end
 
   def check_pattern_properties(obj, regex, module, pp_method) do
     try do
