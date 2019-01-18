@@ -196,7 +196,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
     """
   end
 
-  describe "tuple validation is a thing" do
+  describe "tuple validation" do
     test "a single number is enough to make it pass" do
       assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW"])
       |> Jason.decode!

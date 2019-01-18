@@ -49,4 +49,76 @@ defmodule ExonerateTest.Macro.Tutorial.GenericTest do
     end
   end
 
+  defmodule EnumeratedValues do
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/reference/generic.html#enumerated-values
+    """
+    import Exonerate.Macro
+
+    defschema enum1: """
+    {
+      "type": "string",
+      "enum": ["red", "amber", "green"]
+    }
+    """
+
+    defschema enum2: """
+    {
+      "enum": ["red", "amber", "green", null, 42]
+    }
+    """
+
+    defschema enum3: """
+    {
+      "type": "string",
+      "enum": ["red", "amber", "green", null]
+    }
+    """
+  end
+
+  @moduletag :one
+
+  describe "basic enums work" do
+    test "specific values match" do
+      assert :ok == EnumeratedValues.enum1("red")
+    end
+
+    test "unenumerated values don't match" do
+      assert  {:mismatch,
+      {ExonerateTest.Macro.Tutorial.GenericTest.EnumeratedValues,
+      :enum1, ["blue"]}}
+      = EnumeratedValues.enum1("blue")
+    end
+  end
+
+  describe "enums work across types" do
+    test "specific values match" do
+      assert :ok == EnumeratedValues.enum2("red")
+      assert :ok == EnumeratedValues.enum2(nil)
+      assert :ok == EnumeratedValues.enum2(42)
+    end
+
+    test "unenumerated values don't match" do
+      assert  {:mismatch,
+      {ExonerateTest.Macro.Tutorial.GenericTest.EnumeratedValues,
+      :enum2, [0]}}
+      = EnumeratedValues.enum2(0)
+    end
+  end
+
+  describe "enums must be valid with the enclosing schema" do
+    test "specific values match" do
+      assert :ok == EnumeratedValues.enum3("red")
+    end
+
+    test "unenumerated values don't match" do
+      assert  {:mismatch,
+      {ExonerateTest.Macro.Tutorial.GenericTest.EnumeratedValues,
+      :enum3___enclosing, [nil]}}
+      = EnumeratedValues.enum3(nil)
+    end
+  end
+
 end

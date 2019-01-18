@@ -22,14 +22,14 @@ defmodule Exonerate.Macro do
     # TODO:
     # remove this block.  It's only for checking it out.
 
-    IO.puts("")
-    code2
-    |> Macro.to_string
-    |> Code.format_string!
-    |> Enum.join
-    |> IO.puts
-
-    code2
+    #IO.puts("")
+    #code2
+    #|> Macro.to_string
+    #|> Code.format_string!
+    #|> Enum.join
+    #|> IO.puts
+#
+    #code2
   end
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
@@ -42,8 +42,10 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"description" => desc}, method), do: set_description(spec, desc, method)
   def matcher(spec = %{"default" => default}, method), do: set_default(spec, default, method)
   def matcher(spec = %{"examples" => examples}, method), do: set_examples(spec, examples, method)
-  def matcher(spec = %{"$schema" => schema}, method), do: match_schema(spec, schema, method)
-  def matcher(spec = %{"$id" => id}, method), do: match_id(spec, id, method)
+  def matcher(spec = %{"$schema" => schema}, method), do: set_schema(spec, schema, method)
+  def matcher(spec = %{"$id" => id}, method), do: set_id(spec, id, method)
+  # match enums
+  def matcher(spec = %{"enum" => elist}, method), do: match_enum(spec, elist, method)
   # type matching things
   def matcher(spec, method) when spec == %{}, do: always_matches(method)
   def matcher(spec = %{"type" => "string"}, method), do: match_string(spec, method)
@@ -56,7 +58,7 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"type" => list}, method) when is_list(list), do: match_list(spec, list, method)
   def matcher(spec, method), do: match_list(spec, @all_types, method)
 
-  @spec always_matches(atom) :: defblock
+  @spec always_matches(atom) :: [defblock]
   defp always_matches(method) do
     [quote do
       def unquote(method)(_val) do
@@ -118,8 +120,8 @@ defmodule Exonerate.Macro do
     end | rest]
   end
 
-  @spec match_schema(map, String.t, atom) :: [defblock]
-  def match_schema(map, schema, module) do
+  @spec set_schema(map, String.t, atom) :: [defblock]
+  def set_schema(map, schema, module) do
     rest = map
     |> Map.delete("$schema")
     |> matcher(module)
@@ -129,8 +131,8 @@ defmodule Exonerate.Macro do
      end | rest]
   end
 
-  @spec match_id(map, String.t, atom) :: [defblock]
-  def match_id(map, id, module) do
+  @spec set_id(map, String.t, atom) :: [defblock]
+  def set_id(map, id, module) do
     rest = map
     |> Map.delete("$id")
     |> matcher(module)
@@ -138,6 +140,26 @@ defmodule Exonerate.Macro do
     [quote do
       def unquote(module)(:id), do: unquote(id)
      end | rest]
+  end
+
+  @spec match_enum(map, list(any), atom) :: [defblock]
+  defp match_enum(spec, enum_list, method) do
+    esc_list = Macro.escape(enum_list)
+
+    enum_submethod = generate_submethod(method, "_enclosing")
+
+    [quote do
+      def unquote(method)(val) do
+        if val in unquote(esc_list) do
+          unquote(enum_submethod)(val)
+        else
+          Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
+        end
+      end
+    end] ++
+    (spec
+     |> Map.delete("enum")
+     |> matcher(enum_submethod))
   end
 
   @spec match_string(map, atom, boolean) :: [defblock]
@@ -369,7 +391,7 @@ defmodule Exonerate.Macro do
       |> build_string_cond(method)
     ]
   end
-  def build_string_cond(spec, method), do: build_enum_cond(spec, method)
+  def build_string_cond(_spec, _method), do: []
 
   @spec build_integer_cond(Exonerate.schema, atom) :: condlist
   @doc """
@@ -438,7 +460,7 @@ defmodule Exonerate.Macro do
       |> build_number_cond(method)
     ]
   end
-  def build_number_cond(spec, method), do: build_enum_cond(spec, method)
+  def build_number_cond(_spec, _method), do: []
 
   @spec build_object_cond(Exonerate.schema, atom) :: condlist
   @doc """
@@ -609,7 +631,7 @@ defmodule Exonerate.Macro do
     |> Map.delete("properties")
     |> build_object_cond(method))
   end
-  def build_object_cond(spec, method), do: build_enum_cond(spec, method)
+  def build_object_cond(_spec, _method), do: []
 
   def build_array_cond(spec = %{"items" => pobj}, method) when is_map(pobj) do
     new_method = generate_submethod(method, "items")
@@ -627,7 +649,7 @@ defmodule Exonerate.Macro do
       |
       spec
       |> Map.delete("items")
-      |> build_object_cond(method)
+      |> build_array_cond(method)
     ]
   end
   def build_array_cond(spec = %{"additionalItems" => _props, "items" => parr}, method) when is_list(parr) do
@@ -646,7 +668,7 @@ defmodule Exonerate.Macro do
     }] ++
     (spec
     |> Map.delete("additionalItems")
-    |> build_object_cond(method))
+    |> build_array_cond(method))
   end
   def build_array_cond(spec = %{"items" => parr}, method) when is_list(parr) do
     for idx <- 0..(Enum.count(parr) - 1) do
@@ -668,7 +690,7 @@ defmodule Exonerate.Macro do
     ++
     (spec
       |> Map.delete("items")
-      |> build_object_cond(method))
+      |> build_array_cond(method))
   end
   def build_array_cond(spec = %{"contains" => _pobj}, method) do
     new_method = generate_submethod(method, "contains")
@@ -725,19 +747,8 @@ defmodule Exonerate.Macro do
       |> build_array_cond(method)
     ]
   end
-  def build_array_cond(spec, method), do: build_enum_cond(spec, method)
+  def build_array_cond(_spec, _method), do: []
 
-  def build_enum_cond(%{"enum" => elist}, method) do
-    esc_elist = Macro.escape(elist)
-    [{quote do
-        val not in unquote(esc_elist)
-      end,
-      quote do
-        Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
-      end
-    }]
-  end
-  def build_enum_cond(_, _), do: []
 
   @spec build_object_deps(Exonerate.schema, atom) :: [defblock]
   def build_object_deps(spec = %{"patternProperties" => pobj}, method) do
@@ -934,17 +945,6 @@ defmodule Exonerate.Macro do
         |> throw_if_invalid
     end
   end
-
-  def check_additional_property({k, v}, list, module, ap_method) do
-    if k in list do
-      :ok
-    else
-      module
-      |> apply(ap_method, [v])
-      |> throw_if_invalid
-    end
-  end
-
 
   def check_additional_array(arr, tuple_count, module, ap_method) do
     try do
