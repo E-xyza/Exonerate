@@ -44,8 +44,9 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"examples" => examples}, method), do: set_examples(spec, examples, method)
   def matcher(spec = %{"$schema" => schema}, method), do: set_schema(spec, schema, method)
   def matcher(spec = %{"$id" => id}, method), do: set_id(spec, id, method)
-  # match enums
+  # match enums and consts
   def matcher(spec = %{"enum" => elist}, method), do: match_enum(spec, elist, method)
+  def matcher(spec = %{"const" => const}, method), do: match_const(spec, const, method)
   # type matching things
   def matcher(spec, method) when spec == %{}, do: always_matches(method)
   def matcher(spec = %{"type" => "string"}, method), do: match_string(spec, method)
@@ -160,6 +161,26 @@ defmodule Exonerate.Macro do
     (spec
      |> Map.delete("enum")
      |> matcher(enum_submethod))
+  end
+
+  @spec match_const(map, any, atom) :: [defblock]
+  defp match_const(spec, const, method) do
+    const_val = Macro.escape(const)
+
+    const_submethod = generate_submethod(method, "_enclosing")
+
+    [quote do
+      def unquote(method)(val) do
+        if val == unquote(const_val) do
+          unquote(const_submethod)(val)
+        else
+          Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
+        end
+      end
+    end] ++
+    (spec
+     |> Map.delete("const")
+     |> matcher(const_submethod))
   end
 
   @spec match_string(map, atom, boolean) :: [defblock]

@@ -121,4 +121,35 @@ defmodule ExonerateTest.Macro.Tutorial.GenericTest do
     end
   end
 
+  defmodule ConstantValues do
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/reference/generic.html#constant-values
+    """
+    import Exonerate.Macro
+
+    defschema const: """
+    {
+      "properties": {
+        "country": {
+          "const": "United States of America"
+        }
+      }
+    }
+    """
+  end
+
+  describe "consts restrict to a single value" do
+    test "specific values match" do
+      assert :ok == ConstantValues.const(%{"country" => "United States of America"})
+    end
+
+    test "unenumerated values don't match" do
+      assert  {:mismatch,
+      {ExonerateTest.Macro.Tutorial.GenericTest.ConstantValues,
+      :const__country, ["Canada"]}}
+      = ConstantValues.const(%{"country" => "Canada"})
+    end
+  end
 end
