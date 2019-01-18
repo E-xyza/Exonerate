@@ -47,6 +47,8 @@ defmodule Exonerate.Macro do
   # match enums and consts
   def matcher(spec = %{"enum" => elist}, method), do: match_enum(spec, elist, method)
   def matcher(spec = %{"const" => const}, method), do: match_const(spec, const, method)
+  # match combining elements
+  def matcher(spec = %{"anyOf" => clist}, method), do: match_anyof(spec, clist, method)
   # type matching things
   def matcher(spec, method) when spec == %{}, do: always_matches(method)
   def matcher(spec = %{"type" => "string"}, method), do: match_string(spec, method)
@@ -141,6 +143,35 @@ defmodule Exonerate.Macro do
     [quote do
       def unquote(module)(:id), do: unquote(id)
      end | rest]
+  end
+
+  @spec match_anyof(map, list(any), atom) :: [defblock]
+  defp match_anyof(spec, spec_list, method) do
+
+    idx_range = 0..(Enum.count(spec_list) - 1)
+
+    submethod_name = &generate_submethod(method, "__anyof_" <> inspect &1)
+
+    comb_list = Enum.map(idx_range, submethod_name)
+
+    dependencies = spec_list
+    |> Enum.with_index
+    |> Enum.map(
+      fn {spec, idx} ->
+        submethod = submethod_name.(idx)
+        matcher(spec, submethod)
+      end
+    )
+
+    [quote do
+      def unquote(method)(val) do
+        Exonerate.Macro.reduce_any(
+          __MODULE__,
+          unquote(comb_list),
+          [val],
+          unquote(method))
+      end
+    end] ++ dependencies
   end
 
   @spec match_enum(map, list(any), atom) :: [defblock]
@@ -893,6 +924,18 @@ defmodule Exonerate.Macro do
     |> Kernel.<>(sub)
     |> String.to_atom
   end
+
+  def reduce_any(module, functions, args, method) do
+    functions
+    |> Enum.map(&apply(module, &1, args))
+    |> Enum.any?(&(&1 == :ok))
+    |> if do
+      :ok
+    else
+      {:mismatch, {module, method, args}}
+    end
+  end
+
 
   def check_pattern_properties(obj, regex, module, pp_method) do
     try do
