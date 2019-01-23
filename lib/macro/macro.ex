@@ -176,45 +176,4 @@ defmodule Exonerate.Macro do
     )
   end
 
-  def reduce_any(module, functions, base, args, method) do
-    functions
-    |> Enum.map(&apply(module, &1, args))
-    |> Enum.any?(&(&1 == :ok))
-    |> if do
-      apply(module, base, args)
-    else
-      {:mismatch, {module, method, args}}
-    end
-  end
-
-  def reduce_all(module, functions, args, method) do
-    functions
-    |> Enum.map(&apply(module, &1, args))
-    |> Enum.all?(&(&1 == :ok))
-    |> if do
-      :ok
-    else
-      {:mismatch, {module, method, args}}
-    end
-  end
-
-  def reduce_one(module, functions, args, method) do
-    functions
-    |> Enum.map(&apply(module, &1, args))
-    |> Enum.count(&(&1 == :ok))
-    |> case do
-      1 -> :ok
-      _ -> {:mismatch, {module, method, args}}
-    end
-  end
-
-  def apply_not(module, method, args) do
-    module
-    |> apply(method, args)
-    |> case do
-      :ok -> {:mismatch, {module, method, args}}
-      {:mismatch, _} -> :ok
-    end
-  end
-
 end

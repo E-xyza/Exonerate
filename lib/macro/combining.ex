@@ -31,10 +31,10 @@ defmodule Exonerate.Macro.Combining do
 
     [quote do
       def unquote(method)(val) do
-        Exonerate.Macro.reduce_all(
+        Exonerate.Reduce.allof(
+          val,
           __MODULE__,
           unquote(deps_list),
-          [val],
           unquote(method))
       end
     end]
@@ -67,11 +67,11 @@ defmodule Exonerate.Macro.Combining do
 
     [quote do
       def unquote(method)(val) do
-        Exonerate.Macro.reduce_any(
+        Exonerate.Reduce.anyof(
+          val,
           __MODULE__,
           unquote(deps_list),
           unquote(base_child),
-          [val],
           unquote(method))
       end
     end]
@@ -99,10 +99,10 @@ defmodule Exonerate.Macro.Combining do
 
     [quote do
       def unquote(method)(val) do
-        Exonerate.Macro.reduce_one(
+        Exonerate.Reduce.oneof(
+          val,
           __MODULE__,
           unquote(deps_list),
-          [val],
           unquote(method))
       end
     end] ++ dependencies
@@ -115,10 +115,10 @@ defmodule Exonerate.Macro.Combining do
 
     [quote do
       def unquote(method)(val) do
-        Exonerate.Macro.apply_not(
+        Exonerate.Reduce.apply_not(
+          val,
           __MODULE__,
-          unquote(not_method),
-          [val])
+          unquote(not_method))
       end
     end] ++ Exonerate.Macro.matcher(inv_spec, not_method)
   end
