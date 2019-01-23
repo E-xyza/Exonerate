@@ -5,6 +5,7 @@ defmodule Exonerate.Macro do
 
   alias Exonerate.Macro.BuildCond
   alias Exonerate.Macro.Combining
+  alias Exonerate.Macro.MatchArray
   alias Exonerate.Macro.MatchEnum
   alias Exonerate.Macro.MatchNumber
   alias Exonerate.Macro.MatchObject
@@ -56,7 +57,8 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"type" => "integer"}, method),    do: MatchNumber.match_int(spec, method)
   def matcher(spec = %{"type" => "number"}, method),     do: MatchNumber.match(spec, method)
   def matcher(spec = %{"type" => "object"}, method),     do: MatchObject.match(spec, method)
-  def matcher(spec = %{"type" => "array"}, method), do: match_array(spec, method)
+  def matcher(spec = %{"type" => "array"}, method),      do: MatchArray.match(spec, method)
+  # lists and no type spec
   def matcher(spec = %{"type" => list}, method) when is_list(list), do: match_list(spec, list, method)
   def matcher(spec, method), do: match_list(spec, @all_types, method)
 
@@ -110,29 +112,6 @@ defmodule Exonerate.Macro do
     end
   end
 
-  @spec match_array(map, atom, boolean) :: [defblock]
-  defp match_array(spec, method, terminal \\ true) do
-
-    cond_stmt = spec
-    |> build_array_cond(method)
-    |> BuildCond.build
-
-    # build the extra dependencies on the array type
-    dependencies = build_array_deps(spec, method)
-
-    arr_match = quote do
-      def unquote(method)(val) when is_list(val) do
-        unquote(cond_stmt)
-      end
-    end
-
-    if terminal do
-      [arr_match | never_matches(method)] ++ dependencies
-    else
-      [arr_match] ++ dependencies
-    end
-  end
-
   @spec match_list(map, list, atom) :: [defblock]
   defp match_list(_spec, [], method), do: never_matches(method)
   defp match_list(spec, ["string" | tail], method) do
@@ -156,7 +135,7 @@ defmodule Exonerate.Macro do
     head_code ++ tail_code
   end
   defp match_list(spec, ["array" | tail], method) do
-    head_code = match_array(spec, method, false)
+    head_code = MatchArray.match(spec, method, false)
     tail_code = match_list(spec, tail, method)
     head_code ++ tail_code
   end
@@ -182,136 +161,6 @@ defmodule Exonerate.Macro do
     {:mismatch, {m, f, [a]}}
   end
 
-  def build_array_cond(spec = %{"additionalItems" => _props, "items" => parr}, method) when is_list(parr) do
-    #this only gets triggered when we have a tuple list.
-    ap_method = generate_submethod(method, "additional_items")
-    length = Enum.count(parr)
-    [{
-      quote do
-        parse_additional = Exonerate.Macro.check_additional_array(
-                    val,
-                    unquote(length),
-                    __MODULE__,
-                    unquote(ap_method))
-      end,
-      quote do parse_additional end
-    }] ++
-    (spec
-    |> Map.delete("additionalItems")
-    |> build_array_cond(method))
-  end
-  def build_array_cond(spec = %{"items" => parr}, method) when is_list(parr) do
-    for idx <- 0..(Enum.count(parr) - 1) do
-      new_method = generate_submethod(method, "item_#{idx}")
-      {
-        quote do
-          parse_recurse = Exonerate.Macro.check_tuple(
-            val,
-            unquote(idx),
-            __MODULE__,
-            unquote(new_method)
-          )
-        end,
-        quote do
-          parse_recurse
-        end
-      }
-    end
-    ++
-    (spec
-      |> Map.delete("items")
-      |> build_array_cond(method))
-  end
-  def build_array_cond(spec = %{"items" => _pobj}, method) do
-    new_method = generate_submethod(method, "items")
-    [
-      {
-        quote do
-          parse_recurse = Exonerate.Macro.check_items(
-            val,
-            __MODULE__,
-            unquote(new_method)
-          )
-        end,
-        quote do parse_recurse end
-      }
-      |
-      spec
-      |> Map.delete("items")
-      |> build_array_cond(method)
-    ]
-  end
-  def build_array_cond(spec = %{"contains" => _pobj}, method) do
-    new_method = generate_submethod(method, "contains")
-    [
-      {
-        quote do
-          parse_recurse = Exonerate.Macro.check_contains(
-            val,
-            __MODULE__,
-            unquote(new_method)
-          )
-        end,
-        quote do parse_recurse end
-      }
-      |
-      spec
-      |> Map.delete("contains")
-      |> build_array_cond(method)
-    ]
-  end
-  def build_array_cond(spec = %{"minItems" => items}, method) do
-    [
-      {
-        quote do Enum.count(val) < unquote(items) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      |
-      spec
-      |> Map.delete("minItems")
-      |> build_array_cond(method)
-    ]
-  end
-  def build_array_cond(spec = %{"maxItems" => items}, method) do
-    [
-      {
-        quote do Enum.count(val) > unquote(items) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      |
-      spec
-      |> Map.delete("maxItems")
-      |> build_array_cond(method)
-    ]
-  end
-  def build_array_cond(spec = %{"uniqueItems" => true}, method) do
-    [
-      {
-        quote do Exonerate.Macro.contains_duplicate?(val) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      |
-      spec
-      |> Map.delete("uniqueItems")
-      |> build_array_cond(method)
-    ]
-  end
-  def build_array_cond(_spec, _method), do: []
-
-  def build_array_deps(spec = %{"additionalItems" => props, "items" => parr}, method) when is_list(parr) do
-    array_additional_dep(props, method) ++
-    build_array_deps(Map.delete(spec, "additionalItems"), method)
-  end
-  def build_array_deps(spec = %{"items" => iobj}, method) do
-    array_items_dep(iobj, method) ++
-    build_array_deps(Map.delete(spec, "items"), method)
-  end
-  def build_array_deps(spec = %{"contains" => cobj}, method) do
-    array_contains_dep(cobj, method) ++
-    build_array_deps(Map.delete(spec, "contains"), method)
-  end
-  def build_array_deps(_,_), do: []
-
   def check_property_dependency(map, key, module, method) do
     Map.has_key?(map, key) &&
     (
@@ -322,29 +171,6 @@ defmodule Exonerate.Macro do
         any -> any
       end
     )
-  end
-
-  def array_additional_dep(prop, method) do
-    add_method = generate_submethod(method, "additional_items")
-    matcher(prop, add_method)
-  end
-
-  def array_items_dep(iarr, method) when is_list(iarr) do
-    iarr
-    |> Enum.with_index
-    |> Enum.flat_map(fn {spec, idx} ->
-      item_method = generate_submethod(method, "item_#{idx}")
-      matcher(spec, item_method)
-    end)
-  end
-  def array_items_dep(iobj, method) do
-    items_method = generate_submethod(method, "items")
-    matcher(iobj, items_method)
-  end
-
-  def array_contains_dep(cobj, method) do
-    contains_method = generate_submethod(method, "contains")
-    matcher(cobj, contains_method)
   end
 
   @spec generate_submethod(atom, String.t) :: atom
