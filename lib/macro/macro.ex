@@ -7,6 +7,7 @@ defmodule Exonerate.Macro do
   alias Exonerate.Macro.Combining
   alias Exonerate.Macro.MatchEnum
   alias Exonerate.Macro.MatchNumber
+  alias Exonerate.Macro.MatchObject
   alias Exonerate.Macro.MatchString
   alias Exonerate.Macro.Metadata
 
@@ -49,12 +50,12 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"not" => inv}, method),           do: Combining.match_not(spec, inv, method)
   # type matching things
   def matcher(spec, method) when spec == %{},            do: always_matches(method)
+  def matcher(spec = %{"type" => "boolean"}, method),    do: match_boolean(spec, method)
+  def matcher(spec = %{"type" => "null"}, method),       do: match_null(spec, method)
   def matcher(spec = %{"type" => "string"}, method),     do: MatchString.match(spec, method)
   def matcher(spec = %{"type" => "integer"}, method),    do: MatchNumber.match_int(spec, method)
   def matcher(spec = %{"type" => "number"}, method),     do: MatchNumber.match(spec, method)
-  def matcher(spec = %{"type" => "boolean"}, method), do: match_boolean(spec, method)
-  def matcher(spec = %{"type" => "null"}, method), do: match_null(spec, method)
-  def matcher(spec = %{"type" => "object"}, method), do: match_object(spec, method)
+  def matcher(spec = %{"type" => "object"}, method),     do: MatchObject.match(spec, method)
   def matcher(spec = %{"type" => "array"}, method), do: match_array(spec, method)
   def matcher(spec = %{"type" => list}, method) when is_list(list), do: match_list(spec, list, method)
   def matcher(spec, method), do: match_list(spec, @all_types, method)
@@ -76,8 +77,6 @@ defmodule Exonerate.Macro do
       end
     end]
   end
-
-
 
   @spec match_boolean(map, atom, boolean) :: [defblock]
   defp match_boolean(_spec, method, terminal \\ true) do
@@ -108,30 +107,6 @@ defmodule Exonerate.Macro do
       [null_match | never_matches(method)]
     else
       [null_match]
-    end
-  end
-
-  @spec match_object(map, atom, boolean) :: [defblock]
-  defp match_object(spec, method, terminal \\ true) do
-
-    # build the conditional statement that guards on the object
-    cond_stmt = spec
-    |> build_object_cond(method)
-    |> BuildCond.build
-
-    # build the extra dependencies on the object type
-    dependencies = build_object_deps(spec, method)
-
-    obj_match = quote do
-      def unquote(method)(val) when is_map(val) do
-        unquote(cond_stmt)
-      end
-    end
-
-    if terminal do
-      [obj_match | never_matches(method)] ++ dependencies
-    else
-      [obj_match] ++ dependencies
     end
   end
 
@@ -176,7 +151,7 @@ defmodule Exonerate.Macro do
     head_code ++ tail_code
   end
   defp match_list(spec, ["object" | tail], method) do
-    head_code = match_object(spec, method, false)
+    head_code = MatchObject.match(spec, method, false)
     tail_code = match_list(spec, tail, method)
     head_code ++ tail_code
   end
@@ -206,194 +181,6 @@ defmodule Exonerate.Macro do
   def mismatch(m, f, a) do
     {:mismatch, {m, f, [a]}}
   end
-
-  @spec build_object_cond(Exonerate.schema, atom) :: condlist
-  @doc """
-    builds the conditional structure for filtering objects based on their jsonschema
-    parameters
-  """
-  def build_object_cond(spec = %{"additionalProperties" => _, "patternProperties" => patts}, method) do
-    props = if spec["properties"] do
-      Map.keys(spec["properties"])
-    else
-      []
-    end
-
-    regexes = patts
-    |> Map.keys
-    |> Enum.map(fn v -> quote do sigil_r(<<unquote(v)>>,'') end end)
-
-    ap_method = generate_submethod(method, "additional_properties")
-
-    [{
-      quote do
-        parse_additional = Exonerate.Macro.check_additional_properties(
-                    val,
-                    unquote(props),
-                    unquote(regexes),
-                    __MODULE__,
-                    unquote(ap_method))
-      end,
-      quote do parse_additional end
-    }] ++
-    (spec
-    |> Map.drop(["additionalProperties"])
-    |> build_object_cond(method))
-  end
-  def build_object_cond(spec = %{"patternProperties" => pobj}, method) do
-    (pobj
-    |> Enum.with_index
-    |> Enum.map(fn {{k, _v}, idx} ->
-      patt_method = generate_submethod(method, "pattern_#{idx}")
-      {
-        quote do
-          parse_pattern_prop = Exonerate.Macro.check_pattern_properties(
-            val,
-            sigil_r(<<unquote(k)>>, ''),
-            __MODULE__,
-            unquote(patt_method)
-          )
-        end,
-        quote do
-          parse_pattern_prop
-        end
-      }
-    end)) ++
-    (spec
-    |> Map.delete("patternProperties")
-    |> build_object_cond(method))
-  end
-  def build_object_cond(spec = %{"dependencies" => dobj}, method) do
-    Enum.map(dobj, fn {k, _v} ->
-      dep_method = generate_submethod(method, k <> "_dependency")
-      {
-        quote do
-          parse_prop_dep = Exonerate.Macro.check_property_dependency(
-            val,
-            unquote(k),
-            __MODULE__,
-            unquote(dep_method)
-          )
-        end,
-        quote do
-          parse_prop_dep
-        end
-      }
-    end) ++
-    (spec
-    |> Map.delete("dependencies")
-    |> build_object_cond(method))
-  end
-  def build_object_cond(spec = %{"minProperties" => min}, method) do
-    [{
-      quote do
-        Enum.count(val) < unquote(min)
-      end,
-      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-    }
-    | spec
-    |> Map.delete("minProperties")
-    |> build_object_cond(method)
-    ]
-  end
-  def build_object_cond(spec = %{"maxProperties" => max}, method) do
-    [{
-      quote do
-        Enum.count(val) > unquote(max)
-      end,
-      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-    }
-    | spec
-    |> Map.delete("maxProperties")
-    |> build_object_cond(method)
-    ]
-  end
-  def build_object_cond(spec = %{"required" => plist}, method) do
-    [{
-      quote do
-        ! Enum.all?(unquote(plist), &Map.has_key?(val, &1))
-      end,
-      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-    }
-    | spec
-    |> Map.delete("required")
-    |> build_object_cond(method)
-    ]
-  end
-  def build_object_cond(spec = %{"propertyNames" => true}, method) do
-    # true potentially matches anything, so let's not add any conditionals.
-    spec
-    |> Map.delete("propertyNames")
-    |> build_object_cond(method)
-  end
-  def build_object_cond(spec = %{"propertyNames" => false}, method) do
-    #false matches nothing but empty object, so add a very tight conditional.
-    [{
-      quote do val != %{} end,
-      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-    }
-    | spec
-    |> Map.delete("propertyNames")
-    |> build_object_cond(method)
-    ]
-  end
-  def build_object_cond(spec = %{"propertyNames" => _}, method) do
-    pn_method = generate_submethod(method, "property_names")
-    [{
-      quote do
-        parse_properties = Exonerate.Macro.check_property_names(
-          val,
-          __MODULE__,
-          unquote(pn_method)
-        )
-      end,
-      quote do parse_properties end
-    }
-    | spec
-    |> Map.delete("propertyNames")
-    |> build_object_cond(method)
-    ]
-  end
-  def build_object_cond(spec = %{"additionalProperties" => _}, method) do
-    props = if spec["properties"] do
-      Map.keys(spec["properties"])
-    else
-      []
-    end
-    ap_method = generate_submethod(method, "additional_properties")
-    [{
-      quote do
-        parse_additional = Exonerate.Macro.check_additional_properties(
-                    val,
-                    unquote(props),
-                    __MODULE__,
-                    unquote(ap_method))
-      end,
-      quote do parse_additional end
-    }] ++
-    (spec
-    |> Map.delete("additionalProperties")
-    |> build_object_cond(method))
-  end
-  def build_object_cond(spec = %{"properties" => pobj}, method) do
-    Enum.map(pobj, fn {k, _v} ->
-      new_method = generate_submethod(method, k)
-      {
-        quote do
-          parse_recurse = Exonerate.Macro.check_property(
-            val[unquote(k)],
-            __MODULE__,
-            unquote(new_method)
-          )
-        end,
-        quote do parse_recurse end
-      }
-    end) ++
-    (spec
-    |> Map.delete("properties")
-    |> build_object_cond(method))
-  end
-  def build_object_cond(_spec, _method), do: []
 
   def build_array_cond(spec = %{"additionalItems" => _props, "items" => parr}, method) when is_list(parr) do
     #this only gets triggered when we have a tuple list.
@@ -511,35 +298,6 @@ defmodule Exonerate.Macro do
   end
   def build_array_cond(_spec, _method), do: []
 
-
-  @spec build_object_deps(Exonerate.schema, atom) :: [defblock]
-  def build_object_deps(spec = %{"patternProperties" => pobj}, method) do
-    (pobj
-    |> Enum.with_index
-    |> Enum.flat_map(fn {{_k, v}, idx} ->
-      patt_prop(v, idx, method)
-    end)) ++
-    build_object_deps(Map.delete(spec, "patternProperties"), method)
-  end
-  def build_object_deps(spec = %{"properties" => pobj}, method) do
-    Enum.flat_map(pobj, &object_dep(&1, method)) ++
-    build_object_deps(Map.delete(spec, "properties"), method)
-  end
-  def build_object_deps(spec = %{"propertyNames" => pobj}, method) when is_map(pobj) do
-    obj_string = Map.put(pobj, "type", "string")
-    object_dep({"property_names", obj_string}, method) ++
-    build_object_deps(Map.delete(spec, "propertyNames"), method)
-  end
-  def build_object_deps(spec = %{"additionalProperties" => pobj}, method) do
-    object_dep({"additional_properties", pobj}, method) ++
-    build_object_deps(Map.delete(spec, "additionalProperties"), method)
-  end
-  def build_object_deps(spec = %{"dependencies" => dobj}, method) do
-    object_property_dep(dobj, method) ++
-    build_object_deps(Map.delete(spec, "dependencies"), method)
-  end
-  def build_object_deps(_, _), do: []
-
   def build_array_deps(spec = %{"additionalItems" => props, "items" => parr}, method) when is_list(parr) do
     array_additional_dep(props, method) ++
     build_array_deps(Map.delete(spec, "additionalItems"), method)
@@ -554,10 +312,6 @@ defmodule Exonerate.Macro do
   end
   def build_array_deps(_,_), do: []
 
-  def object_property_dep(dobj, method) do
-    Enum.flat_map(dobj, &property_dep(&1, method))
-  end
-
   def check_property_dependency(map, key, module, method) do
     Map.has_key?(map, key) &&
     (
@@ -568,42 +322,6 @@ defmodule Exonerate.Macro do
         any -> any
       end
     )
-  end
-
-  def property_dep({k, v}, method) when is_list(v) do
-    dep_method = generate_submethod(method, k <> "_dependency")
-    [quote do
-      def unquote(dep_method)(val) do
-        prop_list = unquote(v)
-        if Enum.all?(prop_list, &Map.has_key?(val, &1)) do
-          :ok
-        else
-          Exonerate.Macro.mismatch(__MODULE__, unquote(dep_method), val)
-        end
-      end
-    end]
-  end
-  def property_dep({k, v}, method) when is_map(v) do
-    dep_method = generate_submethod(method, k <> "_dependency")
-    v
-    |> Map.put("type", "object")
-    |> matcher(dep_method)
-  end
-  def property_dep({k, v}, method) do
-    dep_method = generate_submethod(method, k <> "_dependency")
-    matcher(v, dep_method)
-  end
-
-  #TODO: rename this thing.
-  @spec object_dep({String.t, Exonerate.schema}, atom) :: [defblock]
-  def object_dep({k, v}, method) do
-    new_method = generate_submethod(method, k)
-    matcher(v, new_method)
-  end
-
-  def patt_prop(v, idx, method) do
-    patt_method = generate_submethod(method, "pattern_#{idx}")
-    matcher(v, patt_method)
   end
 
   def array_additional_dep(prop, method) do

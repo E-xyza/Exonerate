@@ -1,6 +1,7 @@
 defmodule Exonerate.Macro.MatchNumber do
 
   alias Exonerate.Macro.BuildCond
+  require Logger
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
@@ -62,6 +63,7 @@ defmodule Exonerate.Macro.MatchNumber do
 
   @spec build_cond(specmap, atom) :: [BuildCond.cond_clauses]
   defp build_cond(spec = %{"multipleOf" => base}, method) do
+    Logger.warn("you are building multipleOf against a \"number\" type in your JsonSchema.  Consider using integer")
     [
       #disallow multipleOf on non-integer values
       {
