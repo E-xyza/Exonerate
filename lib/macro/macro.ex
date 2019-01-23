@@ -164,16 +164,4 @@ defmodule Exonerate.Macro do
     {:mismatch, {m, f, [a]}}
   end
 
-  def check_property_dependency(map, key, module, method) do
-    Map.has_key?(map, key) &&
-    (
-      module
-      |> apply(method, [map])
-      |> case do
-        :ok -> false
-        any -> any
-      end
-    )
-  end
-
 end

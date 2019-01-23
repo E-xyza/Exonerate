@@ -123,6 +123,19 @@ defmodule Exonerate.Check do
     end
   end
 
+  @spec object_property_dependency(json, String.t, module, atom) :: false | mismatch
+  def object_property_dependency(map, key, module, method) do
+    Map.has_key?(map, key) &&
+    (
+      module
+      |> apply(method, [map])
+      |> case do
+        :ok -> false
+        any -> any
+      end
+    )
+  end
+
   @spec array_additional_items([json], non_neg_integer, module, atom) :: false | mismatch
   @doc """
   a trampoline that checks that the "additionalItems" parameter for a

@@ -88,7 +88,7 @@ defmodule Exonerate.Macro.MatchObject do
       child = Method.concat(method, k <> "_dependency")
       {
         quote do
-          parse_prop_dep = Exonerate.Macro.check_property_dependency(
+          parse_prop_dep = Exonerate.Check.object_property_dependency(
             val,
             unquote(k),
             __MODULE__,
