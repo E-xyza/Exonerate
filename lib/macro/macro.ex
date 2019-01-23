@@ -15,21 +15,9 @@ defmodule Exonerate.Macro do
     |> Jason.decode!
     |> matcher(method)
 
-    code2 = quote do
+    quote do
       unquote_splicing(code)
     end
-
-    # TODO:
-    # remove this block.  It's only for checking it out.
-
-    IO.puts("===================")
-    code2
-    |> Macro.to_string
-    |> Code.format_string!
-    |> Enum.join
-    |> IO.puts
-
-    code2
   end
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
@@ -149,13 +137,14 @@ defmodule Exonerate.Macro do
   end
 
   @spec match_allof(map, list(any), atom) :: [defblock]
-  defp match_allof(_spec, spec_list, method) do
+  defp match_allof(base_spec, spec_list, method) do
 
     idx_range = 0..(Enum.count(spec_list) - 1)
 
     submethod_name = &generate_submethod(method, "_allof_" <> inspect &1)
+    base_submethod = generate_submethod(method, "_allof_base")
 
-    comb_list = Enum.map(idx_range, submethod_name)
+    comb_list = [base_submethod | Enum.map(idx_range, submethod_name)]
 
     dependencies = spec_list
     |> Enum.with_index
@@ -165,6 +154,11 @@ defmodule Exonerate.Macro do
         matcher(spec, submethod)
       end
     )
+
+    base_dependency = base_spec
+    |> Map.delete("allOf")
+    |> matcher(base_submethod)
+
     [quote do
       def unquote(method)(val) do
         Exonerate.Macro.reduce_all(
@@ -173,15 +167,18 @@ defmodule Exonerate.Macro do
           [val],
           unquote(method))
       end
-    end] ++ dependencies
+    end]
+    ++ base_dependency
+    ++ dependencies
   end
 
   @spec match_anyof(map, list(any), atom) :: [defblock]
-  defp match_anyof(_spec, spec_list, method) do
+  defp match_anyof(base_spec, spec_list, method) do
 
     idx_range = 0..(Enum.count(spec_list) - 1)
 
     submethod_name = &generate_submethod(method, "_anyof_" <> inspect &1)
+    base_submethod = generate_submethod(method, "_allof_base")
 
     comb_list = Enum.map(idx_range, submethod_name)
 
@@ -194,15 +191,22 @@ defmodule Exonerate.Macro do
       end
     )
 
+    base_dependency = base_spec
+    |> Map.delete("anyOf")
+    |> matcher(base_submethod)
+
     [quote do
       def unquote(method)(val) do
         Exonerate.Macro.reduce_any(
           __MODULE__,
           unquote(comb_list),
+          unquote(base_submethod),
           [val],
           unquote(method))
       end
-    end] ++ dependencies
+    end]
+    ++ base_dependency
+    ++ dependencies
   end
 
   @spec match_oneof(map, list(any), atom) :: [defblock]
@@ -1016,12 +1020,12 @@ defmodule Exonerate.Macro do
     |> String.to_atom
   end
 
-  def reduce_any(module, functions, args, method) do
+  def reduce_any(module, functions, base, args, method) do
     functions
     |> Enum.map(&apply(module, &1, args))
     |> Enum.any?(&(&1 == :ok))
     |> if do
-      :ok
+      apply(module, base, args)
     else
       {:mismatch, {module, method, args}}
     end

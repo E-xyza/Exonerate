@@ -1,7 +1,7 @@
 defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
   use ExUnit.Case, async: true
 
-  @moduletag :generic
+  @moduletag :one #:combining
 
   @moduledoc """
   basic tests from:
