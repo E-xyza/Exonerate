@@ -291,7 +291,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "not matching the property name doesn't match" do
       token2 = Jason.decode!(@token2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyNames, :token__property_names, ["001 invalid"]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyNames, :token___property_names, ["001 invalid"]}} =
         PropertyNames.token(token2)
     end
   end
@@ -433,7 +433,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     end
     test "failing to meet dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :dependency1__credit_card_dependency, [propdependency2]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :dependency1___dependency_credit_card, [propdependency2]}} =
         PropertyDependencies.dependency1(propdependency2)
     end
     test "no dependency doesn't need to be met" do
@@ -451,12 +451,12 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
   describe "matching two-way dependency" do
     test "one-way dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :dependency2__credit_card_dependency, [propdependency2]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependency_credit_card, [propdependency2]}} =
         PropertyDependencies.dependency2(propdependency2)
     end
     test "dependency is now two-way" do
       propdependency4 = Jason.decode!(@propdependency4)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :dependency2__billing_address_dependency, [propdependency4]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependency_billing_address, [propdependency4]}} =
         PropertyDependencies.dependency2(propdependency4)
     end
   end
@@ -524,7 +524,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     end
     test "partial compliance does not work" do
       schemadependency2 = Jason.decode!(@schemadependency2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.SchemaDependencies, :schemadependency__credit_card_dependency, [schemadependency2]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.SchemaDependencies, :schemadependency___dependency_credit_card, [schemadependency2]}} =
         SchemaDependencies.schemadependency(schemadependency2)
     end
     test "omitting a trigger works" do
@@ -577,18 +577,18 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "integers shouldn't match string pattern" do
       patternmatch3 = Jason.decode!(@patternmatch3)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_1, [42]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1___pattern_1, [42]}} =
         PatternProperties.patternprop1(patternmatch3)
     end
     test "strings shouldn't match integer pattern" do
       patternmatch4 = Jason.decode!(@patternmatch4)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_0, ["This is a string"]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1___pattern_0, ["This is a string"]}} =
         PatternProperties.patternprop1(patternmatch4)
     end
 
     test "additional properties shouldn't match" do
       patternmatch5 = Jason.decode!(@patternmatch5)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1__additional_properties, ["value"]}} =
+      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1___additional_properties, ["value"]}} =
         PatternProperties.patternprop1(patternmatch5)
     end
   end

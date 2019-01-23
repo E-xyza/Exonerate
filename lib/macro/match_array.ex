@@ -33,7 +33,7 @@ defmodule Exonerate.Macro.MatchArray do
   @spec build_cond(specmap, atom) :: [BuildCond.cond_clauses]
   defp build_cond(spec = %{"additionalItems" => _props, "items" => parr}, method) when is_list(parr) do
     #this only gets triggered when we have a tuple list.
-    child = Method.concat(method, "additional_items")
+    child = Method.concat(method, "_additional_items")
     length = Enum.count(parr)
     [{
       quote do
@@ -51,7 +51,7 @@ defmodule Exonerate.Macro.MatchArray do
   end
   defp build_cond(spec = %{"items" => parr}, method) when is_list(parr) do
     for idx <- 0..(Enum.count(parr) - 1) do
-      child = Method.concat(method, "item_#{idx}")
+      child = Method.concat(method, "_item_#{idx}")
       {
         quote do
           parse_recurse = Exonerate.Check.array_tuple(
@@ -72,7 +72,7 @@ defmodule Exonerate.Macro.MatchArray do
       |> build_cond(method))
   end
   defp build_cond(spec = %{"items" => _pobj}, method) do
-    child = Method.concat(method, "items")
+    child = Method.concat(method, "_items")
     [
       {
         quote do
@@ -91,7 +91,7 @@ defmodule Exonerate.Macro.MatchArray do
     ]
   end
   defp build_cond(spec = %{"contains" => _pobj}, method) do
-    child = Method.concat(method, "contains")
+    child = Method.concat(method, "_contains")
     [
       {
         quote do
@@ -164,7 +164,7 @@ defmodule Exonerate.Macro.MatchArray do
 
   @spec additional_dep(specmap, atom) :: [defblock]
   defp additional_dep(prop, method) do
-    add_method = Method.concat(method, "additional_items")
+    add_method = Method.concat(method, "_additional_items")
     Exonerate.Macro.matcher(prop, add_method)
   end
 
@@ -173,18 +173,18 @@ defmodule Exonerate.Macro.MatchArray do
     iarr
     |> Enum.with_index
     |> Enum.flat_map(fn {spec, idx} ->
-      item_method = Method.concat(method, "item_#{idx}")
+      item_method = Method.concat(method, "_item_#{idx}")
       Exonerate.Macro.matcher(spec, item_method)
     end)
   end
   defp items_dep(iobj, method) do
-    items_method = Method.concat(method, "items")
+    items_method = Method.concat(method, "_items")
     Exonerate.Macro.matcher(iobj, items_method)
   end
 
   @spec contains_dep(specmap, atom) :: [defblock]
   defp contains_dep(cobj, method) do
-    contains_method = Method.concat(method, "contains")
+    contains_method = Method.concat(method, "_contains")
     Exonerate.Macro.matcher(cobj, contains_method)
   end
 
