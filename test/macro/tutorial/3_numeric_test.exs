@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Macro.Tutorial.NumericTest do
+defmodule ExonerateTest.Tutorial.NumericTest do
   use ExUnit.Case, async: true
 
   @moduletag :numeric
@@ -20,7 +20,7 @@ defmodule ExonerateTest.Macro.Tutorial.NumericTest do
     NOTE: the elixir version is opinionated about accepting multiples for non-integer
     types and does not implement them for floating points.
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema integer: ~s({ "type": "integer" })
   end
@@ -32,10 +32,10 @@ defmodule ExonerateTest.Macro.Tutorial.NumericTest do
     end
 
     test "integer mismatches a float or string" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.NumericTest.Integer, :integer, [3.1415926]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Integer, :integer, [3.1415926]}} =
         Integer.integer(3.1415926)
 
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.NumericTest.Integer, :integer, ["42"]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Integer, :integer, ["42"]}} =
         Integer.integer("42")
     end
   end
@@ -48,7 +48,7 @@ defmodule ExonerateTest.Macro.Tutorial.NumericTest do
     https://json-schema.org/understanding-json-schema/reference/numeric.html#number
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema number: ~s({ "type": "number" })
   end
@@ -62,7 +62,7 @@ defmodule ExonerateTest.Macro.Tutorial.NumericTest do
     end
 
     test "number mismatches a string" do
-       assert {:mismatch, {ExonerateTest.Macro.Tutorial.NumericTest.Number, :number, ["42"]}} =
+       assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Number, :number, ["42"]}} =
         Number.number("42")
     end
   end
@@ -77,7 +77,7 @@ defmodule ExonerateTest.Macro.Tutorial.NumericTest do
     NOTE: the elixir version is opinionated about accepting multiples for non-integer
     types and does not implement them for floating points.
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema integer: ~s({ "type": "integer", "multipleOf": 10 })
   end
@@ -90,7 +90,7 @@ defmodule ExonerateTest.Macro.Tutorial.NumericTest do
     end
 
     test "multiple mismatches noninteger" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.NumericTest.Multiple, :integer, [23]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Multiple, :integer, [23]}} =
         Multiple.integer(23)
     end
   end
@@ -103,7 +103,7 @@ defmodule ExonerateTest.Macro.Tutorial.NumericTest do
     https://json-schema.org/understanding-json-schema/reference/numeric.html#range
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema number: """
                       {
@@ -122,13 +122,13 @@ defmodule ExonerateTest.Macro.Tutorial.NumericTest do
     end
 
     test "multiple mismatches noninteger" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.NumericTest.Range, :number, [-1]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Range, :number, [-1]}} =
         Range.number(-1)
 
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.NumericTest.Range, :number, [100]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Range, :number, [100]}} =
         Range.number(100)  #exclusive maximum
 
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.NumericTest.Range, :number, [101]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Range, :number, [101]}} =
         Range.number(101)
     end
   end

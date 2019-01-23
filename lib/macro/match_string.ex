@@ -1,6 +1,6 @@
-defmodule Exonerate.Macro.MatchString do
+defmodule Exonerate.MatchString do
 
-  alias Exonerate.Macro.BuildCond
+  alias Exonerate.BuildCond
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
@@ -22,7 +22,7 @@ defmodule Exonerate.Macro.MatchString do
     end
 
     if terminal do
-      [str_match | Exonerate.Macro.never_matches(method)]
+      [str_match | Exonerate.never_matches(method)]
     else
       [str_match]
     end
@@ -33,7 +33,7 @@ defmodule Exonerate.Macro.MatchString do
     [
       {
         quote do length > unquote(length) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       | spec
       |> Map.delete("maxLength")
@@ -44,7 +44,7 @@ defmodule Exonerate.Macro.MatchString do
     [
       {
         quote do length < unquote(length) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       | spec
       |> Map.delete("minLength")
@@ -55,7 +55,7 @@ defmodule Exonerate.Macro.MatchString do
     [
       {
         quote do !(Regex.match?(sigil_r(<<unquote(patt)>>, ''), val)) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       | spec
       |> Map.delete("pattern")

@@ -77,7 +77,7 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
         use ExUnit.Case, async: true
 
         defmodule Schemas do
-          import Exonerate.Macro
+          import Exonerate
           unquote_splicing(schemas)
         end
 

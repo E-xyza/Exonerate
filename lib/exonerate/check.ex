@@ -180,7 +180,7 @@ defmodule Exonerate.Check do
     if Enum.any?(val, &(apply(module, cont_method, [&1]) == :ok)) do
       :ok
     else
-      Exonerate.Macro.mismatch(module, cont_method, val)
+      Exonerate.mismatch(module, cont_method, val)
     end
   end
 

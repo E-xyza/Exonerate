@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Macro.Tutorial.BooleanTest do
+defmodule ExonerateTest.Tutorial.BooleanTest do
   use ExUnit.Case, async: true
 
   @moduledoc """
@@ -14,7 +14,7 @@ defmodule ExonerateTest.Macro.Tutorial.BooleanTest do
 
     https://json-schema.org/understanding-json-schema/boolean.html#boolean
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema boolean: ~s({ "type": "boolean" })
   end
@@ -26,12 +26,12 @@ defmodule ExonerateTest.Macro.Tutorial.BooleanTest do
     end
     test "doesn't match not quite bools" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.BooleanTest.Boolean,
+      {ExonerateTest.Tutorial.BooleanTest.Boolean,
       :boolean, ["true"]}}
       = Boolean.boolean("true")
 
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.BooleanTest.Boolean,
+      {ExonerateTest.Tutorial.BooleanTest.Boolean,
       :boolean, [0]}}
       =  Boolean.boolean(0)
     end

@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
+defmodule ExonerateTest.Tutorial.CombiningTest do
   use ExUnit.Case, async: true
 
   @moduletag :one #:combining
@@ -16,7 +16,7 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#combining-schemas
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema combining: """
     {
@@ -36,12 +36,12 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     test "things that match none don't match" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.Combining,
+      {ExonerateTest.Tutorial.CombiningTest.Combining,
       :combining, ["too long"]}}
       = Combining.combining("too long")
 
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.Combining,
+      {ExonerateTest.Tutorial.CombiningTest.Combining,
       :combining, [-5]}}
       = Combining.combining(-5)
     end
@@ -53,7 +53,7 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#allof
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema allof: """
     {
@@ -81,7 +81,7 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     test "things that mismatch one don't match" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.AllOf,
+      {ExonerateTest.Tutorial.CombiningTest.AllOf,
       :allof, ["too long"]}}
       = AllOf.allof("too long")
     end
@@ -90,12 +90,12 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
   describe "logical impossibilities" do
     test "are possible of allof" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.AllOf,
+      {ExonerateTest.Tutorial.CombiningTest.AllOf,
       :impossible, ["No way"]}}
       = AllOf.impossible("No way")
 
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.AllOf,
+      {ExonerateTest.Tutorial.CombiningTest.AllOf,
       :impossible, [-1]}}
       = AllOf.impossible(-1)
     end
@@ -107,7 +107,7 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#anyof
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema anyof: """
     {
@@ -127,7 +127,7 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     test "things that mismatch one don't match" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.AnyOf,
+      {ExonerateTest.Tutorial.CombiningTest.AnyOf,
       :anyof, [%{"Not a" => "string or number"}]}}
       = AnyOf.anyof(%{"Not a" => "string or number"})
     end
@@ -139,7 +139,7 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#oneof
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema oneof: """
     {
@@ -169,14 +169,14 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     test "multiples of neither don't" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.OneOf,
+      {ExonerateTest.Tutorial.CombiningTest.OneOf,
       :oneof, [2]}}
       = OneOf.oneof(2)
     end
 
     test "multiples of both don't" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.OneOf,
+      {ExonerateTest.Tutorial.CombiningTest.OneOf,
       :oneof, [15]}}
       = OneOf.oneof(15)
     end
@@ -190,14 +190,14 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     test "multiples of neither don't" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.OneOf,
+      {ExonerateTest.Tutorial.CombiningTest.OneOf,
       :factorout, [2]}}
       = OneOf.factorout(2)
     end
 
     test "multiples of both don't" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.OneOf,
+      {ExonerateTest.Tutorial.CombiningTest.OneOf,
       :factorout, [15]}}
       = OneOf.factorout(15)
     end
@@ -210,7 +210,7 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#not
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema no: """
     { "not": { "type": "string" } }
@@ -225,7 +225,7 @@ defmodule ExonerateTest.Macro.Tutorial.CombiningTest do
 
     test "things that mismatch one don't match" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.CombiningTest.Not,
+      {ExonerateTest.Tutorial.CombiningTest.Not,
       :no___not, ["I am a string"]}}
       = Not.no("I am a string")
     end

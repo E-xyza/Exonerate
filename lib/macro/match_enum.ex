@@ -1,6 +1,6 @@
-defmodule Exonerate.Macro.MatchEnum do
+defmodule Exonerate.MatchEnum do
 
-  alias Exonerate.Macro.Method
+  alias Exonerate.Method
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
@@ -17,13 +17,13 @@ defmodule Exonerate.Macro.MatchEnum do
         if val in unquote(esc_list) do
           unquote(child)(val)
         else
-          Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
+          Exonerate.mismatch(__MODULE__, unquote(method), val)
         end
       end
     end] ++
     (spec
      |> Map.delete("enum")
-     |> Exonerate.Macro.matcher(child))
+     |> Exonerate.matcher(child))
   end
 
   @spec match_const(specmap, any, atom) :: [defblock]
@@ -37,13 +37,13 @@ defmodule Exonerate.Macro.MatchEnum do
         if val == unquote(const_val) do
           unquote(child)(val)
         else
-          Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
+          Exonerate.mismatch(__MODULE__, unquote(method), val)
         end
       end
     end] ++
     (spec
      |> Map.delete("const")
-     |> Exonerate.Macro.matcher(child))
+     |> Exonerate.matcher(child))
   end
 
 end

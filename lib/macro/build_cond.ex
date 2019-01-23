@@ -1,4 +1,4 @@
-defmodule Exonerate.Macro.BuildCond do
+defmodule Exonerate.BuildCond do
   @moduledoc false
 
   @type expr :: {atom, list, any} | atom

@@ -1,6 +1,4 @@
-defmodule Exonerate.Macro.Metadata do
-
-  alias Exonerate.Macro
+defmodule Exonerate.Metadata do
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
@@ -10,7 +8,7 @@ defmodule Exonerate.Macro.Metadata do
   def set_title(spec, title, method) do
     rest = spec
     |> Map.delete("title")
-    |> Macro.matcher(method)
+    |> Exonerate.matcher(method)
 
     [quote do
       def unquote(method)(:title), do: unquote(title)
@@ -21,7 +19,7 @@ defmodule Exonerate.Macro.Metadata do
   def set_description(spec, description, method) do
     rest = spec
     |> Map.delete("description")
-    |> Macro.matcher(method)
+    |> Exonerate.matcher(method)
 
     [quote do
       def unquote(method)(:description), do: unquote(description)
@@ -32,7 +30,7 @@ defmodule Exonerate.Macro.Metadata do
   def set_default(spec, default, method) do
     rest = spec
     |> Map.delete("default")
-    |> Macro.matcher(method)
+    |> Exonerate.matcher(method)
 
     [quote do
       def unquote(method)(:default), do: unquote(default)
@@ -43,7 +41,7 @@ defmodule Exonerate.Macro.Metadata do
   def set_examples(spec, examples, method) do
     rest = spec
     |> Map.delete("examples")
-    |> Macro.matcher(method)
+    |> Exonerate.matcher(method)
 
     [quote do
       def unquote(method)(:examples), do: unquote(examples)
@@ -54,7 +52,7 @@ defmodule Exonerate.Macro.Metadata do
   def set_schema(map, schema, module) do
     rest = map
     |> Map.delete("$schema")
-    |> Macro.matcher(module)
+    |> Exonerate.matcher(module)
 
     [quote do
        def unquote(module)(:schema), do: unquote(schema)
@@ -65,7 +63,7 @@ defmodule Exonerate.Macro.Metadata do
   def set_id(map, id, module) do
     rest = map
     |> Map.delete("$id")
-    |> Macro.matcher(module)
+    |> Exonerate.matcher(module)
 
     [quote do
       def unquote(module)(:id), do: unquote(id)

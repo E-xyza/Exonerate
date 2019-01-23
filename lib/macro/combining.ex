@@ -1,6 +1,6 @@
-defmodule Exonerate.Macro.Combining do
+defmodule Exonerate.Combining do
 
-  alias Exonerate.Macro.Method
+  alias Exonerate.Method
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
@@ -21,13 +21,13 @@ defmodule Exonerate.Macro.Combining do
     |> Enum.map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
-        Exonerate.Macro.matcher(spec, child_method)
+        Exonerate.matcher(spec, child_method)
       end
     )
 
     base_dependency = base_spec
     |> Map.delete("allOf")
-    |> Exonerate.Macro.matcher(base_child)
+    |> Exonerate.matcher(base_child)
 
     [quote do
       def unquote(method)(val) do
@@ -57,13 +57,13 @@ defmodule Exonerate.Macro.Combining do
     |> Enum.map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
-        Exonerate.Macro.matcher(spec, child_method)
+        Exonerate.matcher(spec, child_method)
       end
     )
 
     base_dependency = base_spec
     |> Map.delete("anyOf")
-    |> Exonerate.Macro.matcher(base_child)
+    |> Exonerate.matcher(base_child)
 
     [quote do
       def unquote(method)(val) do
@@ -93,7 +93,7 @@ defmodule Exonerate.Macro.Combining do
     |> Enum.map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
-        Exonerate.Macro.matcher(spec, child_method)
+        Exonerate.matcher(spec, child_method)
       end
     )
 
@@ -120,6 +120,6 @@ defmodule Exonerate.Macro.Combining do
           __MODULE__,
           unquote(not_method))
       end
-    end] ++ Exonerate.Macro.matcher(inv_spec, not_method)
+    end] ++ Exonerate.matcher(inv_spec, not_method)
   end
 end

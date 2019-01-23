@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Macro.Tutorial.NullTest do
+defmodule ExonerateTest.Tutorial.NullTest do
   use ExUnit.Case, async: true
 
   @moduletag :null
@@ -16,7 +16,7 @@ defmodule ExonerateTest.Macro.Tutorial.NullTest do
 
     https://json-schema.org/understanding-json-schema/null.html#null
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema null: ~s({ "type": "null" })
   end
@@ -29,17 +29,17 @@ defmodule ExonerateTest.Macro.Tutorial.NullTest do
 
     test "doesn't match not quite bools" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.NullTest.Null,
+      {ExonerateTest.Tutorial.NullTest.Null,
       :null, [false]}}
       = Null.null(false)
 
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.NullTest.Null,
+      {ExonerateTest.Tutorial.NullTest.Null,
       :null, [0]}}
       = Null.null(0)
 
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.NullTest.Null,
+      {ExonerateTest.Tutorial.NullTest.Null,
       :null, [""]}}
       = Null.null("")
     end

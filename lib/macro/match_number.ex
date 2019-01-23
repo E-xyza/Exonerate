@@ -1,6 +1,6 @@
-defmodule Exonerate.Macro.MatchNumber do
+defmodule Exonerate.MatchNumber do
 
-  alias Exonerate.Macro.BuildCond
+  alias Exonerate.BuildCond
   require Logger
 
   @type json     :: Exonerate.json
@@ -21,7 +21,7 @@ defmodule Exonerate.Macro.MatchNumber do
     end
 
     if terminal do
-      [int_match | Exonerate.Macro.never_matches(method)]
+      [int_match | Exonerate.never_matches(method)]
     else
       [int_match]
     end
@@ -32,7 +32,7 @@ defmodule Exonerate.Macro.MatchNumber do
     [
       {
         quote do rem(val, unquote(base)) != 0 end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       | spec
       |> Map.delete("multipleOf")
@@ -55,7 +55,7 @@ defmodule Exonerate.Macro.MatchNumber do
     end
 
     if terminal do
-      [num_match | Exonerate.Macro.never_matches(method)]
+      [num_match | Exonerate.never_matches(method)]
     else
       [num_match]
     end
@@ -68,11 +68,11 @@ defmodule Exonerate.Macro.MatchNumber do
       #disallow multipleOf on non-integer values
       {
         quote do !is_integer(val) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       },
       {
         quote do rem(val, unquote(base)) != 0 end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       | spec
       |> Map.delete("multipleOf")
@@ -83,7 +83,7 @@ defmodule Exonerate.Macro.MatchNumber do
     [
       {
         quote do val < unquote(cmp) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       | spec
       |> Map.delete("minimum")
@@ -94,7 +94,7 @@ defmodule Exonerate.Macro.MatchNumber do
     [
       {
         quote do val <= unquote(cmp) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       | spec
       |> Map.delete("exclusiveMinimum")
@@ -105,7 +105,7 @@ defmodule Exonerate.Macro.MatchNumber do
     [
       {
         quote do val > unquote(cmp) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       | spec
       |> Map.delete("maximum")
@@ -116,7 +116,7 @@ defmodule Exonerate.Macro.MatchNumber do
     [
       {
         quote do val >= unquote(cmp) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       | spec
       |> Map.delete("exclusiveMaximum")

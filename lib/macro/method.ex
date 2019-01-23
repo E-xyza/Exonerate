@@ -1,4 +1,4 @@
-defmodule Exonerate.Macro.Method do
+defmodule Exonerate.Method do
   @spec concat(atom, String.t) :: atom
   def concat(method, sub) do
     method

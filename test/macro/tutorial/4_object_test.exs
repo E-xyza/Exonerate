@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
+defmodule ExonerateTest.Tutorial.ObjectTest do
   use ExUnit.Case, async: true
 
   @moduletag :object
@@ -18,7 +18,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#object
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema object: ~s({ "type": "object" })
   end
@@ -58,10 +58,10 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     @badarray ["An", "array", "not", "an", "object"]
 
     test "objects mismatches a string or array" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Object, :object, ["Not an object"]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Object, :object, ["Not an object"]}} =
         Object.object("Not an object")
 
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Object, :object, [@badarray]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Object, :object, [@badarray]}} =
         Object.object(@badarray)
     end
   end
@@ -74,7 +74,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#properties
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema address1:
     """
@@ -151,7 +151,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     end
 
     test "mismatched inner property doesn't match" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Properties, :address1__number, ["1600"]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Properties, :address1__number, ["1600"]}} =
         @addr2
         |> Jason.decode!
         |> Properties.address1
@@ -167,7 +167,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "extra properties matches correctly" do
       addr4 = Jason.decode(@addr4)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Properties, :address2, [addr4]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Properties, :address2, [addr4]}} =
         Properties.address2(addr4)
     end
   end
@@ -187,7 +187,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "extra nonstring property doesn't matche" do
       addr5 = Jason.decode(@addr5)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Properties, :address2, [addr5]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Properties, :address2, [addr5]}} =
         Properties.address2(addr5)
     end
   end
@@ -200,7 +200,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#required-properties
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema contactinfo:
     """
@@ -253,7 +253,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "deficient info is a problem" do
       contact3 = Jason.decode!(@contact3)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.RequiredProperties, :contactinfo, [contact3]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.RequiredProperties, :contactinfo, [contact3]}} =
         RequiredProperties.contactinfo(contact3)
     end
   end
@@ -266,7 +266,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#property-names
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema token:
     """
@@ -291,7 +291,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "not matching the property name doesn't match" do
       token2 = Jason.decode!(@token2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyNames, :token___property_names, ["001 invalid"]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyNames, :token___property_names, ["001 invalid"]}} =
         PropertyNames.token(token2)
     end
   end
@@ -304,7 +304,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#size
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema object:
     """
@@ -325,13 +325,13 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
   describe "matching property size" do
     test "empty object mismatches" do
       objsize1 = Jason.decode!(@objsize1)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Size, :object, [objsize1]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Size, :object, [objsize1]}} =
         Size.object(objsize1)
     end
 
     test "too small object mismatches" do
       objsize2 = Jason.decode!(@objsize2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Size, :object, [objsize2]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Size, :object, [objsize2]}} =
         Size.object(objsize2)
     end
 
@@ -349,7 +349,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "too large object mismatches" do
       objsize5 = Jason.decode!(@objsize5)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.Size, :object, [objsize5]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Size, :object, [objsize5]}} =
         Size.object(objsize5)
     end
   end
@@ -362,7 +362,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#property-dependencies
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema dependency1:
     """
@@ -433,7 +433,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     end
     test "failing to meet dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :dependency1___dependency_credit_card, [propdependency2]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency1___dependency_credit_card, [propdependency2]}} =
         PropertyDependencies.dependency1(propdependency2)
     end
     test "no dependency doesn't need to be met" do
@@ -451,12 +451,12 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
   describe "matching two-way dependency" do
     test "one-way dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependency_credit_card, [propdependency2]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependency_credit_card, [propdependency2]}} =
         PropertyDependencies.dependency2(propdependency2)
     end
     test "dependency is now two-way" do
       propdependency4 = Jason.decode!(@propdependency4)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependency_billing_address, [propdependency4]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependency_billing_address, [propdependency4]}} =
         PropertyDependencies.dependency2(propdependency4)
     end
   end
@@ -469,7 +469,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#schema-dependencies
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema schemadependency:
     """
@@ -524,7 +524,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     end
     test "partial compliance does not work" do
       schemadependency2 = Jason.decode!(@schemadependency2)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.SchemaDependencies, :schemadependency___dependency_credit_card, [schemadependency2]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.SchemaDependencies, :schemadependency___dependency_credit_card, [schemadependency2]}} =
         SchemaDependencies.schemadependency(schemadependency2)
     end
     test "omitting a trigger works" do
@@ -542,7 +542,7 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#pattern-properties
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema patternprop1:
     """
@@ -577,18 +577,18 @@ defmodule ExonerateTest.Macro.Tutorial.ObjectTest do
 
     test "integers shouldn't match string pattern" do
       patternmatch3 = Jason.decode!(@patternmatch3)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1___pattern_1, [42]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1___pattern_1, [42]}} =
         PatternProperties.patternprop1(patternmatch3)
     end
     test "strings shouldn't match integer pattern" do
       patternmatch4 = Jason.decode!(@patternmatch4)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1___pattern_0, ["This is a string"]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1___pattern_0, ["This is a string"]}} =
         PatternProperties.patternprop1(patternmatch4)
     end
 
     test "additional properties shouldn't match" do
       patternmatch5 = Jason.decode!(@patternmatch5)
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.ObjectTest.PatternProperties, :patternprop1___additional_properties, ["value"]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1___additional_properties, ["value"]}} =
         PatternProperties.patternprop1(patternmatch5)
     end
   end

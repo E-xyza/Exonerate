@@ -2,7 +2,7 @@ defmodule ExonerateTest.Macro.Helpers.BuildCondTest do
 
   use ExUnit.Case
 
-  alias Exonerate.Macro.BuildCond
+  alias Exonerate.BuildCond
 
   test "an empty buildcond builds a null result" do
 

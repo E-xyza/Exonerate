@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
+defmodule ExonerateTest.Tutorial.ArrayTest do
   use ExUnit.Case, async: true
 
   @moduletag :array
@@ -17,7 +17,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#array
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema array: ~s({ "type": "array" })
 
@@ -38,7 +38,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
 
     test "object doesn't match array" do
       assert  {:mismatch,
-        {ExonerateTest.Macro.Tutorial.ArrayTest.Array,
+        {ExonerateTest.Tutorial.ArrayTest.Array,
         :array,
         [%{"Not" => "an array"}]}} = Array.array(%{"Not" => "an array"})
     end
@@ -51,7 +51,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#list-validation
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema items: """
     {
@@ -82,7 +82,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
 
     test "one non-number ruins the party" do
       assert  {:mismatch,
-        {ExonerateTest.Macro.Tutorial.ArrayTest.ListValidation,
+        {ExonerateTest.Tutorial.ArrayTest.ListValidation,
         :items___items,
         ["3"]}} = ListValidation.items([1, 2, "3", 4, 5])
     end
@@ -103,7 +103,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
 
     test "it fails with no numbers" do
       assert  {:mismatch,
-        {ExonerateTest.Macro.Tutorial.ArrayTest.ListValidation,
+        {ExonerateTest.Tutorial.ArrayTest.ListValidation,
         :contains___contains,
         [["life", "universe", "everything", "forty-two"]]}}
         = ListValidation.contains(["life", "universe", "everything", "forty-two"])
@@ -123,7 +123,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#tuple-validation
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema tuple: """
     {
@@ -205,7 +205,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
 
     test "drive is not an acceptable street type" do
       assert  {:mismatch,
-        {ExonerateTest.Macro.Tutorial.ArrayTest.TupleValidation,
+        {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
         :tuple___item_2,
         ["Drive"]}}
         = TupleValidation.tuple([24, "Sussex", "Drive"])
@@ -213,7 +213,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
 
     test "address is missing a street number" do
       assert  {:mismatch,
-        {ExonerateTest.Macro.Tutorial.ArrayTest.TupleValidation,
+        {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
         :tuple___item_0, ["Palais de l'Élysée"]}}
         = TupleValidation.tuple(["Palais de l'Élysée"])
     end
@@ -246,7 +246,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
 
     test "it is not ok to provide extra items" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.ArrayTest.TupleValidation,
+      {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
       :tuple_noadditional___additional_items, ["Washington"]}}
       = TupleValidation.tuple_noadditional([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
     end
@@ -261,7 +261,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
 
     test "but not extra numbers" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.ArrayTest.TupleValidation,
+      {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
       :tuple_additional_with_property___additional_items, [20500]}}
       = TupleValidation.tuple_additional_with_property([1600, "Pennsylvania", "Avenue", "NW", 20500])
     end
@@ -274,7 +274,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#length
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema length: """
     {
@@ -288,12 +288,12 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
   describe "array length works" do
     test "by length" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.ArrayTest.Length,
+      {ExonerateTest.Tutorial.ArrayTest.Length,
       :length, [[]]}}
       = Length.length([])
 
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.ArrayTest.Length,
+      {ExonerateTest.Tutorial.ArrayTest.Length,
       :length, [[1]]}}
       = Length.length([1])
 
@@ -302,7 +302,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
       assert :ok = Length.length([1, 2, 3])
 
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.ArrayTest.Length,
+      {ExonerateTest.Tutorial.ArrayTest.Length,
       :length, [[1, 2, 3, 4]]}}
       = Length.length([1, 2, 3, 4])
     end
@@ -315,7 +315,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#uniqueness
 
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema unique: """
     {
@@ -330,7 +330,7 @@ defmodule ExonerateTest.Macro.Tutorial.ArrayTest do
       assert :ok = Uniqueness.unique([1, 2, 3, 4, 5])
 
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.ArrayTest.Uniqueness,
+      {ExonerateTest.Tutorial.ArrayTest.Uniqueness,
       :unique, [[1, 2, 3, 3, 4]]}}
       = Uniqueness.unique([1, 2, 3, 3, 4])
     end

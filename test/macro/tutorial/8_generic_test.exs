@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Macro.Tutorial.GenericTest do
+defmodule ExonerateTest.Tutorial.GenericTest do
   use ExUnit.Case, async: true
 
   @moduletag :generic
@@ -16,7 +16,7 @@ defmodule ExonerateTest.Macro.Tutorial.GenericTest do
 
     https://json-schema.org/understanding-json-schema/reference/generic.html#metadata
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema metadata: """
     {
@@ -55,7 +55,7 @@ defmodule ExonerateTest.Macro.Tutorial.GenericTest do
 
     https://json-schema.org/understanding-json-schema/reference/generic.html#enumerated-values
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema enum1: """
     {
@@ -87,7 +87,7 @@ defmodule ExonerateTest.Macro.Tutorial.GenericTest do
 
     test "unenumerated values don't match" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.GenericTest.EnumeratedValues,
+      {ExonerateTest.Tutorial.GenericTest.EnumeratedValues,
       :enum1, ["blue"]}}
       = EnumeratedValues.enum1("blue")
     end
@@ -102,7 +102,7 @@ defmodule ExonerateTest.Macro.Tutorial.GenericTest do
 
     test "unenumerated values don't match" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.GenericTest.EnumeratedValues,
+      {ExonerateTest.Tutorial.GenericTest.EnumeratedValues,
       :enum2, [0]}}
       = EnumeratedValues.enum2(0)
     end
@@ -115,7 +115,7 @@ defmodule ExonerateTest.Macro.Tutorial.GenericTest do
 
     test "unenumerated values don't match" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.GenericTest.EnumeratedValues,
+      {ExonerateTest.Tutorial.GenericTest.EnumeratedValues,
       :enum3___enclosing, [nil]}}
       = EnumeratedValues.enum3(nil)
     end
@@ -127,7 +127,7 @@ defmodule ExonerateTest.Macro.Tutorial.GenericTest do
 
     https://json-schema.org/understanding-json-schema/reference/generic.html#constant-values
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema const: """
     {
@@ -147,7 +147,7 @@ defmodule ExonerateTest.Macro.Tutorial.GenericTest do
 
     test "unenumerated values don't match" do
       assert  {:mismatch,
-      {ExonerateTest.Macro.Tutorial.GenericTest.ConstantValues,
+      {ExonerateTest.Tutorial.GenericTest.ConstantValues,
       :const__country, ["Canada"]}}
       = ConstantValues.const(%{"country" => "Canada"})
     end

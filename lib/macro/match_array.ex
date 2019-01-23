@@ -1,7 +1,7 @@
-defmodule Exonerate.Macro.MatchArray do
+defmodule Exonerate.MatchArray do
 
-  alias Exonerate.Macro.BuildCond
-  alias Exonerate.Macro.Method
+  alias Exonerate.BuildCond
+  alias Exonerate.Method
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
@@ -24,7 +24,7 @@ defmodule Exonerate.Macro.MatchArray do
     end
 
     if terminal do
-      [arr_match | Exonerate.Macro.never_matches(method)] ++ dependencies
+      [arr_match | Exonerate.never_matches(method)] ++ dependencies
     else
       [arr_match] ++ dependencies
     end
@@ -113,7 +113,7 @@ defmodule Exonerate.Macro.MatchArray do
     [
       {
         quote do Enum.count(val) < unquote(items) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       |
       spec
@@ -125,7 +125,7 @@ defmodule Exonerate.Macro.MatchArray do
     [
       {
         quote do Enum.count(val) > unquote(items) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       |
       spec
@@ -137,7 +137,7 @@ defmodule Exonerate.Macro.MatchArray do
     [
       {
         quote do Exonerate.Check.contains_duplicate?(val) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       |
       spec
@@ -165,7 +165,7 @@ defmodule Exonerate.Macro.MatchArray do
   @spec additional_dep(specmap, atom) :: [defblock]
   defp additional_dep(prop, method) do
     add_method = Method.concat(method, "_additional_items")
-    Exonerate.Macro.matcher(prop, add_method)
+    Exonerate.matcher(prop, add_method)
   end
 
   @spec items_dep([specmap] | specmap, atom) :: [defblock]
@@ -174,18 +174,18 @@ defmodule Exonerate.Macro.MatchArray do
     |> Enum.with_index
     |> Enum.flat_map(fn {spec, idx} ->
       item_method = Method.concat(method, "_item_#{idx}")
-      Exonerate.Macro.matcher(spec, item_method)
+      Exonerate.matcher(spec, item_method)
     end)
   end
   defp items_dep(iobj, method) do
     items_method = Method.concat(method, "_items")
-    Exonerate.Macro.matcher(iobj, items_method)
+    Exonerate.matcher(iobj, items_method)
   end
 
   @spec contains_dep(specmap, atom) :: [defblock]
   defp contains_dep(cobj, method) do
     contains_method = Method.concat(method, "_contains")
-    Exonerate.Macro.matcher(cobj, contains_method)
+    Exonerate.matcher(cobj, contains_method)
   end
 
 end

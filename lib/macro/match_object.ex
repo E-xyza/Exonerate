@@ -1,7 +1,7 @@
-defmodule Exonerate.Macro.MatchObject do
+defmodule Exonerate.MatchObject do
 
-  alias Exonerate.Macro.BuildCond
-  alias Exonerate.Macro.Method
+  alias Exonerate.BuildCond
+  alias Exonerate.Method
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
@@ -25,7 +25,7 @@ defmodule Exonerate.Macro.MatchObject do
     end
 
     if terminal do
-      [obj_match | Exonerate.Macro.never_matches(method)] ++ dependencies
+      [obj_match | Exonerate.never_matches(method)] ++ dependencies
     else
       [obj_match] ++ dependencies
     end
@@ -109,7 +109,7 @@ defmodule Exonerate.Macro.MatchObject do
       quote do
         Enum.count(val) < unquote(min)
       end,
-      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+      quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
     }
     | spec
     |> Map.delete("minProperties")
@@ -121,7 +121,7 @@ defmodule Exonerate.Macro.MatchObject do
       quote do
         Enum.count(val) > unquote(max)
       end,
-      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+      quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
     }
     | spec
     |> Map.delete("maxProperties")
@@ -133,7 +133,7 @@ defmodule Exonerate.Macro.MatchObject do
       quote do
         ! Enum.all?(unquote(plist), &Map.has_key?(val, &1))
       end,
-      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+      quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
     }
     | spec
     |> Map.delete("required")
@@ -150,7 +150,7 @@ defmodule Exonerate.Macro.MatchObject do
     #false matches nothing but empty object, so add a very tight conditional.
     [{
       quote do val != %{} end,
-      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+      quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
     }
     | spec
     |> Map.delete("propertyNames")
@@ -249,13 +249,13 @@ defmodule Exonerate.Macro.MatchObject do
   @spec pattern_property_dep(specmap, non_neg_integer, atom) :: [defblock]
   defp pattern_property_dep(v, idx, method) do
     pattern_child = Method.concat(method, "_pattern_#{idx}")
-    Exonerate.Macro.matcher(v, pattern_child)
+    Exonerate.matcher(v, pattern_child)
   end
 
   @spec property_dep({String.t, json}, atom) :: [defblock]
   defp property_dep({k, v}, method) do
     object_child = Method.concat(method, k)
-    Exonerate.Macro.matcher(v, object_child)
+    Exonerate.matcher(v, object_child)
   end
 
   @spec object_dep({String.t, json} | json, atom) :: [defblock]
@@ -270,7 +270,7 @@ defmodule Exonerate.Macro.MatchObject do
         if Enum.all?(prop_list, &Map.has_key?(val, &1)) do
           :ok
         else
-          Exonerate.Macro.mismatch(__MODULE__, unquote(dep_child), val)
+          Exonerate.mismatch(__MODULE__, unquote(dep_child), val)
         end
       end
     end]
@@ -279,11 +279,11 @@ defmodule Exonerate.Macro.MatchObject do
     dep_child = Method.concat(method, "_dependency_" <> k)
     v
     |> Map.put("type", "object")
-    |> Exonerate.Macro.matcher(dep_child)
+    |> Exonerate.matcher(dep_child)
   end
   defp object_dep({k, v}, method) do
     dep_child = Method.concat(method, "_dependency_" <> k)
-    Exonerate.Macro.matcher(v, dep_child)
+    Exonerate.matcher(v, dep_child)
   end
 
 end

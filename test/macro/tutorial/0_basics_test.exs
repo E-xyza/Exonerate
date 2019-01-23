@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
+defmodule ExonerateTest.Tutorial.BasicsTest do
   use ExUnit.Case, async: true
 
   @moduledoc """
@@ -15,7 +15,7 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
 
     https://json-schema.org/understanding-json-schema/basics.html#hello-world
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema helloworld1: "{}"
     defschema helloworld2: "true"
@@ -36,7 +36,7 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
     end
 
     test "false matches nothing" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.BasicsTest.HelloWorld, :helloworld3, ["Resistance is futile...  This will always fail!!!"]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.BasicsTest.HelloWorld, :helloworld3, ["Resistance is futile...  This will always fail!!!"]}} =
         HelloWorld.helloworld3("Resistance is futile...  This will always fail!!!")
     end
   end
@@ -47,7 +47,7 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
 
     https://json-schema.org/understanding-json-schema/basics.html#the-type-keyword
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema type: ~s({"type": "string"})
   end
@@ -58,7 +58,7 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
     end
 
     test "string type does not match nonstring" do
-      assert {:mismatch, {ExonerateTest.Macro.Tutorial.BasicsTest.TypeKeyword, :type, [42]}} = TypeKeyword.type(42)
+      assert {:mismatch, {ExonerateTest.Tutorial.BasicsTest.TypeKeyword, :type, [42]}} = TypeKeyword.type(42)
     end
   end
 
@@ -68,7 +68,7 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
 
     https://json-schema.org/understanding-json-schema/basics.html#declaring-a-json-schema
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema schema: ~s({"$schema": "http://json-schema.org/schema#"})
   end
@@ -85,7 +85,7 @@ defmodule ExonerateTest.Macro.Tutorial.BasicsTest do
 
     https://json-schema.org/understanding-json-schema/basics.html#declaring-a-unique-identifier
     """
-    import Exonerate.Macro
+    import Exonerate
 
     defschema id: ~s({"$id": "http://yourdomain.com/schemas/myschema.json"})
   end
