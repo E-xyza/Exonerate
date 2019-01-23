@@ -5,6 +5,8 @@ defmodule Exonerate.Macro do
 
   alias Exonerate.Macro.BuildCond
 
+  @type json :: Exonerate.json
+  @type specmap :: %{optional(String.t) => json}
   @type condlist :: [BuildCond.condclause]
   @type defblock :: {:def, any, any}
 
@@ -22,7 +24,7 @@ defmodule Exonerate.Macro do
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
 
-  @spec matcher(any, any)::[defblock | {:__block__, any, any}]
+  @spec matcher(json, atom)::[defblock | {:__block__, any, any}]
   def matcher(true, method), do: always_matches(method)
   def matcher(false, method), do: never_matches(method)
   # metadata things
@@ -70,7 +72,7 @@ defmodule Exonerate.Macro do
     end]
   end
 
-  @spec set_title(map, String.t, atom) :: [defblock]
+  @spec set_title(specmap, String.t, atom) :: [defblock]
   def set_title(spec, title, method) do
     rest = spec
     |> Map.delete("title")
@@ -81,7 +83,7 @@ defmodule Exonerate.Macro do
     end | rest]
   end
 
-  @spec set_description(map, String.t, atom) :: [defblock]
+  @spec set_description(specmap, String.t, atom) :: [defblock]
   def set_description(spec, description, method) do
     rest = spec
     |> Map.delete("description")
@@ -92,7 +94,7 @@ defmodule Exonerate.Macro do
     end | rest]
   end
 
-  @spec set_default(map, any, atom) :: [defblock]
+  @spec set_default(specmap, json, atom) :: [defblock]
   def set_default(spec, default, method) do
     rest = spec
     |> Map.delete("default")
@@ -103,7 +105,7 @@ defmodule Exonerate.Macro do
     end | rest]
   end
 
-  @spec set_examples(map, [any], atom) :: [defblock]
+  @spec set_examples(specmap, [json], atom) :: [defblock]
   def set_examples(spec, examples, method) do
     rest = spec
     |> Map.delete("examples")
@@ -114,7 +116,7 @@ defmodule Exonerate.Macro do
     end | rest]
   end
 
-  @spec set_schema(map, String.t, atom) :: [defblock]
+  @spec set_schema(specmap, String.t, atom) :: [defblock]
   def set_schema(map, schema, module) do
     rest = map
     |> Map.delete("$schema")

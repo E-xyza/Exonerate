@@ -1,11 +1,12 @@
 defmodule Exonerate do
 
-  # module typedefs
-  @type schema ::
-    %{optional(String.t) => schema}
-    | list(schema)
-    | String.t
-    | number
+  @type json ::
+     %{optional(String.t) => json}
+     | list(json)
+     | String.t
+     | number
+     | boolean
+     | nil
 
   def error_reduction(arr) when is_list(arr),
     do: arr |> Enum.reduce(:ok, &Exonerate.error_reduction/2)
