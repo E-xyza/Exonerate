@@ -4,6 +4,8 @@ defmodule Exonerate.Macro do
   """
 
   alias Exonerate.Macro.BuildCond
+  alias Exonerate.Macro.MatchEnum
+  alias Exonerate.Macro.Metadata
 
   @type json :: Exonerate.json
   @type specmap :: %{optional(String.t) => json}
@@ -28,15 +30,15 @@ defmodule Exonerate.Macro do
   def matcher(true, method), do: always_matches(method)
   def matcher(false, method), do: never_matches(method)
   # metadata things
-  def matcher(spec = %{"title" => title}, method), do: set_title(spec, title, method)
-  def matcher(spec = %{"description" => desc}, method), do: set_description(spec, desc, method)
-  def matcher(spec = %{"default" => default}, method), do: set_default(spec, default, method)
-  def matcher(spec = %{"examples" => examples}, method), do: set_examples(spec, examples, method)
-  def matcher(spec = %{"$schema" => schema}, method), do: set_schema(spec, schema, method)
-  def matcher(spec = %{"$id" => id}, method), do: set_id(spec, id, method)
+  def matcher(spec = %{"title" => title}, method),       do: Metadata.set_title(spec, title, method)
+  def matcher(spec = %{"description" => desc}, method),  do: Metadata.set_description(spec, desc, method)
+  def matcher(spec = %{"default" => default}, method),   do: Metadata.set_default(spec, default, method)
+  def matcher(spec = %{"examples" => examples}, method), do: Metadata.set_examples(spec, examples, method)
+  def matcher(spec = %{"$schema" => schema}, method),    do: Metadata.set_schema(spec, schema, method)
+  def matcher(spec = %{"$id" => id}, method),            do: Metadata.set_id(spec, id, method)
   # match enums and consts
-  def matcher(spec = %{"enum" => elist}, method), do: match_enum(spec, elist, method)
-  def matcher(spec = %{"const" => const}, method), do: match_const(spec, const, method)
+  def matcher(spec = %{"enum" => elist}, method),        do: MatchEnum.match_enum(spec, elist, method)
+  def matcher(spec = %{"const" => const}, method),       do: MatchEnum.match_const(spec, const, method)
   # match combining elements
   def matcher(spec = %{"allOf" => clist}, method), do: match_allof(spec, clist, method)
   def matcher(spec = %{"anyOf" => clist}, method), do: match_anyof(spec, clist, method)
@@ -70,72 +72,6 @@ defmodule Exonerate.Macro do
         Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
       end
     end]
-  end
-
-  @spec set_title(specmap, String.t, atom) :: [defblock]
-  def set_title(spec, title, method) do
-    rest = spec
-    |> Map.delete("title")
-    |> matcher(method)
-
-    [quote do
-      def unquote(method)(:title), do: unquote(title)
-    end | rest]
-  end
-
-  @spec set_description(specmap, String.t, atom) :: [defblock]
-  def set_description(spec, description, method) do
-    rest = spec
-    |> Map.delete("description")
-    |> matcher(method)
-
-    [quote do
-      def unquote(method)(:description), do: unquote(description)
-    end | rest]
-  end
-
-  @spec set_default(specmap, json, atom) :: [defblock]
-  def set_default(spec, default, method) do
-    rest = spec
-    |> Map.delete("default")
-    |> matcher(method)
-
-    [quote do
-      def unquote(method)(:default), do: unquote(default)
-    end | rest]
-  end
-
-  @spec set_examples(specmap, [json], atom) :: [defblock]
-  def set_examples(spec, examples, method) do
-    rest = spec
-    |> Map.delete("examples")
-    |> matcher(method)
-
-    [quote do
-      def unquote(method)(:examples), do: unquote(examples)
-    end | rest]
-  end
-
-  @spec set_schema(specmap, String.t, atom) :: [defblock]
-  def set_schema(map, schema, module) do
-    rest = map
-    |> Map.delete("$schema")
-    |> matcher(module)
-
-    [quote do
-       def unquote(module)(:schema), do: unquote(schema)
-     end | rest]
-  end
-
-  @spec set_id(map, String.t, atom) :: [defblock]
-  def set_id(map, id, module) do
-    rest = map
-    |> Map.delete("$id")
-    |> matcher(module)
-
-    [quote do
-      def unquote(module)(:id), do: unquote(id)
-     end | rest]
   end
 
   @spec match_allof(map, list(any), atom) :: [defblock]
@@ -253,46 +189,6 @@ defmodule Exonerate.Macro do
           [val])
       end
     end] ++ matcher(inv_spec, not_method)
-  end
-
-  @spec match_enum(map, list(any), atom) :: [defblock]
-  defp match_enum(spec, enum_list, method) do
-    esc_list = Macro.escape(enum_list)
-
-    enum_submethod = generate_submethod(method, "_enclosing")
-
-    [quote do
-      def unquote(method)(val) do
-        if val in unquote(esc_list) do
-          unquote(enum_submethod)(val)
-        else
-          Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
-        end
-      end
-    end] ++
-    (spec
-     |> Map.delete("enum")
-     |> matcher(enum_submethod))
-  end
-
-  @spec match_const(map, any, atom) :: [defblock]
-  defp match_const(spec, const, method) do
-    const_val = Macro.escape(const)
-
-    const_submethod = generate_submethod(method, "_enclosing")
-
-    [quote do
-      def unquote(method)(val) do
-        if val == unquote(const_val) do
-          unquote(const_submethod)(val)
-        else
-          Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
-        end
-      end
-    end] ++
-    (spec
-     |> Map.delete("const")
-     |> matcher(const_submethod))
   end
 
   @spec match_string(map, atom, boolean) :: [defblock]
