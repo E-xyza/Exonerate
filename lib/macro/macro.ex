@@ -6,6 +6,8 @@ defmodule Exonerate.Macro do
   alias Exonerate.Macro.BuildCond
   alias Exonerate.Macro.Combining
   alias Exonerate.Macro.MatchEnum
+  alias Exonerate.Macro.MatchNumber
+  alias Exonerate.Macro.MatchString
   alias Exonerate.Macro.Metadata
 
   @type json     :: Exonerate.json
@@ -46,10 +48,10 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"oneOf" => clist}, method),       do: Combining.match_oneof(spec, clist, method)
   def matcher(spec = %{"not" => inv}, method),           do: Combining.match_not(spec, inv, method)
   # type matching things
-  def matcher(spec, method) when spec == %{}, do: always_matches(method)
-  def matcher(spec = %{"type" => "string"}, method), do: match_string(spec, method)
-  def matcher(spec = %{"type" => "integer"}, method), do: match_integer(spec, method)
-  def matcher(spec = %{"type" => "number"}, method), do: match_number(spec, method)
+  def matcher(spec, method) when spec == %{},            do: always_matches(method)
+  def matcher(spec = %{"type" => "string"}, method),     do: MatchString.match(spec, method)
+  def matcher(spec = %{"type" => "integer"}, method),    do: MatchNumber.match_int(spec, method)
+  def matcher(spec = %{"type" => "number"}, method),     do: MatchNumber.match(spec, method)
   def matcher(spec = %{"type" => "boolean"}, method), do: match_boolean(spec, method)
   def matcher(spec = %{"type" => "null"}, method), do: match_null(spec, method)
   def matcher(spec = %{"type" => "object"}, method), do: match_object(spec, method)
@@ -58,7 +60,7 @@ defmodule Exonerate.Macro do
   def matcher(spec, method), do: match_list(spec, @all_types, method)
 
   @spec always_matches(atom) :: [defblock]
-  defp always_matches(method) do
+  def always_matches(method) do
     [quote do
       def unquote(method)(_val) do
         :ok
@@ -67,7 +69,7 @@ defmodule Exonerate.Macro do
   end
 
   @spec never_matches(atom) :: [defblock]
-  defp never_matches(method) do
+  def never_matches(method) do
     [quote do
       def unquote(method)(val) do
         Exonerate.Macro.mismatch(__MODULE__, unquote(method), val)
@@ -76,69 +78,6 @@ defmodule Exonerate.Macro do
   end
 
 
-
-  @spec match_string(map, atom, boolean) :: [defblock]
-  defp match_string(spec, method, terminal \\ true) do
-
-    cond_stmt = spec
-    |> build_string_cond(method)
-    |> BuildCond.build
-
-    # TODO: make length value only appear if we have a length check.
-
-    str_match = quote do
-      def unquote(method)(val) when is_binary(val) do
-        length = String.length(val)
-        unquote(cond_stmt)
-      end
-    end
-
-    if terminal do
-      [str_match | never_matches(method)]
-    else
-      [str_match]
-    end
-  end
-
-  @spec match_integer(map, atom, boolean) :: [defblock]
-  defp match_integer(spec, method, terminal \\ true) do
-
-    cond_stmt = spec
-    |> build_integer_cond(method)
-    |> BuildCond.build
-
-    int_match = quote do
-      def unquote(method)(val) when is_integer(val) do
-        unquote(cond_stmt)
-      end
-    end
-
-    if terminal do
-      [int_match | never_matches(method)]
-    else
-      [int_match]
-    end
-  end
-
-  @spec match_number(map, atom, boolean) :: [defblock]
-  defp match_number(spec, method, terminal \\ true) do
-
-    cond_stmt = spec
-    |> build_number_cond(method)
-    |> BuildCond.build
-
-    num_match = quote do
-      def unquote(method)(val) when is_number(val) do
-        unquote(cond_stmt)
-      end
-    end
-
-    if terminal do
-      [num_match | never_matches(method)]
-    else
-      [num_match]
-    end
-  end
 
   @spec match_boolean(map, atom, boolean) :: [defblock]
   defp match_boolean(_spec, method, terminal \\ true) do
@@ -222,12 +161,17 @@ defmodule Exonerate.Macro do
   @spec match_list(map, list, atom) :: [defblock]
   defp match_list(_spec, [], method), do: never_matches(method)
   defp match_list(spec, ["string" | tail], method) do
-    head_code = match_string(spec, method, false)
+    head_code = MatchString.match(spec, method, false)
+    tail_code = match_list(spec, tail, method)
+    head_code ++ tail_code
+  end
+  defp match_list(spec, ["integer" | tail], method) do
+    head_code = MatchNumber.match_int(spec, method, false)
     tail_code = match_list(spec, tail, method)
     head_code ++ tail_code
   end
   defp match_list(spec, ["number" | tail], method) do
-    head_code = match_number(spec, method, false)
+    head_code = MatchNumber.match(spec, method, false)
     tail_code = match_list(spec, tail, method)
     head_code ++ tail_code
   end
@@ -238,11 +182,6 @@ defmodule Exonerate.Macro do
   end
   defp match_list(spec, ["array" | tail], method) do
     head_code = match_array(spec, method, false)
-    tail_code = match_list(spec, tail, method)
-    head_code ++ tail_code
-  end
-  defp match_list(spec, ["integer" | tail], method) do
-    head_code = match_integer(spec, method, false)
     tail_code = match_list(spec, tail, method)
     head_code ++ tail_code
   end
@@ -267,131 +206,6 @@ defmodule Exonerate.Macro do
   def mismatch(m, f, a) do
     {:mismatch, {m, f, [a]}}
   end
-
-  @spec build_string_cond(Exonerate.schema, atom) :: condlist
-  @doc """
-    builds the conditional structure for filtering strings based on their jsonschema
-    parameters
-  """
-  def build_string_cond(spec = %{"maxLength" => length}, method) do
-    [
-      {
-        quote do length > unquote(length) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      | spec
-      |> Map.delete("maxLength")
-      |> build_string_cond(method)
-    ]
-  end
-  def build_string_cond(spec = %{"minLength" => length}, method) do
-    [
-      {
-        quote do length < unquote(length) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      | spec
-      |> Map.delete("minLength")
-      |> build_string_cond(method)
-    ]
-  end
-  def build_string_cond(spec = %{"pattern" => patt}, method) do
-    [
-      {
-        quote do !(Regex.match?(sigil_r(<<unquote(patt)>>, ''), val)) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      | spec
-      |> Map.delete("pattern")
-      |> build_string_cond(method)
-    ]
-  end
-  def build_string_cond(_spec, _method), do: []
-
-  @spec build_integer_cond(Exonerate.schema, atom) :: condlist
-  @doc """
-    builds the conditional structure for filtering integers based on their jsonschema
-    parameters
-  """
-  def build_integer_cond(spec = %{"multipleOf" => base}, method) do
-    [
-      {
-        quote do rem(val, unquote(base)) != 0 end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      | spec
-      |> Map.delete("multipleOf")
-      |> build_integer_cond(method)
-    ]
-  end
-  def build_integer_cond(spec, module), do: build_number_cond(spec, module)
-
-  @spec build_number_cond(Exonerate.schema, atom) :: condlist
-  @doc """
-    builds the conditional structure for filtering numbers based on their jsonschema
-    parameters
-  """
-  def build_number_cond(spec = %{"multipleOf" => base}, method) do
-    [
-      #disallow multipleOf on non-integer values
-      {
-        quote do !is_integer(val) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      },
-      {
-        quote do rem(val, unquote(base)) != 0 end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      | spec
-      |> Map.delete("multipleOf")
-      |> build_integer_cond(method)
-    ]
-  end
-  def build_number_cond(spec = %{"minimum" => cmp}, method) do
-    [
-      {
-        quote do val < unquote(cmp) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      | spec
-      |> Map.delete("minimum")
-      |> build_number_cond(method)
-    ]
-  end
-  def build_number_cond(spec = %{"exclusiveMinimum" => cmp}, method) do
-    [
-      {
-        quote do val <= unquote(cmp) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      | spec
-      |> Map.delete("exclusiveMinimum")
-      |> build_number_cond(method)
-    ]
-  end
-  def build_number_cond(spec = %{"maximum" => cmp}, method) do
-    [
-      {
-        quote do val > unquote(cmp) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      | spec
-      |> Map.delete("maximum")
-      |> build_number_cond(method)
-    ]
-  end
-  def build_number_cond(spec = %{"exclusiveMaximum" => cmp}, method) do
-    [
-      {
-        quote do val >= unquote(cmp) end,
-        quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
-      }
-      | spec
-      |> Map.delete("exclusiveMaximum")
-      |> build_number_cond(method)
-    ]
-  end
-  def build_number_cond(_spec, _method), do: []
 
   @spec build_object_cond(Exonerate.schema, atom) :: condlist
   @doc """

@@ -2,9 +2,9 @@ defmodule Exonerate.Macro.MatchEnum do
 
   alias Exonerate.Macro.Method
 
-  @type json :: Exonerate.json
-  @type specmap :: %{optional(String.t) => json}
-  @type defblock :: {:def, any, any}
+  @type json     :: Exonerate.json
+  @type specmap  :: Exonerate.specmap
+  @type defblock :: Exonerate.defblock
 
   @spec match_enum(specmap, list(any), atom) :: [defblock]
   def match_enum(spec, enum_list, method) do
