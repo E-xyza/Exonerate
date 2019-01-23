@@ -4,11 +4,12 @@ defmodule Exonerate.Macro do
   """
 
   alias Exonerate.Macro.BuildCond
+  alias Exonerate.Macro.Combining
   alias Exonerate.Macro.MatchEnum
   alias Exonerate.Macro.Metadata
 
-  @type json :: Exonerate.json
-  @type specmap :: %{optional(String.t) => json}
+  @type json     :: Exonerate.json
+  @type specmap  :: %{optional(String.t) => json}
   @type condlist :: [BuildCond.condclause]
   @type defblock :: {:def, any, any}
 
@@ -40,10 +41,10 @@ defmodule Exonerate.Macro do
   def matcher(spec = %{"enum" => elist}, method),        do: MatchEnum.match_enum(spec, elist, method)
   def matcher(spec = %{"const" => const}, method),       do: MatchEnum.match_const(spec, const, method)
   # match combining elements
-  def matcher(spec = %{"allOf" => clist}, method), do: match_allof(spec, clist, method)
-  def matcher(spec = %{"anyOf" => clist}, method), do: match_anyof(spec, clist, method)
-  def matcher(spec = %{"oneOf" => clist}, method), do: match_oneof(spec, clist, method)
-  def matcher(spec = %{"not" => inv}, method), do: match_not(spec, inv, method)
+  def matcher(spec = %{"allOf" => clist}, method),       do: Combining.match_allof(spec, clist, method)
+  def matcher(spec = %{"anyOf" => clist}, method),       do: Combining.match_anyof(spec, clist, method)
+  def matcher(spec = %{"oneOf" => clist}, method),       do: Combining.match_oneof(spec, clist, method)
+  def matcher(spec = %{"not" => inv}, method),           do: Combining.match_not(spec, inv, method)
   # type matching things
   def matcher(spec, method) when spec == %{}, do: always_matches(method)
   def matcher(spec = %{"type" => "string"}, method), do: match_string(spec, method)
@@ -74,122 +75,7 @@ defmodule Exonerate.Macro do
     end]
   end
 
-  @spec match_allof(map, list(any), atom) :: [defblock]
-  defp match_allof(base_spec, spec_list, method) do
 
-    idx_range = 0..(Enum.count(spec_list) - 1)
-
-    submethod_name = &generate_submethod(method, "_allof_" <> inspect &1)
-    base_submethod = generate_submethod(method, "_allof_base")
-
-    comb_list = [base_submethod | Enum.map(idx_range, submethod_name)]
-
-    dependencies = spec_list
-    |> Enum.with_index
-    |> Enum.map(
-      fn {spec, idx} ->
-        submethod = submethod_name.(idx)
-        matcher(spec, submethod)
-      end
-    )
-
-    base_dependency = base_spec
-    |> Map.delete("allOf")
-    |> matcher(base_submethod)
-
-    [quote do
-      def unquote(method)(val) do
-        Exonerate.Macro.reduce_all(
-          __MODULE__,
-          unquote(comb_list),
-          [val],
-          unquote(method))
-      end
-    end]
-    ++ base_dependency
-    ++ dependencies
-  end
-
-  @spec match_anyof(map, list(any), atom) :: [defblock]
-  defp match_anyof(base_spec, spec_list, method) do
-
-    idx_range = 0..(Enum.count(spec_list) - 1)
-
-    submethod_name = &generate_submethod(method, "_anyof_" <> inspect &1)
-    base_submethod = generate_submethod(method, "_allof_base")
-
-    comb_list = Enum.map(idx_range, submethod_name)
-
-    dependencies = spec_list
-    |> Enum.with_index
-    |> Enum.map(
-      fn {spec, idx} ->
-        submethod = submethod_name.(idx)
-        matcher(spec, submethod)
-      end
-    )
-
-    base_dependency = base_spec
-    |> Map.delete("anyOf")
-    |> matcher(base_submethod)
-
-    [quote do
-      def unquote(method)(val) do
-        Exonerate.Macro.reduce_any(
-          __MODULE__,
-          unquote(comb_list),
-          unquote(base_submethod),
-          [val],
-          unquote(method))
-      end
-    end]
-    ++ base_dependency
-    ++ dependencies
-  end
-
-  @spec match_oneof(map, list(any), atom) :: [defblock]
-  defp match_oneof(_spec, spec_list, method) do
-
-    idx_range = 0..(Enum.count(spec_list) - 1)
-
-    submethod_name = &generate_submethod(method, "_oneof_" <> inspect &1)
-
-    comb_list = Enum.map(idx_range, submethod_name)
-
-    dependencies = spec_list
-    |> Enum.with_index
-    |> Enum.map(
-      fn {spec, idx} ->
-        submethod = submethod_name.(idx)
-        matcher(spec, submethod)
-      end
-    )
-
-    [quote do
-      def unquote(method)(val) do
-        Exonerate.Macro.reduce_one(
-          __MODULE__,
-          unquote(comb_list),
-          [val],
-          unquote(method))
-      end
-    end] ++ dependencies
-  end
-
-  @spec match_not(map, any, atom) :: [defblock]
-  defp match_not(_spec, inv_spec, method) do
-
-    not_method = generate_submethod(method, "_not")
-
-    [quote do
-      def unquote(method)(val) do
-        Exonerate.Macro.apply_not(
-          __MODULE__,
-          unquote(not_method),
-          [val])
-      end
-    end] ++ matcher(inv_spec, not_method)
-  end
 
   @spec match_string(map, atom, boolean) :: [defblock]
   defp match_string(spec, method, terminal \\ true) do

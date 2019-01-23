@@ -2,9 +2,9 @@ defmodule Exonerate.Macro.Metadata do
 
   alias Exonerate.Macro
 
-  @type json :: Exonerate.json
-  @type specmap :: %{optional(String.t) => json}
-  @type defblock :: {:def, any, any}
+  @type json     :: Exonerate.json
+  @type specmap  :: Exonerate.specmap
+  @type defblock :: Exonerate.defblock
 
   @spec set_title(specmap, String.t, atom) :: [defblock]
   def set_title(spec, title, method) do
