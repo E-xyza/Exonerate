@@ -47,7 +47,7 @@ defmodule Exonerate.Macro.MatchObject do
 
     [{
       quote do
-        parse_additional = Exonerate.Macro.check_additional_properties(
+        parse_additional = Exonerate.Check.object_additional_properties(
                     val,
                     unquote(props),
                     unquote(regexes),
@@ -67,7 +67,7 @@ defmodule Exonerate.Macro.MatchObject do
       child = Method.concat(method, "pattern_#{idx}")
       {
         quote do
-          parse_pattern_prop = Exonerate.Macro.check_pattern_properties(
+          parse_pattern_prop = Exonerate.Check.object_pattern_properties(
             val,
             sigil_r(<<unquote(k)>>, ''),
             __MODULE__,
@@ -161,7 +161,7 @@ defmodule Exonerate.Macro.MatchObject do
     child = Method.concat(method, "property_names")
     [{
       quote do
-        parse_properties = Exonerate.Macro.check_property_names(
+        parse_properties = Exonerate.Check.object_property_names(
           val,
           __MODULE__,
           unquote(child)
@@ -183,7 +183,7 @@ defmodule Exonerate.Macro.MatchObject do
     child = Method.concat(method, "additional_properties")
     [{
       quote do
-        parse_additional = Exonerate.Macro.check_additional_properties(
+        parse_additional = Exonerate.Check.object_additional_properties(
                     val,
                     unquote(props),
                     __MODULE__,
@@ -200,7 +200,7 @@ defmodule Exonerate.Macro.MatchObject do
       child = Method.concat(method, k)
       {
         quote do
-          parse_recurse = Exonerate.Macro.check_property(
+          parse_recurse = Exonerate.Check.object_property(
             val[unquote(k)],
             __MODULE__,
             unquote(child)

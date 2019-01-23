@@ -8,4 +8,5 @@ defmodule Exonerate do
      | boolean
      | nil
 
+  @type mismatch :: {:mismatch, {module, atom, [json]}}
 end

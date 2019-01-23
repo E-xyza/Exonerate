@@ -37,7 +37,7 @@ defmodule Exonerate.Macro.MatchArray do
     length = Enum.count(parr)
     [{
       quote do
-        parse_additional = Exonerate.Macro.check_additional_array(
+        parse_additional = Exonerate.Check.array_additional_items(
                     val,
                     unquote(length),
                     __MODULE__,
@@ -54,7 +54,7 @@ defmodule Exonerate.Macro.MatchArray do
       child = Method.concat(method, "item_#{idx}")
       {
         quote do
-          parse_recurse = Exonerate.Macro.check_tuple(
+          parse_recurse = Exonerate.Check.array_tuple(
             val,
             unquote(idx),
             __MODULE__,
@@ -76,7 +76,7 @@ defmodule Exonerate.Macro.MatchArray do
     [
       {
         quote do
-          parse_recurse = Exonerate.Macro.check_items(
+          parse_recurse = Exonerate.Check.array_items(
             val,
             __MODULE__,
             unquote(child)
@@ -95,7 +95,7 @@ defmodule Exonerate.Macro.MatchArray do
     [
       {
         quote do
-          parse_recurse = Exonerate.Macro.check_contains(
+          parse_recurse = Exonerate.Check.array_contains(
             val,
             __MODULE__,
             unquote(child)
@@ -136,7 +136,7 @@ defmodule Exonerate.Macro.MatchArray do
   defp build_cond(spec = %{"uniqueItems" => true}, method) do
     [
       {
-        quote do Exonerate.Macro.contains_duplicate?(val) end,
+        quote do Exonerate.Check.contains_duplicate?(val) end,
         quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
       }
       |

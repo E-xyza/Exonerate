@@ -150,6 +150,9 @@ defmodule Exonerate.Macro do
     head_code ++ tail_code
   end
 
+  #############################################################################
+  ## utilities
+
   defp maybe_desigil(s = {:sigil_s, _, _}) do
     {bin, _} = Code.eval_quoted(s)
     bin
@@ -171,15 +174,6 @@ defmodule Exonerate.Macro do
         any -> any
       end
     )
-  end
-
-  @spec generate_submethod(atom, String.t) :: atom
-  defp generate_submethod(method, sub) do
-    method
-    |> Atom.to_string
-    |> Kernel.<>("__")
-    |> Kernel.<>(sub)
-    |> String.to_atom
   end
 
   def reduce_any(module, functions, base, args, method) do
@@ -222,152 +216,5 @@ defmodule Exonerate.Macro do
       {:mismatch, _} -> :ok
     end
   end
-
-  def check_pattern_properties(obj, regex, module, pp_method) do
-    try do
-      obj
-      |> Map.keys
-      |> Enum.filter(&Regex.match?(regex, &1))
-      |> Enum.each(&check_pattern_property(obj[&1], module, pp_method))
-      false
-    catch
-      any -> any
-    end
-  end
-
-  def check_pattern_property(value, module, pp_method) do
-    module
-    |> apply(pp_method, [value])
-    |> throw_if_invalid
-  end
-
-  def check_property_names(obj, module, pn_method) do
-    try do
-      Enum.each(obj, &check_property_name(&1, module, pn_method))
-      false
-    catch
-      any -> any
-    end
-  end
-
-  def check_property_name({k, _v}, module, pn_method) do
-    module
-    |> apply(pn_method, [k])
-    |> throw_if_invalid
-  end
-
-  def check_additional_properties(obj, list, module, ap_method) do
-    try do
-      Enum.each(obj, &check_additional_property(&1, list, module, ap_method))
-      false
-    catch
-      any -> any
-    end
-  end
-  def check_additional_properties(obj, list, regexes, module, ap_method) do
-    try do
-      Enum.each(obj, &check_additional_property(&1, list, regexes, module, ap_method))
-      false
-    catch
-      any -> any
-    end
-  end
-
-  def check_additional_property({k, v}, list, module, ap_method) do
-    if k in list do
-      :ok
-    else
-      module
-      |> apply(ap_method, [v])
-      |> throw_if_invalid
-    end
-  end
-
-  def check_additional_property({k, v}, list, regexes, module, ap_method) do
-    cond do
-      k in list -> :ok
-      regexes
-      |> Enum.map(&Regex.match?(&1, k))
-      |> Enum.any? -> :ok
-      true ->
-        module
-        |> apply(ap_method, [v])
-        |> throw_if_invalid
-    end
-  end
-
-  def check_additional_array(arr, tuple_count, module, ap_method) do
-    try do
-      arr
-      |> Enum.with_index
-      |> Enum.each(fn
-        {_, idx} when idx < tuple_count -> :ok
-        {val, _} ->
-          module
-          |> apply(ap_method, [val])
-          |> throw_if_invalid
-      end)
-      false
-    catch
-      any -> any
-    end
-  end
-
-  def check_property(nil, _, _), do: nil
-  def check_property(obj, module, property_method) do
-    module
-    |> apply(property_method, [obj])
-    |> case do
-      :ok -> false
-      any -> any
-    end
-  end
-
-  def check_items(val, module, item_method) do
-    try do
-      Enum.each(val, &check_item(&1, module, item_method))
-      false
-    catch
-      any -> any
-    end
-  end
-  def check_item(val, module, item_method) do
-    module
-    |> apply(item_method, [val])
-    |> throw_if_invalid
-  end
-
-  def check_tuple(val, idx, module, item_method) do
-    check_val = Enum.at(val, idx)
-    check_val && (
-      module
-      |> apply(item_method, [check_val])
-      |> continue_if_ok
-    )
-  end
-
-  def check_contains(val, module, cont_method) do
-    if Enum.any?(val, &(apply(module, cont_method, [&1]) == :ok)) do
-      :ok
-    else
-      Exonerate.Macro.mismatch(module, cont_method, val)
-    end
-  end
-
-  def contains_duplicate?(array), do: contains_duplicate?(array, MapSet.new())
-  def contains_duplicate?([], _), do: false
-  def contains_duplicate?([head | tail], set) do
-    if MapSet.member?(set, head) do
-      true
-    else
-      contains_duplicate?(tail, MapSet.put(set, head))
-    end
-  end
-
-  def throw_if_invalid(:ok), do: :ok
-  def throw_if_invalid(any), do: throw any
-
-  def continue_if_ok(:ok), do: false
-  def continue_if_ok(any), do: any
 
 end
