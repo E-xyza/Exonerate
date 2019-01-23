@@ -722,6 +722,23 @@ defmodule Exonerate.Macro do
     |> build_object_cond(method)
     ]
   end
+  def build_object_cond(spec = %{"propertyNames" => true}, method) do
+    # true potentially matches anything, so let's not add any conditionals.
+    spec
+    |> Map.delete("propertyNames")
+    |> build_object_cond(method)
+  end
+  def build_object_cond(spec = %{"propertyNames" => false}, method) do
+    #false matches nothing but empty object, so add a very tight conditional.
+    [{
+      quote do val != %{} end,
+      quote do Exonerate.Macro.mismatch(__MODULE__, unquote(method), val) end
+    }
+    | spec
+    |> Map.delete("propertyNames")
+    |> build_object_cond(method)
+    ]
+  end
   def build_object_cond(spec = %{"propertyNames" => _}, method) do
     pn_method = generate_submethod(method, "property_names")
     [{
@@ -780,25 +797,6 @@ defmodule Exonerate.Macro do
   end
   def build_object_cond(_spec, _method), do: []
 
-  def build_array_cond(spec = %{"items" => pobj}, method) when is_map(pobj) do
-    new_method = generate_submethod(method, "items")
-    [
-      {
-        quote do
-          parse_recurse = Exonerate.Macro.check_items(
-            val,
-            __MODULE__,
-            unquote(new_method)
-          )
-        end,
-        quote do parse_recurse end
-      }
-      |
-      spec
-      |> Map.delete("items")
-      |> build_array_cond(method)
-    ]
-  end
   def build_array_cond(spec = %{"additionalItems" => _props, "items" => parr}, method) when is_list(parr) do
     #this only gets triggered when we have a tuple list.
     ap_method = generate_submethod(method, "additional_items")
@@ -838,6 +836,25 @@ defmodule Exonerate.Macro do
     (spec
       |> Map.delete("items")
       |> build_array_cond(method))
+  end
+  def build_array_cond(spec = %{"items" => _pobj}, method) do
+    new_method = generate_submethod(method, "items")
+    [
+      {
+        quote do
+          parse_recurse = Exonerate.Macro.check_items(
+            val,
+            __MODULE__,
+            unquote(new_method)
+          )
+        end,
+        quote do parse_recurse end
+      }
+      |
+      spec
+      |> Map.delete("items")
+      |> build_array_cond(method)
+    ]
   end
   def build_array_cond(spec = %{"contains" => _pobj}, method) do
     new_method = generate_submethod(method, "contains")
@@ -910,7 +927,7 @@ defmodule Exonerate.Macro do
     Enum.flat_map(pobj, &object_dep(&1, method)) ++
     build_object_deps(Map.delete(spec, "properties"), method)
   end
-  def build_object_deps(spec = %{"propertyNames" => pobj}, method) do
+  def build_object_deps(spec = %{"propertyNames" => pobj}, method) when is_map(pobj) do
     obj_string = Map.put(pobj, "type", "string")
     object_dep({"property_names", obj_string}, method) ++
     build_object_deps(Map.delete(spec, "propertyNames"), method)
@@ -974,6 +991,10 @@ defmodule Exonerate.Macro do
     |> Map.put("type", "object")
     |> matcher(dep_method)
   end
+  def property_dep({k, v}, method) do
+    dep_method = generate_submethod(method, k <> "_dependency")
+    matcher(v, dep_method)
+  end
 
   #TODO: rename this thing.
   @spec object_dep({String.t, Exonerate.schema}, atom) :: [defblock]
@@ -992,11 +1013,6 @@ defmodule Exonerate.Macro do
     matcher(prop, add_method)
   end
 
-  def array_items_dep(iobj, method) when is_map(iobj) do
-    items_method = generate_submethod(method, "items")
-    matcher(iobj, items_method)
-  end
-
   def array_items_dep(iarr, method) when is_list(iarr) do
     iarr
     |> Enum.with_index
@@ -1004,6 +1020,10 @@ defmodule Exonerate.Macro do
       item_method = generate_submethod(method, "item_#{idx}")
       matcher(spec, item_method)
     end)
+  end
+  def array_items_dep(iobj, method) do
+    items_method = generate_submethod(method, "items")
+    matcher(iobj, items_method)
   end
 
   def array_contains_dep(cobj, method) do

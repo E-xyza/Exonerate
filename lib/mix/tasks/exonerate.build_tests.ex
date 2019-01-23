@@ -4,16 +4,17 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
 
   @testdir "test/JSON-Schema-Test-Suite/tests/draft7"
   @destdir "test/automated"
-  @ignore ["dependencies.json"]
-  @only ["anyOf.json"]
+  @ignore ["definitions.json", "if-then-else.json", "ref.json", "refRemote.json"]
+  #@only ["anyOf.json"]
+  @banned %{"multipleOf" => ["by number", "by small number"]}
 
   def run(_) do
     File.rm_rf!(@destdir)
     File.mkdir_p!(@destdir)
     @testdir
     |> File.ls!
-    #|> Enum.reject(&(&1 in @ignore))
-    |> Enum.filter(&(&1 in @only))
+    |> Enum.reject(&(&1 in @ignore))
+    #|> Enum.filter(&(&1 in @only))
     |> Enum.reject(&(File.dir?(testdir(&1))))
     |> Stream.map(&{Path.basename(&1, ".json"), testdir(&1)})
     |> Stream.map(&json_to_exmap/1)
@@ -68,6 +69,7 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
     |> Enum.map(&module_code/1)
 
     descriptions = testlist
+    |> Enum.reject(&filter_banned(title, &1))
     |> Enum.with_index
     |> Enum.map(&description_code/1)
 
@@ -132,4 +134,7 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
     end
   end
 
+  def filter_banned(title, description) do
+    @banned[title] && description["description"] in @banned[title]
+  end
 end
