@@ -16,6 +16,7 @@ defmodule Exonerate do
 
   alias Exonerate.BuildCond
   alias Exonerate.Combining
+  alias Exonerate.Conditional
   alias Exonerate.MatchArray
   alias Exonerate.MatchEnum
   alias Exonerate.MatchNumber
@@ -25,14 +26,20 @@ defmodule Exonerate do
 
   @type specmap  :: %{optional(String.t) => json}
   @type condlist :: [BuildCond.condclause]
-  @type defblock :: {:def, any, any}
+  @type ast_def :: {:def, any, any}
+  @type ast_blk :: {:__block__, any, any}
+  @type ast_tag :: {:@, any, any}
+  @type defblock :: ast_def | ast_blk | ast_tag
 
   defmacro defschema([{method, json} | _opts]) do
 
-    code = json
+    exmap = json
     |> maybe_desigil
     |> Jason.decode!
+
+    code = exmap
     |> matcher(method)
+    #|> Reference.resolve(exmap)
 
     quote do
       unquote_splicing(code)
@@ -41,7 +48,7 @@ defmodule Exonerate do
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
 
-  @spec matcher(json, atom)::[defblock | {:__block__, any, any}]
+  @spec matcher(json, atom)::[defblock]
   def matcher(true, method), do: always_matches(method)
   def matcher(false, method), do: never_matches(method)
   # metadata things
@@ -51,6 +58,10 @@ defmodule Exonerate do
   def matcher(spec = %{"examples" => examples}, method), do: Metadata.set_examples(spec, examples, method)
   def matcher(spec = %{"$schema" => schema}, method),    do: Metadata.set_schema(spec, schema, method)
   def matcher(spec = %{"$id" => id}, method),            do: Metadata.set_id(spec, id, method)
+  # match refs
+  #def matcher(spec = %{"$ref" => ref}, method),          do: Reference.match(ref, method)
+  # match if-then-else
+  def matcher(spec = %{"if" => _}, method),              do: Conditional.match(spec, method)
   # match enums and consts
   def matcher(spec = %{"enum" => elist}, method),        do: MatchEnum.match_enum(spec, elist, method)
   def matcher(spec = %{"const" => const}, method),       do: MatchEnum.match_const(spec, const, method)
@@ -173,4 +184,5 @@ defmodule Exonerate do
   def mismatch(m, f, a) do
     {:mismatch, {m, f, [a]}}
   end
+
 end

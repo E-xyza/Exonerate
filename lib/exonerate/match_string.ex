@@ -6,17 +6,25 @@ defmodule Exonerate.MatchString do
   @type specmap  :: Exonerate.specmap
   @type defblock :: Exonerate.defblock
 
+  @spec match(specmap, module, atom) :: [defblock]
   def match(spec, method, terminal \\ true) do
 
     cond_stmt = spec
     |> build_cond(method)
     |> BuildCond.build
 
-    # TODO: make length value only appear if we have a length check.
+    length_stmt = if (Map.has_key?(spec, "maxLength") ||
+                      Map.has_key?(spec, "minLength") ) do
+      quote do
+        length = String.length(val)
+      end
+    else
+      nil
+    end
 
     str_match = quote do
       def unquote(method)(val) when is_binary(val) do
-        length = String.length(val)
+        unquote(length_stmt)
         unquote(cond_stmt)
       end
     end
@@ -63,6 +71,5 @@ defmodule Exonerate.MatchString do
     ]
   end
   defp build_cond(_spec, _method), do: []
-
 
 end

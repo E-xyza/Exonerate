@@ -206,7 +206,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "drive is not an acceptable street type" do
       assert  {:mismatch,
         {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-        :tuple___item_2,
+        :tuple___items_2,
         ["Drive"]}}
         = TupleValidation.tuple([24, "Sussex", "Drive"])
     end
@@ -214,7 +214,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "address is missing a street number" do
       assert  {:mismatch,
         {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-        :tuple___item_0, ["Palais de l'Élysée"]}}
+        :tuple___items_0, ["Palais de l'Élysée"]}}
         = TupleValidation.tuple(["Palais de l'Élysée"])
     end
 

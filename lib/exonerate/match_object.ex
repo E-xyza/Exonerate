@@ -64,7 +64,7 @@ defmodule Exonerate.MatchObject do
     (pobj
     |> Enum.with_index
     |> Enum.map(fn {{k, _v}, idx} ->
-      child = Method.concat(method, "_pattern_#{idx}")
+      child = Method.concat(method, "_pattern_properties_#{idx}")
       {
         quote do
           parse_pattern_prop = Exonerate.Check.object_pattern_properties(
@@ -85,7 +85,7 @@ defmodule Exonerate.MatchObject do
   end
   defp build_cond(spec = %{"dependencies" => dobj}, method) do
     Enum.map(dobj, fn {k, _v} ->
-      child = Method.concat(method, "_dependency_" <> k)
+      child = Method.concat(method, "_dependencies_" <> k)
       {
         quote do
           parse_prop_dep = Exonerate.Check.object_property_dependency(
@@ -248,7 +248,7 @@ defmodule Exonerate.MatchObject do
 
   @spec pattern_property_dep(specmap, non_neg_integer, atom) :: [defblock]
   defp pattern_property_dep(v, idx, method) do
-    pattern_child = Method.concat(method, "_pattern_#{idx}")
+    pattern_child = Method.concat(method, "_pattern_properties_#{idx}")
     Exonerate.matcher(v, pattern_child)
   end
 
@@ -263,7 +263,7 @@ defmodule Exonerate.MatchObject do
     Enum.flat_map(dobj, &object_dep(&1, method))
   end
   defp object_dep({k, v}, method) when is_list(v) do
-    dep_child = Method.concat(method, "_dependency_" <> k)
+    dep_child = Method.concat(method, "_dependencies_" <> k)
     [quote do
       def unquote(dep_child)(val) do
         prop_list = unquote(v)
@@ -276,13 +276,13 @@ defmodule Exonerate.MatchObject do
     end]
   end
   defp object_dep({k, v}, method) when is_map(v) do
-    dep_child = Method.concat(method, "_dependency_" <> k)
+    dep_child = Method.concat(method, "_dependencies_" <> k)
     v
     |> Map.put("type", "object")
     |> Exonerate.matcher(dep_child)
   end
   defp object_dep({k, v}, method) do
-    dep_child = Method.concat(method, "_dependency_" <> k)
+    dep_child = Method.concat(method, "_dependencies_" <> k)
     Exonerate.matcher(v, dep_child)
   end
 

@@ -4,7 +4,7 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
 
   @testdir "test/JSON-Schema-Test-Suite/tests/draft7"
   @destdir "test/automated"
-  @ignore ["definitions.json", "if-then-else.json", "ref.json", "refRemote.json"]
+  @ignore ["definitions.json", "ref.json", "refRemote.json"]
   @banned %{"multipleOf" => ["by number", "by small number"]}
 
   def run(_) do
