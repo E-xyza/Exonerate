@@ -85,7 +85,9 @@ defmodule Exonerate.MatchObject do
   end
   defp build_cond(spec = %{"dependencies" => dobj}, method) do
     Enum.map(dobj, fn {k, _v} ->
-      child = Method.concat(method, "_dependencies_" <> k)
+      child = method
+      |> Method.concat("_dependencies")
+      |> Method.concat(k)
       {
         quote do
           parse_prop_dep = Exonerate.Check.object_property_dependency(
@@ -197,7 +199,7 @@ defmodule Exonerate.MatchObject do
   end
   defp build_cond(spec = %{"properties" => pobj}, method) do
     Enum.map(pobj, fn {k, _v} ->
-      child = Method.concat(method, k)
+      child = Method.concat(method, "_properties__" <> k)
       {
         quote do
           parse_recurse = Exonerate.Check.object_property(
@@ -228,7 +230,9 @@ defmodule Exonerate.MatchObject do
     build_deps(Map.delete(spec, "patternProperties"), method)
   end
   defp build_deps(spec = %{"properties" => pobj}, method) do
-    Enum.flat_map(pobj, &property_dep(&1, method)) ++
+    Enum.flat_map(pobj, fn {k, v} ->
+      property_dep({"_properties__" <> k, v}, method)
+    end) ++
     build_deps(Map.delete(spec, "properties"), method)
   end
   defp build_deps(spec = %{"propertyNames" => pobj}, method) when is_map(pobj) do
@@ -263,7 +267,10 @@ defmodule Exonerate.MatchObject do
     Enum.flat_map(dobj, &object_dep(&1, method))
   end
   defp object_dep({k, v}, method) when is_list(v) do
-    dep_child = Method.concat(method, "_dependencies_" <> k)
+    dep_child = method
+    |> Method.concat("_dependencies")
+    |> Method.concat(k)
+
     [quote do
       def unquote(dep_child)(val) do
         prop_list = unquote(v)
@@ -276,13 +283,19 @@ defmodule Exonerate.MatchObject do
     end]
   end
   defp object_dep({k, v}, method) when is_map(v) do
-    dep_child = Method.concat(method, "_dependencies_" <> k)
+    dep_child = method
+    |> Method.concat("_dependencies")
+    |> Method.concat(k)
+
     v
     |> Map.put("type", "object")
     |> Exonerate.matcher(dep_child)
   end
   defp object_dep({k, v}, method) do
-    dep_child = Method.concat(method, "_dependencies_" <> k)
+    dep_child = method
+    |> Method.concat("_dependencies")
+    |> Method.concat(k)
+
     Exonerate.matcher(v, dep_child)
   end
 

@@ -151,7 +151,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
 
     test "mismatched inner property doesn't match" do
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Properties, :address1__number, ["1600"]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Properties, :address1___properties__number, ["1600"]}} =
         @addr2
         |> Jason.decode!
         |> Properties.address1
@@ -433,7 +433,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
     test "failing to meet dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency1___dependencies_credit_card, [propdependency2]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency1___dependencies__credit_card, [propdependency2]}} =
         PropertyDependencies.dependency1(propdependency2)
     end
     test "no dependency doesn't need to be met" do
@@ -451,12 +451,12 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   describe "matching two-way dependency" do
     test "one-way dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependencies_credit_card, [propdependency2]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependencies__credit_card, [propdependency2]}} =
         PropertyDependencies.dependency2(propdependency2)
     end
     test "dependency is now two-way" do
       propdependency4 = Jason.decode!(@propdependency4)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependencies_billing_address, [propdependency4]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency2___dependencies__billing_address, [propdependency4]}} =
         PropertyDependencies.dependency2(propdependency4)
     end
   end
@@ -524,7 +524,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
     test "partial compliance does not work" do
       schemadependency2 = Jason.decode!(@schemadependency2)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.SchemaDependencies, :schemadependency___dependencies_credit_card, [schemadependency2]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.SchemaDependencies, :schemadependency___dependencies__credit_card, [schemadependency2]}} =
         SchemaDependencies.schemadependency(schemadependency2)
     end
     test "omitting a trigger works" do

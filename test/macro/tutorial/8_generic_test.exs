@@ -148,7 +148,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert  {:mismatch,
       {ExonerateTest.Tutorial.GenericTest.ConstantValues,
-      :const__country, ["Canada"]}}
+      :const___properties__country, ["Canada"]}}
       = ConstantValues.const(%{"country" => "Canada"})
     end
   end

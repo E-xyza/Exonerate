@@ -11,8 +11,8 @@ defmodule Exonerate.Combining do
 
     idx_range = 0..(Enum.count(spec_list) - 1)
 
-    children_fn = &Method.concat(method, "_allof_" <> inspect &1)
-    base_child = Method.concat(method, "_allof_base")
+    children_fn = &Method.concat(method, "_all_of_" <> inspect &1)
+    base_child = Method.concat(method, "_all_of_base")
 
     deps_list = [base_child | Enum.map(idx_range, children_fn)]
 
@@ -47,8 +47,8 @@ defmodule Exonerate.Combining do
 
     idx_range = 0..(Enum.count(spec_list) - 1)
 
-    children_fn = &Method.concat(method, "_anyof_" <> inspect &1)
-    base_child = Method.concat(method, "_allof_base")
+    children_fn = &Method.concat(method, "_any_of_" <> inspect &1)
+    base_child = Method.concat(method, "_any_of_base")
 
     deps_list = Enum.map(idx_range, children_fn)
 
@@ -84,7 +84,7 @@ defmodule Exonerate.Combining do
 
     idx_range = 0..(Enum.count(spec_list) - 1)
 
-    children_fn = &Method.concat(method, "_oneof_" <> inspect &1)
+    children_fn = &Method.concat(method, "_one_of_" <> inspect &1)
 
     deps_list = Enum.map(idx_range, children_fn)
 
