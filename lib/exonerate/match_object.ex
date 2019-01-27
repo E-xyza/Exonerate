@@ -43,7 +43,7 @@ defmodule Exonerate.MatchObject do
     |> Map.keys
     |> Enum.map(fn v -> quote do sigil_r(<<unquote(v)>>,'') end end)
 
-    child = Method.concat(method, "_additional_properties")
+    child = Method.concat(method, "additional_properties")
 
     [{
       quote do
@@ -64,7 +64,7 @@ defmodule Exonerate.MatchObject do
     (pobj
     |> Enum.with_index
     |> Enum.map(fn {{k, _v}, idx} ->
-      child = Method.concat(method, "_pattern_properties_#{idx}")
+      child = Method.concat(method, "pattern_properties_#{idx}")
       {
         quote do
           parse_pattern_prop = Exonerate.Check.object_pattern_properties(
@@ -86,7 +86,7 @@ defmodule Exonerate.MatchObject do
   defp build_cond(spec = %{"dependencies" => dobj}, method) do
     Enum.map(dobj, fn {k, _v} ->
       child = method
-      |> Method.concat("_dependencies")
+      |> Method.concat("dependencies")
       |> Method.concat(k)
       {
         quote do
@@ -160,7 +160,7 @@ defmodule Exonerate.MatchObject do
     ]
   end
   defp build_cond(spec = %{"propertyNames" => _}, method) do
-    child = Method.concat(method, "_property_names")
+    child = Method.concat(method, "property_names")
     [{
       quote do
         parse_properties = Exonerate.Check.object_property_names(
@@ -182,7 +182,7 @@ defmodule Exonerate.MatchObject do
     else
       []
     end
-    child = Method.concat(method, "_additional_properties")
+    child = Method.concat(method, "additional_properties")
     [{
       quote do
         parse_additional = Exonerate.Check.object_additional_properties(
@@ -199,7 +199,9 @@ defmodule Exonerate.MatchObject do
   end
   defp build_cond(spec = %{"properties" => pobj}, method) do
     Enum.map(pobj, fn {k, _v} ->
-      child = Method.concat(method, "_properties__" <> k)
+      child = method
+      |> Method.concat("properties")
+      |> Method.concat(k)
       {
         quote do
           parse_recurse = Exonerate.Check.object_property(
@@ -231,17 +233,17 @@ defmodule Exonerate.MatchObject do
   end
   defp build_deps(spec = %{"properties" => pobj}, method) do
     Enum.flat_map(pobj, fn {k, v} ->
-      property_dep({"_properties__" <> k, v}, method)
+      property_dep({"properties__" <> k, v}, method)
     end) ++
     build_deps(Map.delete(spec, "properties"), method)
   end
   defp build_deps(spec = %{"propertyNames" => pobj}, method) when is_map(pobj) do
     obj_string = Map.put(pobj, "type", "string")
-    property_dep({"_property_names", obj_string}, method) ++
+    property_dep({"property_names", obj_string}, method) ++
     build_deps(Map.delete(spec, "propertyNames"), method)
   end
   defp build_deps(spec = %{"additionalProperties" => pobj}, method) do
-    property_dep({"_additional_properties", pobj}, method) ++
+    property_dep({"additional_properties", pobj}, method) ++
     build_deps(Map.delete(spec, "additionalProperties"), method)
   end
   defp build_deps(spec = %{"dependencies" => dobj}, method) do
@@ -252,7 +254,7 @@ defmodule Exonerate.MatchObject do
 
   @spec pattern_property_dep(specmap, non_neg_integer, atom) :: [defblock]
   defp pattern_property_dep(v, idx, method) do
-    pattern_child = Method.concat(method, "_pattern_properties_#{idx}")
+    pattern_child = Method.concat(method, "pattern_properties_#{idx}")
     Exonerate.matcher(v, pattern_child)
   end
 
@@ -268,7 +270,7 @@ defmodule Exonerate.MatchObject do
   end
   defp object_dep({k, v}, method) when is_list(v) do
     dep_child = method
-    |> Method.concat("_dependencies")
+    |> Method.concat("dependencies")
     |> Method.concat(k)
 
     [quote do
@@ -284,7 +286,7 @@ defmodule Exonerate.MatchObject do
   end
   defp object_dep({k, v}, method) when is_map(v) do
     dep_child = method
-    |> Method.concat("_dependencies")
+    |> Method.concat("dependencies")
     |> Method.concat(k)
 
     v
@@ -293,7 +295,7 @@ defmodule Exonerate.MatchObject do
   end
   defp object_dep({k, v}, method) do
     dep_child = method
-    |> Method.concat("_dependencies")
+    |> Method.concat("dependencies")
     |> Method.concat(k)
 
     Exonerate.matcher(v, dep_child)

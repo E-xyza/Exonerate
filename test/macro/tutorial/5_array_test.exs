@@ -83,7 +83,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "one non-number ruins the party" do
       assert  {:mismatch,
         {ExonerateTest.Tutorial.ArrayTest.ListValidation,
-        :items___items,
+        :items__items,
         ["3"]}} = ListValidation.items([1, 2, "3", 4, 5])
     end
 
@@ -104,7 +104,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "it fails with no numbers" do
       assert  {:mismatch,
         {ExonerateTest.Tutorial.ArrayTest.ListValidation,
-        :contains___contains,
+        :contains__contains,
         [["life", "universe", "everything", "forty-two"]]}}
         = ListValidation.contains(["life", "universe", "everything", "forty-two"])
     end
@@ -206,7 +206,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "drive is not an acceptable street type" do
       assert  {:mismatch,
         {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-        :tuple___items_2,
+        :tuple__items_2,
         ["Drive"]}}
         = TupleValidation.tuple([24, "Sussex", "Drive"])
     end
@@ -214,7 +214,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "address is missing a street number" do
       assert  {:mismatch,
         {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-        :tuple___items_0, ["Palais de l'Élysée"]}}
+        :tuple__items_0, ["Palais de l'Élysée"]}}
         = TupleValidation.tuple(["Palais de l'Élysée"])
     end
 
@@ -247,7 +247,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "it is not ok to provide extra items" do
       assert  {:mismatch,
       {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-      :tuple_noadditional___additional_items, ["Washington"]}}
+      :tuple_noadditional__additional_items, ["Washington"]}}
       = TupleValidation.tuple_noadditional([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
     end
   end
@@ -262,7 +262,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "but not extra numbers" do
       assert  {:mismatch,
       {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-      :tuple_additional_with_property___additional_items, [20500]}}
+      :tuple_additional_with_property__additional_items, [20500]}}
       = TupleValidation.tuple_additional_with_property([1600, "Pennsylvania", "Avenue", "NW", 20500])
     end
   end

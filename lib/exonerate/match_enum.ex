@@ -10,7 +10,7 @@ defmodule Exonerate.MatchEnum do
   def match_enum(spec, enum_list, method) do
     esc_list = Macro.escape(enum_list)
 
-    child = Method.concat(method, "_enclosing")
+    child = Method.concat(method, "_base")
 
     [quote do
       def unquote(method)(val) do
@@ -30,7 +30,7 @@ defmodule Exonerate.MatchEnum do
   def match_const(spec, const, method) do
     const_val = Macro.escape(const)
 
-    child = Method.concat(method, "_enclosing")
+    child = Method.concat(method, "_base")
 
     [quote do
       def unquote(method)(val) do

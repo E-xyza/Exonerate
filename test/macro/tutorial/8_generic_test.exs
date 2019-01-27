@@ -116,7 +116,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert  {:mismatch,
       {ExonerateTest.Tutorial.GenericTest.EnumeratedValues,
-      :enum3___enclosing, [nil]}}
+      :enum3___base, [nil]}}
       = EnumeratedValues.enum3(nil)
     end
   end
@@ -148,7 +148,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert  {:mismatch,
       {ExonerateTest.Tutorial.GenericTest.ConstantValues,
-      :const___properties__country, ["Canada"]}}
+      :const__properties__country, ["Canada"]}}
       = ConstantValues.const(%{"country" => "Canada"})
     end
   end

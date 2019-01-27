@@ -9,10 +9,10 @@ defmodule Exonerate.Conditional do
   @spec match(json, atom) :: [defblock]
   def match(spec = %{"if" => testspec}, method) do
 
-    test_child = Method.concat(method, "_if")
-    then_child = Method.concat(method, "_then")
-    else_child = Method.concat(method, "_else")
-    base_child = Method.concat(method, "__base")
+    test_child = Method.concat(method, "if")
+    then_child = Method.concat(method, "then")
+    else_child = Method.concat(method, "else")
+    base_child = Method.concat(method, "_base")
 
     {then_ast, then_deps} = ast_and_deps(spec["then"], then_child)
     {else_ast, else_deps} = ast_and_deps(spec["else"], else_child)
