@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Macro.Helpers.BuildCondTest do
+defmodule ExonerateTest.BuildCondTest do
 
   use ExUnit.Case
 
