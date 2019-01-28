@@ -2,6 +2,7 @@ defmodule Exonerate.Method do
 
   @moduledoc false
 
+  @spec concat(atom, String.t) :: atom
   @doc """
   a generalized method that concatenates an atom with the
   next string in the method to generate a methodname.  Should
@@ -16,8 +17,6 @@ defmodule Exonerate.Method do
   iex> Exonerate.Method.concat(:hello__any_of_base, "world")
   :hello__world
   """
-
-  @spec concat(atom, String.t) :: atom
   def concat(method, sub) do
     method
     |> Atom.to_string
@@ -29,5 +28,17 @@ defmodule Exonerate.Method do
 
   defp strip_base(string) do
     Regex.replace(~r/^(.*)__(_|any_of_|all_of_|one_of_|not_)base$/, string, "\\1")
+  end
+
+  @spec to_lambda(atom) :: {:&, list, list}
+  @doc """
+  takes a method atom and converts it to a 1-arity lambda for a private
+  function in the same module.
+  """
+  def to_lambda(method) do
+    lambda = {method, [], :__MODULE__}
+    quote do
+      &unquote(lambda)/1
+    end
   end
 end

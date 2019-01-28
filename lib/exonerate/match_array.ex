@@ -33,15 +33,17 @@ defmodule Exonerate.MatchArray do
   @spec build_cond(specmap, atom) :: [BuildCond.cond_clauses]
   defp build_cond(spec = %{"additionalItems" => _props, "items" => parr}, method) when is_list(parr) do
     #this only gets triggered when we have a tuple list.
-    child = Method.concat(method, "additional_items")
+    child_fn = method
+    |> Method.concat("additional_items")
+    |> Method.to_lambda
+
     length = Enum.count(parr)
     [{
       quote do
         parse_additional = Exonerate.Check.array_additional_items(
                     val,
                     unquote(length),
-                    __MODULE__,
-                    unquote(child))
+                    unquote(child_fn))
       end,
       quote do parse_additional end
     }] ++
@@ -51,14 +53,16 @@ defmodule Exonerate.MatchArray do
   end
   defp build_cond(spec = %{"items" => parr}, method) when is_list(parr) do
     for idx <- 0..(Enum.count(parr) - 1) do
-      child = Method.concat(method, "items_#{idx}")
+      child_fn = method
+      |> Method.concat("items_#{idx}")
+      |> Method.to_lambda
+
       {
         quote do
           parse_recurse = Exonerate.Check.array_tuple(
             val,
             unquote(idx),
-            __MODULE__,
-            unquote(child)
+            unquote(child_fn)
           )
         end,
         quote do
@@ -72,14 +76,15 @@ defmodule Exonerate.MatchArray do
       |> build_cond(method))
   end
   defp build_cond(spec = %{"items" => _pobj}, method) do
-    child = Method.concat(method, "items")
+    child_fn = method
+    |> Method.concat("items")
+    |> Method.to_lambda
     [
       {
         quote do
           parse_recurse = Exonerate.Check.array_items(
             val,
-            __MODULE__,
-            unquote(child)
+            unquote(child_fn)
           )
         end,
         quote do parse_recurse end
@@ -91,17 +96,18 @@ defmodule Exonerate.MatchArray do
     ]
   end
   defp build_cond(spec = %{"contains" => _pobj}, method) do
-    child = Method.concat(method, "contains")
+    child_fn = method
+    |> Method.concat("contains")
+    |> Method.to_lambda
     [
       {
         quote do
-          parse_recurse = Exonerate.Check.array_contains(
+          parse_recurse = Exonerate.Check.array_contains_not(
             val,
-            __MODULE__,
-            unquote(child)
+            unquote(child_fn)
           )
         end,
-        quote do parse_recurse end
+        quote do Exonerate.mismatch(__MODULE__, unquote(method), val) end
       }
       |
       spec

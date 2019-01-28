@@ -43,7 +43,9 @@ defmodule Exonerate.MatchObject do
     |> Map.keys
     |> Enum.map(fn v -> quote do sigil_r(<<unquote(v)>>,'') end end)
 
-    child = Method.concat(method, "additional_properties")
+    child_fn = method
+    |> Method.concat("additional_properties")
+    |> Method.to_lambda
 
     [{
       quote do
@@ -51,8 +53,7 @@ defmodule Exonerate.MatchObject do
                     val,
                     unquote(props),
                     unquote(regexes),
-                    __MODULE__,
-                    unquote(child))
+                    unquote(child_fn))
       end,
       quote do parse_additional end
     }] ++
@@ -64,14 +65,15 @@ defmodule Exonerate.MatchObject do
     (pobj
     |> Enum.with_index
     |> Enum.map(fn {{k, _v}, idx} ->
-      child = Method.concat(method, "pattern_properties_#{idx}")
+      child_fn = method
+      |> Method.concat("pattern_properties_#{idx}")
+      |> Method.to_lambda
       {
         quote do
           parse_pattern_prop = Exonerate.Check.object_pattern_properties(
             val,
             sigil_r(<<unquote(k)>>, ''),
-            __MODULE__,
-            unquote(child)
+            unquote(child_fn)
           )
         end,
         quote do
@@ -85,16 +87,16 @@ defmodule Exonerate.MatchObject do
   end
   defp build_cond(spec = %{"dependencies" => dobj}, method) do
     Enum.map(dobj, fn {k, _v} ->
-      child = method
+      child_fn = method
       |> Method.concat("dependencies")
       |> Method.concat(k)
+      |> Method.to_lambda
       {
         quote do
           parse_prop_dep = Exonerate.Check.object_property_dependency(
             val,
             unquote(k),
-            __MODULE__,
-            unquote(child)
+            unquote(child_fn)
           )
         end,
         quote do
@@ -160,13 +162,14 @@ defmodule Exonerate.MatchObject do
     ]
   end
   defp build_cond(spec = %{"propertyNames" => _}, method) do
-    child = Method.concat(method, "property_names")
+    child_fn = method
+    |> Method.concat("property_names")
+    |> Method.to_lambda
     [{
       quote do
         parse_properties = Exonerate.Check.object_property_names(
           val,
-          __MODULE__,
-          unquote(child)
+          unquote(child_fn)
         )
       end,
       quote do parse_properties end
@@ -182,14 +185,15 @@ defmodule Exonerate.MatchObject do
     else
       []
     end
-    child = Method.concat(method, "additional_properties")
+    child_fn = method
+    |> Method.concat("additional_properties")
+    |> Method.to_lambda()
     [{
       quote do
         parse_additional = Exonerate.Check.object_additional_properties(
                     val,
                     unquote(props),
-                    __MODULE__,
-                    unquote(child))
+                    unquote(child_fn))
       end,
       quote do parse_additional end
     }] ++
@@ -199,15 +203,15 @@ defmodule Exonerate.MatchObject do
   end
   defp build_cond(spec = %{"properties" => pobj}, method) do
     Enum.map(pobj, fn {k, _v} ->
-      child = method
+      child_fn = method
       |> Method.concat("properties")
       |> Method.concat(k)
+      |> Method.to_lambda
       {
         quote do
           parse_recurse = Exonerate.Check.object_property(
             val[unquote(k)],
-            __MODULE__,
-            unquote(child)
+            unquote(child_fn)
           )
         end,
         quote do parse_recurse end

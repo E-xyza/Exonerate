@@ -104,7 +104,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "it fails with no numbers" do
       assert  {:mismatch,
         {ExonerateTest.Tutorial.ArrayTest.ListValidation,
-        :contains__contains,
+        :contains,
         [["life", "universe", "everything", "forty-two"]]}}
         = ListValidation.contains(["life", "universe", "everything", "forty-two"])
     end
