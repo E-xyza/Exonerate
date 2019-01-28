@@ -2,49 +2,50 @@ defmodule Exonerate.Reduce do
 
   @type json :: Exonerate.json
   @type mismatch :: Exonerate.mismatch
+  @type check_fn :: ((json) -> :ok | mismatch)
 
-  @spec anyof(json, module, [atom], atom, atom) :: :ok | mismatch
-  def anyof(val, module, functions, base, method) do
-    functions
-    |> Enum.map(&apply(module, &1, [val]))
+  @spec anyof(json, [check_fn], check_fn, mismatch) :: :ok | mismatch
+  def anyof(val, check_fns, base_fn, mismatch) do
+    check_fns
+    |> Enum.map(&(&1.(val)))
     |> Enum.any?(&(&1 == :ok))
     |> if do
-      apply(module, base, [val])
+      base_fn.(val)
     else
-      {:mismatch, {module, method, [val]}}
+      mismatch
     end
   end
 
-  @spec allof(json, module, [atom], atom) :: :ok | mismatch
-  def allof(val, module, functions, method) do
-    functions
-    |> Enum.map(&apply(module, &1, [val]))
+  @spec allof(json, [check_fn], mismatch) :: :ok | mismatch
+  def allof(val, check_fns, mismatch) do
+    check_fns
+    |> Enum.map(&(&1.(val)))
     |> Enum.all?(&(&1 == :ok))
     |> if do
       :ok
     else
-      {:mismatch, {module, method, [val]}}
+      mismatch
     end
   end
 
-  @spec oneof(json, module, [atom], atom) :: :ok | mismatch
-  def oneof(val, module, options, method_ref) do
-    options
-    |> Enum.map(&apply(module, &1, [val]))
+  @spec oneof(json, [check_fn], check_fn, mismatch) :: :ok | mismatch
+  def oneof(val, check_fns, base_fn, mismatch) do
+    check_fns
+    |> Enum.map(&(&1.(val)))
     |> Enum.count(&(&1 == :ok))
     |> case do
-      1 -> :ok
-      _ -> {:mismatch, {module, method_ref, [val]}}
+      1 -> base_fn.(val)
+      _ -> mismatch
     end
   end
 
-  @spec apply_not(json, module, atom) :: :ok | mismatch
-  def apply_not(val, module, method) do
-    module
-    |> apply(method, [val])
+  @spec apply_not(json, check_fn, check_fn, mismatch) :: :ok | mismatch
+  def apply_not(val, not_fn, base_fn, mismatch) do
+    val
+    |> not_fn.()
     |> case do
-      :ok -> {:mismatch, {module, method, [val]}}
-      {:mismatch, _} -> :ok
+      :ok -> mismatch
+      {:mismatch, _} -> base_fn.(val)
     end
   end
 

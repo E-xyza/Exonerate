@@ -226,7 +226,7 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     test "things that mismatch one don't match" do
       assert  {:mismatch,
       {ExonerateTest.Tutorial.CombiningTest.Not,
-      :no__not, ["I am a string"]}}
+      :no, ["I am a string"]}}
       = Not.no("I am a string")
     end
   end

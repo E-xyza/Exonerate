@@ -4,14 +4,6 @@ defmodule Exonerate.Check do
   @type mismatch :: Exonerate.mismatch
   @type check_fn :: ((json) -> :ok | mismatch)
 
-  @spec throw_check(json, module, atom) :: :ok | no_return
-  defp throw_check(value, module, method) do
-    # a simple throwing checker.  Used for methods which employ Enum
-    # shortcutting.
-    module
-    |> apply(method, [value])
-    |> throw_if_invalid
-  end
   @spec throw_check(json, check_fn) :: :ok | no_return
   defp throw_check(value, function) do
     value
