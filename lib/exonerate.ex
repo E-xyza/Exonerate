@@ -14,6 +14,7 @@ defmodule Exonerate do
     creates the defschema macro.
   """
 
+  alias Exonerate.Annotate
   alias Exonerate.BuildCond
   alias Exonerate.Combining
   alias Exonerate.Conditional
@@ -26,10 +27,13 @@ defmodule Exonerate do
 
   @type specmap  :: %{optional(String.t) => json}
   @type condlist :: [BuildCond.condclause]
-  @type ast_def :: {:def, any, any}
+  @type ast_def :: {:defp, any, any} | {:def, any, any}
   @type ast_blk :: {:__block__, any, any}
   @type ast_tag :: {:@, any, any}
   @type defblock :: ast_def | ast_blk | ast_tag
+  @type public :: {:public, atom}
+  @type refreq :: {:refreq, atom}
+  @type annotated_ast :: defblock | public | refreq
 
   defmacro defschema([{method, json} | _opts]) do
 
@@ -37,18 +41,22 @@ defmodule Exonerate do
     |> maybe_desigil
     |> Jason.decode!
 
-    code = exmap
+    components = exmap
     |> matcher(method)
-    #|> Reference.resolve(exmap)
+    # prepend a term stating that the generated method
+    # is guaranteed to be public.
+    |> fn arr -> [Annotate.public(method) | arr] end.()
+    |> Enum.group_by(&discriminator/1)
+    |> defp_to_def
 
     quote do
-      unquote_splicing(code)
+      unquote_splicing(components)
     end
   end
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
 
-  @spec matcher(json, atom)::[defblock]
+  @spec matcher(json, atom)::[annotated_ast]
   def matcher(true, method), do: always_matches(method)
   def matcher(false, method), do: never_matches(method)
   # metadata things
@@ -86,7 +94,7 @@ defmodule Exonerate do
   @spec always_matches(atom) :: [defblock]
   def always_matches(method) do
     [quote do
-      def unquote(method)(_val) do
+      defp unquote(method)(_val) do
         :ok
       end
     end]
@@ -95,7 +103,7 @@ defmodule Exonerate do
   @spec never_matches(atom) :: [defblock]
   def never_matches(method) do
     [quote do
-      def unquote(method)(val) do
+      defp unquote(method)(val) do
         Exonerate.mismatch(__MODULE__, unquote(method), val)
       end
     end]
@@ -105,7 +113,7 @@ defmodule Exonerate do
   defp match_boolean(_spec, method, terminal \\ true) do
 
     bool_match = quote do
-      def unquote(method)(val) when is_boolean(val) do
+      defp unquote(method)(val) when is_boolean(val) do
         :ok
       end
     end
@@ -121,7 +129,7 @@ defmodule Exonerate do
   defp match_null(_spec, method, terminal \\ true) do
 
     null_match = quote do
-      def unquote(method)(val) when is_nil(val) do
+      defp unquote(method)(val) when is_nil(val) do
         :ok
       end
     end
@@ -184,5 +192,53 @@ defmodule Exonerate do
   def mismatch(m, f, a) do
     {:mismatch, {m, f, [a]}}
   end
+
+  defp discriminator({:__block__, _, _}), do: :blocks
+  defp discriminator({:defp, _, _}), do: :blocks
+  defp discriminator({:public, _}), do: :publics
+
+  defp map_publics(%{publics: publics}) do
+    Enum.map(publics, fn
+      {:public, token} -> token
+    end)
+  end
+
+  @spec defp_to_def(
+    %{
+      required(:blocks) => [defblock],
+      required(:publics) => [{:public, atom}],
+      optional(atom) => any
+     }
+  )::[defblock]
+
+  defp defp_to_def(map) when is_map(map) do
+    map
+    |> Map.get(:blocks)
+    |> Enum.map(&defp_to_def(&1, map_publics(map)))
+  end
+
+  @spec defp_to_def(defblock, [atom])::defblock
+  defp defp_to_def({:__block__, context, blocklist}, list) do
+    {
+      :__block__,
+      context,
+      Enum.map(blocklist, &defp_to_def(&1, list))
+    }
+  end
+  defp defp_to_def({:defp, context, content = [{:when, _, [{title, _, _} | _]} | _]}, list) do
+    if title in list do
+      {:def, context, content}
+    else
+      {:defp, context, content}
+    end
+  end
+  defp defp_to_def({:defp, context, content = [{title, _, _} | _]}, list) do
+    if title in list do
+      {:def, context, content}
+    else
+      {:defp, context, content}
+    end
+  end
+  defp defp_to_def(any, _), do: any
 
 end

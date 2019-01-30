@@ -23,7 +23,7 @@ defmodule Exonerate.MatchString do
     end
 
     str_match = quote do
-      def unquote(method)(val) when is_binary(val) do
+      defp unquote(method)(val) when is_binary(val) do
         unquote(length_stmt)
         unquote(cond_stmt)
       end

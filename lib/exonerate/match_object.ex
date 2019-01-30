@@ -19,7 +19,7 @@ defmodule Exonerate.MatchObject do
     dependencies = build_deps(spec, method)
 
     obj_match = quote do
-      def unquote(method)(val) when is_map(val) do
+      defp unquote(method)(val) when is_map(val) do
         unquote(cond_stmt)
       end
     end
@@ -278,7 +278,7 @@ defmodule Exonerate.MatchObject do
     |> Method.concat(k)
 
     [quote do
-      def unquote(dep_child)(val) do
+      defp unquote(dep_child)(val) do
         prop_list = unquote(v)
         if Enum.all?(prop_list, &Map.has_key?(val, &1)) do
           :ok

@@ -15,7 +15,7 @@ defmodule Exonerate.MatchNumber do
     |> BuildCond.build
 
     int_match = quote do
-      def unquote(method)(val) when is_integer(val) do
+      defp unquote(method)(val) when is_integer(val) do
         unquote(cond_stmt)
       end
     end
@@ -49,7 +49,7 @@ defmodule Exonerate.MatchNumber do
     |> BuildCond.build
 
     num_match = quote do
-      def unquote(method)(val) when is_number(val) do
+      defp unquote(method)(val) when is_number(val) do
         unquote(cond_stmt)
       end
     end

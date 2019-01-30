@@ -18,7 +18,7 @@ defmodule Exonerate.MatchArray do
     dependencies = build_deps(spec, method)
 
     arr_match = quote do
-      def unquote(method)(val) when is_list(val) do
+      defp unquote(method)(val) when is_list(val) do
         unquote(cond_stmt)
       end
     end

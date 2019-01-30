@@ -1,5 +1,7 @@
 defmodule Exonerate.Metadata do
 
+  alias Exonerate.Annotate
+
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
   @type defblock :: Exonerate.defblock
@@ -10,9 +12,11 @@ defmodule Exonerate.Metadata do
     |> Map.delete("title")
     |> Exonerate.matcher(method)
 
-    [quote do
-      def unquote(method)(:title), do: unquote(title)
-    end | rest]
+    [ Annotate.public(method),
+      quote do
+        defp unquote(method)(:title), do: unquote(title)
+      end
+    | rest]
   end
 
   @spec set_description(specmap, String.t, atom) :: [defblock]
@@ -21,9 +25,11 @@ defmodule Exonerate.Metadata do
     |> Map.delete("description")
     |> Exonerate.matcher(method)
 
-    [quote do
-      def unquote(method)(:description), do: unquote(description)
-    end | rest]
+    [ Annotate.public(method),
+      quote do
+        defp unquote(method)(:description), do: unquote(description)
+      end
+    | rest]
   end
 
   @spec set_default(specmap, json, atom) :: [defblock]
@@ -32,9 +38,11 @@ defmodule Exonerate.Metadata do
     |> Map.delete("default")
     |> Exonerate.matcher(method)
 
-    [quote do
-      def unquote(method)(:default), do: unquote(default)
-    end | rest]
+    [ Annotate.public(method),
+      quote do
+        defp unquote(method)(:default), do: unquote(default)
+      end
+    | rest]
   end
 
   @spec set_examples(specmap, [json], atom) :: [defblock]
@@ -43,31 +51,37 @@ defmodule Exonerate.Metadata do
     |> Map.delete("examples")
     |> Exonerate.matcher(method)
 
-    [quote do
-      def unquote(method)(:examples), do: unquote(examples)
-    end | rest]
+    [ Annotate.public(method),
+      quote do
+        defp unquote(method)(:examples), do: unquote(examples)
+      end
+    | rest]
   end
 
   @spec set_schema(specmap, String.t, atom) :: [defblock]
-  def set_schema(map, schema, module) do
+  def set_schema(map, schema, method) do
     rest = map
     |> Map.delete("$schema")
-    |> Exonerate.matcher(module)
+    |> Exonerate.matcher(method)
 
-    [quote do
-       def unquote(module)(:schema), do: unquote(schema)
-     end | rest]
+    [ Annotate.public(method),
+      quote do
+       defp unquote(method)(:schema), do: unquote(schema)
+      end
+    | rest]
   end
 
   @spec set_id(map, String.t, atom) :: [defblock]
-  def set_id(map, id, module) do
+  def set_id(map, id, method) do
     rest = map
     |> Map.delete("$id")
-    |> Exonerate.matcher(module)
+    |> Exonerate.matcher(method)
 
-    [quote do
-      def unquote(module)(:id), do: unquote(id)
-     end | rest]
+    [ Annotate.public(method),
+      quote do
+        defp unquote(method)(:id), do: unquote(id)
+      end
+    | rest]
   end
 
 end

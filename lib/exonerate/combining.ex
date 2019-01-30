@@ -20,7 +20,7 @@ defmodule Exonerate.Combining do
 
     dependencies = spec_list
     |> Enum.with_index
-    |> Enum.map(
+    |> Enum.flat_map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
         Exonerate.matcher(spec, child_method)
@@ -32,7 +32,7 @@ defmodule Exonerate.Combining do
     |> Exonerate.matcher(base_child)
 
     [quote do
-      def unquote(method)(val) do
+      defp unquote(method)(val) do
         mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
         Exonerate.Reduce.allof(
           val,
@@ -57,7 +57,7 @@ defmodule Exonerate.Combining do
 
     dependencies = spec_list
     |> Enum.with_index
-    |> Enum.map(
+    |> Enum.flat_map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
         Exonerate.matcher(spec, child_method)
@@ -69,7 +69,7 @@ defmodule Exonerate.Combining do
     |> Exonerate.matcher(base_child)
 
     [quote do
-      def unquote(method)(val) do
+      defp unquote(method)(val) do
         mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
         Exonerate.Reduce.anyof(
           val,
@@ -95,7 +95,7 @@ defmodule Exonerate.Combining do
 
     dependencies = spec_list
     |> Enum.with_index
-    |> Enum.map(
+    |> Enum.flat_map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
         Exonerate.matcher(spec, child_method)
@@ -107,7 +107,7 @@ defmodule Exonerate.Combining do
     |> Exonerate.matcher(base_child)
 
     [quote do
-      def unquote(method)(val) do
+      defp unquote(method)(val) do
         mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
         Exonerate.Reduce.oneof(
           val,
@@ -134,7 +134,7 @@ defmodule Exonerate.Combining do
     |> Exonerate.matcher(base_child)
 
     [quote do
-      def unquote(method)(val) do
+      defp unquote(method)(val) do
         mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
         Exonerate.Reduce.apply_not(
           val,
@@ -146,4 +146,5 @@ defmodule Exonerate.Combining do
     ++ base_dependency
     ++ Exonerate.matcher(inv_spec, not_child)
   end
+
 end

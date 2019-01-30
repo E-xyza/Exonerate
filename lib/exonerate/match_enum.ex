@@ -13,7 +13,7 @@ defmodule Exonerate.MatchEnum do
     child = Method.concat(method, "_base")
 
     [quote do
-      def unquote(method)(val) do
+      defp unquote(method)(val) do
         if val in unquote(esc_list) do
           unquote(child)(val)
         else
@@ -33,7 +33,7 @@ defmodule Exonerate.MatchEnum do
     child = Method.concat(method, "_base")
 
     [quote do
-      def unquote(method)(val) do
+      defp unquote(method)(val) do
         if val == unquote(const_val) do
           unquote(child)(val)
         else

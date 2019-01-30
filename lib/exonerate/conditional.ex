@@ -20,7 +20,7 @@ defmodule Exonerate.Conditional do
     basespec = Map.drop(spec, ["if", "then", "else"])
 
     [quote do
-      def unquote(method)(val) do
+      defp unquote(method)(val) do
         test_res = if :ok == unquote(test_child)(val) do
           unquote(then_ast)
         else
