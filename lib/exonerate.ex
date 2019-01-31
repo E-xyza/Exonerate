@@ -33,7 +33,8 @@ defmodule Exonerate do
   @type defblock :: ast_def | ast_blk | ast_tag
   @type public :: {:public, atom}
   @type refreq :: {:refreq, atom}
-  @type annotated_ast :: defblock | public | refreq
+  @type refimp :: {:refimp, atom}
+  @type annotated_ast :: defblock | public | refreq | refimp
 
   defmacro defschema([{method, json} | _opts]) do
 
@@ -96,20 +97,22 @@ defmodule Exonerate do
 
   @spec always_matches(atom) :: [defblock]
   def always_matches(method) do
-    [quote do
-      defp unquote(method)(_val) do
-        :ok
-      end
-    end]
+    [ Annotate.impl(method),
+      quote do
+        defp unquote(method)(_val) do
+          :ok
+        end
+      end ]
   end
 
   @spec never_matches(atom) :: [defblock]
   def never_matches(method) do
-    [quote do
-      defp unquote(method)(val) do
-        Exonerate.mismatch(__MODULE__, unquote(method), val)
-      end
-    end]
+    [ Annotate.impl(method),
+      quote do
+        defp unquote(method)(val) do
+          Exonerate.mismatch(__MODULE__, unquote(method), val)
+        end
+      end ]
   end
 
   @spec match_boolean(map, atom, boolean) :: [defblock]
@@ -122,9 +125,11 @@ defmodule Exonerate do
     end
 
     if terminal do
-      [bool_match | never_matches(method)]
+      [ Annotate.impl(method),
+        bool_match
+      | never_matches(method)]
     else
-      [bool_match]
+      [Annotate.impl(method), bool_match]
     end
   end
 
@@ -138,9 +143,11 @@ defmodule Exonerate do
     end
 
     if terminal do
-      [null_match | never_matches(method)]
+      [ Annotate.impl(method),
+        null_match
+      | never_matches(method)]
     else
-      [null_match]
+      [Annotate.impl(method), null_match]
     end
   end
 
@@ -199,9 +206,9 @@ defmodule Exonerate do
   defp discriminator({:__block__, _, _}), do: :blocks
   defp discriminator({:defp, _, _}), do: :blocks
   defp discriminator({:@, _, _}), do: :blocks
-  defp discriminator({:public, _}), do: :publics
+  defp discriminator({atom, _}) when is_atom(atom), do: atom
 
-  defp map_publics(%{publics: publics}) do
+  defp map_publics(%{public: publics}) do
     Enum.map(publics, fn
       {:public, token} -> token
     end)
@@ -210,7 +217,7 @@ defmodule Exonerate do
   @spec defp_to_def(
     %{
       required(:blocks) => [defblock],
-      required(:publics) => [{:public, atom}],
+      required(:public) => [{:public, atom}],
       optional(atom) => any
      }
   )::[defblock]

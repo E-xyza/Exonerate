@@ -14,6 +14,7 @@ defmodule Exonerate.Metadata do
 
     [ Annotate.public(method),
       quote do
+        @spec unquote(method)(:title) :: String.t
         defp unquote(method)(:title), do: unquote(title)
       end
     | rest]
@@ -27,6 +28,7 @@ defmodule Exonerate.Metadata do
 
     [ Annotate.public(method),
       quote do
+        @spec unquote(method)(:description) :: String.t
         defp unquote(method)(:description), do: unquote(description)
       end
     | rest]
@@ -40,6 +42,7 @@ defmodule Exonerate.Metadata do
 
     [ Annotate.public(method),
       quote do
+        @spec unquote(method)(:default) :: Exonerate.json
         defp unquote(method)(:default), do: unquote(default)
       end
     | rest]
@@ -53,6 +56,7 @@ defmodule Exonerate.Metadata do
 
     [ Annotate.public(method),
       quote do
+        @spec unquote(method)(:examples) :: [Exonerate.json]
         defp unquote(method)(:examples), do: unquote(examples)
       end
     | rest]
@@ -66,7 +70,8 @@ defmodule Exonerate.Metadata do
 
     [ Annotate.public(method),
       quote do
-       defp unquote(method)(:schema), do: unquote(schema)
+        @spec unquote(method)(:schema) :: String.t
+        defp unquote(method)(:schema), do: unquote(schema)
       end
     | rest]
   end
@@ -79,6 +84,7 @@ defmodule Exonerate.Metadata do
 
     [ Annotate.public(method),
       quote do
+        @spec unquote(method)(:id) :: String.t
         defp unquote(method)(:id), do: unquote(id)
       end
     | rest]
