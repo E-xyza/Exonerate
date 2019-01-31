@@ -2,26 +2,23 @@
 
 **A JSONSchema -> Elixir module code generator**
 
-Currently supports JSONSchema draft 0.4.  *except:*
+Currently supports JSONSchema draft 0.7.  *except:*
 
 - multipleOf is not supported for number types.  This is because
 elixir does not support a floating point remainder guard, and also
 because it is impossible for a floating point to guarantee sane results
 (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
+- currently remoteref is not supported.
 
 Works in progress:
 
 - more user-friendly usage surface
-- support for ref and remoteref
+- support for remoteref
 - code sanitization for degenerate forms, e.g. `{"properties":{}}`
-- better error and warning handling during validation and code synthesis
 - code cleanup for simpler dependency checking when the structure has only one dependency.
 - code cleanup for degenerate arrays e.g. `[<contents>] |> Exonerate.error_reduction`
-- code cleanup for degenerate functions e.g. `def <function>(val), do: :ok`
-- make code generation available as a mix Task
-- make code generation available as a macro
 
-## Using the library
+## Installation
 
 Add the following lines to your mix.exs
 
@@ -34,18 +31,37 @@ Add the following lines to your mix.exs
   end
 ```
 
-The following code will create an elixir file from a JSONSchema file:
+## Quick Start
+
 ```elixir
-  jsonchema_file_name
-  |> File.open!
-  |> Jason.decode!
-  |> &Exonerate.buildmodule_string("modulename", "schemaname", &1).()
-  |> &File.write("result_file.ex",&1).()
+
+defmodule SchemaModule do
+  include Exonerate
+
+  @schemadoc """
+  validates our input
+  """
+  defschema validate_input: """
+  {
+    "type":"object"
+    "properties":{
+      "parameter":{"type":"integer"}
+    }
+  }
+  """
+end
+
+iex> SchemaModule.validate_input("some string")
+{:mismatch, "#", "some string"}
+
+iex> SchemaModule.validate_input(%{"parameter" => "2"})
+{:mismatch, "#/properties/parameter", "2"}
+
+iex> SchemaModule.validate_input(%{"parameter" => 2})
+:ok
+
 ```
 
-## Installation
-
-This library requires Elixir 1.6 (because of code prettification)
 
 ## Running unit tests
 
@@ -56,11 +72,11 @@ This library requires Elixir 1.6 (because of code prettification)
 ```
 
 - comprehensive automated unit tests.  This will build a JSONSchema directory in
-test/ that features automatically generated code and code testing.
+test/automated that features automatically generated code and code testing.
 
 ```bash
-  mix exoneratebuildtests
-  mix test --only jsonschema
+  mix exonerate.build_tests
+  mix test
 ```
 
 ## response encoding.
