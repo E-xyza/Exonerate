@@ -1,14 +1,15 @@
 defmodule Exonerate.MatchNumber do
 
   alias Exonerate.BuildCond
+  alias Exonerate.Parser
   require Logger
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type defblock :: Exonerate.defblock
+  @type parser   :: Parser.t
 
-  @spec match_int(map, atom, boolean) :: [defblock]
-  def match_int(spec, method, terminal \\ true) do
+  @spec match_int(map, parser, atom, boolean) :: parser
+  def match_int(spec, parser, method, terminal \\ true) do
 
     cond_stmt = spec
     |> build_cond_int(method)
@@ -21,9 +22,12 @@ defmodule Exonerate.MatchNumber do
     end
 
     if terminal do
-      [int_match | Exonerate.never_matches(method)]
+      parser
+      |> Parser.append_blocks([int_match])
+      |> Parser.never_matches(method)
     else
-      [int_match]
+      parser
+      |> Parser.append_blocks([int_match])
     end
   end
 
@@ -41,8 +45,8 @@ defmodule Exonerate.MatchNumber do
   end
   defp build_cond_int(spec, module), do: build_cond(spec, module)
 
-  @spec match(map, atom, boolean) :: [defblock]
-  def match(spec, method, terminal \\ true) do
+  @spec match(map, parser, atom, boolean) :: parser
+  def match(spec, parser, method, terminal \\ true) do
 
     cond_stmt = spec
     |> build_cond(method)
@@ -55,9 +59,12 @@ defmodule Exonerate.MatchNumber do
     end
 
     if terminal do
-      [num_match | Exonerate.never_matches(method)]
+      parser
+      |> Parser.append_blocks([num_match])
+      |> Parser.never_matches(method)
     else
-      [num_match]
+      parser
+      |> Parser.append_blocks([num_match])
     end
   end
 

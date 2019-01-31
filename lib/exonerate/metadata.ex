@@ -1,93 +1,106 @@
 defmodule Exonerate.Metadata do
 
   alias Exonerate.Annotate
+  alias Exonerate.Parser
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type annotated_ast :: Exonerate.annotated_ast
+  @type parser   :: Exonerate.Parser.t
 
-  @spec set_title(specmap, String.t, atom) :: [annotated_ast]
-  def set_title(spec, title, method) do
-    rest = spec
-    |> Map.delete("title")
-    |> Exonerate.matcher(method)
-
-    [ Annotate.public(method),
+  @spec set_title(specmap, parser, String.t, atom) :: parser
+  def set_title(spec, parser!, title, method) do
+    parser! = parser!
+    |> Annotate.public(method)
+    |> Parser.append_blocks([
       quote do
         @spec unquote(method)(:title) :: String.t
         defp unquote(method)(:title), do: unquote(title)
       end
-    | rest]
+    ])
+
+    spec
+    |> Map.delete("title")
+    |> Parser.match(parser!, method)
   end
 
-  @spec set_description(specmap, String.t, atom) :: [annotated_ast]
-  def set_description(spec, description, method) do
-    rest = spec
-    |> Map.delete("description")
-    |> Exonerate.matcher(method)
-
-    [ Annotate.public(method),
+  @spec set_description(specmap, parser, String.t, atom) :: parser
+  def set_description(spec, parser!, description, method) do
+    parser! = parser!
+    |> Annotate.public(method)
+    |> Parser.append_blocks([
       quote do
         @spec unquote(method)(:description) :: String.t
         defp unquote(method)(:description), do: unquote(description)
       end
-    | rest]
+    ])
+
+    spec
+    |> Map.delete("description")
+    |> Parser.match(parser!, method)
   end
 
-  @spec set_default(specmap, json, atom) :: [annotated_ast]
-  def set_default(spec, default, method) do
-    rest = spec
-    |> Map.delete("default")
-    |> Exonerate.matcher(method)
-
-    [ Annotate.public(method),
+  @spec set_default(specmap, parser, json, atom) :: parser
+  def set_default(spec, parser!, default, method) do
+    parser! = parser!
+    |> Annotate.public(method)
+    |> Parser.append_blocks([
       quote do
         @spec unquote(method)(:default) :: Exonerate.json
         defp unquote(method)(:default), do: unquote(default)
       end
-    | rest]
+    ])
+
+    spec
+    |> Map.delete("default")
+    |> Parser.match(parser!, method)
   end
 
-  @spec set_examples(specmap, [json], atom) :: [annotated_ast]
-  def set_examples(spec, examples, method) do
-    rest = spec
-    |> Map.delete("examples")
-    |> Exonerate.matcher(method)
-
-    [ Annotate.public(method),
+  @spec set_examples(specmap, parser, [json], atom) :: parser
+  def set_examples(spec, parser!, examples, method) do
+    parser! = parser!
+    |> Annotate.public(method)
+    |> Parser.append_blocks([
       quote do
         @spec unquote(method)(:examples) :: [Exonerate.json]
         defp unquote(method)(:examples), do: unquote(examples)
       end
-    | rest]
+    ])
+
+    spec
+    |> Map.delete("examples")
+    |> Parser.match(parser!, method)
   end
 
-  @spec set_schema(specmap, String.t, atom) :: [annotated_ast]
-  def set_schema(map, schema, method) do
-    rest = map
-    |> Map.delete("$schema")
-    |> Exonerate.matcher(method)
-
-    [ Annotate.public(method),
+  @spec set_schema(specmap, parser, String.t, atom) :: parser
+  def set_schema(spec, parser!, schema, method) do
+    parser! = parser!
+    |> Annotate.public(method)
+    |> Parser.append_blocks([
       quote do
         @spec unquote(method)(:schema) :: String.t
         defp unquote(method)(:schema), do: unquote(schema)
       end
-    | rest]
+    ])
+
+    spec
+    |> Map.delete("$schema")
+    |> Parser.match(parser!, method)
   end
 
-  @spec set_id(map, String.t, atom) :: [annotated_ast]
-  def set_id(map, id, method) do
-    rest = map
-    |> Map.delete("$id")
-    |> Exonerate.matcher(method)
-
-    [ Annotate.public(method),
+  @spec set_id(map, parser, String.t, atom) :: parser
+  def set_id(spec, parser!, id, method) do
+    parser! = parser!
+    |> Annotate.public(method)
+    |> Parser.append_blocks([
       quote do
         @spec unquote(method)(:id) :: String.t
         defp unquote(method)(:id), do: unquote(id)
       end
-    | rest]
+    ])
+
+    spec
+    |> Map.delete("$id")
+    |> Parser.match(parser!, method)
   end
 
 end

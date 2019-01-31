@@ -32,18 +32,22 @@ defmodule ExonerateTest.Tutorial.GenericTest do
   end
 
   describe "metadata are stored" do
+    @tag :metadata
     test "the title is included" do
       assert "Match anything" == Metadata.metadata(:title)
     end
 
+    @tag :metadata
     test "the description is included" do
       assert "This is a schema that matches anything." == Metadata.metadata(:description)
     end
 
+    @tag :metadata
     test "the default value is included" do
       assert "Default value" == Metadata.metadata(:default)
     end
 
+    @tag :metadata
     test "the example values are included" do
       assert ["Anything", 4035] == Metadata.metadata(:examples)
     end

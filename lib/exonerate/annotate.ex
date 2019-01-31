@@ -1,8 +1,10 @@
 defmodule Exonerate.Annotate do
 
   @moduledoc """
-  defines several annotations that are generated alongside the
+  manages the annotations which are part of the parser
   """
+
+  alias Exonerate.Parser
 
   @type public_t :: Exonerate.public
   @type tag_t :: Exonerate.tag
@@ -19,20 +21,24 @@ defmodule Exonerate.Annotate do
     end
   end
 
-  @spec public(atom)::public_t
+  @spec public(Parser.t, atom)::Parser.t
   @doc """
   marks that a method needs to be changed from a `defp` method to a
   `def` method.  Used for the root method and any method that surfaces
   queryable metadata.
   """
-  def public(atom), do: {:public, atom}
+  def public(parser, method) do
+    %{parser | public: MapSet.put(parser.public, method)}
+  end
 
   @spec req(atom)::req_t
   def req(atom), do: {:refreq, atom}
 
-  @spec impl(atom)::impl_t
+  @spec impl(Parser.t, atom)::Parser.t
   @doc """
   marks that a method has been implemented
   """
-  def impl(atom), do: {:refimp, atom}
+  def impl(parser, method) do
+    %{parser | refimp: MapSet.put(parser.refimp, method)}
+  end
 end

@@ -2,21 +2,19 @@ defmodule Exonerate.MatchObject do
 
   alias Exonerate.BuildCond
   alias Exonerate.Method
+  alias Exonerate.Parser
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type defblock :: Exonerate.defblock
+  @type parser   :: Parser.t
 
-  @spec match(specmap, atom, boolean) :: [defblock]
-  def match(spec, method, terminal \\ true) do
+  @spec match(specmap, parser, atom, boolean) :: parser
+  def match(spec, parser, method, terminal \\ true) do
 
     # build the conditional statement that guards on the object
     cond_stmt = spec
     |> build_cond(method)
     |> BuildCond.build
-
-    # build the extra dependencies on the object type
-    dependencies = build_deps(spec, method)
 
     obj_match = quote do
       defp unquote(method)(val) when is_map(val) do
@@ -25,89 +23,21 @@ defmodule Exonerate.MatchObject do
     end
 
     if terminal do
-      [obj_match | Exonerate.never_matches(method)] ++ dependencies
+      parser
+      |> Parser.add_dependencies(build_deps(spec, method))
+      |> Parser.append_blocks([obj_match])
+      |> Parser.never_matches(method)
     else
-      [obj_match] ++ dependencies
+      parser
+      |> Parser.add_dependencies(build_deps(spec, method))
+      |> Parser.append_blocks([obj_match])
     end
   end
 
   @spec build_cond(specmap, atom) :: [BuildCond.condclause]
-  defp build_cond(spec = %{"additionalProperties" => _, "patternProperties" => patts}, method) do
-    props = if spec["properties"] do
-      Map.keys(spec["properties"])
-    else
-      []
-    end
-
-    regexes = patts
-    |> Map.keys
-    |> Enum.map(fn v -> quote do sigil_r(<<unquote(v)>>,'') end end)
-
-    child_fn = method
-    |> Method.concat("additional_properties")
-    |> Method.to_lambda
-
-    [{
-      quote do
-        parse_additional = Exonerate.Check.object_additional_properties(
-                    val,
-                    unquote(props),
-                    unquote(regexes),
-                    unquote(child_fn))
-      end,
-      quote do parse_additional end
-    }] ++
-    (spec
-    |> Map.drop(["additionalProperties"])
-    |> build_cond(method))
-  end
-  defp build_cond(spec = %{"patternProperties" => pobj}, method) do
-    (pobj
-    |> Enum.with_index
-    |> Enum.map(fn {{k, _v}, idx} ->
-      child_fn = method
-      |> Method.concat("pattern_properties__#{idx}")
-      |> Method.to_lambda
-      {
-        quote do
-          parse_pattern_prop = Exonerate.Check.object_pattern_properties(
-            val,
-            sigil_r(<<unquote(k)>>, ''),
-            unquote(child_fn)
-          )
-        end,
-        quote do
-          parse_pattern_prop
-        end
-      }
-    end)) ++
-    (spec
-    |> Map.delete("patternProperties")
-    |> build_cond(method))
-  end
-  defp build_cond(spec = %{"dependencies" => dobj}, method) do
-    Enum.map(dobj, fn {k, _v} ->
-      child_fn = method
-      |> Method.concat("dependencies")
-      |> Method.concat(k)
-      |> Method.to_lambda
-      {
-        quote do
-          parse_prop_dep = Exonerate.Check.object_property_dependency(
-            val,
-            unquote(k),
-            unquote(child_fn)
-          )
-        end,
-        quote do
-          parse_prop_dep
-        end
-      }
-    end) ++
-    (spec
-    |> Map.delete("dependencies")
-    |> build_cond(method))
-  end
+  #
+  # Conditional clauses that don't require any dependencies.
+  #
   defp build_cond(spec = %{"minProperties" => min}, method) do
     [{
       quote do
@@ -161,6 +91,85 @@ defmodule Exonerate.MatchObject do
     |> build_cond(method)
     ]
   end
+  #
+  # this conditional is a double match so it needs to be treated specially and
+  # in front of the other properties.
+  #
+  defp build_cond(spec = %{"additionalProperties" => _, "patternProperties" => patts}, method) do
+    props = if spec["properties"] do
+      Map.keys(spec["properties"])
+    else
+      []
+    end
+
+    regexes = patts
+    |> Map.keys
+    |> Enum.map(fn v -> quote do sigil_r(<<unquote(v)>>,'') end end)
+
+    child_fn = method
+    |> Method.concat("additional_properties")
+    |> Method.to_lambda
+
+    [{
+      quote do
+        parse_additional = Exonerate.Check.object_additional_properties(
+                    val,
+                    unquote(props),
+                    unquote(regexes),
+                    unquote(child_fn))
+      end,
+      quote do parse_additional end
+    }] ++
+    (spec
+    |> Map.drop(["additionalProperties"])
+    |> build_cond(method))
+  end
+  #
+  # conditional building that has dependencies.
+  #
+  defp build_cond(spec = %{"dependencies" => dobj}, method) do
+    Enum.map(dobj, fn {k, _v} ->
+      child_fn = method
+      |> Method.concat("dependencies")
+      |> Method.concat(k)
+      |> Method.to_lambda
+      {
+        quote do
+          parse_prop_dep = Exonerate.Check.object_property_dependency(
+            val,
+            unquote(k),
+            unquote(child_fn)
+          )
+        end,
+        quote do
+          parse_prop_dep
+        end
+      }
+    end) ++
+    (spec
+    |> Map.delete("dependencies")
+    |> build_cond(method))
+  end
+  defp build_cond(spec = %{"properties" => pobj}, method) do
+    Enum.map(pobj, fn {k, _v} ->
+      child_fn = method
+      |> Method.concat("properties")
+      |> Method.concat(k)
+      |> Method.to_lambda
+      {
+        quote do
+          parse_recurse = Exonerate.Check.object_property(
+            val[unquote(k)],
+            unquote(child_fn)
+            )
+          end,
+          quote do parse_recurse end
+        }
+      end) ++
+    (spec
+    |> Map.delete("properties")
+    |> build_cond(method))
+  end
   defp build_cond(spec = %{"propertyNames" => _}, method) do
     child_fn = method
     |> Method.concat("property_names")
@@ -178,6 +187,30 @@ defmodule Exonerate.MatchObject do
     |> Map.delete("propertyNames")
     |> build_cond(method)
     ]
+  end
+  defp build_cond(spec = %{"patternProperties" => pobj}, method) do
+    (pobj
+    |> Enum.with_index
+    |> Enum.map(fn {{k, _v}, idx} ->
+      child_fn = method
+      |> Method.concat("pattern_properties__#{idx}")
+      |> Method.to_lambda
+      {
+        quote do
+          parse_pattern_prop = Exonerate.Check.object_pattern_properties(
+            val,
+            sigil_r(<<unquote(k)>>, ''),
+            unquote(child_fn)
+          )
+        end,
+        quote do
+          parse_pattern_prop
+        end
+      }
+    end)) ++
+    (spec
+    |> Map.delete("patternProperties")
+    |> build_cond(method))
   end
   defp build_cond(spec = %{"additionalProperties" => _}, method) do
     props = if spec["properties"] do
@@ -201,54 +234,34 @@ defmodule Exonerate.MatchObject do
     |> Map.delete("additionalProperties")
     |> build_cond(method))
   end
-  defp build_cond(spec = %{"properties" => pobj}, method) do
-    Enum.map(pobj, fn {k, _v} ->
-      child_fn = method
-      |> Method.concat("properties")
-      |> Method.concat(k)
-      |> Method.to_lambda
-      {
-        quote do
-          parse_recurse = Exonerate.Check.object_property(
-            val[unquote(k)],
-            unquote(child_fn)
-          )
-        end,
-        quote do parse_recurse end
-      }
-    end) ++
-    (spec
-    |> Map.delete("properties")
-    |> build_cond(method))
-  end
   defp build_cond(_spec, _method), do: []
 
   #############################################################################
   ## Dependency building
 
-  @spec build_deps(specmap, atom) :: [defblock]
-  defp build_deps(spec = %{"patternProperties" => pobj}, method) do
-    (pobj
-    |> Enum.with_index
-    |> Enum.flat_map(fn {{_k, v}, idx} ->
-      pattern_property_dep(v, idx, method)
-    end)) ++
-    build_deps(Map.delete(spec, "patternProperties"), method)
-  end
+  @spec build_deps(specmap, atom) :: [parser]
   defp build_deps(spec = %{"properties" => pobj}, method) do
-    Enum.flat_map(pobj, fn {k, v} ->
+    Enum.map(pobj, fn {k, v} ->
       property_dep({"properties__" <> k, v}, method)
     end) ++
     build_deps(Map.delete(spec, "properties"), method)
   end
   defp build_deps(spec = %{"propertyNames" => pobj}, method) when is_map(pobj) do
     obj_string = Map.put(pobj, "type", "string")
-    property_dep({"property_names", obj_string}, method) ++
-    build_deps(Map.delete(spec, "propertyNames"), method)
+    [ property_dep({"property_names", obj_string}, method)
+    | build_deps(Map.delete(spec, "propertyNames"), method)]
+  end
+  defp build_deps(spec = %{"patternProperties" => pobj}, method) do
+    (pobj
+    |> Enum.with_index
+    |> Enum.map(fn {{_k, v}, idx} ->
+      pattern_property_dep(v, idx, method)
+    end)) ++
+    build_deps(Map.delete(spec, "patternProperties"), method)
   end
   defp build_deps(spec = %{"additionalProperties" => pobj}, method) do
-    property_dep({"additional_properties", pobj}, method) ++
-    build_deps(Map.delete(spec, "additionalProperties"), method)
+    [ property_dep({"additional_properties", pobj}, method)
+    | build_deps(Map.delete(spec, "additionalProperties"), method)]
   end
   defp build_deps(spec = %{"dependencies" => dobj}, method) do
     object_dep(dobj, method) ++
@@ -256,53 +269,63 @@ defmodule Exonerate.MatchObject do
   end
   defp build_deps(_, _), do: []
 
-  @spec pattern_property_dep(specmap, non_neg_integer, atom) :: [defblock]
+  @spec pattern_property_dep(specmap, non_neg_integer, atom) :: parser
   defp pattern_property_dep(v, idx, method) do
     pattern_child = Method.concat(method, "pattern_properties__#{idx}")
-    Exonerate.matcher(v, pattern_child)
+    p = struct!(Exonerate.Parser)
+    Parser.match(v, p, pattern_child)
   end
 
-  @spec property_dep({String.t, json}, atom) :: [defblock]
+  @spec property_dep({String.t, json}, atom) :: parser
   defp property_dep({k, v}, method) do
     object_child = Method.concat(method, k)
-    Exonerate.matcher(v, object_child)
+    p = struct!(Exonerate.Parser)
+    Parser.match(v, p, object_child)
   end
 
-  @spec object_dep({String.t, json} | json, atom) :: [defblock]
+  @spec object_dep({String.t, json} | json, atom) :: [parser]
   defp object_dep(dobj, method) when is_map dobj do
-    Enum.flat_map(dobj, &object_dep(&1, method))
+    Enum.map(dobj, &object_dep(&1, method))
   end
   defp object_dep({k, v}, method) when is_list(v) do
     dep_child = method
     |> Method.concat("dependencies")
     |> Method.concat(k)
 
-    [quote do
-      defp unquote(dep_child)(val) do
-        prop_list = unquote(v)
-        if Enum.all?(prop_list, &Map.has_key?(val, &1)) do
-          :ok
-        else
-          Exonerate.mismatch(__MODULE__, unquote(dep_child), val)
-        end
-      end
-    end]
+    %Parser{
+      blocks:
+        [quote do
+          defp unquote(dep_child)(val) do
+            prop_list = unquote(v)
+            if Enum.all?(prop_list, &Map.has_key?(val, &1)) do
+              :ok
+            else
+              Exonerate.mismatch(__MODULE__, unquote(dep_child), val)
+            end
+          end
+        end],
+      refimp: MapSet.new([dep_child])
+    }
   end
   defp object_dep({k, v}, method) when is_map(v) do
     dep_child = method
     |> Method.concat("dependencies")
     |> Method.concat(k)
 
+    parser = struct!(Exonerate.Parser)
+
     v
     |> Map.put("type", "object")
-    |> Exonerate.matcher(dep_child)
+    |> Parser.match(parser, dep_child)
+    |> IO.inspect(label: "HI MOM")
   end
   defp object_dep({k, v}, method) do
     dep_child = method
     |> Method.concat("dependencies")
     |> Method.concat(k)
 
-    Exonerate.matcher(v, dep_child)
+    parser = struct!(Exonerate.Parser)
+    Parser.match(v, parser, dep_child)
   end
 
 end
