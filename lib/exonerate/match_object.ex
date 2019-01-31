@@ -125,6 +125,32 @@ defmodule Exonerate.MatchObject do
     |> build_cond(method))
   end
   #
+  # additionalProperties needs to be ahead of properties, because it can gate
+  # on that condition.
+  #
+  defp build_cond(spec = %{"additionalProperties" => _}, method) do
+    props = if spec["properties"] do
+      Map.keys(spec["properties"])
+    else
+      []
+    end
+    child_fn = method
+    |> Method.concat("additional_properties")
+    |> Method.to_lambda()
+    [{
+      quote do
+        parse_additional = Exonerate.Check.object_additional_properties(
+                    val,
+                    unquote(props),
+                    unquote(child_fn))
+      end,
+      quote do parse_additional end
+    }] ++
+    (spec
+    |> Map.delete("additionalProperties")
+    |> build_cond(method))
+  end
+  #
   # conditional building that has dependencies.
   #
   defp build_cond(spec = %{"dependencies" => dobj}, method) do
@@ -212,28 +238,6 @@ defmodule Exonerate.MatchObject do
     |> Map.delete("patternProperties")
     |> build_cond(method))
   end
-  defp build_cond(spec = %{"additionalProperties" => _}, method) do
-    props = if spec["properties"] do
-      Map.keys(spec["properties"])
-    else
-      []
-    end
-    child_fn = method
-    |> Method.concat("additional_properties")
-    |> Method.to_lambda()
-    [{
-      quote do
-        parse_additional = Exonerate.Check.object_additional_properties(
-                    val,
-                    unquote(props),
-                    unquote(child_fn))
-      end,
-      quote do parse_additional end
-    }] ++
-    (spec
-    |> Map.delete("additionalProperties")
-    |> build_cond(method))
-  end
   defp build_cond(_spec, _method), do: []
 
   #############################################################################
@@ -317,7 +321,6 @@ defmodule Exonerate.MatchObject do
     v
     |> Map.put("type", "object")
     |> Parser.match(parser, dep_child)
-    |> IO.inspect(label: "HI MOM")
   end
   defp object_dep({k, v}, method) do
     dep_child = method

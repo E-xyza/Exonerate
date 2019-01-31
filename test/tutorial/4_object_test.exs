@@ -185,7 +185,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       |> Properties.address3
     end
 
-    test "extra nonstring property doesn't matche" do
+    test "extra nonstring property doesn't match" do
       addr5 = Jason.decode(@addr5)
       assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Properties, :address2, [addr5]}} =
         Properties.address2(addr5)
