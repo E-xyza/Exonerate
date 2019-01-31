@@ -66,7 +66,7 @@ defmodule Exonerate.MatchObject do
     |> Enum.with_index
     |> Enum.map(fn {{k, _v}, idx} ->
       child_fn = method
-      |> Method.concat("pattern_properties_#{idx}")
+      |> Method.concat("pattern_properties__#{idx}")
       |> Method.to_lambda
       {
         quote do
@@ -258,7 +258,7 @@ defmodule Exonerate.MatchObject do
 
   @spec pattern_property_dep(specmap, non_neg_integer, atom) :: [defblock]
   defp pattern_property_dep(v, idx, method) do
-    pattern_child = Method.concat(method, "pattern_properties_#{idx}")
+    pattern_child = Method.concat(method, "pattern_properties__#{idx}")
     Exonerate.matcher(v, pattern_child)
   end
 

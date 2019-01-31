@@ -24,6 +24,7 @@ defmodule Exonerate do
   alias Exonerate.MatchObject
   alias Exonerate.MatchString
   alias Exonerate.Metadata
+  alias Exonerate.Reference
 
   @type specmap  :: %{optional(String.t) => json}
   @type condlist :: [BuildCond.condclause]
@@ -46,11 +47,12 @@ defmodule Exonerate do
     |> matcher(method)
     # prepend a term stating that the generated method
     # is guaranteed to be public, and have the desired spec.
-    |> fn arr -> [
-      Annotate.spec(method),
-      Annotate.public(method)
-    | arr] end.()
+    |> fn arr -> [Annotate.public(method) | arr] end.()
     |> Enum.group_by(&discriminator/1)
+    |> fn map ->
+      IO.inspect(map[:refreq], label: "reference requests")
+      map
+    end.()
     |> defp_to_def
 
     quote do
@@ -71,7 +73,7 @@ defmodule Exonerate do
   def matcher(spec = %{"$schema" => schema}, method),    do: Metadata.set_schema(spec, schema, method)
   def matcher(spec = %{"$id" => id}, method),            do: Metadata.set_id(spec, id, method)
   # match refs
-  #def matcher(spec = %{"$ref" => ref}, method),          do: Reference.match(ref, method)
+  def matcher(spec = %{"$ref" => ref}, method),          do: Reference.match(ref, method)
   # match if-then-else
   def matcher(spec = %{"if" => _}, method),              do: Conditional.match(spec, method)
   # match enums and consts
@@ -208,12 +210,13 @@ defmodule Exonerate do
   defp discriminator({:@, _, _}), do: :blocks
   defp discriminator({atom, _}) when is_atom(atom), do: atom
 
-  defp map_publics(%{public: publics}) do
-    Enum.map(publics, fn
-      {:public, token} -> token
-    end)
-  end
-
+  #
+  # defp_to_def/1 --
+  #
+  # takes a map with an AST in `:blocks` and a list of methods to be shifted to
+  # public in `:public`, then trampolines it to defp_to_def/2 for conversion of
+  # the blocks into a block list as converted.
+  #
   @spec defp_to_def(
     %{
       required(:blocks) => [defblock],
@@ -221,13 +224,21 @@ defmodule Exonerate do
       optional(atom) => any
      }
   )::[defblock]
-
   defp defp_to_def(map) when is_map(map) do
-    map
-    |> Map.get(:blocks)
-    |> Enum.map(&defp_to_def(&1, map_publics(map)))
+    public_list = Enum.map(map.public, fn
+      {:public, token} -> token
+    end)
+
+    Enum.map(map.blocks, &defp_to_def(&1, public_list))
   end
 
+  #
+  # defp_to_def/2 --
+  #
+  # recursively goes through block statements, substitituting defp's
+  # as needed (some might have `when` substatements).  Skips over other
+  # types of elements, e.g. @ tags.
+  #
   @spec defp_to_def(defblock, [atom])::defblock
   defp defp_to_def({:__block__, context, blocklist}, list) do
     {
@@ -237,19 +248,34 @@ defmodule Exonerate do
     }
   end
   defp defp_to_def({:defp, context, content = [{:when, _, [{title, _, _} | _]} | _]}, list) do
-    if title in list do
-      {:def, context, content}
-    else
-      {:defp, context, content}
-    end
+    defp_to_def(context, content, title, list)
   end
   defp defp_to_def({:defp, context, content = [{title, _, _} | _]}, list) do
+    defp_to_def(context, content, title, list)
+  end
+  defp defp_to_def(any, _), do: any
+
+  #
+  # defp_to_def/4 --
+  #
+  # used as a trampoline by defp_to_def/2 -> presumably matched against a
+  # defp statement and is given all the information needed to decide if the
+  # statement needs to be substituted for a def, and does so if the 'title'
+  # parameter is in the list of "to change to def".  Publicized methods are
+  # given @spec statements.
+  #
+  @spec defp_to_def(any, any, atom, [atom])::defblock
+  defp defp_to_def(context, content, title, list) do
     if title in list do
-      {:def, context, content}
+      specblock = Annotate.spec(title)
+      defblock = {:def, context, content}
+      quote do
+        unquote(specblock)
+        unquote(defblock)
+      end
     else
       {:defp, context, content}
     end
   end
-  defp defp_to_def(any, _), do: any
 
 end

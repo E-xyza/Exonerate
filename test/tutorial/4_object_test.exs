@@ -577,12 +577,12 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "integers shouldn't match string pattern" do
       patternmatch3 = Jason.decode!(@patternmatch3)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_properties_1, [42]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_properties__1, [42]}} =
         PatternProperties.patternprop1(patternmatch3)
     end
     test "strings shouldn't match integer pattern" do
       patternmatch4 = Jason.decode!(@patternmatch4)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_properties_0, ["This is a string"]}} =
+      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_properties__0, ["This is a string"]}} =
         PatternProperties.patternprop1(patternmatch4)
     end
 

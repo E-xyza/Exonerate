@@ -54,7 +54,7 @@ defmodule Exonerate.MatchArray do
   defp build_cond(spec = %{"items" => parr}, method) when is_list(parr) do
     for idx <- 0..(Enum.count(parr) - 1) do
       child_fn = method
-      |> Method.concat("items_#{idx}")
+      |> Method.concat("items__#{idx}")
       |> Method.to_lambda
 
       {
@@ -179,7 +179,7 @@ defmodule Exonerate.MatchArray do
     iarr
     |> Enum.with_index
     |> Enum.flat_map(fn {spec, idx} ->
-      item_method = Method.concat(method, "items_#{idx}")
+      item_method = Method.concat(method, "items__#{idx}")
       Exonerate.matcher(spec, item_method)
     end)
   end

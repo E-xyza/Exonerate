@@ -4,8 +4,14 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
 
   @testdir "test/JSON-Schema-Test-Suite/tests/draft7"
   @destdir "test/automated"
-  @ignore ["definitions.json", "ref.json", "refRemote.json"]
-  @banned %{"multipleOf" => ["by number", "by small number"]}
+  @ignore ["definitions.json", "refRemote.json"]
+  @banned %{
+    "multipleOf" => ["by number", "by small number"],
+    "ref" => ["escaped pointer ref", "nested refs",
+      "ref overrides any sibling keywords",
+      "$ref to boolean schema true", "$ref to boolean schema false",
+      "Recursive references between schemas", "remote ref, containing refs itself"]
+  }
 
   @impl true
   @spec run([String.t]) :: :ok
@@ -68,12 +74,14 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
     |> String.to_atom
     |> atom_to_module
 
-    schemas = testlist
+    curated_list =
+    Enum.reject(testlist, &filter_banned(title, &1))
+
+    schemas = curated_list
     |> Enum.with_index
     |> Enum.map(&module_code/1)
 
-    descriptions = testlist
-    |> Enum.reject(&filter_banned(title, &1))
+    descriptions = curated_list
     |> Enum.with_index
     |> Enum.map(&description_code/1)
 
@@ -138,7 +146,7 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
     end
   end
 
-  def filter_banned(title, description) do
+  defp filter_banned(title, description) do
     @banned[title] && description["description"] in @banned[title]
   end
 end
