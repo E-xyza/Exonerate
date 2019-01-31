@@ -4,9 +4,9 @@ defmodule Exonerate.Metadata do
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type defblock :: Exonerate.defblock
+  @type annotated_ast :: Exonerate.annotated_ast
 
-  @spec set_title(specmap, String.t, atom) :: [defblock]
+  @spec set_title(specmap, String.t, atom) :: [annotated_ast]
   def set_title(spec, title, method) do
     rest = spec
     |> Map.delete("title")
@@ -19,7 +19,7 @@ defmodule Exonerate.Metadata do
     | rest]
   end
 
-  @spec set_description(specmap, String.t, atom) :: [defblock]
+  @spec set_description(specmap, String.t, atom) :: [annotated_ast]
   def set_description(spec, description, method) do
     rest = spec
     |> Map.delete("description")
@@ -32,7 +32,7 @@ defmodule Exonerate.Metadata do
     | rest]
   end
 
-  @spec set_default(specmap, json, atom) :: [defblock]
+  @spec set_default(specmap, json, atom) :: [annotated_ast]
   def set_default(spec, default, method) do
     rest = spec
     |> Map.delete("default")
@@ -45,7 +45,7 @@ defmodule Exonerate.Metadata do
     | rest]
   end
 
-  @spec set_examples(specmap, [json], atom) :: [defblock]
+  @spec set_examples(specmap, [json], atom) :: [annotated_ast]
   def set_examples(spec, examples, method) do
     rest = spec
     |> Map.delete("examples")
@@ -58,7 +58,7 @@ defmodule Exonerate.Metadata do
     | rest]
   end
 
-  @spec set_schema(specmap, String.t, atom) :: [defblock]
+  @spec set_schema(specmap, String.t, atom) :: [annotated_ast]
   def set_schema(map, schema, method) do
     rest = map
     |> Map.delete("$schema")
@@ -71,7 +71,7 @@ defmodule Exonerate.Metadata do
     | rest]
   end
 
-  @spec set_id(map, String.t, atom) :: [defblock]
+  @spec set_id(map, String.t, atom) :: [annotated_ast]
   def set_id(map, id, method) do
     rest = map
     |> Map.delete("$id")

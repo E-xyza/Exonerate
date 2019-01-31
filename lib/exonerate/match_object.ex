@@ -31,7 +31,7 @@ defmodule Exonerate.MatchObject do
     end
   end
 
-  @spec build_cond(specmap, atom) :: [BuildCond.cond_clauses]
+  @spec build_cond(specmap, atom) :: [BuildCond.condclause]
   defp build_cond(spec = %{"additionalProperties" => _, "patternProperties" => patts}, method) do
     props = if spec["properties"] do
       Map.keys(spec["properties"])

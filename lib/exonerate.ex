@@ -44,8 +44,11 @@ defmodule Exonerate do
     components = exmap
     |> matcher(method)
     # prepend a term stating that the generated method
-    # is guaranteed to be public.
-    |> fn arr -> [Annotate.public(method) | arr] end.()
+    # is guaranteed to be public, and have the desired spec.
+    |> fn arr -> [
+      Annotate.spec(method),
+      Annotate.public(method)
+    | arr] end.()
     |> Enum.group_by(&discriminator/1)
     |> defp_to_def
 
@@ -195,6 +198,7 @@ defmodule Exonerate do
 
   defp discriminator({:__block__, _, _}), do: :blocks
   defp discriminator({:defp, _, _}), do: :blocks
+  defp discriminator({:@, _, _}), do: :blocks
   defp discriminator({:public, _}), do: :publics
 
   defp map_publics(%{publics: publics}) do

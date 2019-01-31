@@ -8,7 +8,12 @@ defmodule Exonerate.MixProject do
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      preferred_cli_env: [exoneratebuildtests: :test]
+      preferred_cli_env: [exoneratebuildtests: :test],
+      #for dialyxir
+      dialyzer: [
+        plt_add_deps: :transitive,
+        plt_add_apps: [:mix]
+      ]
     ]
   end
 
@@ -22,6 +27,7 @@ defmodule Exonerate.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:dialyxir, "~> 1.0.0-rc.4", only: :dev, runtime: false},
       {:httpoison, "~> 0.13", only: [:test]},
       {:jason, "~> 1.1"},
     ]

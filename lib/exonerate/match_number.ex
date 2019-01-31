@@ -27,7 +27,7 @@ defmodule Exonerate.MatchNumber do
     end
   end
 
-  @spec build_cond_int(specmap, atom) :: [BuildCond.cond_clauses]
+  @spec build_cond_int(specmap, atom) :: [BuildCond.condclause]
   defp build_cond_int(spec = %{"multipleOf" => base}, method) do
     [
       {
@@ -61,7 +61,7 @@ defmodule Exonerate.MatchNumber do
     end
   end
 
-  @spec build_cond(specmap, atom) :: [BuildCond.cond_clauses]
+  @spec build_cond(specmap, atom) :: [BuildCond.condclause]
   defp build_cond(spec = %{"multipleOf" => base}, method) do
     Logger.warn("you are building multipleOf against a \"number\" type in your JsonSchema.  Consider using integer")
     [

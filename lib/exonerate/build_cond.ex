@@ -4,7 +4,6 @@ defmodule Exonerate.BuildCond do
   @type expr :: {atom, list, any} | atom
   @type condclause :: {test::expr, clause::expr}
   @type right_arrow_ast :: {:"->", list, list(expr | list(expr))}
-  @type defblock :: {:def, any, any}
   @type condblock :: :ok | {:cond, any, any}
 
   @spec build([condclause]) :: condblock
@@ -15,7 +14,7 @@ defmodule Exonerate.BuildCond do
     in a quoted fashion.
   """
   def build([]), do: :ok
-  def build(cond_clauses) when is_list(cond_clauses) do
+  def build(cond_clauses) do
 
     # wrap turning the cond clauses into a right arrow list AST, inside
     # the standard AST for a cond clause.  This has been empirically
@@ -41,7 +40,7 @@ defmodule Exonerate.BuildCond do
     ++ [right_arrow({true, :ok})]
   end
 
-  @spec right_arrow({expr, expr}) :: right_arrow_ast
+  @spec right_arrow(condclause) :: right_arrow_ast
   defp right_arrow({test, clause}) do
 
     # the AST of a typical right arrow clause is encoded here.  I suspect

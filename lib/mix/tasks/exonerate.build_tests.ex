@@ -7,6 +7,8 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
   @ignore ["definitions.json", "ref.json", "refRemote.json"]
   @banned %{"multipleOf" => ["by number", "by small number"]}
 
+  @impl true
+  @spec run([String.t]) :: :ok
   def run(_) do
     File.rm_rf!(@destdir)
     File.mkdir_p!(@destdir)
@@ -18,10 +20,14 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
     |> Stream.map(&json_to_exmap/1)
     |> Stream.map(&exmap_to_macro/1)
     |> Stream.map(fn {t, m} -> {t, Macro.to_string(m, &ast_xform/2)} end)
-    |> Stream.map(fn
-      {t, m} -> {t, Code.format_string!(m, locals_without_parens: [defschema: :*])}
-    end)
+    |> Stream.map(&format_string/1)
     |> Enum.map(&send_to_file/1)
+    :ok
+  end
+
+  @spec format_string({String.t, String.t})::{String.t, iodata}
+  defp format_string({t, m}) do
+    {t, Code.format_string!(m, locals_without_parens: [defschema: :*])}
   end
 
   def send_to_file({title, m}) do

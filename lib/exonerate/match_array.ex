@@ -30,7 +30,7 @@ defmodule Exonerate.MatchArray do
     end
   end
 
-  @spec build_cond(specmap, atom) :: [BuildCond.cond_clauses]
+  @spec build_cond(specmap, atom) :: [BuildCond.condclause]
   defp build_cond(spec = %{"additionalItems" => _props, "items" => parr}, method) when is_list(parr) do
     #this only gets triggered when we have a tuple list.
     child_fn = method
