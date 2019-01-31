@@ -6,10 +6,7 @@ defmodule Exonerate.Annotate do
 
   alias Exonerate.Parser
 
-  @type public_t :: Exonerate.public
   @type tag_t :: Exonerate.tag
-  @type req_t :: Exonerate.refreq
-  @type impl_t :: Exonerate.refimp
 
   @spec spec(atom)::tag_t
   @doc """
@@ -31,8 +28,10 @@ defmodule Exonerate.Annotate do
     %{parser | public: MapSet.put(parser.public, method)}
   end
 
-  @spec req(atom)::req_t
-  def req(atom), do: {:refreq, atom}
+  @spec req(Parser.t, atom)::Parser.t
+  def req(parser, method) do
+    %{parser | refreq: MapSet.put(parser.refreq, method)}
+  end
 
   @spec impl(Parser.t, atom)::Parser.t
   @doc """

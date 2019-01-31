@@ -85,63 +85,6 @@ defmodule Exonerate do
   #  process(new_m, exschema)
   #end
 
-
-  # metadata things
-  ## match refs - refs override all other specs.
-  #def matcher(       %{"$ref" => ref}, method),          do: Reference.match(ref, method)
-  ## match if-then-else
-  #def matcher(spec = %{"if" => _}, method),              do: Conditional.match(spec, method)
-  ## match enums and consts
-  #def matcher(spec = %{"enum" => elist}, method),        do: MatchEnum.match_enum(spec, elist, method)
-  #def matcher(spec = %{"const" => const}, method),       do: MatchEnum.match_const(spec, const, method)
-  ## match combining elements
-  #def matcher(spec = %{"allOf" => clist}, method),       do: Combining.match_allof(spec, clist, method)
-  #def matcher(spec = %{"anyOf" => clist}, method),       do: Combining.match_anyof(spec, clist, method)
-  #def matcher(spec = %{"oneOf" => clist}, method),       do: Combining.match_oneof(spec, clist, method)
-  #def matcher(spec = %{"not" => inv}, method),           do: Combining.match_not(spec, inv, method)
-  ## type matching things
-  ## lists and no type spec
-  #def matcher(spec = %{"type" => list}, method) when is_list(list), do: match_list(spec, list, method)
-  #def matcher(spec, method), do: match_list(spec, @all_types, method)
-#
-  #@spec match_list(map, list, atom) :: [defblock]
-  #defp match_list(_spec, [], method), do: never_matches(method)
-  #defp match_list(spec, ["string" | tail], method) do
-  #  head_code = MatchString.match(spec, method, false)
-  #  tail_code = match_list(spec, tail, method)
-  #  head_code ++ tail_code
-  #end
-  #defp match_list(spec, ["integer" | tail], method) do
-  #  head_code = MatchNumber.match_int(spec, method, false)
-  #  tail_code = match_list(spec, tail, method)
-  #  head_code ++ tail_code
-  #end
-  #defp match_list(spec, ["number" | tail], method) do
-  #  head_code = MatchNumber.match(spec, method, false)
-  #  tail_code = match_list(spec, tail, method)
-  #  head_code ++ tail_code
-  #end
-  #defp match_list(spec, ["object" | tail], method) do
-  #  head_code = MatchObject.match(spec, method, false)
-  #  tail_code = match_list(spec, tail, method)
-  #  head_code ++ tail_code
-  #end
-  #defp match_list(spec, ["array" | tail], method) do
-  #  head_code = MatchArray.match(spec, method, false)
-  #  tail_code = match_list(spec, tail, method)
-  #  head_code ++ tail_code
-  #end
-  #defp match_list(spec, ["boolean" | tail], method) do
-  #  head_code = match_boolean(spec, method, false)
-  #  tail_code = match_list(spec, tail, method)
-  #  head_code ++ tail_code
-  #end
-  #defp match_list(spec, ["null" | tail], method) do
-  #  head_code = match_null(spec, method, false)
-  #  tail_code = match_list(spec, tail, method)
-  #  head_code ++ tail_code
-  #end
-#
   ##############################################################################
   ## utilities
 

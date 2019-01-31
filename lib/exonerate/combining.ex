@@ -1,13 +1,14 @@
 defmodule Exonerate.Combining do
 
   alias Exonerate.Method
+  alias Exonerate.Parser
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type defblock :: Exonerate.defblock
+  @type parser   :: Parser.t
 
-  @spec match_allof(map, list(any), atom) :: [defblock]
-  def match_allof(base_spec, spec_list, method) do
+  @spec match_allof(map, parser, list(any), atom) :: parser
+  def match_allof(base_spec, parser, spec_list, method) do
 
     children_fn = &Method.concat(method, "all_of_" <> inspect &1)
     base_child = Method.concat(method, "all_of_base")
@@ -20,32 +21,33 @@ defmodule Exonerate.Combining do
 
     dependencies = spec_list
     |> Enum.with_index
-    |> Enum.flat_map(
+    |> Enum.map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
-        Exonerate.matcher(spec, child_method)
+        Parser.match(spec, parser, child_method)
       end
     )
 
     base_dependency = base_spec
     |> Map.delete("allOf")
-    |> Exonerate.matcher(base_child)
+    |> Parser.match(parser, base_child)
 
-    [quote do
-      defp unquote(method)(val) do
-        mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
-        Exonerate.Reduce.allof(
-          val,
-          unquote(deps_fns),
-          mismatch)
-      end
-    end]
-    ++ base_dependency
-    ++ dependencies
+    parser
+    |> Parser.add_dependencies([base_dependency | dependencies])
+    |> Parser.append_blocks([
+      quote do
+        defp unquote(method)(val) do
+          mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
+          Exonerate.Reduce.allof(
+            val,
+            unquote(deps_fns),
+            mismatch)
+        end
+      end])
   end
 
-  @spec match_anyof(map, list(any), atom) :: [defblock]
-  def match_anyof(base_spec, spec_list, method) do
+  @spec match_anyof(map, parser, list(any), atom) :: parser
+  def match_anyof(base_spec, parser, spec_list, method) do
 
     children_fn = &Method.concat(method, "any_of_" <> inspect &1)
     base_child = Method.concat(method, "any_of_base")
@@ -57,33 +59,34 @@ defmodule Exonerate.Combining do
 
     dependencies = spec_list
     |> Enum.with_index
-    |> Enum.flat_map(
+    |> Enum.map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
-        Exonerate.matcher(spec, child_method)
+        Parser.match(spec, parser, child_method)
       end
     )
 
     base_dependency = base_spec
     |> Map.delete("anyOf")
-    |> Exonerate.matcher(base_child)
+    |> Parser.match(parser, base_child)
 
-    [quote do
-      defp unquote(method)(val) do
-        mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
-        Exonerate.Reduce.anyof(
-          val,
-          unquote(deps_fns),
-          unquote(base_child_fn),
-          mismatch)
-      end
-    end]
-    ++ base_dependency
-    ++ dependencies
+    parser
+    |> Parser.add_dependencies([base_dependency | dependencies])
+    |> Parser.append_blocks([
+      quote do
+        defp unquote(method)(val) do
+          mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
+          Exonerate.Reduce.anyof(
+            val,
+            unquote(deps_fns),
+            unquote(base_child_fn),
+            mismatch)
+        end
+      end])
   end
 
-  @spec match_oneof(map, list(any), atom) :: [defblock]
-  def match_oneof(base_spec, spec_list, method) do
+  @spec match_oneof(map, parser, list(any), atom) :: parser
+  def match_oneof(base_spec, parser, spec_list, method) do
 
     children_fn = &Method.concat(method, "one_of_" <> inspect &1)
     base_child = Method.concat(method, "one_of_base")
@@ -95,33 +98,34 @@ defmodule Exonerate.Combining do
 
     dependencies = spec_list
     |> Enum.with_index
-    |> Enum.flat_map(
+    |> Enum.map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
-        Exonerate.matcher(spec, child_method)
+        Parser.match(spec, parser, child_method)
       end
     )
 
     base_dependency = base_spec
     |> Map.delete("oneOf")
-    |> Exonerate.matcher(base_child)
+    |> Parser.match(parser, base_child)
 
-    [quote do
-      defp unquote(method)(val) do
-        mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
-        Exonerate.Reduce.oneof(
-          val,
-          unquote(deps_fns),
-          unquote(base_child_fn),
-          mismatch)
-      end
-    end]
-    ++ base_dependency
-    ++ dependencies
+    parser
+    |> Parser.add_dependencies([base_dependency | dependencies])
+    |> Parser.append_blocks([
+      quote do
+        defp unquote(method)(val) do
+          mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
+          Exonerate.Reduce.oneof(
+            val,
+            unquote(deps_fns),
+            unquote(base_child_fn),
+            mismatch)
+        end
+      end])
   end
 
-  @spec match_not(map, any, atom) :: [defblock]
-  def match_not(base_spec, inv_spec, method) do
+  @spec match_not(map, parser, any, atom) :: parser
+  def match_not(base_spec, parser, inv_spec, method) do
 
     not_child = Method.concat(method, "not")
     not_fn = Method.to_lambda(not_child)
@@ -131,9 +135,14 @@ defmodule Exonerate.Combining do
 
     base_dependency = base_spec
     |> Map.delete("not")
-    |> Exonerate.matcher(base_child)
+    |> Parser.match(parser, base_child)
 
-    [quote do
+    new_parser = struct!(Exonerate.Parser)
+    inv_dependency = Parser.match(inv_spec, new_parser, not_child)
+
+    parser
+    |> Parser.add_dependencies([base_dependency, inv_dependency])
+    |> Parser.append_blocks([quote do
       defp unquote(method)(val) do
         mismatch = Exonerate.mismatch(__MODULE__, unquote(method), val)
         Exonerate.Reduce.apply_not(
@@ -142,9 +151,7 @@ defmodule Exonerate.Combining do
           unquote(base_child_fn),
           mismatch)
       end
-    end]
-    ++ base_dependency
-    ++ Exonerate.matcher(inv_spec, not_child)
+    end])
   end
 
 end
