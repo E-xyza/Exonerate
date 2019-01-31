@@ -6,6 +6,7 @@ defmodule Exonerate.Annotate do
 
   @type public_t :: Exonerate.public
   @type tag_t :: Exonerate.tag
+  @type req_t :: Exonerate.refreq
   @type impl_t :: Exonerate.refimp
 
   @spec spec(atom)::tag_t
@@ -25,6 +26,9 @@ defmodule Exonerate.Annotate do
   queryable metadata.
   """
   def public(atom), do: {:public, atom}
+
+  @spec req(atom)::req_t
+  def req(atom), do: {:refreq, atom}
 
   @spec impl(atom)::impl_t
   @doc """

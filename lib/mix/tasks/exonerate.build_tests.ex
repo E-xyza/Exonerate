@@ -7,9 +7,7 @@ defmodule Mix.Tasks.Exonerate.BuildTests do
   @ignore ["definitions.json", "refRemote.json"]
   @banned %{
     "multipleOf" => ["by number", "by small number"],
-    "ref" => ["escaped pointer ref", "nested refs",
-      "ref overrides any sibling keywords",
-      "$ref to boolean schema true", "$ref to boolean schema false",
+    "ref" => [#"escaped pointer ref",
       "Recursive references between schemas", "remote ref, containing refs itself"]
   }
 

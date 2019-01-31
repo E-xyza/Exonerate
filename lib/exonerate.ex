@@ -24,6 +24,7 @@ defmodule Exonerate do
   alias Exonerate.MatchObject
   alias Exonerate.MatchString
   alias Exonerate.Metadata
+  alias Exonerate.Method
   alias Exonerate.Reference
 
   @type specmap  :: %{optional(String.t) => json}
@@ -39,25 +40,61 @@ defmodule Exonerate do
 
   defmacro defschema([{method, json} | _opts]) do
 
-    exmap = json
+    exschema = json
     |> maybe_desigil
     |> Jason.decode!
 
-    components = exmap
+    components = exschema
     |> matcher(method)
     # prepend a term stating that the generated method
     # is guaranteed to be public, and have the desired spec.
     |> fn arr -> [Annotate.public(method) | arr] end.()
     |> Enum.group_by(&discriminator/1)
-    |> fn map ->
-      IO.inspect(map[:refreq], label: "reference requests")
-      map
-    end.()
+    |> clear_requests
+    |> process(exschema)
     |> defp_to_def
 
-    quote do
+    res = quote do
       unquote_splicing(components)
     end
+
+    #res
+    #|> Macro.to_string
+    #|> IO.puts
+
+    res
+  end
+
+  def clear_requests(map) do
+    unhandled_requests = if map[:refreq] do
+      map[:refreq]
+      |> Enum.uniq
+      |> Enum.reject(fn {:refreq, v} ->
+        map[:refimp] && ({:refimp, v} in map[:refimp])
+      end)
+    else
+      []
+    end
+    Map.put(map, :refreq, unhandled_requests)
+  end
+
+  def process(m = %{refreq: []}, _), do: m
+  def process(m = %{refreq: [{:refreq, head} | tail]}, exschema) do
+    # navigate to the schema element referenced by the reference request
+    subschema = Method.subschema(exschema, head)
+
+    components = subschema
+    |> matcher(head)
+    |> Enum.group_by(&discriminator/1)
+
+    new_m = %{
+      refreq: tail ++ (components[:refreq] || []),
+      refimp: m.refimp ++ (components[:refimp] || []),
+      public: m.public ++ (components[:public] || []),
+      blocks: m.blocks ++ (components[:blocks] || [])
+    } |> clear_requests
+
+    process(new_m, exschema)
   end
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
@@ -72,8 +109,8 @@ defmodule Exonerate do
   def matcher(spec = %{"examples" => examples}, method), do: Metadata.set_examples(spec, examples, method)
   def matcher(spec = %{"$schema" => schema}, method),    do: Metadata.set_schema(spec, schema, method)
   def matcher(spec = %{"$id" => id}, method),            do: Metadata.set_id(spec, id, method)
-  # match refs
-  def matcher(spec = %{"$ref" => ref}, method),          do: Reference.match(ref, method)
+  # match refs - refs override all other specs.
+  def matcher(       %{"$ref" => ref}, method),          do: Reference.match(ref, method)
   # match if-then-else
   def matcher(spec = %{"if" => _}, method),              do: Conditional.match(spec, method)
   # match enums and consts
@@ -267,10 +304,8 @@ defmodule Exonerate do
   @spec defp_to_def(any, any, atom, [atom])::defblock
   defp defp_to_def(context, content, title, list) do
     if title in list do
-      specblock = Annotate.spec(title)
       defblock = {:def, context, content}
       quote do
-        unquote(specblock)
         unquote(defblock)
       end
     else
