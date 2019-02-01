@@ -38,13 +38,14 @@ defmodule Exonerate do
   @type annotated_ast :: defblock | public | refreq | refimp
 
   defmacro defschema([{method, json} | _opts]) do
-    exschema = json
+    spec = json
     |> maybe_desigil
     |> Jason.decode!
 
-    final_ast = exschema
+    final_ast = spec
     |> Parser.match(struct(Exonerate.Parser), method)
     |> Parser.collapse_deps
+    |> Parser.external_deps(spec)
     |> Annotate.public(method)
     |> Parser.defp_to_def
 

@@ -1,10 +1,11 @@
 defmodule Exonerate.Conditional do
 
-  @type json     :: Exonerate.json
-  @type specmap  :: Exonerate.specmap
-
   alias Exonerate.Method
   alias Exonerate.Parser
+
+  @type json     :: Exonerate.json
+  @type ast      :: Parser.ast
+  @type specmap  :: Exonerate.specmap
 
   @spec match(json, Parser.t, atom) :: Parser.t
   def match(spec = %{"if" => testspec}, parser, method) do
@@ -43,7 +44,7 @@ defmodule Exonerate.Conditional do
     end])
   end
 
-  @spec ast_and_deps(json | nil, atom) :: [Parser.t]
+  @spec ast_and_deps(json | nil, atom) :: {:ok | ast, [Parser.t]}
 
   defp ast_and_deps(nil, _), do: {:ok, []}
   defp ast_and_deps(spec, name) do

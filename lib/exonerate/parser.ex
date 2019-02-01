@@ -23,6 +23,7 @@ defmodule Exonerate.Parser do
   alias Exonerate.MatchObject
   alias Exonerate.MatchString
   alias Exonerate.Metadata
+  alias Exonerate.Method
   alias Exonerate.Reference
 
   defstruct blocks: [],
@@ -61,7 +62,7 @@ defmodule Exonerate.Parser do
   def match(spec = %{"$schema" => schema}, p, method),    do: Metadata.set_schema(spec, p, schema, method)
   def match(spec = %{"$id" => id}, p, method),            do: Metadata.set_id(spec, p, id, method)
   ## match refs - refs override all other specs.
-  #def match(       %{"$ref" => ref}, p, method),          do: Reference.match(ref, p, method)
+  def match(       %{"$ref" => ref}, p, method),          do: Reference.match(ref, p, method)
   ## match if-then-else
   def match(spec = %{"if" => _}, p, method),              do: Conditional.match(spec, p, method)
   ## match enums and consts
@@ -254,6 +255,31 @@ defmodule Exonerate.Parser do
       refimp: MapSet.union(acc.refimp, collapsed_tgt.refimp),
       deps: Enum.reject(acc.deps, &(&1 == tgt))
     }
+  end
+
+  @emptyset MapSet.new([])
+
+  @spec external_deps(t, json) :: t
+  def external_deps(p = %__MODULE__{refreq: empty}, _spec)
+    when empty == @emptyset, do: p
+  def external_deps(p, spec) do
+    p
+    |> drop_satisfied_refs
+    |> case do
+      p = %__MODULE__{refreq: empty} when empty == @emptyset -> p
+      p = %__MODULE__{refreq: refset} ->
+        head = Enum.at(refset, 0)
+        spec
+        |> Method.subschema(head)
+        |> match(%{p | refreq: MapSet.delete(refset, head)}, head)
+        |> collapse_deps
+        |> external_deps(spec)
+    end
+  end
+
+  @spec drop_satisfied_refs(t) :: t
+  def drop_satisfied_refs(p = %__MODULE__{refreq: refreq, refimp: refimp}) do
+    %{p | refreq: Enum.reduce(refimp, refreq, &MapSet.delete(&2, &1))}
   end
 
 end
