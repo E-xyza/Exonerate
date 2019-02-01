@@ -6,10 +6,9 @@ defmodule Exonerate.MatchArray do
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type parser   :: Parser.t
 
-  @spec match(specmap, parser, atom, boolean) :: parser
-  def match(spec, parser, method, terminal \\ true) do
+  @spec match(Parser.t, specmap, atom, boolean) :: Parser.t
+  def match(parser, spec, method, terminal \\ true) do
 
     cond_stmt = spec
     |> build_cond(method)
@@ -21,16 +20,10 @@ defmodule Exonerate.MatchArray do
       end
     end
 
-    if terminal do
-      parser
-      |> Parser.add_dependencies(build_deps(spec, method))
-      |> Parser.append_blocks([arr_match])
-      |> Parser.never_matches(method)
-    else
-      parser
-      |> Parser.add_dependencies(build_deps(spec, method))
-      |> Parser.append_blocks([arr_match])
-    end
+    parser
+    |> Parser.add_dependencies(build_deps(spec, method))
+    |> Parser.append_blocks([arr_match])
+    |> Parser.never_matches(method, terminal)
   end
 
   @spec build_cond(specmap, atom) :: [BuildCond.condclause]
@@ -156,7 +149,7 @@ defmodule Exonerate.MatchArray do
   end
   defp build_cond(_spec, _method), do: []
 
-  @spec build_deps(specmap, atom) :: [parser]
+  @spec build_deps(specmap, atom) :: [Parser.t]
   defp build_deps(spec = %{"additionalItems" => props, "items" => _}, method) do
     [ additional_dep(props, method)
     | build_deps(Map.delete(spec, "additionalItems"), method)]
@@ -171,34 +164,34 @@ defmodule Exonerate.MatchArray do
   end
   defp build_deps(_,_), do: []
 
-  @spec additional_dep(specmap, atom) :: parser
+  @spec additional_dep(specmap, atom) :: Parser.t
   defp additional_dep(prop, method) do
     add_method = Method.concat(method, "additional_items")
     parser = struct!(Exonerate.Parser)
-    Parser.match(prop, parser, add_method)
+    Parser.match(parser, prop, add_method)
   end
 
-  @spec items_dep([specmap] | specmap, atom) :: [parser]
+  @spec items_dep([specmap] | specmap, atom) :: [Parser.t]
   defp items_dep(iarr, method) when is_list(iarr) do
     iarr
     |> Enum.with_index
     |> Enum.map(fn {spec, idx} ->
       item_method = Method.concat(method, "items__#{idx}")
       parser = struct!(Exonerate.Parser)
-      Parser.match(spec, parser, item_method)
+      Parser.match(parser, spec, item_method)
     end)
   end
   defp items_dep(iobj, method) do
     items_method = Method.concat(method, "items")
     parser = struct!(Exonerate.Parser)
-    [Parser.match(iobj, parser, items_method)]
+    [Parser.match(parser, iobj, items_method)]
   end
 
-  @spec contains_dep(specmap, atom) :: parser
+  @spec contains_dep(specmap, atom) :: Parser.t
   defp contains_dep(cobj, method) do
     contains_method = Method.concat(method, "contains")
     parser = struct!(Exonerate.Parser)
-    Parser.match(cobj, parser, contains_method)
+    Parser.match(parser, cobj, contains_method)
   end
 
 end

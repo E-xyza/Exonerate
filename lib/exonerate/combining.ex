@@ -5,10 +5,9 @@ defmodule Exonerate.Combining do
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type parser   :: Parser.t
 
-  @spec match_allof(map, parser, list(any), atom) :: parser
-  def match_allof(base_spec, parser, spec_list, method) do
+  @spec match_allof(Parser.t, map, list(any), atom) :: Parser.t
+  def match_allof(parser, base_spec, spec_list, method) do
 
     children_fn = &Method.concat(method, "all_of_" <> inspect &1)
     base_child = Method.concat(method, "all_of_base")
@@ -24,13 +23,12 @@ defmodule Exonerate.Combining do
     |> Enum.map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
-        Parser.match(spec, parser, child_method)
+        Parser.match(parser, spec, child_method)
       end
     )
 
-    base_dependency = base_spec
-    |> Map.delete("allOf")
-    |> Parser.match(parser, base_child)
+    rest_spec = Map.delete(base_spec, "allOf")
+    base_dependency = Parser.match(parser, rest_spec, base_child)
 
     parser
     |> Parser.add_dependencies([base_dependency | dependencies])
@@ -46,8 +44,8 @@ defmodule Exonerate.Combining do
       end])
   end
 
-  @spec match_anyof(map, parser, list(any), atom) :: parser
-  def match_anyof(base_spec, parser, spec_list, method) do
+  @spec match_anyof(Parser.t, map, list(any), atom) :: Parser.t
+  def match_anyof(parser, base_spec, spec_list, method) do
 
     children_fn = &Method.concat(method, "any_of_" <> inspect &1)
     base_child = Method.concat(method, "any_of_base")
@@ -62,13 +60,12 @@ defmodule Exonerate.Combining do
     |> Enum.map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
-        Parser.match(spec, parser, child_method)
+        Parser.match(parser, spec, child_method)
       end
     )
 
-    base_dependency = base_spec
-    |> Map.delete("anyOf")
-    |> Parser.match(parser, base_child)
+    rest_spec = Map.delete(base_spec, "anyOf")
+    base_dependency = Parser.match(parser, rest_spec, base_child)
 
     parser
     |> Parser.add_dependencies([base_dependency | dependencies])
@@ -85,8 +82,8 @@ defmodule Exonerate.Combining do
       end])
   end
 
-  @spec match_oneof(map, parser, list(any), atom) :: parser
-  def match_oneof(base_spec, parser, spec_list, method) do
+  @spec match_oneof(Parser.t, map, list(any), atom) :: Parser.t
+  def match_oneof(parser, base_spec, spec_list, method) do
 
     children_fn = &Method.concat(method, "one_of_" <> inspect &1)
     base_child = Method.concat(method, "one_of_base")
@@ -101,13 +98,12 @@ defmodule Exonerate.Combining do
     |> Enum.map(
       fn {spec, idx} ->
         child_method = children_fn.(idx)
-        Parser.match(spec, parser, child_method)
+        Parser.match(parser, spec, child_method)
       end
     )
 
-    base_dependency = base_spec
-    |> Map.delete("oneOf")
-    |> Parser.match(parser, base_child)
+    rest_spec = Map.delete(base_spec, "oneOf")
+    base_dependency = Parser.match(parser, rest_spec, base_child)
 
     parser
     |> Parser.add_dependencies([base_dependency | dependencies])
@@ -124,8 +120,8 @@ defmodule Exonerate.Combining do
       end])
   end
 
-  @spec match_not(map, parser, any, atom) :: parser
-  def match_not(base_spec, parser, inv_spec, method) do
+  @spec match_not(Parser.t, map, any, atom) :: Parser.t
+  def match_not(parser, base_spec, inv_spec, method) do
 
     not_child = Method.concat(method, "not")
     not_fn = Method.to_lambda(not_child)
@@ -133,12 +129,12 @@ defmodule Exonerate.Combining do
     base_child = Method.concat(method, "one_of_base")
     base_child_fn = Method.to_lambda(base_child)
 
-    base_dependency = base_spec
-    |> Map.delete("not")
-    |> Parser.match(parser, base_child)
+    rest_spec = Map.delete(base_spec, "not")
+
+    base_dependency = Parser.match(parser, rest_spec, base_child)
 
     new_parser = struct!(Exonerate.Parser)
-    inv_dependency = Parser.match(inv_spec, new_parser, not_child)
+    inv_dependency = Parser.match(new_parser, inv_spec, not_child)
 
     parser
     |> Parser.add_dependencies([base_dependency, inv_dependency])

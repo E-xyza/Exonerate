@@ -8,7 +8,7 @@ defmodule Exonerate.Conditional do
   @type specmap  :: Exonerate.specmap
 
   @spec match(json, Parser.t, atom) :: Parser.t
-  def match(spec = %{"if" => testspec}, parser, method) do
+  def match(parser, spec = %{"if" => testspec}, method) do
 
     test_child = Method.concat(method, "if")
     then_child = Method.concat(method, "then")
@@ -22,8 +22,8 @@ defmodule Exonerate.Conditional do
 
     new_parser = struct!(Exonerate.Parser)
 
-    test_dep = Parser.match(testspec, new_parser, test_child)
-    base_dep = Parser.match(basespec, new_parser, base_child)
+    test_dep = Parser.match(new_parser, testspec, test_child)
+    base_dep = Parser.match(new_parser, basespec, base_child)
 
     parser
     |> Parser.add_dependencies(then_dep ++ else_dep ++ [test_dep, base_dep])
@@ -52,7 +52,7 @@ defmodule Exonerate.Conditional do
       quote do
         unquote(name)(val)
       end,
-      [Parser.match(spec, struct!(Exonerate.Parser), name)]
+      [Parser.match(struct!(Exonerate.Parser), spec, name)]
     }
   end
 

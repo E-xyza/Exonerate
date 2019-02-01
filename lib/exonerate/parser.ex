@@ -50,41 +50,41 @@ defmodule Exonerate.Parser do
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
 
-  @spec match(json, t, atom)::t
+  @spec match(t, json, atom)::t
   ## match non-objects
-  def match(true, p, method), do: always_matches(p, method)
-  def match(false, p, method), do: never_matches(p, method)
+  def match(p, true, method), do: always_matches(p, method)
+  def match(p, false, method), do: never_matches(p, method, true)
   ## match metadata
-  def match(spec = %{"title" => title}, p, method),       do: Metadata.set_title(spec, p, title, method)
-  def match(spec = %{"description" => desc}, p, method),  do: Metadata.set_description(spec, p, desc, method)
-  def match(spec = %{"default" => default}, p, method),   do: Metadata.set_default(spec, p, default, method)
-  def match(spec = %{"examples" => examples}, p, method), do: Metadata.set_examples(spec, p, examples, method)
-  def match(spec = %{"$schema" => schema}, p, method),    do: Metadata.set_schema(spec, p, schema, method)
-  def match(spec = %{"$id" => id}, p, method),            do: Metadata.set_id(spec, p, id, method)
+  def match(p, spec = %{"title" => title}, method),       do: Metadata.set_title(p, spec, title, method)
+  def match(p, spec = %{"description" => desc}, method),  do: Metadata.set_description(p, spec, desc, method)
+  def match(p, spec = %{"default" => default}, method),   do: Metadata.set_default(p, spec, default, method)
+  def match(p, spec = %{"examples" => examples}, method), do: Metadata.set_examples(p, spec, examples, method)
+  def match(p, spec = %{"$schema" => schema}, method),    do: Metadata.set_schema(p, spec, schema, method)
+  def match(p, spec = %{"$id" => id}, method),            do: Metadata.set_id(p, spec, id, method)
   ## match refs - refs override all other specs.
-  def match(       %{"$ref" => ref}, p, method),          do: Reference.match(ref, p, method)
+  def match(p,        %{"$ref" => ref}, method),          do: Reference.match(p, ref, method)
   ## match if-then-else
-  def match(spec = %{"if" => _}, p, method),              do: Conditional.match(spec, p, method)
+  def match(p, spec = %{"if" => _}, method),              do: Conditional.match(p, spec, method)
   ## match enums and consts
-  def match(spec = %{"enum" => elist}, p, method),        do: MatchEnum.match_enum(spec, p, elist, method)
-  def match(spec = %{"const" => const}, p, method),       do: MatchEnum.match_const(spec, p, const, method)
+  def match(p, spec = %{"enum" => elist}, method),        do: MatchEnum.match_enum(p, spec, elist, method)
+  def match(p, spec = %{"const" => const}, method),       do: MatchEnum.match_const(p, spec, const, method)
   ## match combining elements
-  def match(spec = %{"anyOf" => clist}, p, method),       do: Combining.match_anyof(spec, p, clist, method)
-  def match(spec = %{"allOf" => clist}, p, method),       do: Combining.match_allof(spec, p, clist, method)
-  def match(spec = %{"oneOf" => clist}, p, method),       do: Combining.match_oneof(spec, p, clist, method)
-  def match(spec = %{"not" => inv}, p, method),           do: Combining.match_not(spec, p, inv, method)
+  def match(p, spec = %{"anyOf" => clist}, method),       do: Combining.match_anyof(p, spec, clist, method)
+  def match(p, spec = %{"allOf" => clist}, method),       do: Combining.match_allof(p, spec, clist, method)
+  def match(p, spec = %{"oneOf" => clist}, method),       do: Combining.match_oneof(p, spec, clist, method)
+  def match(p, spec = %{"not" => inv}, method),           do: Combining.match_not(p, spec, inv, method)
   #type matching
-  def match(spec, p, method) when spec == %{},            do: always_matches(p, method)
-  def match(spec = %{"type" => "boolean"}, p, method),    do: match_boolean(spec, p, method)
-  def match(spec = %{"type" => "null"}, p, method),       do: match_null(spec, p, method)
-  def match(spec = %{"type" => "string"}, p, method),     do: MatchString.match(spec, p, method)
-  def match(spec = %{"type" => "integer"}, p, method),    do: MatchNumber.match_int(spec, p, method)
-  def match(spec = %{"type" => "number"}, p, method),     do: MatchNumber.match(spec, p, method)
-  def match(spec = %{"type" => "object"}, p, method),     do: MatchObject.match(spec, p, method)
-  def match(spec = %{"type" => "array"}, p, method),      do: MatchArray.match(spec, p, method)
+  def match(p, spec, method) when spec == %{},            do: always_matches(p, method)
+  def match(p, spec = %{"type" => "boolean"}, method),    do: match_boolean(p, spec, method)
+  def match(p, spec = %{"type" => "null"}, method),       do: match_null(p, spec, method)
+  def match(p, spec = %{"type" => "string"}, method),     do: MatchString.match(p, spec, method)
+  def match(p, spec = %{"type" => "integer"}, method),    do: MatchNumber.match_int(p, spec, method)
+  def match(p, spec = %{"type" => "number"}, method),     do: MatchNumber.match(p, spec, method)
+  def match(p, spec = %{"type" => "object"}, method),     do: MatchObject.match(p, spec, method)
+  def match(p, spec = %{"type" => "array"}, method),      do: MatchArray.match(p, spec, method)
   # lists and no type spec
-  def match(spec = %{"type" => list}, p, method) when is_list(list), do: match_list(spec, p, list, method)
-  def match(spec, p, method), do: match_list(spec, p, @all_types, method)
+  def match(p, spec = %{"type" => list}, method) when is_list(list), do: match_list(p, spec, list, method)
+  def match(p, spec, method), do: match_list(p, spec, @all_types, method)
 
   @spec always_matches(t, atom) :: t
   def always_matches(parser, method) do
@@ -98,8 +98,8 @@ defmodule Exonerate.Parser do
       end])
   end
 
-  @spec never_matches(t, atom) :: t
-  def never_matches(parser, method) do
+  @spec never_matches(t, atom, boolean) :: t
+  def never_matches(parser, method, true) do
     parser
     |> Annotate.impl(method)
     |> append_blocks(
@@ -109,70 +109,68 @@ defmodule Exonerate.Parser do
         end
       end])
   end
+  def never_matches(parser, _, false), do: parser
 
-  @spec match_boolean(map, t, atom, boolean) :: t
-  defp match_boolean(_spec, parser!, method, terminal \\ true) do
-    parser! = parser!
+  @spec match_boolean(t, map, atom, boolean) :: t
+  defp match_boolean(parser, _spec, method, terminal \\ true) do
+    parser
     |> Annotate.impl(method)
     |> append_blocks([quote do
         defp unquote(method)(val) when is_boolean(val) do
           :ok
         end
       end])
-
-    if terminal do
-      never_matches(parser!, method)
-    else
-      parser!
-    end
+    |> never_matches(method, terminal)
   end
 
-  @spec match_null(map, t, atom, boolean) :: t
-  defp match_null(_spec, parser!, method, terminal \\ true) do
-    parser! =  parser!
+  @spec match_null(t, map, atom, boolean) :: t
+  defp match_null(parser, _spec, method, terminal \\ true) do
+    parser
     |> Annotate.impl(method)
     |> append_blocks([quote do
         defp unquote(method)(val) when is_nil(val) do
           :ok
         end
       end])
-
-    if terminal do
-      never_matches(parser!, method)
-    else
-      parser!
-    end
+    |> never_matches(method, terminal)
   end
 
-  @spec match_list(map, t, list, atom) :: t
-  defp match_list(_spec, p, [], method), do: never_matches(p, method)
-  defp match_list(spec, p!, ["string" | tail], method) do
-    p! = MatchString.match(spec, p!, method, false)
-    match_list(spec, p!, tail, method)
+  @spec match_list(t, map, list, atom) :: t
+  defp match_list(p, _spec, [], method), do: never_matches(p, method, true)
+  defp match_list(parser, spec, ["string" | tail], method) do
+    parser
+    |> MatchString.match(spec, method, false)
+    |> match_list(spec, tail, method)
   end
-  defp match_list(spec, p!, ["integer" | tail], method) do
-    p! = MatchNumber.match_int(spec, p!, method, false)
-    match_list(spec, p!, tail, method)
+  defp match_list(parser, spec, ["integer" | tail], method) do
+    parser
+    |> MatchNumber.match_int(spec, method, false)
+    |> match_list(spec, tail, method)
   end
-  defp match_list(spec, p!, ["number" | tail], method) do
-    p! = MatchNumber.match(spec, p!, method, false)
-    match_list(spec, p!, tail, method)
+  defp match_list(parser, spec, ["number" | tail], method) do
+    parser
+    |> MatchNumber.match(spec, method, false)
+    |> match_list(spec, tail, method)
   end
-  defp match_list(spec, p!, ["object" | tail], method) do
-    p! = MatchObject.match(spec, p!, method, false)
-    match_list(spec, p!, tail, method)
+  defp match_list(parser, spec, ["object" | tail], method) do
+    parser
+    |> MatchObject.match(spec, method, false)
+    |> match_list(spec, tail, method)
   end
-  defp match_list(spec, p!, ["array" | tail], method) do
-    p! = MatchArray.match(spec, p!, method, false)
-    match_list(spec, p!, tail, method)
+  defp match_list(parser, spec, ["array" | tail], method) do
+    parser
+    |> MatchArray.match(spec, method, false)
+    |> match_list(spec, tail, method)
   end
-  defp match_list(spec, p!, ["boolean" | tail], method) do
-    p! = match_boolean(spec, p!, method, false)
-    match_list(spec, p!, tail, method)
+  defp match_list(parser, spec, ["boolean" | tail], method) do
+    parser
+    |> match_boolean(spec, method, false)
+    |> match_list(spec, tail, method)
   end
-  defp match_list(spec, p!, ["null" | tail], method) do
-    p! = match_null(spec, p!, method, false)
-    match_list(spec, p!, tail, method)
+  defp match_list(parser, spec, ["null" | tail], method) do
+    parser
+    |> match_null(spec, method, false)
+    |> match_list(spec, tail, method)
   end
 
   @spec append_blocks(t, [ast]) :: t
@@ -269,9 +267,10 @@ defmodule Exonerate.Parser do
       p = %__MODULE__{refreq: empty} when empty == @emptyset -> p
       p = %__MODULE__{refreq: refset} ->
         head = Enum.at(refset, 0)
-        spec
-        |> Method.subschema(head)
-        |> match(%{p | refreq: MapSet.delete(refset, head)}, head)
+        subspec = Method.subschema(spec, head)
+
+        %{p | refreq: MapSet.delete(refset, head)}
+        |> match(subspec, head)
         |> collapse_deps
         |> external_deps(spec)
     end

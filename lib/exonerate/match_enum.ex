@@ -5,19 +5,17 @@ defmodule Exonerate.MatchEnum do
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type parser   :: Parser.t
 
-  @spec match_enum(specmap, parser, list(any), atom) :: parser
-  def match_enum(spec, parser, enum_list, method) do
+  @spec match_enum(Parser.t, specmap, list(any), atom) :: Parser.t
+  def match_enum(parser, spec, enum_list, method) do
     esc_list = Macro.escape(enum_list)
 
     child = Method.concat(method, "_base")
 
     new_parser = struct!(Exonerate.Parser)
 
-    dep = spec
-    |> Map.delete("enum")
-    |> Parser.match(new_parser, child)
+    child_spec = Map.delete(spec, "enum")
+    dep = Parser.match(new_parser, child_spec, child)
 
     parser
     |> Parser.add_dependencies([dep])
@@ -33,17 +31,17 @@ defmodule Exonerate.MatchEnum do
       end])
   end
 
-  @spec match_const(specmap, parser, any, atom) :: parser
-  def match_const(spec, parser, const, method) do
+  @spec match_const(Parser.t, specmap, any, atom) :: Parser.t
+  def match_const(parser, spec, const, method) do
     const_val = Macro.escape(const)
 
     child = Method.concat(method, "_base")
 
     new_parser = struct!(Exonerate.Parser)
 
-    dep = spec
-    |> Map.delete("const")
-    |> Parser.match(new_parser, child)
+    child_spec = Map.delete(spec, "const")
+
+    dep = Parser.match(new_parser, child_spec, child)
 
     parser
     |> Parser.add_dependencies([dep])

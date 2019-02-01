@@ -6,10 +6,9 @@ defmodule Exonerate.MatchObject do
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type parser   :: Parser.t
 
-  @spec match(specmap, parser, atom, boolean) :: parser
-  def match(spec, parser, method, terminal \\ true) do
+  @spec match(Parser.t, specmap, atom, boolean) :: Parser.t
+  def match(parser, spec, method, terminal \\ true) do
 
     # build the conditional statement that guards on the object
     cond_stmt = spec
@@ -22,16 +21,10 @@ defmodule Exonerate.MatchObject do
       end
     end
 
-    if terminal do
-      parser
-      |> Parser.add_dependencies(build_deps(spec, method))
-      |> Parser.append_blocks([obj_match])
-      |> Parser.never_matches(method)
-    else
-      parser
-      |> Parser.add_dependencies(build_deps(spec, method))
-      |> Parser.append_blocks([obj_match])
-    end
+    parser
+    |> Parser.add_dependencies(build_deps(spec, method))
+    |> Parser.append_blocks([obj_match])
+    |> Parser.never_matches(method, terminal)
   end
 
   @spec build_cond(specmap, atom) :: [BuildCond.condclause]
@@ -243,7 +236,7 @@ defmodule Exonerate.MatchObject do
   #############################################################################
   ## Dependency building
 
-  @spec build_deps(specmap, atom) :: [parser]
+  @spec build_deps(specmap, atom) :: [Parser.t]
   defp build_deps(spec = %{"properties" => pobj}, method) do
     Enum.map(pobj, fn {k, v} ->
       property_dep({"properties__" <> k, v}, method)
@@ -273,21 +266,21 @@ defmodule Exonerate.MatchObject do
   end
   defp build_deps(_, _), do: []
 
-  @spec pattern_property_dep(specmap, non_neg_integer, atom) :: parser
+  @spec pattern_property_dep(specmap, non_neg_integer, atom) :: Parser.t
   defp pattern_property_dep(v, idx, method) do
     pattern_child = Method.concat(method, "pattern_properties__#{idx}")
     p = struct!(Exonerate.Parser)
-    Parser.match(v, p, pattern_child)
+    Parser.match(p, v, pattern_child)
   end
 
-  @spec property_dep({String.t, json}, atom) :: parser
+  @spec property_dep({String.t, json}, atom) :: Parser.t
   defp property_dep({k, v}, method) do
     object_child = Method.concat(method, k)
     p = struct!(Exonerate.Parser)
-    Parser.match(v, p, object_child)
+    Parser.match(p, v, object_child)
   end
 
-  @spec object_dep({String.t, json} | json, atom) :: [parser]
+  @spec object_dep({String.t, json} | json, atom) :: [Parser.t]
   defp object_dep(dobj, method) when is_map dobj do
     Enum.map(dobj, &object_dep(&1, method))
   end
@@ -317,10 +310,8 @@ defmodule Exonerate.MatchObject do
     |> Method.concat(k)
 
     parser = struct!(Exonerate.Parser)
-
-    v
-    |> Map.put("type", "object")
-    |> Parser.match(parser, dep_child)
+    sub_spec = Map.put(v, "type", "object")
+    Parser.match(parser, sub_spec, dep_child)
   end
   defp object_dep({k, v}, method) do
     dep_child = method
@@ -328,7 +319,7 @@ defmodule Exonerate.MatchObject do
     |> Method.concat(k)
 
     parser = struct!(Exonerate.Parser)
-    Parser.match(v, parser, dep_child)
+    Parser.match(parser, v, dep_child)
   end
 
 end

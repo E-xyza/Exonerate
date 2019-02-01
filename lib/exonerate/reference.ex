@@ -4,8 +4,8 @@ defmodule Exonerate.Reference do
   alias Exonerate.Method
   alias Exonerate.Parser
 
-  @spec match(String.t, Parser.t, atom)::Parser.t
-  def match(ref, parser, method) do
+  @spec match(Parser.t, String.t, atom)::Parser.t
+  def match(parser, ref, method) do
 
     called_method = method
     |> Method.root

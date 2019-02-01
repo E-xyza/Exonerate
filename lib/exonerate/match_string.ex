@@ -5,10 +5,9 @@ defmodule Exonerate.MatchString do
 
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
-  @type parser   :: Parser.t
 
-  @spec match(specmap, parser, atom, boolean) :: parser
-  def match(spec, parser, method, terminal \\ true) do
+  @spec match(Parser.t, specmap, atom, boolean) :: Parser.t
+  def match(parser, spec, method, terminal \\ true) do
 
     cond_stmt = spec
     |> build_cond(method)
@@ -30,14 +29,9 @@ defmodule Exonerate.MatchString do
       end
     end
 
-    if terminal do
-      parser
-      |> Parser.append_blocks([str_match])
-      |> Parser.never_matches(method)
-    else
-      parser
-      |> Parser.append_blocks([str_match])
-    end
+    parser
+    |> Parser.append_blocks([str_match])
+    |> Parser.never_matches(method, terminal)
   end
 
   @spec build_cond(specmap, atom) :: [BuildCond.condclause]
