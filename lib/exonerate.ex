@@ -34,10 +34,9 @@ defmodule Exonerate do
     |> maybe_desigil
     |> Jason.decode!
 
-    final_ast = spec
-    |> Parser.new_match(method)
-    |> Parser.collapse_deps
-    |> Parser.external_deps(spec)
+    final_ast = method
+    |> Parser.root
+    |> Parser.build_requested(spec)
     |> Annotate.public
     |> Parser.defp_to_def
 

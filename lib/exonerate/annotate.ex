@@ -6,18 +6,6 @@ defmodule Exonerate.Annotate do
 
   alias Exonerate.Parser
 
-  @type tag_t :: Exonerate.tag
-
-  @spec spec(atom)::tag_t
-  @doc """
-  generates a spec tag for a function, will be emitted as AST.
-  """
-  def spec(atom) do
-    quote do
-      @spec unquote(atom)(Exonerate.json):: :ok | Exonerate.mismatch
-    end
-  end
-
   @spec public(Parser.t)::Parser.t
   @doc """
   marks that a method needs to be changed from a `defp` method to a

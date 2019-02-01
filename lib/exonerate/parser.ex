@@ -52,6 +52,11 @@ defmodule Exonerate.Parser do
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
 
+  @spec root(atom)::t
+  def root(method) do
+    %__MODULE__{method: method, refreq: MapSet.new([method])}
+  end
+
   @spec new_match(json, atom)::t
   def new_match(spec, method) do
     __MODULE__
@@ -185,12 +190,12 @@ defmodule Exonerate.Parser do
 
   @spec append_blocks(t, [ast]) :: t
   def append_blocks(parser, blocks) do
-    %{parser | blocks: parser.blocks ++ blocks}
+    %__MODULE__{parser | blocks: parser.blocks ++ blocks}
   end
 
   @spec add_dependencies(t, [t]) :: t
-  def add_dependencies(parser, deps) do
-    %{parser | deps: parser.deps ++ deps}
+  def add_dependencies(parser, deps) when is_list(deps) do
+    %__MODULE__{parser | deps: parser.deps ++ deps}
   end
 
   #
@@ -268,10 +273,10 @@ defmodule Exonerate.Parser do
 
   @emptyset MapSet.new([])
 
-  @spec external_deps(t, json) :: t
-  def external_deps(p = %__MODULE__{refreq: empty}, _spec)
+  @spec build_requested(t, json) :: t
+  def build_requested(p = %__MODULE__{refreq: empty}, _spec)
     when empty == @emptyset, do: p
-  def external_deps(p, spec) do
+  def build_requested(p, spec) do
     p
     |> drop_satisfied_refs
     |> case do
@@ -279,14 +284,14 @@ defmodule Exonerate.Parser do
       p = %__MODULE__{refreq: refset} ->
         head = Enum.at(refset, 0)
 
-        external_dep = spec
+        unbuilt_dep = spec
         |> Method.subschema(head)
         |> new_match(head)
 
         %{p | refreq: MapSet.delete(refset, head)}
-        |> add_dependencies([external_dep])
+        |> add_dependencies([unbuilt_dep])
         |> collapse_deps
-        |> external_deps(spec)
+        |> build_requested(spec)
     end
   end
 
