@@ -210,7 +210,7 @@ defmodule Exonerate.Parser do
   #
   @spec defp_to_def(t)::[ast]
   def defp_to_def(parser) do
-    Enum.map(parser.blocks, &defp_to_def(&1, parser.public))
+    public_specs(parser) ++ Enum.map(parser.blocks, &defp_to_def(&1, parser))
   end
 
   #
@@ -221,18 +221,18 @@ defmodule Exonerate.Parser do
   # types of elements, e.g. @ tags.
   #
   @spec defp_to_def(ast, MapSet.t(atom))::ast
-  defp defp_to_def({:__block__, context, blocklist}, publics) do
+  defp defp_to_def({:__block__, context, blocklist}, parser) do
     {
       :__block__,
       context,
-      Enum.map(blocklist, &defp_to_def(&1, publics))
+      Enum.map(blocklist, &defp_to_def(&1, parser))
     }
   end
-  defp defp_to_def({:defp, context, content = [{:when, _, [{title, _, _} | _]} | _]}, list) do
-    defp_to_def(context, content, title, list)
+  defp defp_to_def({:defp, context, content = [{:when, _, [{title, _, _} | _]} | _]}, parser) do
+    defp_to_def(context, content, title, parser)
   end
-  defp defp_to_def({:defp, context, content = [{title, _, _} | _]}, list) do
-    defp_to_def(context, content, title, list)
+  defp defp_to_def({:defp, context, content = [{title, _, _} | _]}, parser) do
+    defp_to_def(context, content, title, parser)
   end
   defp defp_to_def(any, _), do: any
 
@@ -245,13 +245,10 @@ defmodule Exonerate.Parser do
   # parameter is in the list of "to change to def".  Publicized methods are
   # given @spec statements.
   #
-  @spec defp_to_def(any, any, atom, MapSet.t(atom))::ast
-  defp defp_to_def(context, content, title, list) do
-    if title in list do
-      defblock = {:def, context, content}
-      quote do
-        unquote(defblock)
-      end
+  @spec defp_to_def(any, any, atom, t)::ast
+  defp defp_to_def(context, content, title, parser) do
+    if title in parser.public do
+      {:def, context, content}
     else
       {:defp, context, content}
     end
@@ -302,6 +299,14 @@ defmodule Exonerate.Parser do
   @spec drop_satisfied_refs(t) :: t
   def drop_satisfied_refs(p = %__MODULE__{refreq: refreq, refimp: refimp}) do
     %{p | refreq: Enum.reduce(refimp, refreq, &MapSet.delete(&2, &1))}
+  end
+
+  def public_specs(%__MODULE__{public: publics}) do
+    list = Enum.map(publics, fn method ->
+      quote do
+        @spec unquote(method)(Exonerate.json):: :ok | Exonerate.mismatch
+      end
+    end)
   end
 
 end

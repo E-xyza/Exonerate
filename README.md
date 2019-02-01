@@ -36,21 +36,22 @@ Add the following lines to your mix.exs
 ```elixir
 
 defmodule SchemaModule do
-  include Exonerate
+  import Exonerate
 
   @schemadoc """
   validates our input
   """
   defschema validate_input: """
   {
-    "type":"object"
+    "type":"object",
     "properties":{
       "parameter":{"type":"integer"}
     }
   }
   """
 end
-
+```
+```
 iex> SchemaModule.validate_input("some string")
 {:mismatch, "#", "some string"}
 
@@ -60,6 +61,23 @@ iex> SchemaModule.validate_input(%{"parameter" => "2"})
 iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok
 
+iex> h SchemaModule.validate_input                   
+
+                            def validate_input(val)                             
+
+  @spec validate_input(Exonerate.json()) :: :ok | Exonerate.mismatch()
+
+validates our input
+
+Matches JSONSchema:
+
+    {
+      "type":"object",
+      "properties":{
+        "parameter":{"type":"integer"}
+      }
+    }
+    
 ```
 
 

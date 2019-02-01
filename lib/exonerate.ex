@@ -15,24 +15,11 @@ defmodule Exonerate do
   """
 
   alias Exonerate.Annotate
-  alias Exonerate.BuildCond
   alias Exonerate.Parser
 
-  @type specmap  :: %{optional(String.t) => json}
-  @type condlist :: [BuildCond.condclause]
-  @type ast_def :: {:defp, any, any} | {:def, any, any}
-  @type ast_blk :: {:__block__, any, any}
-  @type ast_tag :: {:@, any, any}
-  @type defblock :: ast_def | ast_blk | ast_tag
-  @type public :: {:public, atom}
-  @type refreq :: {:refreq, atom}
-  @type refimp :: {:refimp, atom}
-  @type annotated_ast :: defblock | public | refreq | refimp
-
   defmacro defschema([{method, json} | _opts]) do
-    spec = json
-    |> maybe_desigil
-    |> Jason.decode!
+    text_json = maybe_desigil(json)
+    spec = Jason.decode!(text_json)
 
     final_ast = method
     |> Parser.root
@@ -40,8 +27,26 @@ defmodule Exonerate do
     |> Annotate.public
     |> Parser.defp_to_def
 
+    docstr = """
+    Matches JSONSchema:
+    ```
+    #{text_json}
+    ```
+    """
+
+    docblock = quote do
+      @doc (if @schemadoc do
+      """
+        #{@schemadoc}
+        #{unquote(docstr)}
+      """
+      else
+        unquote(docstr)
+      end)
+    end
+
     res = quote do
-      unquote_splicing(final_ast)
+      unquote_splicing([docblock | final_ast])
     end
 
     IO.puts("======================")
