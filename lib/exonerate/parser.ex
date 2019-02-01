@@ -53,6 +53,10 @@ defmodule Exonerate.Parser do
   @all_types ["string", "number", "boolean", "null", "object", "array"]
 
   @spec root(atom)::t
+  @doc """
+  generates a parser struct which is poised to trigger the construction and
+  building of the method root functions.
+  """
   def root(method) do
     %__MODULE__{method: method, refreq: MapSet.new([method])}
   end
