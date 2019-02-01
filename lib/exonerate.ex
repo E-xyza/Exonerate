@@ -41,13 +41,9 @@ defmodule Exonerate do
     |> Annotate.public
     |> Parser.defp_to_def
 
-    res = quote do
+    quote do
       unquote_splicing(final_ast)
     end
-
-    #res |> Macro.to_string |> IO.puts
-
-    res
   end
 
   ##############################################################################

@@ -9,8 +9,8 @@ defmodule Exonerate.Combining do
   @spec match_allof(Parser.t, map, list(any)) :: Parser.t
   def match_allof(parser, base_spec, spec_list) do
 
-    children_fn = &Method.concat(parser.method, "all_of_" <> inspect &1)
-    base_child = Method.concat(parser.method, "all_of_base")
+    children_fn = &Method.concat(parser, "all_of_" <> inspect &1)
+    base_child = Method.concat(parser, "all_of_base")
     base_child_fn = Method.to_lambda(base_child)
 
     deps_fns = (0..(Enum.count(spec_list) - 1)
