@@ -34,16 +34,20 @@ defmodule Exonerate do
     |> maybe_desigil
     |> Jason.decode!
 
-    final_ast = struct(Exonerate.Parser)
-    |> Parser.match(spec, method)
+    final_ast = spec
+    |> Parser.new_match(method)
     |> Parser.collapse_deps
     |> Parser.external_deps(spec)
-    |> Annotate.public(method)
+    |> Annotate.public
     |> Parser.defp_to_def
 
-    quote do
+    res = quote do
       unquote_splicing(final_ast)
     end
+
+    #res |> Macro.to_string |> IO.puts
+
+    res
   end
 
   ##############################################################################

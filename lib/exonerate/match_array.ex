@@ -7,23 +7,23 @@ defmodule Exonerate.MatchArray do
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
 
-  @spec match(Parser.t, specmap, atom, boolean) :: Parser.t
-  def match(parser, spec, method, terminal \\ true) do
+  @spec match(Parser.t, specmap, boolean) :: Parser.t
+  def match(parser, spec, terminal \\ true) do
 
     cond_stmt = spec
-    |> build_cond(method)
+    |> build_cond(parser.method)
     |> BuildCond.build
 
     arr_match = quote do
-      defp unquote(method)(val) when is_list(val) do
+      defp unquote(parser.method)(val) when is_list(val) do
         unquote(cond_stmt)
       end
     end
 
     parser
-    |> Parser.add_dependencies(build_deps(spec, method))
+    |> Parser.add_dependencies(build_deps(spec, parser.method))
     |> Parser.append_blocks([arr_match])
-    |> Parser.never_matches(method, terminal)
+    |> Parser.never_matches(terminal)
   end
 
   @spec build_cond(specmap, atom) :: [BuildCond.condclause]
@@ -167,8 +167,7 @@ defmodule Exonerate.MatchArray do
   @spec additional_dep(specmap, atom) :: Parser.t
   defp additional_dep(prop, method) do
     add_method = Method.concat(method, "additional_items")
-    parser = struct!(Exonerate.Parser)
-    Parser.match(parser, prop, add_method)
+    Parser.new_match(prop, add_method)
   end
 
   @spec items_dep([specmap] | specmap, atom) :: [Parser.t]
@@ -177,21 +176,18 @@ defmodule Exonerate.MatchArray do
     |> Enum.with_index
     |> Enum.map(fn {spec, idx} ->
       item_method = Method.concat(method, "items__#{idx}")
-      parser = struct!(Exonerate.Parser)
-      Parser.match(parser, spec, item_method)
+      Parser.new_match(spec, item_method)
     end)
   end
   defp items_dep(iobj, method) do
     items_method = Method.concat(method, "items")
-    parser = struct!(Exonerate.Parser)
-    [Parser.match(parser, iobj, items_method)]
+    [Parser.new_match(iobj, items_method)]
   end
 
   @spec contains_dep(specmap, atom) :: Parser.t
   defp contains_dep(cobj, method) do
     contains_method = Method.concat(method, "contains")
-    parser = struct!(Exonerate.Parser)
-    Parser.match(parser, cobj, contains_method)
+    Parser.new_match(cobj, contains_method)
   end
 
 end

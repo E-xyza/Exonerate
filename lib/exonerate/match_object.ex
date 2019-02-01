@@ -7,24 +7,24 @@ defmodule Exonerate.MatchObject do
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
 
-  @spec match(Parser.t, specmap, atom, boolean) :: Parser.t
-  def match(parser, spec, method, terminal \\ true) do
+  @spec match(Parser.t, specmap, boolean) :: Parser.t
+  def match(parser, spec, terminal \\ true) do
 
     # build the conditional statement that guards on the object
     cond_stmt = spec
-    |> build_cond(method)
+    |> build_cond(parser.method)
     |> BuildCond.build
 
     obj_match = quote do
-      defp unquote(method)(val) when is_map(val) do
+      defp unquote(parser.method)(val) when is_map(val) do
         unquote(cond_stmt)
       end
     end
 
     parser
-    |> Parser.add_dependencies(build_deps(spec, method))
+    |> Parser.add_dependencies(build_deps(spec, parser.method))
     |> Parser.append_blocks([obj_match])
-    |> Parser.never_matches(method, terminal)
+    |> Parser.never_matches(terminal)
   end
 
   @spec build_cond(specmap, atom) :: [BuildCond.condclause]
@@ -269,15 +269,13 @@ defmodule Exonerate.MatchObject do
   @spec pattern_property_dep(specmap, non_neg_integer, atom) :: Parser.t
   defp pattern_property_dep(v, idx, method) do
     pattern_child = Method.concat(method, "pattern_properties__#{idx}")
-    p = struct!(Exonerate.Parser)
-    Parser.match(p, v, pattern_child)
+    Parser.new_match(v, pattern_child)
   end
 
   @spec property_dep({String.t, json}, atom) :: Parser.t
   defp property_dep({k, v}, method) do
     object_child = Method.concat(method, k)
-    p = struct!(Exonerate.Parser)
-    Parser.match(p, v, object_child)
+    Parser.new_match(v, object_child)
   end
 
   @spec object_dep({String.t, json} | json, atom) :: [Parser.t]
@@ -309,17 +307,16 @@ defmodule Exonerate.MatchObject do
     |> Method.concat("dependencies")
     |> Method.concat(k)
 
-    parser = struct!(Exonerate.Parser)
-    sub_spec = Map.put(v, "type", "object")
-    Parser.match(parser, sub_spec, dep_child)
+    v
+    |> Map.put("type", "object")
+    |> Parser.new_match(dep_child)
   end
   defp object_dep({k, v}, method) do
     dep_child = method
     |> Method.concat("dependencies")
     |> Method.concat(k)
 
-    parser = struct!(Exonerate.Parser)
-    Parser.match(parser, v, dep_child)
+    Parser.new_match(v, dep_child)
   end
 
 end

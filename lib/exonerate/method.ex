@@ -19,6 +19,7 @@ defmodule Exonerate.Method do
   iex> Exonerate.Method.concat(:hello__any_of_base, "world")
   :hello__world
   """
+  def concat(%{method: method}, sub), do: concat(method, sub)
   def concat(method, sub) do
     method
     |> Atom.to_string

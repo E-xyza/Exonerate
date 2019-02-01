@@ -6,11 +6,11 @@ defmodule Exonerate.MatchString do
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
 
-  @spec match(Parser.t, specmap, atom, boolean) :: Parser.t
-  def match(parser, spec, method, terminal \\ true) do
+  @spec match(Parser.t, specmap, boolean) :: Parser.t
+  def match(parser, spec, terminal \\ true) do
 
     cond_stmt = spec
-    |> build_cond(method)
+    |> build_cond(parser.method)
     |> BuildCond.build
 
     length_stmt = if (Map.has_key?(spec, "maxLength") ||
@@ -23,7 +23,7 @@ defmodule Exonerate.MatchString do
     end
 
     str_match = quote do
-      defp unquote(method)(val) when is_binary(val) do
+      defp unquote(parser.method)(val) when is_binary(val) do
         unquote(length_stmt)
         unquote(cond_stmt)
       end
@@ -31,7 +31,7 @@ defmodule Exonerate.MatchString do
 
     parser
     |> Parser.append_blocks([str_match])
-    |> Parser.never_matches(method, terminal)
+    |> Parser.never_matches(terminal)
   end
 
   @spec build_cond(specmap, atom) :: [BuildCond.condclause]

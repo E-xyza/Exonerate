@@ -7,22 +7,22 @@ defmodule Exonerate.MatchNumber do
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
 
-  @spec match_int(Parser.t, map, atom, boolean) :: Parser.t
-  def match_int(parser, spec, method, terminal \\ true) do
+  @spec match_int(Parser.t, map, boolean) :: Parser.t
+  def match_int(parser, spec, terminal \\ true) do
 
     cond_stmt = spec
-    |> build_cond_int(method)
+    |> build_cond_int(parser.method)
     |> BuildCond.build
 
     int_match = quote do
-      defp unquote(method)(val) when is_integer(val) do
+      defp unquote(parser.method)(val) when is_integer(val) do
         unquote(cond_stmt)
       end
     end
 
     parser
     |> Parser.append_blocks([int_match])
-    |> Parser.never_matches(method, terminal)
+    |> Parser.never_matches(terminal)
   end
 
   @spec build_cond_int(specmap, atom) :: [BuildCond.condclause]
@@ -39,22 +39,22 @@ defmodule Exonerate.MatchNumber do
   end
   defp build_cond_int(spec, module), do: build_cond(spec, module)
 
-  @spec match(Parser.t, map, atom, boolean) :: Parser.t
-  def match(parser, spec, method, terminal \\ true) do
+  @spec match(Parser.t, map, boolean) :: Parser.t
+  def match(parser, spec, terminal \\ true) do
 
     cond_stmt = spec
-    |> build_cond(method)
+    |> build_cond(parser.method)
     |> BuildCond.build
 
     num_match = quote do
-      defp unquote(method)(val) when is_number(val) do
+      defp unquote(parser.method)(val) when is_number(val) do
         unquote(cond_stmt)
       end
     end
 
     parser
     |> Parser.append_blocks([num_match])
-    |> Parser.never_matches(method, terminal)
+    |> Parser.never_matches(terminal)
   end
 
   @spec build_cond(specmap, atom) :: [BuildCond.condclause]
