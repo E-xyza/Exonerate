@@ -32,8 +32,7 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "number mismatches a string" do
-      assert {:mismatch, {ExonerateTest.Tutorial.StringTest.String, :string, [42]}} =
-        String.string(42)
+      assert {:mismatch, {"#", 42}} == String.string(42)
     end
   end
 
@@ -62,11 +61,8 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "string of incorrect sizes don't match" do
-      assert {:mismatch, {ExonerateTest.Tutorial.StringTest.Length, :string, ["A"]}} =
-        Length.string("A")
-
-      assert {:mismatch, {ExonerateTest.Tutorial.StringTest.Length, :string, ["ABCD"]}} =
-        Length.string("ABCD")
+      assert {:mismatch, {"#", "A"}} == Length.string("A")
+      assert {:mismatch, {"#", "ABCD"}} == Length.string("ABCD")
     end
   end
 
@@ -94,10 +90,10 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "string of incorrect sizes don't match" do
-      assert {:mismatch, {ExonerateTest.Tutorial.StringTest.Pattern, :string, ["(888)555-1212 ext. 532"]}} =
+      assert {:mismatch, {"#", "(888)555-1212 ext. 532"}} ==
         Pattern.string("(888)555-1212 ext. 532")
 
-      assert {:mismatch, {ExonerateTest.Tutorial.StringTest.Pattern, :string, ["(800)FLOWERS"]}} =
+      assert {:mismatch, {"#", "(800)FLOWERS"}} ==
         Pattern.string("(800)FLOWERS")
     end
   end

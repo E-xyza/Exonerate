@@ -37,10 +37,8 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "object doesn't match array" do
-      assert  {:mismatch,
-        {ExonerateTest.Tutorial.ArrayTest.Array,
-        :array,
-        [%{"Not" => "an array"}]}} = Array.array(%{"Not" => "an array"})
+      assert  {:mismatch, {"#", %{"Not" => "an array"}}} ==
+        Array.array(%{"Not" => "an array"})
     end
   end
 
@@ -81,10 +79,8 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "one non-number ruins the party" do
-      assert  {:mismatch,
-        {ExonerateTest.Tutorial.ArrayTest.ListValidation,
-        :items__items,
-        ["3"]}} = ListValidation.items([1, 2, "3", 4, 5])
+      assert  {:mismatch, {"#/items", "3"}} ==
+        ListValidation.items([1, 2, "3", 4, 5])
     end
 
     test "an empty array passes" do
@@ -103,10 +99,8 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
 
     test "it fails with no numbers" do
       assert  {:mismatch,
-        {ExonerateTest.Tutorial.ArrayTest.ListValidation,
-        :contains,
-        [["life", "universe", "everything", "forty-two"]]}}
-        = ListValidation.contains(["life", "universe", "everything", "forty-two"])
+        {"#", ["life", "universe", "everything", "forty-two"]}} ==
+          ListValidation.contains(["life", "universe", "everything", "forty-two"])
     end
 
     test "all numbers is ok" do
@@ -204,18 +198,13 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "drive is not an acceptable street type" do
-      assert  {:mismatch,
-        {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-        :tuple__items__2,
-        ["Drive"]}}
-        = TupleValidation.tuple([24, "Sussex", "Drive"])
+      assert  {:mismatch, {"#/items/2", "Drive"}}
+        == TupleValidation.tuple([24, "Sussex", "Drive"])
     end
 
     test "address is missing a street number" do
-      assert  {:mismatch,
-        {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-        :tuple__items__0, ["Palais de l'Élysée"]}}
-        = TupleValidation.tuple(["Palais de l'Élysée"])
+      assert  {:mismatch, {"#/items/0", "Palais de l'Élysée"}} ==
+        TupleValidation.tuple(["Palais de l'Élysée"])
     end
 
     test "it's ok to not have all the items" do
@@ -245,10 +234,9 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "it is not ok to provide extra items" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-      :tuple_noadditional__additional_items, ["Washington"]}}
-      = TupleValidation.tuple_noadditional([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+      assert  {:mismatch,{"#/additional_items", "Washington"}} ==
+        TupleValidation.tuple_noadditional(
+          [1600, "Pennsylvania", "Avenue", "NW", "Washington"])
     end
   end
 
@@ -260,10 +248,9 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "but not extra numbers" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.ArrayTest.TupleValidation,
-      :tuple_additional_with_property__additional_items, [20500]}}
-      = TupleValidation.tuple_additional_with_property([1600, "Pennsylvania", "Avenue", "NW", 20500])
+      assert  {:mismatch, {"#/additional_items", 20500}} ==
+        TupleValidation.tuple_additional_with_property(
+          [1600, "Pennsylvania", "Avenue", "NW", 20500])
     end
   end
 
@@ -287,24 +274,10 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
 
   describe "array length works" do
     test "by length" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.ArrayTest.Length,
-      :length, [[]]}}
-      = Length.length([])
-
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.ArrayTest.Length,
-      :length, [[1]]}}
-      = Length.length([1])
-
-      assert :ok = Length.length([1, 2])
-
-      assert :ok = Length.length([1, 2, 3])
-
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.ArrayTest.Length,
-      :length, [[1, 2, 3, 4]]}}
-      = Length.length([1, 2, 3, 4])
+      assert {:mismatch, {"#", []}} == Length.length([])
+      assert :ok == Length.length([1, 2])
+      assert :ok == Length.length([1, 2, 3])
+      assert {:mismatch, {"#", [1, 2, 3, 4]}} == Length.length([1, 2, 3, 4])
     end
   end
 
@@ -329,10 +302,8 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "for arrays" do
       assert :ok = Uniqueness.unique([1, 2, 3, 4, 5])
 
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.ArrayTest.Uniqueness,
-      :unique, [[1, 2, 3, 3, 4]]}}
-      = Uniqueness.unique([1, 2, 3, 3, 4])
+      assert {:mismatch, {"#", [1, 2, 3, 3, 4]}} ==
+        Uniqueness.unique([1, 2, 3, 3, 4])
     end
 
     test "empty array always passes" do

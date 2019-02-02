@@ -25,15 +25,9 @@ defmodule ExonerateTest.Tutorial.BooleanTest do
       assert :ok = Boolean.boolean(false)
     end
     test "doesn't match not quite bools" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.BooleanTest.Boolean,
-      :boolean, ["true"]}}
-      = Boolean.boolean("true")
+      assert  {:mismatch, {"#", "true"}} == Boolean.boolean("true")
 
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.BooleanTest.Boolean,
-      :boolean, [0]}}
-      =  Boolean.boolean(0)
+      assert  {:mismatch, {"#", 0}} == Boolean.boolean(0)
     end
   end
 end

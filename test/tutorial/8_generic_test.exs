@@ -90,10 +90,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     end
 
     test "unenumerated values don't match" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.GenericTest.EnumeratedValues,
-      :enum1, ["blue"]}}
-      = EnumeratedValues.enum1("blue")
+      assert  {:mismatch, {"#", "blue"}} == EnumeratedValues.enum1("blue")
     end
   end
 
@@ -105,10 +102,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     end
 
     test "unenumerated values don't match" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.GenericTest.EnumeratedValues,
-      :enum2, [0]}}
-      = EnumeratedValues.enum2(0)
+      assert  {:mismatch, {"#", 0}} == EnumeratedValues.enum2(0)
     end
   end
 
@@ -118,10 +112,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     end
 
     test "unenumerated values don't match" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.GenericTest.EnumeratedValues,
-      :enum3___base, [nil]}}
-      = EnumeratedValues.enum3(nil)
+      assert {:mismatch, {"#", nil}} == EnumeratedValues.enum3(nil)
     end
   end
 
@@ -150,10 +141,8 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     end
 
     test "unenumerated values don't match" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.GenericTest.ConstantValues,
-      :const__properties__country, ["Canada"]}}
-      = ConstantValues.const(%{"country" => "Canada"})
+      assert  {:mismatch, {"#/properties/country", "Canada"}} ==
+        ConstantValues.const(%{"country" => "Canada"})
     end
   end
 end

@@ -32,11 +32,8 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     end
 
     test "integer mismatches a float or string" do
-      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Integer, :integer, [3.1415926]}} =
-        Integer.integer(3.1415926)
-
-      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Integer, :integer, ["42"]}} =
-        Integer.integer("42")
+      assert {:mismatch, {"#", 3.1415926}} == Integer.integer(3.1415926)
+      assert {:mismatch, {"#", "42"}} == Integer.integer("42")
     end
   end
 
@@ -62,8 +59,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     end
 
     test "number mismatches a string" do
-       assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Number, :number, ["42"]}} =
-        Number.number("42")
+      assert {:mismatch, {"#", "42"}} = Number.number("42")
     end
   end
 
@@ -90,8 +86,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     end
 
     test "multiple mismatches noninteger" do
-      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Multiple, :integer, [23]}} =
-        Multiple.integer(23)
+      assert {:mismatch, {"#", 23}} = Multiple.integer(23)
     end
   end
 
@@ -122,14 +117,9 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     end
 
     test "multiple mismatches noninteger" do
-      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Range, :number, [-1]}} =
-        Range.number(-1)
-
-      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Range, :number, [100]}} =
-        Range.number(100)  #exclusive maximum
-
-      assert {:mismatch, {ExonerateTest.Tutorial.NumericTest.Range, :number, [101]}} =
-        Range.number(101)
+      assert {:mismatch, {"#", -1}} = Range.number(-1)
+      assert {:mismatch, {"#", 100}} = Range.number(100)  #exclusive maximum
+      assert {:mismatch, {"#", 101}} = Range.number(101)
     end
   end
 

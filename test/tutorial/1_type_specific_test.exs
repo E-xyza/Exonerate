@@ -28,8 +28,7 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
     end
 
     test "number mismatches a string" do
-      assert {:mismatch, {ExonerateTest.Tutorial.TypeSpecificTest.Type, :one_type, ["42"]}} =
-        Type.one_type("42")
+      assert {:mismatch, {"#", "42"}} == Type.one_type("42")
     end
   end
 
@@ -41,9 +40,7 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
 
     @struct_list ["Life", "the universe", "and everything"]
     test "number mismatches a structured type" do
-      assert {:mismatch, {ExonerateTest.Tutorial.TypeSpecificTest.Type, :two_types, [@struct_list]}
-       } =
-        Type.two_types(@struct_list)
+      assert {:mismatch, {"#", @struct_list}} == Type.two_types(@struct_list)
     end
   end
 

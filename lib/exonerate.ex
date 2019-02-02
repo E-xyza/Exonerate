@@ -15,6 +15,7 @@ defmodule Exonerate do
   @type mismatch :: {:mismatch, {module, atom, [json]}}
 
   alias Exonerate.Annotate
+  alias Exonerate.Method
   alias Exonerate.Parser
 
   defmacro defschema([{method, json} | _opts]) do
@@ -60,8 +61,9 @@ defmodule Exonerate do
   defp maybe_desigil(any), do: any
 
   defmacro mismatch(m, f, a) do
+    path = Method.to_jsonpath(f)
     quote do
-      {:mismatch, {unquote(m), unquote(f), [unquote(a)]}}
+      {:mismatch, {unquote(path), unquote(a)}}
     end
   end
 

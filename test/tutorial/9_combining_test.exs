@@ -35,15 +35,8 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "things that match none don't match" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.Combining,
-      :combining, ["too long"]}}
-      = Combining.combining("too long")
-
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.Combining,
-      :combining, [-5]}}
-      = Combining.combining(-5)
+      assert  {:mismatch, {"#", "too long"}} == Combining.combining("too long")
+      assert  {:mismatch, {"#", -5}} == Combining.combining(-5)
     end
   end
 
@@ -80,24 +73,14 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "things that mismatch one don't match" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.AllOf,
-      :allof, ["too long"]}}
-      = AllOf.allof("too long")
+      assert  {:mismatch, {"#", "too long"}} == AllOf.allof("too long")
     end
   end
 
   describe "logical impossibilities" do
     test "are possible of allof" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.AllOf,
-      :impossible, ["No way"]}}
-      = AllOf.impossible("No way")
-
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.AllOf,
-      :impossible, [-1]}}
-      = AllOf.impossible(-1)
+      assert  {:mismatch, {"#", "No way"}} = AllOf.impossible("No way")
+      assert  {:mismatch, {"#", -1}} = AllOf.impossible(-1)
     end
   end
 
@@ -127,9 +110,8 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
 
     test "things that mismatch one don't match" do
       assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.AnyOf,
-      :anyof, [%{"Not a" => "string or number"}]}}
-      = AnyOf.anyof(%{"Not a" => "string or number"})
+      {"#", %{"Not a" => "string or number"}}} ==
+        AnyOf.anyof(%{"Not a" => "string or number"})
     end
   end
 
@@ -168,17 +150,11 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "multiples of neither don't" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.OneOf,
-      :oneof, [2]}}
-      = OneOf.oneof(2)
+      assert  {:mismatch, {"#", 2}} == OneOf.oneof(2)
     end
 
     test "multiples of both don't" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.OneOf,
-      :oneof, [15]}}
-      = OneOf.oneof(15)
+      assert  {:mismatch, {"#", 15}} == OneOf.oneof(15)
     end
   end
 
@@ -189,17 +165,11 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "multiples of neither don't" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.OneOf,
-      :factorout, [2]}}
-      = OneOf.factorout(2)
+      assert  {:mismatch, {"#", 2}} == OneOf.factorout(2)
     end
 
     test "multiples of both don't" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.OneOf,
-      :factorout, [15]}}
-      = OneOf.factorout(15)
+      assert  {:mismatch, {"#", 15}} == OneOf.factorout(15)
     end
   end
 
@@ -224,10 +194,7 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "things that mismatch one don't match" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.CombiningTest.Not,
-      :no, ["I am a string"]}}
-      = Not.no("I am a string")
+      assert  {:mismatch, {"#", "I am a string"}} = Not.no("I am a string")
     end
   end
 

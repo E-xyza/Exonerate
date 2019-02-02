@@ -28,20 +28,9 @@ defmodule ExonerateTest.Tutorial.NullTest do
     end
 
     test "doesn't match not quite bools" do
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.NullTest.Null,
-      :null, [false]}}
-      = Null.null(false)
-
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.NullTest.Null,
-      :null, [0]}}
-      = Null.null(0)
-
-      assert  {:mismatch,
-      {ExonerateTest.Tutorial.NullTest.Null,
-      :null, [""]}}
-      = Null.null("")
+      assert  {:mismatch, {"#", false}} == Null.null(false)
+      assert  {:mismatch, {"#", 0}} == Null.null(0)
+      assert  {:mismatch, {"#", ""}} == Null.null("")
     end
   end
 end

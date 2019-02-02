@@ -58,10 +58,10 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     @badarray ["An", "array", "not", "an", "object"]
 
     test "objects mismatches a string or array" do
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Object, :object, ["Not an object"]}} =
+      assert {:mismatch, {"#", "Not an object"}} =
         Object.object("Not an object")
 
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Object, :object, [@badarray]}} =
+      assert {:mismatch, {"#", @badarray}} =
         Object.object(@badarray)
     end
   end
@@ -151,7 +151,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
 
     test "mismatched inner property doesn't match" do
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Properties, :address1__properties__number, ["1600"]}} =
+      assert {:mismatch, {"#/properties/number", "1600"}} ==
         @addr2
         |> Jason.decode!
         |> Properties.address1
@@ -167,7 +167,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "extra properties matches correctly" do
       addr4 = Jason.decode(@addr4)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Properties, :address2, [addr4]}} =
+      assert {:mismatch, {"#", addr4}} ==
         Properties.address2(addr4)
     end
   end
@@ -186,9 +186,8 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
 
     test "extra nonstring property doesn't match" do
-      addr5 = Jason.decode(@addr5)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Properties, :address2, [addr5]}} =
-        Properties.address2(addr5)
+      addr5 = Jason.decode!(@addr5)
+      assert {:mismatch, {"#/additional_properties", 201}} == Properties.address2(addr5)
     end
   end
 
@@ -253,7 +252,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "deficient info is a problem" do
       contact3 = Jason.decode!(@contact3)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.RequiredProperties, :contactinfo, [contact3]}} =
+      assert {:mismatch, {"#", contact3}} ==
         RequiredProperties.contactinfo(contact3)
     end
   end
@@ -291,7 +290,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "not matching the property name doesn't match" do
       token2 = Jason.decode!(@token2)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyNames, :token__property_names, ["001 invalid"]}} =
+      assert {:mismatch, {"#/property_names", "001 invalid"}} =
         PropertyNames.token(token2)
     end
   end
@@ -325,14 +324,12 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   describe "matching property size" do
     test "empty object mismatches" do
       objsize1 = Jason.decode!(@objsize1)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Size, :object, [objsize1]}} =
-        Size.object(objsize1)
+      assert {:mismatch, {"#", objsize1}} == Size.object(objsize1)
     end
 
     test "too small object mismatches" do
       objsize2 = Jason.decode!(@objsize2)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Size, :object, [objsize2]}} =
-        Size.object(objsize2)
+      assert {:mismatch, {"#", objsize2}} == Size.object(objsize2)
     end
 
     test "small goldilocks matches correctly" do
@@ -349,7 +346,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "too large object mismatches" do
       objsize5 = Jason.decode!(@objsize5)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.Size, :object, [objsize5]}} =
+      assert {:mismatch, {"#", objsize5}} ==
         Size.object(objsize5)
     end
   end
@@ -433,7 +430,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
     test "failing to meet dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency1__dependencies__credit_card, [propdependency2]}} =
+      assert {:mismatch, {"#/dependencies/credit_card", propdependency2}} ==
         PropertyDependencies.dependency1(propdependency2)
     end
     test "no dependency doesn't need to be met" do
@@ -451,12 +448,12 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   describe "matching two-way dependency" do
     test "one-way dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency2__dependencies__credit_card, [propdependency2]}} =
+      assert {:mismatch, {"#/dependencies/credit_card", propdependency2}} ==
         PropertyDependencies.dependency2(propdependency2)
     end
     test "dependency is now two-way" do
       propdependency4 = Jason.decode!(@propdependency4)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PropertyDependencies, :dependency2__dependencies__billing_address, [propdependency4]}} =
+      assert {:mismatch, {"#/dependencies/billing_address", propdependency4}} ==
         PropertyDependencies.dependency2(propdependency4)
     end
   end
@@ -524,7 +521,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
     test "partial compliance does not work" do
       schemadependency2 = Jason.decode!(@schemadependency2)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.SchemaDependencies, :schemadependency__dependencies__credit_card, [schemadependency2]}} =
+      assert {:mismatch, {"#/dependencies/credit_card", schemadependency2}} ==
         SchemaDependencies.schemadependency(schemadependency2)
     end
     test "omitting a trigger works" do
@@ -577,18 +574,18 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "integers shouldn't match string pattern" do
       patternmatch3 = Jason.decode!(@patternmatch3)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_properties__1, [42]}} =
+      assert {:mismatch, {"#/pattern_properties/1", 42}} ==
         PatternProperties.patternprop1(patternmatch3)
     end
     test "strings shouldn't match integer pattern" do
       patternmatch4 = Jason.decode!(@patternmatch4)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1__pattern_properties__0, ["This is a string"]}} =
+      assert {:mismatch, {"#/pattern_properties/0", "This is a string"}} ==
         PatternProperties.patternprop1(patternmatch4)
     end
 
     test "additional properties shouldn't match" do
       patternmatch5 = Jason.decode!(@patternmatch5)
-      assert {:mismatch, {ExonerateTest.Tutorial.ObjectTest.PatternProperties, :patternprop1__additional_properties, ["value"]}} =
+      assert {:mismatch, {"#/additional_properties", "value"}} ==
         PatternProperties.patternprop1(patternmatch5)
     end
   end

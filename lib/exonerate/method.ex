@@ -159,4 +159,27 @@ defmodule Exonerate.Method do
     end
   end
 
+  @spec to_jsonpath(atom)::String.t
+  def to_jsonpath(method) do
+    method
+    |> Atom.to_string
+    |> String.split("__")
+    |> tl
+    |> scrub_list
+    |> Enum.join("/")
+    |> finalize_jsonpath
+  end
+
+  @rej_list ["_base", "any_of_base", "all_of_base", "one_of_base", "not_base"]
+  defp scrub_list(list) do
+    Enum.reject(list, fn
+      x when x in @rej_list -> true
+      _ -> false
+    end)
+  end
+
+  @spec finalize_jsonpath(String.t)::String.t
+  defp finalize_jsonpath(""), do: "#"
+  defp finalize_jsonpath(any), do: "#/#{any}"
+
 end
