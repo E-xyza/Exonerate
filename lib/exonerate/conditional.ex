@@ -25,7 +25,7 @@ defmodule Exonerate.Conditional do
 
     parser
     |> Parser.add_dependencies(then_dep ++ else_dep ++ [test_dep, base_dep])
-    |> Parser.append_blocks([quote do
+    |> Parser.append_block(quote do
       defp unquote(parser.method)(val) do
         test_res = if :ok == unquote(test_child)(val) do
           unquote(then_ast)
@@ -39,7 +39,7 @@ defmodule Exonerate.Conditional do
           test_res
         end
       end
-    end])
+    end)
   end
 
   @spec ast_and_deps(json | nil, atom) :: {:ok | ast, [Parser.t]}

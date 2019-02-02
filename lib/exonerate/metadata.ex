@@ -10,12 +10,11 @@ defmodule Exonerate.Metadata do
   def set_title(parser, spec, title) do
     parser
     |> Annotate.public
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         @spec unquote(parser.method)(:title) :: String.t
         defp unquote(parser.method)(:title), do: unquote(title)
-      end
-    ])
+      end)
     |> Parser.match(Map.delete(spec, "title"))
   end
 
@@ -23,12 +22,11 @@ defmodule Exonerate.Metadata do
   def set_description(parser, spec, description) do
     parser
     |> Annotate.public
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         @spec unquote(parser.method)(:description) :: String.t
         defp unquote(parser.method)(:description), do: unquote(description)
-      end
-    ])
+      end)
     |> Parser.match(Map.delete(spec, "description"))
   end
 
@@ -36,12 +34,11 @@ defmodule Exonerate.Metadata do
   def set_default(parser, spec, default) do
     parser
     |> Annotate.public
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         @spec unquote(parser.method)(:default) :: Exonerate.json
         defp unquote(parser.method)(:default), do: unquote(default)
-      end
-    ])
+      end)
     |> Parser.match(Map.delete(spec, "default"))
   end
 
@@ -49,12 +46,11 @@ defmodule Exonerate.Metadata do
   def set_examples(parser, spec, examples) do
     parser
     |> Annotate.public
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         @spec unquote(parser.method)(:examples) :: [Exonerate.json]
         defp unquote(parser.method)(:examples), do: unquote(examples)
-      end
-    ])
+      end)
     |> Parser.match(Map.delete(spec, "examples"))
   end
 
@@ -62,12 +58,11 @@ defmodule Exonerate.Metadata do
   def set_schema(parser, spec, schema) do
     parser
     |> Annotate.public
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         @spec unquote(parser.method)(:schema) :: String.t
         defp unquote(parser.method)(:schema), do: unquote(schema)
-      end
-    ])
+      end)
     |> Parser.match(Map.delete(spec, "$schema"))
   end
 
@@ -75,12 +70,11 @@ defmodule Exonerate.Metadata do
   def set_id(parser, spec, id) do
     parser
     |> Annotate.public
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         @spec unquote(parser.method)(:id) :: String.t
         defp unquote(parser.method)(:id), do: unquote(id)
-      end
-    ])
+      end)
     |> Parser.match(Map.delete(spec, "$id"))
   end
 

@@ -30,7 +30,7 @@ defmodule Exonerate.MatchString do
     end
 
     parser
-    |> Parser.append_blocks([str_match])
+    |> Parser.append_block(str_match)
     |> Parser.never_matches(terminal)
   end
 

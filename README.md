@@ -53,10 +53,10 @@ end
 ```
 ```
 iex> SchemaModule.validate_input("some string")
-{:mismatch, "#", "some string"}
+{:mismatch, {"#", "some string"}}
 
 iex> SchemaModule.validate_input(%{"parameter" => "2"})
-{:mismatch, "#/properties/parameter", "2"}
+{:mismatch, {"#/properties/parameter", "2"}}
 
 iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok

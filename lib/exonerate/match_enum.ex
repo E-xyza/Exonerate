@@ -17,7 +17,7 @@ defmodule Exonerate.MatchEnum do
 
     parser
     |> Parser.add_dependencies([dep])
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         defp unquote(parser.method)(val) do
           if val in unquote(esc_list) do
@@ -26,7 +26,7 @@ defmodule Exonerate.MatchEnum do
             Exonerate.mismatch(__MODULE__, unquote(parser.method), val)
           end
         end
-      end])
+      end)
   end
 
   @spec match_const(Parser.t, specmap, any) :: Parser.t
@@ -41,7 +41,7 @@ defmodule Exonerate.MatchEnum do
 
     parser
     |> Parser.add_dependencies([dep])
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         defp unquote(parser.method)(val) do
           if val == unquote(const_val) do
@@ -50,7 +50,7 @@ defmodule Exonerate.MatchEnum do
             Exonerate.mismatch(__MODULE__, unquote(parser.method), val)
           end
         end
-      end])
+      end)
   end
 
 end

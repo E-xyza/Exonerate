@@ -109,24 +109,24 @@ defmodule Exonerate.Parser do
   def always_matches(parser) do
     parser
     |> Annotate.impl
-    |> append_blocks(
-      [quote do
+    |> append_block(
+      quote do
         defp unquote(parser.method)(_val) do
           :ok
         end
-      end])
+      end)
   end
 
   @spec never_matches(t, boolean) :: t
   def never_matches(parser, true) do
     parser
     |> Annotate.impl
-    |> append_blocks(
-      [quote do
+    |> append_block(
+      quote do
         defp unquote(parser.method)(val) do
           Exonerate.mismatch(__MODULE__, unquote(parser.method), val)
         end
-      end])
+      end)
   end
   def never_matches(parser, false), do: parser
 
@@ -134,11 +134,12 @@ defmodule Exonerate.Parser do
   defp match_boolean(parser, _spec, terminal \\ true) do
     parser
     |> Annotate.impl
-    |> append_blocks([quote do
+    |> append_block(
+      quote do
         defp unquote(parser.method)(val) when is_boolean(val) do
           :ok
         end
-      end])
+      end)
     |> never_matches(terminal)
   end
 
@@ -146,15 +147,16 @@ defmodule Exonerate.Parser do
   defp match_null(parser, _spec, terminal \\ true) do
     parser
     |> Annotate.impl
-    |> append_blocks([quote do
+    |> append_block(
+      quote do
         defp unquote(parser.method)(val) when is_nil(val) do
           :ok
         end
-      end])
+      end)
     |> never_matches(terminal)
   end
 
-  @spec match_list(t, map, list) :: t
+  @spec match_list(t, json, [String.t]) :: t
   defp match_list(p, _spec, []), do: never_matches(p, true)
   defp match_list(parser, spec, ["string" | tail]) do
     parser
@@ -192,9 +194,9 @@ defmodule Exonerate.Parser do
     |> match_list(spec, tail)
   end
 
-  @spec append_blocks(t, [ast]) :: t
-  def append_blocks(parser, blocks) do
-    %__MODULE__{parser | blocks: parser.blocks ++ blocks}
+  @spec append_block(t, ast) :: t
+  def append_block(parser, block) do
+    %__MODULE__{parser | blocks: parser.blocks ++ [block]}
   end
 
   @spec add_dependencies(t, [t]) :: t
@@ -220,7 +222,7 @@ defmodule Exonerate.Parser do
   # as needed (some might have `when` substatements).  Skips over other
   # types of elements, e.g. @ tags.
   #
-  @spec defp_to_def(ast, MapSet.t(atom))::ast
+  @spec defp_to_def(ast, t)::ast
   defp defp_to_def({:__block__, context, blocklist}, parser) do
     {
       :__block__,
@@ -302,7 +304,7 @@ defmodule Exonerate.Parser do
   end
 
   def public_specs(%__MODULE__{public: publics}) do
-    list = Enum.map(publics, fn method ->
+    Enum.map(publics, fn method ->
       quote do
         @spec unquote(method)(Exonerate.json):: :ok | Exonerate.mismatch
       end

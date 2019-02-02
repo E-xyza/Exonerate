@@ -32,7 +32,7 @@ defmodule Exonerate.Combining do
 
     parser
     |> Parser.add_dependencies([base_dependency | dependencies])
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         defp unquote(parser.method)(val) do
           mismatch = Exonerate.mismatch(__MODULE__, unquote(parser.method), val)
@@ -41,7 +41,7 @@ defmodule Exonerate.Combining do
             unquote(deps_fns),
             mismatch)
         end
-      end])
+      end)
   end
 
   @spec match_anyof(Parser.t, map, list(any)) :: Parser.t
@@ -69,7 +69,7 @@ defmodule Exonerate.Combining do
 
     parser
     |> Parser.add_dependencies([base_dependency | dependencies])
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         defp unquote(parser.method)(val) do
           mismatch = Exonerate.mismatch(__MODULE__, unquote(parser.method), val)
@@ -79,7 +79,7 @@ defmodule Exonerate.Combining do
             unquote(base_child_fn),
             mismatch)
         end
-      end])
+      end)
   end
 
   @spec match_oneof(Parser.t, map, list(any)) :: Parser.t
@@ -107,7 +107,7 @@ defmodule Exonerate.Combining do
 
     parser
     |> Parser.add_dependencies([base_dependency | dependencies])
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         defp unquote(parser.method)(val) do
           mismatch = Exonerate.mismatch(__MODULE__, unquote(parser.method), val)
@@ -117,7 +117,7 @@ defmodule Exonerate.Combining do
             unquote(base_child_fn),
             mismatch)
         end
-      end])
+      end)
   end
 
   @spec match_not(Parser.t, map, any) :: Parser.t
@@ -136,16 +136,17 @@ defmodule Exonerate.Combining do
 
     parser
     |> Parser.add_dependencies([base_dependency, inv_dependency])
-    |> Parser.append_blocks([quote do
-      defp unquote(parser.method)(val) do
-        mismatch = Exonerate.mismatch(__MODULE__, unquote(parser.method), val)
-        Exonerate.Reduce.apply_not(
-          val,
-          unquote(not_fn),
-          unquote(base_child_fn),
-          mismatch)
-      end
-    end])
+    |> Parser.append_block(
+      quote do
+        defp unquote(parser.method)(val) do
+          mismatch = Exonerate.mismatch(__MODULE__, unquote(parser.method), val)
+          Exonerate.Reduce.apply_not(
+            val,
+            unquote(not_fn),
+            unquote(base_child_fn),
+            mismatch)
+        end
+      end)
   end
 
 end

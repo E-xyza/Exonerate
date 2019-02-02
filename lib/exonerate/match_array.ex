@@ -22,7 +22,7 @@ defmodule Exonerate.MatchArray do
 
     parser
     |> Parser.add_dependencies(build_deps(spec, parser.method))
-    |> Parser.append_blocks([arr_match])
+    |> Parser.append_block(arr_match)
     |> Parser.never_matches(terminal)
   end
 

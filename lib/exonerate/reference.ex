@@ -14,12 +14,11 @@ defmodule Exonerate.Reference do
     parser
     |> Annotate.impl
     |> Annotate.req(called_method)
-    |> Parser.append_blocks([
+    |> Parser.append_block(
       quote do
         defp unquote(parser.method)(val) do
           unquote(called_method)(val)
         end
-      end
-    ])
+      end)
   end
 end

@@ -21,7 +21,7 @@ defmodule Exonerate.MatchNumber do
     end
 
     parser
-    |> Parser.append_blocks([int_match])
+    |> Parser.append_block(int_match)
     |> Parser.never_matches(terminal)
   end
 
@@ -53,7 +53,7 @@ defmodule Exonerate.MatchNumber do
     end
 
     parser
-    |> Parser.append_blocks([num_match])
+    |> Parser.append_block(num_match)
     |> Parser.never_matches(terminal)
   end
 

@@ -1,5 +1,9 @@
 defmodule Exonerate do
 
+  @moduledoc """
+    creates the defschema macro.
+  """
+
   @type json ::
      %{optional(String.t) => json}
      | list(json)
@@ -9,10 +13,6 @@ defmodule Exonerate do
      | nil
 
   @type mismatch :: {:mismatch, {module, atom, [json]}}
-
-  @moduledoc """
-    creates the defschema macro.
-  """
 
   alias Exonerate.Annotate
   alias Exonerate.Parser
@@ -35,24 +35,19 @@ defmodule Exonerate do
     """
 
     docblock = quote do
-      @doc (if @schemadoc do
-      """
+      if Module.get_attribute(__MODULE__, :schemadoc) do
+        @doc """
         #{@schemadoc}
         #{unquote(docstr)}
-      """
+        """
       else
-        unquote(docstr)
-      end)
+        @doc unquote(docstr)
+      end
     end
 
-    res = quote do
+    quote do
       unquote_splicing([docblock | final_ast])
     end
-
-    IO.puts("======================")
-    res |> Macro.to_string |> IO.puts
-
-    res
   end
 
   ##############################################################################
@@ -64,9 +59,10 @@ defmodule Exonerate do
   end
   defp maybe_desigil(any), do: any
 
-  @spec mismatch(module, atom, any) :: {:mismatch, {module, atom, [any]}}
-  def mismatch(m, f, a) do
-    {:mismatch, {m, f, [a]}}
+  defmacro mismatch(m, f, a) do
+    quote do
+      {:mismatch, {unquote(m), unquote(f), [unquote(a)]}}
+    end
   end
 
 end

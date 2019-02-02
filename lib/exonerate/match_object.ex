@@ -23,7 +23,7 @@ defmodule Exonerate.MatchObject do
 
     parser
     |> Parser.add_dependencies(build_deps(spec, parser.method))
-    |> Parser.append_blocks([obj_match])
+    |> Parser.append_block(obj_match)
     |> Parser.never_matches(terminal)
   end
 
