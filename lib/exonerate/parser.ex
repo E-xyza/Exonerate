@@ -47,7 +47,7 @@ defmodule Exonerate.Parser do
     public: MapSet.t(atom),
     refreq: MapSet.t(atom),
     refimp: MapSet.t(atom),
-    deps: list(t)
+    deps: [t]
   }
 
   @all_types ["string", "number", "boolean", "null", "object", "array"]
@@ -201,7 +201,7 @@ defmodule Exonerate.Parser do
 
   @spec add_dependencies(t, [t]) :: t
   def add_dependencies(parser, deps) when is_list(deps) do
-    %__MODULE__{parser | deps: parser.deps ++ deps}
+    %__MODULE__{parser | deps: deps ++ parser.deps}
   end
 
   #

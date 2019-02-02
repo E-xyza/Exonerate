@@ -6,7 +6,7 @@ defmodule Exonerate.MatchEnum do
   @type json     :: Exonerate.json
   @type specmap  :: Exonerate.specmap
 
-  @spec match_enum(Parser.t, specmap, list(any)) :: Parser.t
+  @spec match_enum(Parser.t, specmap, list(json)) :: Parser.t
   def match_enum(parser, spec, enum_list) do
     esc_list = Macro.escape(enum_list)
 
@@ -29,7 +29,7 @@ defmodule Exonerate.MatchEnum do
       end)
   end
 
-  @spec match_const(Parser.t, specmap, any) :: Parser.t
+  @spec match_const(Parser.t, specmap, json) :: Parser.t
   def match_const(parser, spec, const) do
     const_val = Macro.escape(const)
 
