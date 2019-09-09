@@ -26,7 +26,7 @@ Add the following lines to your mix.exs
   defp deps do
     [
       # -- your favorite dependencies here
-      {:exonerate, git: "https://github.com/rstorsauce/exonerate.git", tag: "master"},
+      {:exonerate, git: "https://github.com/ityonemo/exonerate.git", tag: "master"},
     ]
   end
 ```
