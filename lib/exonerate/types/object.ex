@@ -1,85 +1,83 @@
 defmodule Exonerate.Types.Object do
   @enforce_keys [:method]
-  defstruct @enforce_keys ++ [
-    :min_properties, :max_properties, :property_names
-  ]
+  @props ~w(min_properties max_properties property_names)a
+
+  defstruct @enforce_keys ++ @props
 
   def build(method, params) do
-    prop_names = if string_props = params["propertyNames"] do
-      method
-      |> prop_name_accessory_fn
-      |> Exonerate.Types.String.build(string_props)
-    end
-
     %__MODULE__{
       method: method,
       min_properties: params["minProperties"],
       max_properties: params["maxProperties"],
-      property_names: prop_names
+      property_names: params["propertyNames"],
+      additional_properties: params["additionalProperties"]
     }
   end
 
-  def prop_name_accessory_fn(method), do: :"#{method}_property_name"
+  def props, do: @props
 
   defimpl Exonerate.Buildable do
 
     alias Exonerate.Types.Object
 
+    @guard_filters [:max_properties, :min_properties]
+
     def build(params = %{method: method}) do
-      cond_branches =
-        prop_size_branch(:<, params.min_properties) ++
-        prop_size_branch(:>, params.max_properties) ++
-        prop_name_branch(method, params.property_names) ++
-        [arrow(true, :ok)]
+      filter_params = params
+      |> Map.take(Object.props() -- @guard_filters)
+      |> Enum.filter(&(elem(&1, 1)))
+      |> Enum.to_list
 
-      cond_body = {:cond, [], [[do: cond_branches]]}
-
-      obj_check = {:defp, [],
-      [
-        {:when, [],
-         [
-           {method, [], [v(:object), v(:path)]},
-           {:is_map, [], [v(:object)]}
-         ]},
-        [do: cond_body]
-      ]}
-
-      accessory_functions =
-        prop_name_accessory(params)
+      guard_properties =
+        size_branch(method, :<, params.min_properties) ++
+        size_branch(method, :>, params.max_properties)
 
       quote do
-        unquote(obj_check)
-        defp unquote(method)(content, path) do
-          {:mismatch, {path, content}}
+        defp unquote(method)(value, path) when not is_map(value) do
+          {:mismatch, path, value}
         end
+        unquote_splicing(guard_properties)
+        defp unquote(method)(object, path) do
+          unquote(next_call(filter_params, method))
+        end
+        defp unquote(method)(_, _), do: :ok
 
-        unquote_splicing(accessory_functions)
+        unquote_splicing(helpers(filter_params, method))
       end
     end
 
-    defp prop_size_branch(_op, nil), do: []
-    defp prop_size_branch(op, limit) do
-      [arrow({op, [], [call(:map_size, [v(:object)]), limit]}, mismatch())]
+    defp size_branch(_, _, nil), do: []
+    defp size_branch(method, op, value) do
+      size_comp = {op, [], [quote do map_size(object) end, value]}
+      [quote do
+        defp unquote(method)(object, path) when unquote(size_comp) do
+          {:mismatch, {path, object}}
+        end
+      end]
     end
 
-    def prop_name_branch(_method, nil), do: []
-    def prop_name_branch(method, _) do
-      pp_method = Object.prop_name_accessory_fn(method)
-      [arrow({:=, [], [v(:mismatch), {pp_method, [], [v(:object), v(:path)]}]}, v(:mismatch))]
+    defp next_call([], _), do: :ok
+    defp next_call([{filter, _}| _], method) do
+      quote do
+        unquote(:"#{method}-#{filter}")(object, path)
+      end
     end
 
-    def prop_name_accessory(%{property_names: nil}), do: []
-    def prop_name_accessory(%{property_names: props}) do
-      props
-      |> Exonerate.Buildable.build
-      |> List.wrap
+    defp helpers([{filter, value} | rest], method) do
+      [quote do
+        defp unquote(:"#{method}-#{filter}")(object, path) do
+          if unquote(filter_condition(filter, value)) do
+            unquote(next_call(rest, method))
+          else
+            {:mismatch, {path, object}}
+          end
+        end
+      end | helpers(rest, method)]
     end
+    defp helpers([], _), do: []
 
-    defp call(fun, params), do: {fun, [], params}
-
-    defp mismatch, do: {:mismatch, {v(:path), v(:object)}}
-
-    defp arrow(left, right), do: {:->, [], [[left], right]}
-    defp v(name), do: {name, [], Elixir}
+    defp filter_condition(:property_names, _value) do
+      true
+    end
   end
 end

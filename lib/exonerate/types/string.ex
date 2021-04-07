@@ -1,6 +1,7 @@
 defmodule Exonerate.Types.String do
   @enforce_keys [:method]
-  defstruct @enforce_keys ++ [:pattern, :min_length, :max_length]
+  @props ~w(pattern min_length max_length)a
+  defstruct @enforce_keys ++ @props
 
   def build(method, schema), do: %__MODULE__{
     method: method,
@@ -8,10 +9,14 @@ defmodule Exonerate.Types.String do
     min_length: schema["minLength"],
     max_length: schema["maxLength"]}
 
+  def props, do: @props
+
   defimpl Exonerate.Buildable do
+    alias Exonerate.Types.String
+
     def build(params = %{method: method}) do
       filter_params = params
-      |> Map.take(~w(pattern min_length max_length)a)
+      |> Map.take(String.props())
       |> Enum.filter(&(elem(&1, 1)))
       |> Enum.to_list
 
