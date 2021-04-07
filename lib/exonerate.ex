@@ -12,59 +12,66 @@ defmodule Exonerate do
      | boolean
      | nil
 
-  @type mismatch :: {:mismatch, {module, atom, [json]}}
+  @type mismatch :: {:mismatch, Path.t, json}
 
-  alias Exonerate.Annotate
-  alias Exonerate.Method
-  alias Exonerate.Parser
+  alias Exonerate.Builder
+  alias Exonerate.Buildable
 
-  defmacro defschema([{method, json} | _opts]) do
-    text_json = maybe_desigil(json)
-    spec = Jason.decode!(text_json)
+  defmacro defschema([{method, json} | opts]) do
+    #path = Keyword.get(opts, :path, [])
 
-    final_ast = method
-    |> Parser.root
-    |> Parser.build_requested(spec)
-    |> Annotate.public
-    |> Parser.defp_to_def
+    schema_map = json
+    |> Macro.expand(__CALLER__)
+    |> Jason.decode!
 
-    docstr = """
-    Matches JSONSchema:
-    ```
-    #{text_json}
-    ```
-    """
+    schema_ast = schema_map
+    |> Builder.build(method, opts)
+    |> Buildable.build()
+    |> List.wrap
 
-    docblock = quote do
-      if Module.get_attribute(__MODULE__, :schemadoc) do
-        @doc """
-        #{@schemadoc}
-        #{unquote(docstr)}
-        """
-      else
-        @doc unquote(docstr)
+    #docstr = """
+    #Matches JSONSchema:
+    #```
+    ##{json}
+    #```
+    #"""
+
+    #docblock = quote do
+    #  if Module.get_attribute(__MODULE__, :schemadoc) do
+    #    @doc """
+    #    #{@schemadoc}
+    #    #{unquote(docstr)}
+    #    """
+    #  else
+    #    @doc unquote(docstr)
+    #  end
+    #end
+
+    quote do
+      unquote_splicing(id_special_ast(method, schema_map))
+      unquote_splicing(schema_special_ast(method, schema_map))
+      
+      def unquote(method)(json) do
+        unquote(method)(json, "#")
       end
-    end
 
-    quote do
-      unquote_splicing([docblock | final_ast])
+      unquote_splicing(schema_ast)
     end
   end
 
-  ##############################################################################
-  ## utilities
-
-  defp maybe_desigil(s = {:sigil_s, _, _}) do
-    {bin, _} = Code.eval_quoted(s)
-    bin
+  # special forms
+  defp id_special_ast(method, %{"$id" => id}) do
+    [quote do
+      def unquote(method)(:id), do: unquote(id)
+    end]
   end
-  defp maybe_desigil(any), do: any
+  defp id_special_ast(_, _), do: []
 
-  defmacro mismatch(m, f, a) do
-    path = Method.to_jsonpath(f)
-    quote do
-      {:mismatch, {unquote(path), unquote(a)}}
-    end
+  defp schema_special_ast(method, %{"$schema" => schema}) do
+    [quote do
+      def unquote(method)(:schema), do: unquote(schema)
+    end]
   end
+  defp schema_special_ast(_, _), do: []
 
 end

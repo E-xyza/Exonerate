@@ -43,6 +43,8 @@ defmodule ExonerateTest.AutomatedTests do
 
         import Exonerate
 
+        @moduletag :automated
+
         unquote(describe_blocks)
       end
     end
