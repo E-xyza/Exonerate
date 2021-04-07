@@ -61,9 +61,9 @@ iex> SchemaModule.validate_input(%{"parameter" => "2"})
 iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok
 
-iex> h SchemaModule.validate_input                   
+iex> h SchemaModule.validate_input
 
-                            def validate_input(val)                             
+                            def validate_input(val)
 
   @spec validate_input(Exonerate.json()) :: :ok | Exonerate.mismatch()
 
@@ -77,7 +77,7 @@ Matches JSONSchema:
         "parameter":{"type":"integer"}
       }
     }
-    
+
 ```
 
 
@@ -93,7 +93,6 @@ Matches JSONSchema:
 test/automated that features automatically generated code and code testing.
 
 ```bash
-  mix exonerate.build_tests
   mix test
 ```
 

@@ -5,10 +5,10 @@ defmodule Exonerate.MixProject do
     [
       app: :exonerate,
       version: "0.1.0",
-      elixir: "~> 1.7",
+      elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      preferred_cli_env: [exoneratebuildtests: :test],
+      preferred_cli_env: ["exonerate.build_tests": :test],
       #for dialyxir
       dialyzer: [
         plt_add_deps: :transitive,
