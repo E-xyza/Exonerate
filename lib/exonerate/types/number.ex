@@ -19,11 +19,11 @@ defmodule Exonerate.Types.Number do
         compare_branch(schema_path, "exclusive_maximum", schema.exclusive_maximum)
 
       quote do
-        defp unquote(schema_path)(value, path) when not is_number(content) do
-          Exonerate.Builder.mismatch(value, path)
+        defp unquote(schema_path)(value, path) when not is_number(value) do
+          Exonerate.Builder.mismatch(value, path, subpath: "type")
         end
         unquote_splicing(compare_branches)
-        defp unquote(schema_path)(content, path), do: :ok
+        defp unquote(schema_path)(_value, _path), do: :ok
       end
     end
 

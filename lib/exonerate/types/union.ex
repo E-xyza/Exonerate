@@ -2,10 +2,10 @@ defmodule Exonerate.Types.Union do
   @enforce_keys [:path, :types]
   defstruct @enforce_keys
 
-  def build(path, params) do
+  def build(params, path) do
     types = params["type"]
     |> Enum.with_index
-    |> Enum.map(&build_reenter(&1, path, params))
+    |> Enum.map(&spec_rebuild(&1, path, params))
 
     %__MODULE__{
       path: path,
@@ -13,24 +13,33 @@ defmodule Exonerate.Types.Union do
     }
   end
 
-  def build_reenter({type, index}, path, params), do:
-    Exonerate.Builder.to_struct(%{params | "type" => type}, :"#{path}_#{index}")
+  def spec_rebuild({type, index}, path, params), do:
+    Exonerate.Builder.to_struct(%{params | "type" => type}, :"#{path}/type/#{index}")
 
   defimpl Exonerate.Buildable do
-    def build(%{path: path, types: types}) do
-      calls = Enum.map(types, &quote do
-        unless (error = unquote(&1.path)(value, path)) == :ok do
-          throw error
-        end
-      end)
+    def build(%{path: spec_path, types: type_spec}) do
 
-      helpers = Enum.map(types, &Exonerate.Buildable.build(&1))
+      {calls, helpers} = type_spec
+      |> Enum.map(fn spec ->
+        {
+          quote do
+            try do
+              throw unquote(spec.path)(value, path)
+            catch
+              {:mismatch, _} -> :ok
+            end
+          end,
+          Exonerate.Buildable.build(spec)
+        }
+      end)
+      |> Enum.unzip
 
       quote do
-        defp unquote(path)(value, path) do
+        defp unquote(spec_path)(value, path) do
           unquote_splicing(calls)
+          Exonerate.Builder.mismatch(value, path, subpath: "type")
         catch
-          error = {:mismatch, _} -> error
+          :ok -> :ok
         end
 
         unquote_splicing(helpers)
