@@ -66,7 +66,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
       assert {:error, list} = Object.object(@badarray)
 
-      assert list[:schema_path] == "object#type"
+      assert list[:schema_path] == "object#!/type"
       assert list[:error_value] == @badarray
       assert list[:json_path] == "/"
     end
@@ -131,7 +131,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   @addr2 ~s({ "number": "1600", "street_name": "Pennsylvania", "street_type": "Avenue" })
   @addr3 ~s({ "number": 1600, "street_name": "Pennsylvania" })
   @addr4 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue", "direction": "NW" })
-  @addr5 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue","office_number": 201  })
+  @addr5 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue", "office_number": 201 })
 
   describe "matching simple addresses" do
     test "explicit addresses match correctly" do
@@ -176,7 +176,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
 
     test "extra properties matches correctly" do
-      addr4 = Jason.decode(@addr4)
+      addr4 = Jason.decode!(@addr4)
       assert {:error, list} = Properties.address2(addr4)
 
       assert list[:schema_path] == "address2#!/additionalProperties"
@@ -200,7 +200,11 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "extra nonstring property doesn't match" do
       addr5 = Jason.decode!(@addr5)
-      assert {:mismatch, {"/", 201}} == Properties.address2(addr5)
+      assert {:error, list} = Properties.address3(addr5)
+
+      assert list[:schema_path] == "address3#!/additionalProperties/type"
+      assert list[:error_value] == 201
+      assert list[:json_path] == "/office_number"
     end
   end
 
@@ -267,7 +271,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       contact3 = Jason.decode!(@contact3)
       assert {:error, list} = RequiredProperties.contactinfo(contact3)
 
-      assert list[:schema_path] == "contactinfo#!/required/0"
+      assert list[:schema_path] == "contactinfo#!/required/1"
       assert list[:error_value] == contact3
       assert list[:json_path] == "/"
     end
@@ -463,7 +467,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       assert {:error, list} =
         PropertyDependencies.dependency1(propdependency2)
 
-      assert list[:schema_path] == "dependency1#!/dependencies"
+      assert list[:schema_path] == "dependency1#!/dependencies/credit_card/0"
       assert list[:error_value] == propdependency2
       assert list[:json_path] == "/"
     end
@@ -564,8 +568,12 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
     test "partial compliance does not work" do
       schemadependency2 = Jason.decode!(@schemadependency2)
-      assert {:mismatch, {"/", schemadependency2}} ==
+      assert {:error, list} =
         SchemaDependencies.schemadependency(schemadependency2)
+
+      assert list[:schema_path] == "schemadependency#!/dependencies/credit_card/required/0"
+      assert list[:error_value] == %{"credit_card" => 5555555555555555, "name" => "John Doe"}
+      assert list[:json_path] == "/"
     end
     test "omitting a trigger works" do
       assert :ok = @schemadependency3
@@ -617,20 +625,29 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "integers shouldn't match string pattern" do
       patternmatch3 = Jason.decode!(@patternmatch3)
-      assert {:mismatch, {"/", 42}} ==
-        PatternProperties.patternprop1(patternmatch3)
+      assert {:error, list} = PatternProperties.patternprop1(patternmatch3)
+
+      assert list[:schema_path] == "patternprop1#!/patternProperties/^S_/type"
+      assert list[:error_value] == 42
+      assert list[:json_path] == "/S_0"
     end
 
     test "strings shouldn't match integer pattern" do
       patternmatch4 = Jason.decode!(@patternmatch4)
-      assert {:mismatch, {"/", "This is a string"}} ==
-        PatternProperties.patternprop1(patternmatch4)
+      assert {:error, list} = PatternProperties.patternprop1(patternmatch4)
+
+      assert list[:schema_path] == "patternprop1#!/patternProperties/^I_/type"
+      assert list[:error_value] == "This is a string"
+      assert list[:json_path] == "/I_42"
     end
 
     test "additional properties shouldn't match" do
       patternmatch5 = Jason.decode!(@patternmatch5)
-      assert {:mismatch, {"/", "value"}} ==
-        PatternProperties.patternprop1(patternmatch5)
+      assert {:error, list} = PatternProperties.patternprop1(patternmatch5)
+
+      assert list[:schema_path] == "patternprop1#!/additionalProperties"
+      assert list[:error_value] == %{"keyword" => "value"}
+      assert list[:json_path] == "/"
     end
   end
 end

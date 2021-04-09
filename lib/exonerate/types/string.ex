@@ -26,7 +26,7 @@ defmodule Exonerate.Types.String do
         end
       end
 
-      [quote do
+      quote do
         defp unquote(spec_path)(value, path) when not is_binary(value) do
           Exonerate.Builder.mismatch(value, path, subpath: "type")
         end
@@ -36,7 +36,8 @@ defmodule Exonerate.Types.String do
           unquote(max_length)
           unquote(pattern_call(spec))
         end
-      end] ++ pattern_filter(spec)
+        unquote_splicing(pattern_filter(spec))
+      end
     end
 
     defp pattern_call(%{pattern: nil}), do: :ok

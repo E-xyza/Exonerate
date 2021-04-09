@@ -41,7 +41,6 @@ defmodule Exonerate.Types.Union do
         catch
           :ok -> :ok
         end
-
         unquote_splicing(helpers)
       end
     end
