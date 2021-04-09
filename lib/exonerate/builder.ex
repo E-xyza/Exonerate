@@ -53,11 +53,20 @@ defmodule Exonerate.Builder do
     end
   end
 
-  defp join(x, subpath) do
-    if String.ends_with?(x, "#") do
-      x <> subpath
+  @spec join(atom, String.t) :: atom
+  @spec join(Path.t, String.t) :: Path.t
+
+  def join(path, subpath) when is_atom(path) do
+    path
+    |> Atom.to_string
+    |> join(subpath)
+    |> String.to_atom
+  end
+  def join(path, subpath) do
+    if String.ends_with?(path, "#") do
+      path <> subpath
     else
-      Path.join(x, subpath)
+      Path.join(path, subpath)
     end
   end
 

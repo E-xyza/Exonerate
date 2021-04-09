@@ -2,48 +2,55 @@ defmodule Exonerate.Types.Integer do
   @enforce_keys [:path]
   defstruct @enforce_keys ++ [:minimum, :maximum, :exclusive_minimum, :exclusive_maximum, :multiple_of]
 
-  def build(path, params), do: %__MODULE__{
+  def build(spec, path), do: %__MODULE__{
     path: path,
-    minimum: params["minimum"],
-    maximum: params["maximum"],
-    exclusive_minimum: params["exclusiveMinimum"],
-    exclusive_maximum: params["exclusiveMaximum"],
-    multiple_of: params["multipleOf"]
+    minimum: spec["minimum"],
+    maximum: spec["maximum"],
+    exclusive_minimum: spec["exclusiveMinimum"],
+    exclusive_maximum: spec["exclusiveMaximum"],
+    multiple_of: spec["multipleOf"]
   }
 
   defimpl Exonerate.Buildable do
-    def build(params = %{path: path}) do
+    def build(spec = %{path: spec_path}) do
       compare_branches =
-        compare_branch(path, :<, params.minimum) ++
-        compare_branch(path, :>, params.maximum) ++
-        compare_branch(path, :<=, params.exclusive_minimum) ++
-        compare_branch(path, :>=, params.exclusive_maximum) ++
-        multiple_branch(path, params.multiple_of)
+        compare_guard(spec_path, "minimum", spec.minimum) ++
+        compare_guard(spec_path, "maximum", spec.maximum) ++
+        compare_guard(spec_path, "exclusiveMinimum", spec.exclusive_minimum) ++
+        compare_guard(spec_path, "exclusiveMaximum", spec.exclusive_maximum) ++
+        multiple_guard(spec_path, spec.multiple_of)
 
       quote do
-        defp unquote(path)(content, path) when not is_integer(content) do
-          {:mismatch, {path, content}}
+        defp unquote(spec_path)(value, path) when not is_number(value) do
+          Exonerate.Builder.mismatch(value, path, subpath: "type")
         end
         unquote_splicing(compare_branches)
-        defp unquote(path)(content, path), do: :ok
+        defp unquote(spec_path)(_value, _path), do: :ok
       end
     end
 
-    defp compare_branch(_, _, nil), do: []
-    defp compare_branch(path, op, limit) do
-      compexpr = {op, [], [quote do value end, limit]}
+    @operands %{
+      "minimum" => :<,
+      "maximum" => :>,
+      "exclusiveMinimum" => :<=,
+      "exclusiveMaximum" => :>=
+    }
+
+    defp compare_guard(_, _, nil), do: []
+    defp compare_guard(path, branch, limit) do
+      compexpr = {@operands[branch], [], [quote do value end, limit]}
       [quote do
-        defp unquote(path)(value, path) when unquote(compexpr) do
-          {:mismatch, {path, value}}
+        defp unquote(path)(integer, path) when unquote(compexpr) do
+          Exonerate.Builder.mismatch(integer, path, subpath: unquote(branch))
         end
       end]
     end
 
-    defp multiple_branch(_, nil), do: []
-    defp multiple_branch(path, factor) do
+    defp multiple_guard(_, nil), do: []
+    defp multiple_guard(path, limit) do
       [quote do
-        defp unquote(path)(value, path) when rem(value, unquote(factor)) != 0 do
-          {:mismatch, {path, value}}
+        defp unquote(path)(integer, path) when mod(integer, unquote(limit)) != 0 do
+          Exonerate.Builder.mismatch(integer, path, subpath: "mulitpleOf")
         end
       end]
     end

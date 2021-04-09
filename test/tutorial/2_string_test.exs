@@ -32,7 +32,11 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "number mismatches a string" do
-      assert {:mismatch, {"#", 42}} == String.string(42)
+      assert {:error, list} = String.string(42)
+
+      assert list[:schema_path] == "string#type"
+      assert list[:error_value] == 42
+      assert list[:json_path] == "#"
     end
   end
 
@@ -61,8 +65,18 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "string of incorrect sizes don't match" do
-      assert {:mismatch, {"#", "A"}} == Length.string("A")
-      assert {:mismatch, {"#", "ABCD"}} == Length.string("ABCD")
+      assert {:error, list} = Length.string("A")
+
+      assert list[:schema_path] == "string#minLength"
+      assert list[:error_value] == "A"
+      assert list[:json_path] == "#"
+
+      assert {:error, list} = Length.string("ABCD")
+
+      assert list[:schema_path] == "string#maxLength"
+      assert list[:error_value] == "ABCD"
+      assert list[:json_path] == "#"
+
     end
   end
 
@@ -90,11 +104,19 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "string of incorrect sizes don't match" do
-      assert {:mismatch, {"#", "(888)555-1212 ext. 532"}} ==
+      assert {:error, list} =
         Pattern.string("(888)555-1212 ext. 532")
 
-      assert {:mismatch, {"#", "(800)FLOWERS"}} ==
+      assert list[:schema_path] == "string#pattern"
+      assert list[:error_value] == "(888)555-1212 ext. 532"
+      assert list[:json_path] == "#"
+
+      assert {:error, list} =
         Pattern.string("(800)FLOWERS")
+
+      assert list[:schema_path] == "string#pattern"
+      assert list[:error_value] == "(800)FLOWERS"
+      assert list[:json_path] == "#"
     end
   end
 
