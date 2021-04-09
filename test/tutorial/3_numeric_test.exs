@@ -34,15 +34,15 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     test "integer mismatches a float or string" do
       assert {:error, list} = Integer.integer(3.1415926)
 
-      assert list[:schema_path] == "integer#type"
+      assert list[:schema_path] == "integer#!/type"
       assert list[:error_value] == 3.1415926
-      assert list[:json_path] == "#"
+      assert list[:json_path] == "/"
 
       assert {:error, list} = Integer.integer("42")
 
-      assert list[:schema_path] == "integer#type"
+      assert list[:schema_path] == "integer#!/type"
       assert list[:error_value] == "42"
-      assert list[:json_path] == "#"
+      assert list[:json_path] == "/"
 
     end
   end
@@ -71,9 +71,9 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     test "number mismatches a string" do
       assert {:error, list} = Number.number("42")
 
-      assert list[:schema_path] == "number#type"
+      assert list[:schema_path] == "number#!/type"
       assert list[:error_value] == "42"
-      assert list[:json_path] == "#"
+      assert list[:json_path] == "/"
 
     end
   end
@@ -103,9 +103,9 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     test "multiple mismatches noninteger" do
       assert {:error, list} = Multiple.integer(23)
 
-      assert list[:schema_path] == "integer#multipleOf"
+      assert list[:schema_path] == "integer#!/multipleOf"
       assert list[:error_value] == 23
-      assert list[:json_path] == "#"
+      assert list[:json_path] == "/"
 
     end
   end
@@ -139,21 +139,21 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     test "multiple mismatches noninteger" do
       assert {:error, list} = Range.number(-1)
 
-      assert list[:schema_path] == "number#minimum"
+      assert list[:schema_path] == "number#!/minimum"
       assert list[:error_value] == -1
-      assert list[:json_path] == "#"
+      assert list[:json_path] == "/"
 
       assert {:error, list} = Range.number(100)  #exclusive maximum
 
-      assert list[:schema_path] == "number#exclusiveMaximum"
+      assert list[:schema_path] == "number#!/exclusiveMaximum"
       assert list[:error_value] == 100
-      assert list[:json_path] == "#"
+      assert list[:json_path] == "/"
 
       assert {:error, list} = Range.number(101)
 
-      assert list[:schema_path] == "number#exclusiveMaximum"
+      assert list[:schema_path] == "number#!/exclusiveMaximum"
       assert list[:error_value] == 101
-      assert list[:json_path] == "#"
+      assert list[:json_path] == "/"
 
     end
   end

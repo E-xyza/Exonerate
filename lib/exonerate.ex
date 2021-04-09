@@ -25,7 +25,7 @@ defmodule Exonerate do
     |> Macro.expand(__CALLER__)
     |> Jason.decode!
 
-    schema = Builder.build(schema_map, path, opts)
+    schema = Builder.build(schema_map, :"#{path}#!/", opts)
 
     schema_ast = schema
     |> Buildable.build()
@@ -56,7 +56,7 @@ defmodule Exonerate do
       unquote_splicing(schema_special_ast(path, schema_map))
 
       def unquote(path)(value) do
-        unquote(schema.path)(value, "#")
+        unquote(schema.path)(value, "/")
       catch
         {:mismatch, list} -> {:error, list}
       end

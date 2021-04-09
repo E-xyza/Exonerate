@@ -11,31 +11,31 @@ defmodule Exonerate.Builder do
   defp traverse_path(json_spec, _), do: json_spec
 
   def to_struct(spec = %{"type" => "object"}, path) do
-    Exonerate.Types.Object.build(spec, :"#{path}#")
+    Exonerate.Types.Object.build(spec, path)
   end
   def to_struct(spec = %{"type" => "number"}, path) do
-    Exonerate.Types.Number.build(spec, :"#{path}#")
+    Exonerate.Types.Number.build(spec, path)
   end
   def to_struct(spec = %{"type" => "integer"}, path) do
-    Exonerate.Types.Integer.build(spec, :"#{path}#")
+    Exonerate.Types.Integer.build(spec, path)
   end
   def to_struct(spec = %{"type" => "string"}, path) do
-    Exonerate.Types.String.build(spec, :"#{path}#")
+    Exonerate.Types.String.build(spec, path)
   end
   def to_struct(spec = %{"type" => "array"}, path) do
-    Exonerate.Types.Array.build(spec, :"#{path}#")
+    Exonerate.Types.Array.build(spec, path)
   end
   def to_struct(spec = %{"type" => list}, path) when is_list(list) do
-    Exonerate.Types.Union.build(spec, :"#{path}#")
+    Exonerate.Types.Union.build(spec, path)
   end
   def to_struct(%{}, path) do
-    Exonerate.Types.Absolute.build(:"#{path}#")
+    Exonerate.Types.Absolute.build(path)
   end
   def to_struct(true, path) do
-    Exonerate.Types.Absolute.build(:"#{path}#")
+    Exonerate.Types.Absolute.build(path)
   end
   def to_struct(false, path) do
-    Exonerate.Types.Absolute.build(false, :"#{path}#")
+    Exonerate.Types.Absolute.build(false, path)
   end
 
   # helper function
@@ -63,11 +63,7 @@ defmodule Exonerate.Builder do
     |> String.to_atom
   end
   def join(path, subpath) do
-    if String.ends_with?(path, "#") do
-      path <> subpath
-    else
-      Path.join(path, subpath)
-    end
+    Path.join(path, subpath)
   end
 
 end

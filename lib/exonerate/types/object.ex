@@ -108,7 +108,7 @@ defmodule Exonerate.Types.Object do
         required_branch(spec_path, spec.required) ++
         property_dependencies(spec_path, spec.property_dependencies)
 
-      quote do
+      q = quote do
         defp unquote(spec_path)(value, path) when not is_map(value) do
           Exonerate.Builder.mismatch(value, path, subpath: "type")
         end
@@ -120,6 +120,8 @@ defmodule Exonerate.Types.Object do
         unquote_splicing(properties_filter_helpers(spec))
         unquote_splicing(schema_dependencies_helpers(spec))
       end
+      spec.path == :"address1#" && Macro.to_string(q) |> IO.puts
+      q
     end
 
     @operands %{
@@ -166,7 +168,58 @@ defmodule Exonerate.Types.Object do
       end)
     end
 
+    defp properties_filter_call(spec = %{properties: p}) when not is_nil(p) do
+      props_path = Exonerate.Builder.join(spec.path, "properties")
+      quote do
+        Enum.each(object, fn {k, v} ->
+          unquote(props_path)(k, v, path)
+        end)
+      end
+    end
+    defp properties_filter_call(spec = %{pattern_properties: p}) when not is_nil(p) do
+      props_path = Exonerate.Builder.join(spec.path, "patternProperties")
+      quote do
+        unquote(props_path)(object, path)
+      end
+    end
+    defp properties_filter_call(spec = %{property_names: p}) when not is_nil(p) do
+      props_path = Exonerate.Builder.join(spec.path, "propertyNames")
+      quote do
+        Enum.each(object, fn {key, param} ->
+          unquote(props_path)(key, path)
+        end)
+      end
+    end
     defp properties_filter_call(_), do: :ok
+
+    defp properties_filter_helpers(spec = %{properties: p}) when not is_nil(p) do
+      props_path = Exonerate.Builder.join(spec.path, "properties")
+      {shims, helpers} = p
+      |> Enum.map(fn {k, v} ->
+        prop_path = Exonerate.Builder.join(props_path, k)
+        {quote do
+          defp unquote(props_path)(unquote(k), value, path) do
+            unquote(prop_path)(value, Path.join(path, unquote(k)))
+          end
+        end,
+        Exonerate.Buildable.build(v)}
+      end)
+      |> Enum.unzip
+
+      shims ++ helpers
+    end
+    defp properties_filter_helpers(spec = %{pattern_properties: p}) when not is_nil(p) do
+      props_path = Exonerate.Builder.join(spec.path, "patternProperties")
+      [quote do
+        defp unquote(props_path)(_, _) do
+        :ok
+        end
+      end]
+    end
+    defp properties_filter_helpers(%{property_names: p}) when not is_nil(p) do
+      [Exonerate.Buildable.build(p)]
+    end
+
     defp schema_dependencies_call(_), do: :ok
 
     #defp properties_filter(path, props = %{properties: nil, pattern_properties: nil, property_names: nil}) do
