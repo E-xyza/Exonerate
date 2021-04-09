@@ -21,7 +21,7 @@ defmodule Exonerate.Types.Integer do
         multiple_guard(spec_path, spec.multiple_of)
 
       quote do
-        defp unquote(spec_path)(value, path) when not is_number(value) do
+        defp unquote(spec_path)(value, path) when not is_integer(value) do
           Exonerate.Builder.mismatch(value, path, subpath: "type")
         end
         unquote_splicing(compare_branches)
@@ -38,7 +38,7 @@ defmodule Exonerate.Types.Integer do
 
     defp compare_guard(_, _, nil), do: []
     defp compare_guard(path, branch, limit) do
-      compexpr = {@operands[branch], [], [quote do value end, limit]}
+      compexpr = {@operands[branch], [], [quote do integer end, limit]}
       [quote do
         defp unquote(path)(integer, path) when unquote(compexpr) do
           Exonerate.Builder.mismatch(integer, path, subpath: unquote(branch))
@@ -49,8 +49,8 @@ defmodule Exonerate.Types.Integer do
     defp multiple_guard(_, nil), do: []
     defp multiple_guard(path, limit) do
       [quote do
-        defp unquote(path)(integer, path) when mod(integer, unquote(limit)) != 0 do
-          Exonerate.Builder.mismatch(integer, path, subpath: "mulitpleOf")
+        defp unquote(path)(integer, path) when rem(integer, unquote(limit)) != 0 do
+          Exonerate.Builder.mismatch(integer, path, subpath: "multipleOf")
         end
       end]
     end

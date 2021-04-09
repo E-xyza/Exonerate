@@ -18,7 +18,7 @@ defmodule Exonerate.Types.Number do
         compare_guard(spec_path, "maximum", spec.maximum) ++
         compare_guard(spec_path, "exclusiveMinimum", spec.exclusive_minimum) ++
         compare_guard(spec_path, "exclusiveMaximum", spec.exclusive_maximum) ++
-        multiple_guards(spec_path, spec.mulitple_of)
+        multiple_guards(spec_path, spec.multiple_of)
 
       quote do
         defp unquote(spec_path)(value, path) when not is_number(value) do
@@ -38,7 +38,7 @@ defmodule Exonerate.Types.Number do
 
     defp compare_guard(_, _, nil), do: []
     defp compare_guard(path, branch, limit) do
-      compexpr = {@operands[branch], [], [quote do value end, limit]}
+      compexpr = {@operands[branch], [], [quote do number end, limit]}
       [quote do
         defp unquote(path)(number, path) when unquote(compexpr) do
           Exonerate.Builder.mismatch(number, path, subpath: unquote(branch))
@@ -50,10 +50,10 @@ defmodule Exonerate.Types.Number do
     defp multiple_guards(path, limit) do
       [quote do
         defp unquote(path)(noninteger, path) when not is_integer(noninteger) do
-          Exonerate.Builder.mismatch(integer, path, subpath: "mulitpleOf")
+          Exonerate.Builder.mismatch(integer, path, subpath: "multipleOf")
         end
-        defp unquote(path)(integer, path) when mod(integer, unquote(limit)) != 0 do
-          Exonerate.Builder.mismatch(integer, path, subpath: "mulitpleOf")
+        defp unquote(path)(integer, path) when rem(integer, unquote(limit)) != 0 do
+          Exonerate.Builder.mismatch(integer, path, subpath: "multipleOf")
         end
       end]
     end
