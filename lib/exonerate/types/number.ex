@@ -1,38 +1,45 @@
 defmodule Exonerate.Types.Number do
-  @enforce_keys [:method]
+  @enforce_keys [:path]
   defstruct @enforce_keys ++ [:minimum, :maximum, :exclusive_minimum, :exclusive_maximum]
 
-  def build(method, params), do: %__MODULE__{
-    method: method,
-    minimum: params["minimum"],
-    maximum: params["maximum"],
-    exclusive_minimum: params["exclusive_minimum"],
-    exclusive_maximum: params["exclusive_maximum"]
+  def build(schema, path), do: %__MODULE__{
+    path: path,
+    minimum: schema["minimum"],
+    maximum: schema["maximum"],
+    exclusive_minimum: schema["exclusive_minimum"],
+    exclusive_maximum: schema["exclusive_maximum"]
   }
 
   defimpl Exonerate.Buildable do
-    def build(params = %{method: method}) do
+    def build(schema = %{path: schema_path}) do
       compare_branches =
-        compare_branch(method, :<, params.minimum) ++
-        compare_branch(method, :>, params.maximum) ++
-        compare_branch(method, :<=, params.exclusive_minimum) ++
-        compare_branch(method, :>=, params.exclusive_maximum)
+        compare_branch(schema_path, "minimum", schema.minimum) ++
+        compare_branch(schema_path, "maximum", schema.maximum) ++
+        compare_branch(schema_path, "exclusive_minimum", schema.exclusive_minimum) ++
+        compare_branch(schema_path, "exclusive_maximum", schema.exclusive_maximum)
 
       quote do
-        defp unquote(method)(content, path) when not is_number(content) do
-          {:mismatch, {path, content}}
+        defp unquote(schema_path)(value, path) when not is_number(content) do
+          Exonerate.Builder.mismatch(value, path)
         end
         unquote_splicing(compare_branches)
-        defp unquote(method)(content, path), do: :ok
+        defp unquote(schema_path)(content, path), do: :ok
       end
     end
 
+    @operands %{
+      "minimum" => :<,
+      "maximum" => :>,
+      "exclusive_minimum" => :<=,
+      "exclusive_maximum" => :>=
+    }
+
     defp compare_branch(_, _, nil), do: []
-    defp compare_branch(method, op, limit) do
-      compexpr = {op, [], [quote do value end, limit]}
+    defp compare_branch(path, branch, limit) do
+      compexpr = {@operands[branch], [], [quote do value end, limit]}
       [quote do
-        defp unquote(method)(value, path) when unquote(compexpr) do
-          {:mismatch, {path, value}}
+        defp unquote(path)(number, path) when unquote(compexpr) do
+          Exonerate.Builder.mismatch(number, path, subpath: unquote(branch))
         end
       end]
     end

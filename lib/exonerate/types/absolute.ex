@@ -2,24 +2,24 @@ defmodule Exonerate.Types.Absolute do
   @enforce_keys [:path]
   defstruct @enforce_keys ++ [:accept]
 
-  def build(accept \\ true, method) do
+  def build(accept \\ true, path) do
     %__MODULE__{
-      path: method,
+      path: path,
       accept: accept
     }
   end
 
   defimpl Exonerate.Buildable do
-    def build(%{accept: true, path: path}) do
+    def build(schema = %{accept: true}) do
       quote do
-        def unquote(path)(_, _), do: :ok
+        def unquote(schema.path)(_, _), do: :ok
       end
     end
 
-    def build(spec = %{accept: false, path: path}) do
+    def build(schema = %{accept: false}) do
       quote do
-        def unquote(path)(value, path) do
-          unquote(Exonerate.Builder.mismatch(spec))
+        def unquote(schema.path)(value, path) do
+          Exonerate.Builder.mismatch(value, path)
         end
       end
     end

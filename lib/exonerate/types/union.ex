@@ -1,25 +1,25 @@
 defmodule Exonerate.Types.Union do
-  @enforce_keys [:method, :types]
+  @enforce_keys [:path, :types]
   defstruct @enforce_keys
 
-  def build(method, params) do
+  def build(path, params) do
     types = params["type"]
     |> Enum.with_index
-    |> Enum.map(&build_reenter(&1, method, params))
+    |> Enum.map(&build_reenter(&1, path, params))
 
     %__MODULE__{
-      method: method,
+      path: path,
       types: types
     }
   end
 
-  def build_reenter({type, index}, method, params), do:
-    Exonerate.Builder.to_struct(%{params | "type" => type}, :"#{method}_#{index}")
+  def build_reenter({type, index}, path, params), do:
+    Exonerate.Builder.to_struct(%{params | "type" => type}, :"#{path}_#{index}")
 
   defimpl Exonerate.Buildable do
-    def build(%{method: method, types: types}) do
+    def build(%{path: path, types: types}) do
       calls = Enum.map(types, &quote do
-        unless (error = unquote(&1.method)(value, path)) == :ok do
+        unless (error = unquote(&1.path)(value, path)) == :ok do
           throw error
         end
       end)
@@ -27,7 +27,7 @@ defmodule Exonerate.Types.Union do
       helpers = Enum.map(types, &Exonerate.Buildable.build(&1))
 
       quote do
-        defp unquote(method)(value, path) do
+        defp unquote(path)(value, path) do
           unquote_splicing(calls)
         catch
           error = {:mismatch, _} -> error

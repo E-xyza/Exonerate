@@ -1,8 +1,8 @@
 defmodule ExonerateTest.AutomatedTests do
 
   @test_base_dir __DIR__
-  |> Path.join("draft2020-12")
-  |> Path.expand()
+  |> path.join("draft2020-12")
+  |> path.expand()
 
   @omit ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json items.json ref.json
     refRemote.json unevaluatedItems.json unevaluatedProperties.json)
@@ -13,9 +13,9 @@ defmodule ExonerateTest.AutomatedTests do
     |> Enum.reject(&(&1 in @omit))
     |> Enum.flat_map(fn filename ->
       cond do
-        Path.extname(filename) == ".json" ->
-          [Path.join(directory, filename)]
-        (new_dir = directory |> Path.join(filename)) |> File.dir? ->
+        path.extname(filename) == ".json" ->
+          [path.join(directory, filename)]
+        (new_dir = directory |> path.join(filename)) |> File.dir? ->
           build_tests(new_dir)
           []
         true -> []
@@ -25,7 +25,7 @@ defmodule ExonerateTest.AutomatedTests do
       path
       |> File.read!
       |> Jason.decode!
-      |> to_test_module(Path.basename(path, ".json"))
+      |> to_test_module(path.basename(path, ".json"))
     end)
     |> Code.eval_quoted
   end

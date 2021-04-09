@@ -1,40 +1,40 @@
 defmodule Exonerate.Types.Array do
-  @enforce_keys [:method]
+  @enforce_keys [:path]
   @params [:contains, :items]
 
   defstruct @enforce_keys ++ @params
 
-  def build(method, params) do
+  def build(path, params) do
     items = case params["items"] do
       nil -> nil
       items_list when is_list(items_list) ->
         items_list
         |> Enum.with_index
         |> Enum.map(fn {item, index} ->
-          Exonerate.Builder.to_struct(item, :"#{method}-items-#{index}")
+          Exonerate.Builder.to_struct(item, :"#{path}-items-#{index}")
         end)
       item ->
-        Exonerate.Builder.to_struct(item, :"#{method}-items")
+        Exonerate.Builder.to_struct(item, :"#{path}-items")
     end
 
     contains = if contains = params["contains"] do
-      Exonerate.Builder.to_struct(contains, :"#{method}-contains")
+      Exonerate.Builder.to_struct(contains, :"#{path}-contains")
     end
 
     %__MODULE__{
-      method: method,
+      path: path,
       items: items,
       contains: contains
     }
   end
 
   defimpl Exonerate.Buildable do
-    def build(spec = %{method: method}) do
+    def build(spec = %{path: path}) do
       q = quote do
-        defp unquote(method)(content, path) when not is_list(content) do
+        defp unquote(path)(content, path) when not is_list(content) do
           {:mismatch, {path, content}}
         end
-        defp unquote(method)(list, path) do
+        defp unquote(path)(list, path) do
           unquote(items_call(spec))
           :ok
         catch
@@ -43,7 +43,7 @@ defmodule Exonerate.Types.Array do
         unquote_splicing(items_validation(spec.items))
       end
 
-      if spec.method == :tuple do
+      if spec.path == :tuple do
         q |> Macro.to_string |> IO.puts
       end
       q
@@ -61,7 +61,7 @@ defmodule Exonerate.Types.Array do
     defp items_call(spec = %{items: _}) do
       quote do
         Enum.each(list, fn item ->
-          unless (error = unquote(:"#{spec.method}-items")(item, path)) == :ok do
+          unless (error = unquote(:"#{spec.path}-items")(item, path)) == :ok do
             throw error
           end
         end)
@@ -78,14 +78,14 @@ defmodule Exonerate.Types.Array do
 
     defp tuple_call([spec | _]) do
       quote do
-        unquote(spec.method)(list, path)
+        unquote(spec.path)(list, path)
       end
     end
     defp tuple_call([]), do: :ok
 
     defp tuple_validation([spec | rest]) do
       [quote do
-        defp unquote(spec.method)(list, path) do
+        defp unquote(spec.path)(list, path) do
           unless (error = unquote(tuple_call(rest))) == :ok do
             throw error
           end

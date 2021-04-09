@@ -12,20 +12,22 @@ defmodule Exonerate do
      | boolean
      | nil
 
-  @type mismatch :: {:mismatch, Path.t, json}
+  # TODO: fill tihs out with more descriptive terms
+  @type error :: {:error, keyword}
 
   alias Exonerate.Builder
   alias Exonerate.Buildable
 
-  defmacro defschema([{method, json} | opts]) do
+  defmacro defschema([{path, json} | opts]) do
     #path = Keyword.get(opts, :path, [])
 
     schema_map = json
     |> Macro.expand(__CALLER__)
     |> Jason.decode!
 
-    schema_ast = schema_map
-    |> Builder.build(method, opts)
+    schema = Builder.build(schema_map, path, opts)
+
+    schema_ast = schema
     |> Buildable.build()
     |> List.wrap
 
@@ -47,34 +49,33 @@ defmodule Exonerate do
     #  end
     #end
 
-    q = quote do
-      unquote_splicing(id_special_ast(method, schema_map))
-      unquote_splicing(schema_special_ast(method, schema_map))
+    quote do
+      require Exonerate.Builder
 
-      def unquote(method)(value) do
-        unquote(method)(value, "#")
+      unquote_splicing(id_special_ast(path, schema_map))
+      unquote_splicing(schema_special_ast(path, schema_map))
+
+      def unquote(path)(value) do
+        unquote(schema.path)(value, "#")
       catch
         {:mismatch, list} -> {:error, list}
       end
 
       unquote_splicing(schema_ast)
     end
-
-    q |> Macro.to_string |> IO.puts
-    q
   end
 
   # special forms
-  defp id_special_ast(method, %{"$id" => id}) do
+  defp id_special_ast(path, %{"$id" => id}) do
     [quote do
-      def unquote(method)(:id), do: unquote(id)
+      def unquote(path)(:id), do: unquote(id)
     end]
   end
   defp id_special_ast(_, _), do: []
 
-  defp schema_special_ast(method, %{"$schema" => schema}) do
+  defp schema_special_ast(path, %{"$schema" => schema}) do
     [quote do
-      def unquote(method)(:schema), do: unquote(schema)
+      def unquote(path)(:schema), do: unquote(schema)
     end]
   end
   defp schema_special_ast(_, _), do: []

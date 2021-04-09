@@ -1,5 +1,5 @@
-defmodule ExonerateTest.MethodTest do
+defmodule ExonerateTest.pathTest do
   use ExUnit.Case
 
-  doctest Exonerate.Method
+  doctest Exonerate.path
 end
