@@ -10,8 +10,6 @@ defmodule Exonerate.Builder do
   # temporary
   defp traverse_path(json_spec, _), do: json_spec
 
-  @empty_map %{}
-
   def to_struct(params = %{"type" => "object"}, method) do
     Exonerate.Types.Object.build(method, params)
   end
@@ -33,7 +31,7 @@ defmodule Exonerate.Builder do
   def to_struct(params = %{"type" => list}, method) when is_list(list) do
     Exonerate.Types.Union.build(method, params)
   end
-  def to_struct(@empty_map, method) do
+  def to_struct(empty_map, method) when empty_map == %{} do
     Exonerate.Types.Absolute.build(method)
   end
   def to_struct(true, method) do

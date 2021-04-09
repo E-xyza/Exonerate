@@ -28,7 +28,7 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     """
   end
 
-  describe "combiningn schemas is possible" do
+  describe "combining schemas is possible" do
     test "validating values match" do
       assert :ok == Combining.combining("short")
       assert :ok == Combining.combining(12)
@@ -197,5 +197,4 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
       assert  {:mismatch, {"#", "I am a string"}} = Not.no("I am a string")
     end
   end
-
 end
