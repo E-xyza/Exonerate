@@ -79,7 +79,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "one non-number ruins the party" do
-      assert  {:mismatch, {"#/items", "3"}} ==
+      assert  {:mismatch, {"#", "3"}} ==
         ListValidation.items([1, 2, "3", 4, 5])
     end
 

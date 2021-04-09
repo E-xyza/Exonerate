@@ -47,16 +47,21 @@ defmodule Exonerate do
     #  end
     #end
 
-    quote do
+    q = quote do
       unquote_splicing(id_special_ast(method, schema_map))
       unquote_splicing(schema_special_ast(method, schema_map))
-      
-      def unquote(method)(json) do
-        unquote(method)(json, "#")
+
+      def unquote(method)(value) do
+        unquote(method)(value, "#")
+      catch
+        {:mismatch, list} -> {:error, list}
       end
 
       unquote_splicing(schema_ast)
     end
+
+    q |> Macro.to_string |> IO.puts
+    q
   end
 
   # special forms

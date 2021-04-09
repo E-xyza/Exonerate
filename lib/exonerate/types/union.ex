@@ -18,24 +18,23 @@ defmodule Exonerate.Types.Union do
 
   defimpl Exonerate.Buildable do
     def build(%{method: method, types: types}) do
-      cond_branches = Enum.map(types, &cond_branch(&1.method)) ++ [
-        arrow(true, {:mismatch, {v(:path), v(:json)}})]
+      calls = Enum.map(types, &quote do
+        unless (error = unquote(&1.method)(value, path)) == :ok do
+          throw error
+        end
+      end)
 
-      cond_body = {:cond, [], [[do: cond_branches]]}
+      helpers = Enum.map(types, &Exonerate.Buildable.build(&1))
 
-      [{:defp, [],
-      [
-        {method, [], [v(:json), v(:path)]},
-        [do: cond_body]
-      ]}] ++ Enum.map(types, &Exonerate.Buildable.build(&1))
+      quote do
+        defp unquote(method)(value, path) do
+          unquote_splicing(calls)
+        catch
+          error = {:mismatch, _} -> error
+        end
+
+        unquote_splicing(helpers)
+      end
     end
-
-    defp cond_branch(method) do
-      arrow({:==, [], [{method, [], [v(:json), v(:path)]}, :ok]}, :ok)
-    end
-
-    defp arrow(left, right), do: {:->, [], [[left], right]}
-    defp v(name), do: {name, [], Elixir}
-
   end
 end

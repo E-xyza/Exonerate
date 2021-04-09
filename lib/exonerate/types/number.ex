@@ -1,4 +1,4 @@
-defmodule Exonerate.Types.Float do
+defmodule Exonerate.Types.Number do
   @enforce_keys [:method]
   defstruct @enforce_keys ++ [:minimum, :maximum, :exclusive_minimum, :exclusive_maximum]
 
@@ -19,7 +19,7 @@ defmodule Exonerate.Types.Float do
         compare_branch(method, :>=, params.exclusive_maximum)
 
       quote do
-        defp unquote(method)(content, path) when not is_float(content) do
+        defp unquote(method)(content, path) when not is_number(content) do
           {:mismatch, {path, content}}
         end
         unquote_splicing(compare_branches)

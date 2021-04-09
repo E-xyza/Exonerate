@@ -1,43 +1,50 @@
 defmodule Exonerate.Builder do
   @moduledoc false
 
-  def build(full_json_spec, method, opts) do
+  def build(full_json_spec, path, opts) do
     full_json_spec
     |> traverse_path(opts)
-    |> to_struct(method)
+    |> to_struct(path)
   end
 
   # temporary
   defp traverse_path(json_spec, _), do: json_spec
 
-  def to_struct(params = %{"type" => "object"}, method) do
-    Exonerate.Types.Object.build(method, params)
+  def to_struct(spec = %{"type" => "object"}, path) do
+    Exonerate.Types.Object.build(spec, path)
   end
-  def to_struct(params = %{"type" => "number"}, method) do
-    to_struct(%{params | "type" => ["float", "integer"]}, method)
+  def to_struct(spec = %{"type" => "number"}, path) do
+    Exonerate.Types.Number.build(spec, path)
   end
-  def to_struct(params = %{"type" => "float"}, method) do
-    Exonerate.Types.Float.build(method, params)
+  def to_struct(spec = %{"type" => "integer"}, path) do
+    Exonerate.Types.Integer.build(spec, path)
   end
-  def to_struct(params = %{"type" => "integer"}, method) do
-    Exonerate.Types.Integer.build(method, params)
+  def to_struct(spec = %{"type" => "string"}, path) do
+    Exonerate.Types.String.build(spec, path)
   end
-  def to_struct(params = %{"type" => "string"}, method) do
-    Exonerate.Types.String.build(method, params)
+  def to_struct(spec = %{"type" => "array"}, path) do
+    Exonerate.Types.Array.build(spec, path)
   end
-  def to_struct(params = %{"type" => "list"}, method) do
-    Exonerate.Types.List.build(method, params)
+  def to_struct(spec = %{"type" => list}, path) when is_list(list) do
+    Exonerate.Types.Union.build(spec, path)
   end
-  def to_struct(params = %{"type" => list}, method) when is_list(list) do
-    Exonerate.Types.Union.build(method, params)
+  def to_struct(%{}, path) do
+    Exonerate.Types.Absolute.build(path)
   end
-  def to_struct(empty_map, method) when empty_map == %{} do
-    Exonerate.Types.Absolute.build(method)
+  def to_struct(true, path) do
+    Exonerate.Types.Absolute.build(path)
   end
-  def to_struct(true, method) do
-    Exonerate.Types.Absolute.build(method)
+  def to_struct(false, path) do
+    Exonerate.Types.Absolute.build(false, path)
   end
-  def to_struct(false, method) do
-    Exonerate.Types.Absolute.build(method, accept: false)
+
+  # helper function
+  def mismatch(spec) do
+    quote do
+      throw {:mismatch,
+
+
+      }
+    end
   end
 end
