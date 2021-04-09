@@ -2,13 +2,13 @@ defmodule Exonerate.Types.Integer do
   @enforce_keys [:path]
   defstruct @enforce_keys ++ [:minimum, :maximum, :exclusive_minimum, :exclusive_maximum, :multiple_of]
 
-  def build(spec, path), do: %__MODULE__{
+  def build(schema, path), do: %__MODULE__{
     path: path,
-    minimum: spec["minimum"],
-    maximum: spec["maximum"],
-    exclusive_minimum: spec["exclusiveMinimum"],
-    exclusive_maximum: spec["exclusiveMaximum"],
-    multiple_of: spec["multipleOf"]
+    minimum: schema["minimum"],
+    maximum: schema["maximum"],
+    exclusive_minimum: schema["exclusiveMinimum"],
+    exclusive_maximum: schema["exclusiveMaximum"],
+    multiple_of: schema["multipleOf"]
   }
 
   defimpl Exonerate.Buildable do

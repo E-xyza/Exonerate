@@ -10,15 +10,15 @@ defmodule Exonerate.Types.Absolute do
   end
 
   defimpl Exonerate.Buildable do
-    def build(schema = %{accept: true}) do
+    def build(spec = %{accept: true}) do
       quote do
-        def unquote(schema.path)(_, _), do: :ok
+        def unquote(spec.path)(_, _), do: :ok
       end
     end
 
-    def build(schema = %{accept: false}) do
+    def build(spec = %{accept: false}) do
       quote do
-        def unquote(schema.path)(value, path) do
+        def unquote(spec.path)(value, path) do
           Exonerate.Builder.mismatch(value, path)
         end
       end

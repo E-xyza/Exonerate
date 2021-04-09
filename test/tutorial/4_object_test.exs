@@ -58,11 +58,17 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     @badarray ["An", "array", "not", "an", "object"]
 
     test "objects mismatches a string or array" do
-      assert {:mismatch, {"#", "Not an object"}} =
-        Object.object("Not an object")
+      assert {:error, list} = Object.object("Not an object")
 
-      assert {:mismatch, {"#", @badarray}} =
-        Object.object(@badarray)
+      assert list[:schema_path] == "object#type"
+      assert list[:error_value] == "Not an object"
+      assert list[:json_path] == "#"
+
+      assert {:error, list} = Object.object(@badarray)
+
+      assert list[:schema_path] == "object#type"
+      assert list[:error_value] == @badarray
+      assert list[:json_path] == "#"
     end
   end
 
@@ -167,8 +173,11 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "extra properties matches correctly" do
       addr4 = Jason.decode(@addr4)
-      assert {:mismatch, {"#", addr4}} ==
-        Properties.address2(addr4)
+      assert {:error, list} = Properties.address2(addr4)
+
+      assert list[:schema_path] == "address2#additionalProperties"
+      assert list[:error_value] == %{"direction" => "NW"}
+      assert list[:json_path] == "#"
     end
   end
 
@@ -252,8 +261,11 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "deficient info is a problem" do
       contact3 = Jason.decode!(@contact3)
-      assert {:mismatch, {"#", contact3}} ==
-        RequiredProperties.contactinfo(contact3)
+      assert {:error, list} = RequiredProperties.contactinfo(contact3)
+
+      assert list[:schema_path] == "contactinfo#required/0"
+      assert list[:error_value] == contact3
+      assert list[:json_path] == "#"
     end
   end
 
@@ -324,12 +336,20 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   describe "matching property size" do
     test "empty object mismatches" do
       objsize1 = Jason.decode!(@objsize1)
-      assert {:mismatch, {"#", objsize1}} == Size.object(objsize1)
+      assert {:error, list} = Size.object(objsize1)
+
+      assert list[:schema_path] == "object#minProperties"
+      assert list[:error_value] == objsize1
+      assert list[:json_path] == "#"
     end
 
     test "too small object mismatches" do
       objsize2 = Jason.decode!(@objsize2)
-      assert {:mismatch, {"#", objsize2}} == Size.object(objsize2)
+      assert {:error, list} = Size.object(objsize2)
+
+      assert list[:schema_path] == "object#maxProperties"
+      assert list[:error_value] == objsize2
+      assert list[:json_path] == "#"
     end
 
     test "small goldilocks matches correctly" do
@@ -346,8 +366,11 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "too large object mismatches" do
       objsize5 = Jason.decode!(@objsize5)
-      assert {:mismatch, {"#", objsize5}} ==
-        Size.object(objsize5)
+      assert {:error, list} = Size.object(objsize5)
+
+      assert list[:schema_path] == "object#maxProperties"
+      assert list[:error_value] == objsize5
+      assert list[:json_path] == "#"
     end
   end
 
@@ -430,8 +453,12 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
     test "failing to meet dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {"#", propdependency2}} ==
+      assert {:error, list} =
         PropertyDependencies.dependency1(propdependency2)
+
+      assert list[:schema_path] == "dependency1#dependencies"
+      assert list[:error_value] == propdependency2
+      assert list[:json_path] == "#"
     end
     test "no dependency doesn't need to be met" do
       assert :ok = @propdependency3
@@ -448,13 +475,22 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   describe "matching two-way dependency" do
     test "one-way dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {"#", propdependency2}} ==
+      assert {:error, list} =
         PropertyDependencies.dependency2(propdependency2)
+
+      assert list[:schema_path] == "dependency2#dependencies/credit_card/0"
+      assert list[:error_value] == propdependency2
+      assert list[:json_path] == "#"
     end
+
     test "dependency is now two-way" do
       propdependency4 = Jason.decode!(@propdependency4)
-      assert {:mismatch, {"#", propdependency4}} ==
+      assert {:error, list} =
         PropertyDependencies.dependency2(propdependency4)
+
+      assert list[:schema_path] == "dependency2#dependencies/billing_address/0"
+      assert list[:error_value] == propdependency4
+      assert list[:json_path] == "#"
     end
   end
 
