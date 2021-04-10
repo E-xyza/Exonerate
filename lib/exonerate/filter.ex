@@ -28,15 +28,16 @@ defmodule Exonerate.Filter do
   #################################################################################
   ## API
 
-  @spec from_schema(Type.json, atom) :: [Macro.t]
+  @spec from_schema(Type.json, atom) :: Macro.t
   def from_schema(false, spec_path) do
-    [quote do
+    quote do
       defp unquote(spec_path)(value, path) do
         Exonerate.mismatch(value, path)
       end
-    end]
+    end
   end
 
+  @spec from_schema(Type.json, atom) :: Macro.t
   def from_schema(schema, spec_path) do
     alias Exonerate.Filter.Const
     alias Exonerate.Filter.Enum
@@ -53,13 +54,18 @@ defmodule Exonerate.Filter do
         module.filter(schema, state)
       end)
 
-    filter_ast ++ case state.types do
-      map when map == %{} -> []
+    fallthrough = case state.types do
+      map when map == %{} -> :ok
       _ ->
         # add in the fallthrough if we have valid types remaining.
-        [quote do
+        quote do
           defp unquote(spec_path)(_value, _path), do: :ok
-        end]
+        end
+    end
+
+    quote do
+      unquote_splicing(filter_ast)
+      unquote(fallthrough)
     end
   end
 
