@@ -42,9 +42,11 @@ defmodule Exonerate.Filter do
     alias Exonerate.Filter.Enum
     alias Exonerate.Filter.Type
     alias Exonerate.Filter.String
+    alias Exonerate.Filter.Number
+    alias Exonerate.Filter.Integer
 
     {filter_ast, state} = Elixir.Enum.flat_map_reduce(
-      [Const, Enum, Type, String],
+      [Const, Enum, Type, String, Number, Integer],
       %__MODULE__{path: spec_path},
       fn module, state ->
         module.filter(schema, state)

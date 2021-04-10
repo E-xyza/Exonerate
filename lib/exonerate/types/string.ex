@@ -19,18 +19,18 @@ defmodule Exonerate.Types.String do
 
       min_length = if min = spec.min_length do
         quote do
-          (length < unquote(min)) && Exonerate.Builder.mismatch(value, path, subpath: "minLength")
+          (length < unquote(min)) && Exonerate.mismatch(value, path, subpath: "minLength")
         end
       end
       max_length = if max = spec.max_length do
         quote do
-          (length > unquote(max)) && Exonerate.Builder.mismatch(value, path, subpath: "maxLength")
+          (length > unquote(max)) && Exonerate.mismatch(value, path, subpath: "maxLength")
         end
       end
 
       quote do
         defp unquote(spec_path)(value, path) when not is_binary(value) do
-          Exonerate.Builder.mismatch(value, path, subpath: "type")
+          Exonerate.mismatch(value, path, subpath: "type")
         end
         unquote_splicing(filter_generic(spec))
         defp unquote(spec_path)(value, path) do
@@ -45,7 +45,7 @@ defmodule Exonerate.Types.String do
 
     defp pattern_call(%{pattern: nil}), do: :ok
     defp pattern_call(spec) do
-      pattern_filter = Exonerate.Builder.join(spec.path, "pattern")
+      pattern_filter = Exonerate.join(spec.path, "pattern")
       quote do
         unquote(pattern_filter)(value, path)
       end
@@ -53,13 +53,13 @@ defmodule Exonerate.Types.String do
 
     defp pattern_filter(%{pattern: nil}), do: []
     defp pattern_filter(spec) do
-      pattern_filter = Exonerate.Builder.join(spec.path, "pattern")
+      pattern_filter = Exonerate.join(spec.path, "pattern")
       [quote do
         def unquote(pattern_filter)(value, path) do
           if value =~ sigil_r(<<unquote(spec.pattern)>>, []) do
             :ok
           else
-            Exonerate.Builder.mismatch(value, path)
+            Exonerate.mismatch(value, path)
           end
         end
       end]
