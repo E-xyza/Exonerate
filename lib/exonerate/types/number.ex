@@ -1,6 +1,11 @@
 defmodule Exonerate.Types.Number do
-  @enforce_keys [:path]
-  defstruct @enforce_keys ++ [:minimum, :maximum, :exclusive_minimum, :exclusive_maximum, :multiple_of]
+  use Exonerate.Builder, ~w(
+    minimum
+    maximum
+    exclusive_minimum
+    exclusive_maximum
+    multiple_of
+  )a
 
   def build(schema, path), do: %__MODULE__{
     path: path,

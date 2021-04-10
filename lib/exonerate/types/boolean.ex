@@ -1,6 +1,5 @@
 defmodule Exonerate.Types.Boolean do
-  @enforce_keys [:path]
-  defstruct @enforce_keys
+  use Exonerate.Builder, []
 
   def build(_schema, path), do: %__MODULE__{
     path: path

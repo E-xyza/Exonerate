@@ -54,6 +54,7 @@ defmodule Exonerate do
 
       unquote_splicing(id_special_ast(path, schema_map))
       unquote_splicing(schema_special_ast(path, schema_map))
+      unquote_splicing(metadata_ast(path, schema_map))
 
       def unquote(path)(value) do
         unquote(schema.path)(value, "/")
@@ -62,6 +63,8 @@ defmodule Exonerate do
       end
 
       unquote_splicing(schema_ast)
+
+      unquote_splicing(verification_ast(path, schema_map))
     end
   end
 
@@ -79,5 +82,38 @@ defmodule Exonerate do
     end]
   end
   defp schema_special_ast(_, _), do: []
+
+  @metadata_fields ~w(title description default examples)
+  defp metadata_ast(path, schema_map) do
+    Enum.flat_map(@metadata_fields, fn field ->
+      if is_map_key(schema_map, field) do
+        symbol = String.to_atom(field)
+        [quote do
+          def unquote(path)(unquote(symbol)), do: unquote(schema_map[field])
+        end]
+      else
+        []
+      end
+    end)
+  end
+
+  # verify that default and examples must satisfy the schema
+  @verifying_fields ~w(default examples)
+  defp verification_ast(path, schema_map) do
+    Enum.flat_map(@verifying_fields, fn field ->
+      if is_map_key(schema_map, field) do
+        verification = :foobar
+        [quote do
+          @after_compile {__MODULE__, unquote(verification)}
+
+          def foobar(env, bytecode) do
+            IO.puts("hi mom")
+          end
+        end]
+      else
+        []
+      end
+    end)
+  end
 
 end

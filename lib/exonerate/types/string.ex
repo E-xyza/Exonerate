@@ -1,8 +1,5 @@
 defmodule Exonerate.Types.String do
-  @enforce_keys [:path]
-  @props ~w(pattern min_length max_length)a
-  defstruct @enforce_keys ++ @props
-
+  use Exonerate.Builder, ~w(pattern min_length max_length)a
   def build(schema, path), do: %__MODULE__{
     path: path,
     pattern: schema["pattern"],

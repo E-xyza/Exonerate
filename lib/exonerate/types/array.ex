@@ -1,6 +1,5 @@
 defmodule Exonerate.Types.Array do
-  @enforce_keys [:path]
-  @params ~w(
+  use Exonerate.Builder, ~w(
     contains
     items
     tuple
@@ -9,8 +8,6 @@ defmodule Exonerate.Types.Array do
     unique_items
     additional_items
   )a
-
-  defstruct @enforce_keys ++ @params
 
   def build(schema, path) do
     items = case schema["items"] do

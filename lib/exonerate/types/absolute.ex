@@ -1,6 +1,5 @@
 defmodule Exonerate.Types.Absolute do
-  @enforce_keys [:path]
-  defstruct @enforce_keys ++ [:accept]
+  use Exonerate.Builder, [:accept]
 
   def build(accept \\ true, path) do
     %__MODULE__{

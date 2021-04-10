@@ -1,6 +1,14 @@
 defmodule Exonerate.Builder do
   @moduledoc false
 
+  defmacro __using__(fields) do
+    quote do
+      @enforce_keys [:path]
+      @common_keys [:enum, :const]
+      defstruct @enforce_keys ++ @common_keys ++ unquote(fields)
+    end
+  end
+
   def build(full_json_spec, path, opts) do
     full_json_spec
     |> traverse_path(opts)
@@ -9,6 +17,8 @@ defmodule Exonerate.Builder do
 
   # temporary
   defp traverse_path(json_spec, _), do: json_spec
+
+  def common_keys, do: ~w(enum const)a
 
   def to_struct(spec = %{"type" => "object"}, path) do
     Exonerate.Types.Object.build(spec, path)
@@ -52,7 +62,7 @@ defmodule Exonerate.Builder do
     schema_path = __CALLER__.function
     |> elem(0)
     |> to_string
-    |> join(opts[:subpath] || "")
+    |> join(opts[:subpath])
 
     quote do
       throw {:mismatch,
@@ -62,9 +72,10 @@ defmodule Exonerate.Builder do
     end
   end
 
-  @spec join(atom, String.t) :: atom
-  @spec join(Path.t, String.t) :: Path.t
+  @spec join(atom, String.t | nil) :: atom
+  @spec join(Path.t, String.t | nil) :: Path.t
 
+  def join(path, nil), do: path
   def join(path, subpath) when is_atom(path) do
     path
     |> Atom.to_string

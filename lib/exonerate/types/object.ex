@@ -1,6 +1,5 @@
 defmodule Exonerate.Types.Object do
-  @enforce_keys [:path]
-  @props ~w(
+  use Exonerate.Builder, ~w(
     min_properties
     max_properties
     required
@@ -11,8 +10,6 @@ defmodule Exonerate.Types.Object do
     additional_properties
     schema_dependencies
     )a
-
-  defstruct @enforce_keys ++ @props
 
   alias Exonerate.Types.String
   alias Exonerate.Builder

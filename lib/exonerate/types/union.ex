@@ -1,6 +1,5 @@
 defmodule Exonerate.Types.Union do
-  @enforce_keys [:path, :types]
-  defstruct @enforce_keys
+  use Exonerate.Builder, [:types]
 
   def build(params, path) do
     types = params["type"]
