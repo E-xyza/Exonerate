@@ -37,8 +37,11 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "object doesn't match array" do
-      assert  {:mismatch, {"#", %{"Not" => "an array"}}} ==
-        Array.array(%{"Not" => "an array"})
+      assert {:error, list} = Array.array(%{"Not" => "an array"})
+
+      assert list[:schema_path] == "array#!/type"
+      assert list[:error_value] == %{"Not" => "an array"}
+      assert list[:json_path] == "/"
     end
   end
 
@@ -79,8 +82,11 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "one non-number ruins the party" do
-      assert  {:mismatch, {"#", "3"}} ==
-        ListValidation.items([1, 2, "3", 4, 5])
+      assert {:error, list} = ListValidation.items([1, 2, "3", 4, 5])
+
+      assert list[:schema_path] == "items#!/items/type"
+      assert list[:error_value] == "3"
+      assert list[:json_path] == "/2"
     end
 
     test "an empty array passes" do
@@ -98,9 +104,12 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "it fails with no numbers" do
-      assert  {:mismatch,
-        {"#", ["life", "universe", "everything", "forty-two"]}} ==
+      assert  {:error, list} =
           ListValidation.contains(["life", "universe", "everything", "forty-two"])
+
+      assert list[:schema_path] == "contains#!/contains"
+      assert list[:error_value] == ["life", "universe", "everything", "forty-two"]
+      assert list[:json_path] == "/"
     end
 
     test "all numbers is ok" do
@@ -203,8 +212,12 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "address is missing a street number" do
-      assert  {:mismatch, {"#/items/0", "Palais de l'Élysée"}} ==
+      assert  {:error, list} =
         TupleValidation.tuple(["Palais de l'Élysée"])
+
+      assert list[:schema_path] == "tuple#!/items/0/type"
+      assert list[:error_value] == "Palais de l'Élysée"
+      assert list[:json_path] == "/0"
     end
 
     test "it's ok to not have all the items" do
@@ -234,9 +247,13 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "it is not ok to provide extra items" do
-      assert  {:mismatch,{"#/additional_items", "Washington"}} ==
+      assert  {:error, list} =
         TupleValidation.tuple_noadditional(
           [1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+
+      assert list[:schema_path] == "tuple_noadditional#!/additionalItems"
+      assert list[:error_value] == "Washington"
+      assert list[:json_path] == "/4"
     end
   end
 
@@ -248,9 +265,13 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "but not extra numbers" do
-      assert  {:mismatch, {"#/additional_items", 20500}} ==
+      assert {:error, list} =
         TupleValidation.tuple_additional_with_property(
           [1600, "Pennsylvania", "Avenue", "NW", 20500])
+
+      assert list[:schema_path] == "tuple_additional_with_property#!/additionalItems/type"
+      assert list[:error_value] == 20500
+      assert list[:json_path] == "/4"
     end
   end
 
@@ -274,10 +295,20 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
 
   describe "array length works" do
     test "by length" do
-      assert {:mismatch, {"#", []}} == Length.length([])
+      assert {:error, list} = Length.length([])
+
+      assert list[:schema_path] == "length#!/minItems"
+      assert list[:error_value] == []
+      assert list[:json_path] == "/"
+
       assert :ok == Length.length([1, 2])
       assert :ok == Length.length([1, 2, 3])
-      assert {:mismatch, {"#", [1, 2, 3, 4]}} == Length.length([1, 2, 3, 4])
+
+      assert {:error, list} = Length.length([1, 2, 3, 4])
+
+      assert list[:schema_path] == "length#!/maxItems"
+      assert list[:error_value] == [1, 2, 3, 4]
+      assert list[:json_path] == "/"
     end
   end
 
@@ -302,8 +333,11 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "for arrays" do
       assert :ok = Uniqueness.unique([1, 2, 3, 4, 5])
 
-      assert {:mismatch, {"#", [1, 2, 3, 3, 4]}} ==
-        Uniqueness.unique([1, 2, 3, 3, 4])
+      assert {:error, list} = Uniqueness.unique([1, 2, 3, 3, 4])
+
+      assert list[:schema_path] == "unique#!/uniqueItems"
+      assert list[:error_value] == 3
+      assert list[:json_path] == "/3"
     end
 
     test "empty array always passes" do
