@@ -207,8 +207,11 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "drive is not an acceptable street type" do
-      assert  {:mismatch, {"#/items/2", "Drive"}}
-        == TupleValidation.tuple([24, "Sussex", "Drive"])
+      assert  {:error, list} = TupleValidation.tuple([24, "Sussex", "Drive"])
+
+      assert list[:schema_path] == "tuple#!/items/2/enum"
+      assert list[:error_value] == "Drive"
+      assert list[:json_path] == "/2"
     end
 
     test "address is missing a street number" do

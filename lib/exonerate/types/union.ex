@@ -1,22 +1,25 @@
 defmodule Exonerate.Types.Union do
   use Exonerate.Builder, [:types]
 
-  def build(params, path) do
-    types = params["type"]
+  def build(schema, path) do
+    types = schema["type"]
     |> Enum.with_index
-    |> Enum.map(&spec_rebuild(&1, path, params))
+    |> Enum.map(&spec_rebuild(&1, path, schema))
 
-    %__MODULE__{
+    build_generic(%__MODULE__{
       path: path,
       types: types
-    }
+    }, schema)
   end
 
-  def spec_rebuild({type, index}, path, params), do:
-    Exonerate.Builder.to_struct(%{params | "type" => type}, :"#{path}/type/#{index}")
+  def spec_rebuild({type, index}, path, schema), do:
+    Exonerate.Builder.to_struct(%{schema | "type" => type}, :"#{path}/type/#{index}")
 
   defimpl Exonerate.Buildable do
-    def build(%{path: spec_path, types: type_spec}) do
+
+    use Exonerate.GenericTools, [:filter_generic]
+
+    def build(spec = %{path: spec_path, types: type_spec}) do
 
       {calls, helpers} = type_spec
       |> Enum.map(fn spec ->
@@ -34,6 +37,7 @@ defmodule Exonerate.Types.Union do
       |> Enum.unzip
 
       quote do
+        unquote_splicing(filter_generic(spec))
         defp unquote(spec_path)(value, path) do
           unquote_splicing(calls)
           Exonerate.Builder.mismatch(value, path, subpath: "type")

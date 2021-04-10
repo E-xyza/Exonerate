@@ -63,8 +63,6 @@ defmodule Exonerate do
       end
 
       unquote_splicing(schema_ast)
-
-      unquote_splicing(verification_ast(path, schema_map))
     end
   end
 
@@ -84,6 +82,7 @@ defmodule Exonerate do
   defp schema_special_ast(_, _), do: []
 
   @metadata_fields ~w(title description default examples)
+  defp metadata_ast(_path, bool) when is_boolean(bool), do: []
   defp metadata_ast(path, schema_map) do
     Enum.flat_map(@metadata_fields, fn field ->
       if is_map_key(schema_map, field) do
@@ -96,24 +95,4 @@ defmodule Exonerate do
       end
     end)
   end
-
-  # verify that default and examples must satisfy the schema
-  @verifying_fields ~w(default examples)
-  defp verification_ast(path, schema_map) do
-    Enum.flat_map(@verifying_fields, fn field ->
-      if is_map_key(schema_map, field) do
-        verification = :foobar
-        [quote do
-          @after_compile {__MODULE__, unquote(verification)}
-
-          def foobar(env, bytecode) do
-            IO.puts("hi mom")
-          end
-        end]
-      else
-        []
-      end
-    end)
-  end
-
 end

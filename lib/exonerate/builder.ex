@@ -6,6 +6,8 @@ defmodule Exonerate.Builder do
       @enforce_keys [:path]
       @common_keys [:enum, :const]
       defstruct @enforce_keys ++ @common_keys ++ unquote(fields)
+
+      import Exonerate.Builder, only: [build_generic: 2]
     end
   end
 
@@ -47,14 +49,16 @@ defmodule Exonerate.Builder do
   def to_struct(%{"type" => type}, path) do
     raise CompileError, message: "invalid type #{inspect type} found at #{path}"
   end
-  def to_struct(%{}, path) do
-    Exonerate.Types.Absolute.build(path)
+  def to_struct(spec, path) when is_map(spec) do
+    spec
+    |> Map.put("type", ~w(object number integer string array boolean null))
+    |> Exonerate.Types.Union.build(path)
   end
   def to_struct(true, path) do
-    Exonerate.Types.Absolute.build(path)
+    Exonerate.Types.Absolute.build(%{"accept" => true}, path)
   end
   def to_struct(false, path) do
-    Exonerate.Types.Absolute.build(false, path)
+    Exonerate.Types.Absolute.build(%{"accept" => false}, path)
   end
 
   # helper function
@@ -86,4 +90,7 @@ defmodule Exonerate.Builder do
     Path.join(path, subpath)
   end
 
+  def build_generic(s, spec) do
+    struct(s, enum: spec["enum"], const: spec["const"])
+  end
 end

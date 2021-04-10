@@ -64,8 +64,7 @@ defmodule Exonerate.Types.Object do
       {nil, nil}
     end
 
-
-    %__MODULE__{
+    build_generic(%__MODULE__{
       path: path,
       # guardable tests
       min_properties: schema["minProperties"],
@@ -79,15 +78,18 @@ defmodule Exonerate.Types.Object do
       additional_properties: additional_properties,
       # final tests
       schema_dependencies: schema_dependencies,
-    }
+    }, schema)
   end
 
   def spec, do: @spec
 
   defimpl Exonerate.Buildable do
 
+    use Exonerate.GenericTools, [:filter_generic]
+
     # the scheme for testing objects is as follows:
     # - all tests that are guardable
+    #   - generic filters
     #   - size
     #   - required
     #   - property dependencies
@@ -109,6 +111,7 @@ defmodule Exonerate.Types.Object do
         defp unquote(spec_path)(value, path) when not is_map(value) do
           Exonerate.Builder.mismatch(value, path, subpath: "type")
         end
+        unquote_splicing(filter_generic(spec))
         unquote_splicing(guard_properties)
         defp unquote(spec_path)(object, path) do
           unquote(properties_filter_call(spec))

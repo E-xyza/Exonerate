@@ -1,12 +1,17 @@
 defmodule Exonerate.Types.String do
   use Exonerate.Builder, ~w(pattern min_length max_length)a
-  def build(schema, path), do: %__MODULE__{
-    path: path,
-    pattern: schema["pattern"],
-    min_length: schema["minLength"],
-    max_length: schema["maxLength"]}
+  def build(schema, path) do
+    build_generic(%__MODULE__{
+      path: path,
+      pattern: schema["pattern"],
+      min_length: schema["minLength"],
+      max_length: schema["maxLength"]}, schema)
+    end
 
   defimpl Exonerate.Buildable do
+
+    use Exonerate.GenericTools, [:filter_generic]
+
     def build(spec = %{path: spec_path}) do
       uses_length = if spec.min_length || spec.max_length do
         quote do length = String.length(value) end
@@ -27,6 +32,7 @@ defmodule Exonerate.Types.String do
         defp unquote(spec_path)(value, path) when not is_binary(value) do
           Exonerate.Builder.mismatch(value, path, subpath: "type")
         end
+        unquote_splicing(filter_generic(spec))
         defp unquote(spec_path)(value, path) do
           unquote(uses_length)
           unquote(min_length)

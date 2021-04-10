@@ -37,7 +37,7 @@ defmodule Exonerate.Types.Array do
         Exonerate.Builder.to_struct(spec, Exonerate.Builder.join(path, "additionalItems"))
     end
 
-    %__MODULE__{
+    build_generic(%__MODULE__{
       path: path,
       items: items,
       tuple: tuple,
@@ -46,15 +46,19 @@ defmodule Exonerate.Types.Array do
       max_items: schema["maxItems"],
       unique_items: schema["uniqueItems"],
       additional_items: additional_items
-    }
+    }, schema)
   end
 
   defimpl Exonerate.Buildable do
+
+    use Exonerate.GenericTools, [:filter_generic]
+
     def build(spec = %{path: path}) do
       quote do
         defp unquote(path)(value, path) when not is_list(value) do
           Exonerate.Builder.mismatch(value, path, subpath: "type")
         end
+        unquote_splicing(filter_generic(spec))
         defp unquote(path)(list, path) do
           initial! = %{index: 0}
           unquote(unique_initializer(spec))
