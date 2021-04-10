@@ -20,8 +20,6 @@ defmodule Exonerate.Builder do
   # temporary
   defp traverse_path(json_spec, _), do: json_spec
 
-  def common_keys, do: ~w(enum const)a
-
   def to_struct(spec = %{"type" => "object"}, path) do
     Exonerate.Types.Object.build(spec, path)
   end
@@ -59,35 +57,6 @@ defmodule Exonerate.Builder do
   end
   def to_struct(false, path) do
     Exonerate.Types.Absolute.build(%{"accept" => false}, path)
-  end
-
-  # helper function
-  defmacro mismatch(value, path, opts \\ []) do
-    schema_path = __CALLER__.function
-    |> elem(0)
-    |> to_string
-    |> join(opts[:subpath])
-
-    quote do
-      throw {:mismatch,
-      schema_path: unquote(schema_path),
-      error_value: unquote(value),
-      json_path: unquote(path)}
-    end
-  end
-
-  @spec join(atom, String.t | nil) :: atom
-  @spec join(Path.t, String.t | nil) :: Path.t
-
-  def join(path, nil), do: path
-  def join(path, subpath) when is_atom(path) do
-    path
-    |> Atom.to_string
-    |> join(subpath)
-    |> String.to_atom
-  end
-  def join(path, subpath) do
-    Path.join(path, subpath)
   end
 
   def build_generic(s, spec) do

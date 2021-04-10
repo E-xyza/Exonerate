@@ -4,35 +4,20 @@ defmodule Exonerate do
     creates the defschema macro.
   """
 
-  @type json ::
-     %{optional(String.t) => json}
-     | list(json)
-     | String.t
-     | number
-     | boolean
-     | nil
+  alias Exonerate.Filter
 
   # TODO: fill tihs out with more descriptive terms
   @type error :: {:error, keyword}
 
-  alias Exonerate.Builder
-  alias Exonerate.Buildable
-
   defmacro defschema([{path, json} | opts]) do
     #path = Keyword.get(opts, :path, [])
 
-    schema_map = json
+    schema = json
     |> Macro.expand(__CALLER__)
     |> Jason.decode!
 
-    schema = Builder.build(schema_map, :"#{path}#!/", opts)
-
-    schema_ast = schema
-    |> Buildable.build()
-    |> List.wrap
-
     #docstr = """
-    #Matches JSONSchema:
+    #Defined by the jsonschema:
     #```
     ##{json}
     #```
@@ -50,19 +35,19 @@ defmodule Exonerate do
     #end
 
     quote do
-      require Exonerate.Builder
+      require Exonerate
 
-      unquote_splicing(id_special_ast(path, schema_map))
-      unquote_splicing(schema_special_ast(path, schema_map))
-      unquote_splicing(metadata_ast(path, schema_map))
+      unquote_splicing(id_special_ast(path, schema))
+      unquote_splicing(schema_special_ast(path, schema))
+      unquote_splicing(metadata_ast(path, schema))
 
       def unquote(path)(value) do
-        unquote(schema.path)(value, "/")
+        unquote(:"#{path}#!/")(value, "/")
       catch
         {:mismatch, list} -> {:error, list}
       end
 
-      unquote_splicing(schema_ast)
+      unquote_splicing(Filter.from_schema(schema, :"#{path}#!/"))
     end
   end
 
@@ -94,5 +79,37 @@ defmodule Exonerate do
         []
       end
     end)
+  end
+
+  #################################################################
+  ## PRIVATE HELPER FUNCTIONS
+
+  @spec join(atom, String.t | nil) :: atom
+  @spec join(Path.t, String.t | nil) :: Path.t
+  @doc false
+  def join(path, nil), do: path
+  def join(path, subpath) when is_atom(path) do
+    path
+    |> Atom.to_string
+    |> join(subpath)
+    |> String.to_atom
+  end
+  def join(path, subpath) do
+    Path.join(path, subpath)
+  end
+
+  @doc false
+  defmacro mismatch(value, path, opts \\ []) do
+    schema_path = __CALLER__.function
+    |> elem(0)
+    |> to_string
+    |> join(opts[:schema_subpath])
+
+    quote do
+      throw {:mismatch,
+      schema_path: unquote(schema_path),
+      error_value: unquote(value),
+      json_path: unquote(path)}
+    end
   end
 end
