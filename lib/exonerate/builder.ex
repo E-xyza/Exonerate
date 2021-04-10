@@ -25,8 +25,17 @@ defmodule Exonerate.Builder do
   def to_struct(spec = %{"type" => "array"}, path) do
     Exonerate.Types.Array.build(spec, path)
   end
+  def to_struct(spec = %{"type" => "boolean"}, path) do
+    Exonerate.Types.Boolean.build(spec, path)
+  end
+  def to_struct(spec = %{"type" => "null"}, path) do
+    Exonerate.Types.Null.build(spec, path)
+  end
   def to_struct(spec = %{"type" => list}, path) when is_list(list) do
     Exonerate.Types.Union.build(spec, path)
+  end
+  def to_struct(%{"type" => type}, path) do
+    raise CompileError, message: "invalid type #{inspect type} found at #{path}"
   end
   def to_struct(%{}, path) do
     Exonerate.Types.Absolute.build(path)
