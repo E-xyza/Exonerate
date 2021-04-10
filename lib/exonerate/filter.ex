@@ -40,13 +40,14 @@ defmodule Exonerate.Filter do
   def from_schema(schema, spec_path) do
     alias Exonerate.Filter.Const
     alias Exonerate.Filter.Enum
-    alias Exonerate.Filter.Type
-    alias Exonerate.Filter.String
-    alias Exonerate.Filter.Number
     alias Exonerate.Filter.Integer
+    alias Exonerate.Filter.Number
+    alias Exonerate.Filter.Object
+    alias Exonerate.Filter.String
+    alias Exonerate.Filter.Type
 
     {filter_ast, state} = Elixir.Enum.flat_map_reduce(
-      [Const, Enum, Type, String, Number, Integer],
+      [Const, Enum, Type, String, Number, Integer, Object],
       %__MODULE__{path: spec_path},
       fn module, state ->
         module.filter(schema, state)

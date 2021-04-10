@@ -61,5 +61,4 @@ defmodule Exonerate.Filter.Number do
       end
     end]
   end
-
 end
