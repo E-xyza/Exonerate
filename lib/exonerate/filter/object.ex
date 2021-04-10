@@ -41,9 +41,9 @@ defmodule Exonerate.Filter.Object do
   defp object_filter(schema, schema_path) do
     guard_properties =
       size_branch(schema, "minProperties", schema_path) ++
-      size_branch(schema, "maxProperties", schema_path) #++
-      #required_branches(spec_path, spec.required) ++
-      #property_dependencies(spec_path, spec.property_dependencies)
+      size_branch(schema, "maxProperties", schema_path) ++
+      required_branches(schema["required"], schema_path) ++
+      property_dependencies(schema["dependencies"], schema_path)
 
     quote do
       unquote_splicing(guard_properties)
@@ -72,36 +72,38 @@ defmodule Exonerate.Filter.Object do
       end]
     end
 
-#    defp required_branches(_, nil), do: []
-#    defp required_branches(path, requireds) do
-#      requireds
-#      |> Enum.with_index
-#      |> Enum.map(fn {key, index} ->
-#        subpath = "required/#{index}"
-#        quote do
-#          defp unquote(path)(object, path) when not is_map_key(object, unquote(key)) do
-#            Exonerate.Builder.mismatch(object, path, subpath: unquote(subpath))
-#          end
-#        end
-#      end)
-#    end
-#
-#    defp property_dependencies(_, nil), do: []
-#    defp property_dependencies(path, spec) do
-#      Enum.flat_map(spec, fn {key, deps} ->
-#        deps
-#        |> Enum.with_index
-#        |> Enum.map(fn {other_key, index} ->
-#          subpath = "dependencies/#{key}/#{index}"
-#          quote do
-#            defp unquote(path)(object, path) when
-#              is_map_key(object, unquote(key)) and not is_map_key(object, unquote(other_key)) do
-#              Exonerate.Builder.mismatch(object, path, subpath: unquote(subpath))
-#            end
-#          end
-#        end)
-#      end)
-#    end
+    defp required_branches(nil, _), do: []
+    defp required_branches(requireds, schema_path) do
+      requireds
+      |> Enum.with_index
+      |> Enum.map(fn {key, index} ->
+        subpath = "required/#{index}"
+        quote do
+          defp unquote(schema_path)(object, path) when not is_map_key(object, unquote(key)) do
+            Exonerate.mismatch(object, path, schema_subpath: unquote(subpath))
+          end
+        end
+      end)
+    end
+
+    defp property_dependencies(nil, _), do: []
+    defp property_dependencies(deps_map, schema_path) do
+      Enum.flat_map(deps_map, fn {key, deps} ->
+        deps
+        |> Enum.with_index
+        |> Enum.flat_map(fn
+          {other_key, index} when is_binary(other_key) ->
+            subpath = "dependencies/#{key}/#{index}"
+            [quote do
+              defp unquote(schema_path)(object, path) when
+                is_map_key(object, unquote(key)) and not is_map_key(object, unquote(other_key)) do
+                Exonerate.mismatch(object, path, schema_subpath: unquote(subpath))
+              end
+            end]
+          _ -> []
+        end)
+      end)
+    end
 #
 #    defp properties_filter_call(spec = %{properties: p}) when not is_nil(p) do
 #      spec_path = Exonerate.Builder.join(spec.path, "properties")
