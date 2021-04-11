@@ -19,7 +19,7 @@ defmodule Exonerate.Filter.Array do
   def filter(schema, state = %{types: types}) when has_array_props(schema) and is_map_key(types, :array) do
     {[array_filter(schema, state.path)], drop_type(state, :array)}
   end
-  def filter(schema, state) do
+  def filter(_schema, state) do
     {[], state}
   end
 
@@ -72,8 +72,20 @@ defmodule Exonerate.Filter.Array do
   end
   defp unique_validation(_), do: :ok
 
-  defp contains_initializer(%{"contains" => _}, spec_path) do
-    contains_path = Exonerate.join(spec_path, "contains")
+  defguardp needs_contain_count(schema) when
+    is_map_key(schema, "minContains") or
+    is_map_key(schema, "maxContains")
+
+  defp contains_initializer(schema = %{"contains" => _}, schema_path)
+      when needs_contain_count(schema) do
+    contains_path = Exonerate.join(schema_path, "contains")
+    lambda = {:&, [], [{:/, [], [{contains_path, [], Elixir}, 2]}]}
+    quote do
+      initial! = Map.put(initial!, :contains, {unquote(lambda), 0})
+    end
+  end
+  defp contains_initializer(%{"contains" => _}, schema_path) do
+    contains_path = Exonerate.join(schema_path, "contains")
     lambda = {:&, [], [{:/, [], [{contains_path, [], Elixir}, 2]}]}
     quote do
       initial! = Map.put(initial!, :contains, unquote(lambda))
@@ -81,6 +93,26 @@ defmodule Exonerate.Filter.Array do
   end
   defp contains_initializer(_, _), do: :ok
 
+  defp contains_iterator(schema = %{"contains" => _}) when needs_contain_count(schema) do
+    validate_max_contains = if max = schema["maxContains"] do
+      quote do
+        if count > unquote(max) do
+          Exonerate.mismatch(list, path, schema_subpath: "maxContains")
+        end
+      end
+    end
+
+    quote do
+      {contains, count} = acc!.contains
+      unquote(validate_max_contains)
+      acc! = try do
+        contains.(item, path)
+        %{acc! | contains: {contains, count + 1}}
+      catch
+        {:mismatch, _} -> acc!
+      end
+    end
+  end
   defp contains_iterator(%{"contains" => _}) do
     quote do
       acc! = try do
@@ -97,6 +129,23 @@ defmodule Exonerate.Filter.Array do
   end
   defp contains_iterator(_), do: :ok
 
+  defp contains_validation(schema = %{"contains" => _}) when needs_contain_count(schema) do
+    if min = schema["minContains"] do
+      quote do
+        {contains, count} = reduction.contains
+        if count < unquote(min) do
+          Exonerate.mismatch(list, path, schema_subpath: "minContains")
+        end
+      end
+    else
+      quote do
+        {contains, count} = reduction.contains
+        if count == 0 do
+          Exonerate.mismatch(list, path, schema_subpath: "contains")
+        end
+      end
+    end
+  end
   defp contains_validation(%{"contains" => _}) do
     quote do
       if is_map_key(reduction, :contains) do
@@ -159,7 +208,7 @@ defmodule Exonerate.Filter.Array do
   defp min_items_validation(%{"minItems" => min_items}) do
     quote do
       if reduction.index < unquote(min_items), do:
-      Exonerate.mismatch(list, path, schema_subpath: "minItems")
+       Exonerate.mismatch(list, path, schema_subpath: "minItems")
     end
   end
   defp min_items_validation(_), do: :ok
@@ -186,9 +235,9 @@ defmodule Exonerate.Filter.Array do
   end
   defp additional_items_call(_, _), do: :ok
 
-  defp additional_items_helpers(%{"additionalItems" => spec}, schema_path) do
+  defp additional_items_helpers(%{"additionalItems" => schema}, schema_path) do
     additional_items_path = Exonerate.join(schema_path, "additionalItems")
-    Filter.from_schema(spec, additional_items_path)
+    Filter.from_schema(schema, additional_items_path)
   end
   defp additional_items_helpers(_, _), do: :ok
 end
