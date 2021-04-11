@@ -96,7 +96,7 @@ defmodule Exonerate.Filter.Array do
   defp contains_iterator(schema = %{"contains" => _}) when needs_contain_count(schema) do
     validate_max_contains = if max = schema["maxContains"] do
       quote do
-        if count > unquote(max) do
+        if elem(acc!.contains, 1) > unquote(max) do
           Exonerate.mismatch(list, path, schema_subpath: "maxContains")
         end
       end
@@ -104,13 +104,13 @@ defmodule Exonerate.Filter.Array do
 
     quote do
       {contains, count} = acc!.contains
-      unquote(validate_max_contains)
       acc! = try do
         contains.(item, path)
         %{acc! | contains: {contains, count + 1}}
       catch
         {:mismatch, _} -> acc!
       end
+      unquote(validate_max_contains)
     end
   end
   defp contains_iterator(%{"contains" => _}) do
