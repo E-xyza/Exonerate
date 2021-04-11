@@ -84,7 +84,7 @@ defmodule Exonerate.Filter.Array do
   defp contains_iterator(%{"contains" => _}) do
     quote do
       acc! = try do
-        if contains = acc!.contains do
+        if contains = acc![:contains] do
           contains.(item, path)
           Map.delete(acc!, :contains)
         else

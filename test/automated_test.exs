@@ -16,7 +16,8 @@ defmodule ExonerateTest.AutomatedTests do
         Path.extname(filename) == ".json" ->
           [Path.join(directory, filename)]
         (new_dir = directory |> Path.join(filename)) |> File.dir? ->
-          build_tests(new_dir)
+          # don't test optional stuff, for now.
+          #build_tests(new_dir)
           []
         true -> []
       end
@@ -25,17 +26,17 @@ defmodule ExonerateTest.AutomatedTests do
       path
       |> File.read!
       |> Jason.decode!
-      |> to_test_module(Path.basename(path, ".json"))
+      |> to_test_module(Path.basename(path, ".json"), Path.basename(path))
     end)
     |> Code.eval_quoted
   end
 
-  defp to_test_module(test_list, modulename) do
+  defp to_test_module(test_list, modulename, path) do
 
     module = Module.concat([ExonerateTest, modulename, Test])
     describe_blocks = test_list
     |> Enum.with_index
-    |> Enum.map(&to_describe_block/1)
+    |> Enum.map(&to_describe_block(&1, path))
 
     quote do
       defmodule unquote(module) do
@@ -50,8 +51,8 @@ defmodule ExonerateTest.AutomatedTests do
     end
   end
 
-  defp to_describe_block({%{"description" => description!, "schema" => schema!, "tests" => tests}, index}) do
-    description! = "(#{index})#{description!}"
+  defp to_describe_block({%{"description" => description!, "schema" => schema!, "tests" => tests}, index}, path) do
+    description! = "#{path}(#{index}) #{description!}"
     schema_name = :"test#{index}"
     schema! = Jason.encode!(schema!)
     test_blocks = Enum.map(tests, &to_test_block(&1, schema_name))
