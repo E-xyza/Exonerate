@@ -155,7 +155,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = ConstantValues.const(%{"country" => "Canada"})
 
-      assert list[:schema_path] == "const#!/properties/country"
+      assert list[:schema_path] == "const#!/properties/country/const"
       assert list[:error_value] == "Canada"
       assert list[:json_path] == "/country"
     end

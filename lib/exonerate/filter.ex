@@ -39,6 +39,7 @@ defmodule Exonerate.Filter do
 
   @spec from_schema(Type.json, atom) :: Macro.t
   def from_schema(schema, spec_path) do
+    alias Exonerate.Filter.Array
     alias Exonerate.Filter.Const
     alias Exonerate.Filter.Enum
     alias Exonerate.Filter.Integer
@@ -48,7 +49,7 @@ defmodule Exonerate.Filter do
     alias Exonerate.Filter.Type
 
     {filter_ast, state} = Elixir.Enum.flat_map_reduce(
-      [Const, Enum, Type, String, Number, Integer, Object],
+      [Const, Enum, Type, String, Number, Integer, Object, Array],
       %__MODULE__{path: spec_path},
       fn module, state ->
         module.filter(schema, state)

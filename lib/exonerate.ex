@@ -49,7 +49,7 @@ defmodule Exonerate do
 
       unquote(Filter.from_schema(schema, :"#{path}#!/"))
     end
-    if path == :patternprop1 do
+    if path == :tuple_additional_with_property do
       q |> Macro.to_string |> IO.puts
     end
     q
