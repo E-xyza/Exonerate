@@ -15,12 +15,13 @@ defmodule Exonerate.Filter do
     string
   )a, &{&1, []})
 
-  @enforce_keys [:path]
+  @enforce_keys [:path, :footer]
   defstruct @enforce_keys ++ [types: @default_types]
 
   @type state :: %__MODULE__{
     path: atom,
-    types: %{Type.t => []}
+    types: %{Type.t => []},
+    footer: Macro.t
   }
 
   @callback filter(Type.json, state) :: {[Macro.t], state}
@@ -39,6 +40,8 @@ defmodule Exonerate.Filter do
 
   @spec from_schema(Type.json, atom) :: Macro.t
   def from_schema(schema, spec_path) do
+    alias Exonerate.Filter.AllOf
+    alias Exonerate.Filter.AnyOf
     alias Exonerate.Filter.Array
     alias Exonerate.Filter.Const
     alias Exonerate.Filter.Enum
@@ -48,20 +51,23 @@ defmodule Exonerate.Filter do
     alias Exonerate.Filter.String
     alias Exonerate.Filter.Type
 
+    default_footer = &quote do
+      defp unquote(&1)(_value, _path), do: :ok
+    end
+
     {filter_ast, state} = Elixir.Enum.flat_map_reduce(
-      [Const, Enum, Type, String, Number, Integer, Object, Array],
-      %__MODULE__{path: spec_path},
+      [Const, Enum, Type, AllOf, AnyOf, String, Number, Integer, Object, Array],
+      %__MODULE__{
+        path: spec_path,
+        footer: default_footer
+      },
       fn module, state ->
         module.filter(schema, state)
       end)
 
     fallthrough = case state.types do
       map when map == %{} -> :ok
-      _ ->
-        # add in the fallthrough if we have valid types remaining.
-        quote do
-          defp unquote(spec_path)(_value, _path), do: :ok
-        end
+      _ -> state.footer.(state.path)
     end
 
     quote do

@@ -3,6 +3,7 @@ defmodule Exonerate.Filter.String do
   # the filter for "string" parameters
 
   @behaviour Exonerate.Filter
+  import Exonerate.Filter, only: [drop_type: 2]
 
   defguardp has_string_props(schema) when
     is_map_key(schema, "pattern") or
@@ -16,8 +17,6 @@ defmodule Exonerate.Filter.String do
   def filter(_schema, state) do
     {[], state}
   end
-
-  defdelegate drop_type(state, type), to: Exonerate.Filter
 
   defp string_filter(schema, schema_path) do
     uses_length = if schema["minLength"] || schema["maxLength"] do

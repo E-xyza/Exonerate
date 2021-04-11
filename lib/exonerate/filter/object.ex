@@ -4,6 +4,8 @@ defmodule Exonerate.Filter.Object do
 
   alias Exonerate.Filter
 
+  import Filter, only: [drop_type: 2]
+
   @behaviour Filter
 
   defguardp has_object_props(schema) when
@@ -24,8 +26,6 @@ defmodule Exonerate.Filter.Object do
   def filter(_schema, state) do
     {[], state}
   end
-
-  defdelegate drop_type(state, type), to: Exonerate.Filter
 
   # the scheme for testing objects is as follows:
   # - all tests that are guardable

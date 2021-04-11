@@ -4,6 +4,8 @@ defmodule Exonerate.Filter.Number do
 
   @behaviour Exonerate.Filter
 
+  import Exonerate.Filter, only: [drop_type: 2]
+
   defguardp has_number_props(schema) when
     is_map_key(schema, "minimum") or
     is_map_key(schema, "maximum") or
@@ -18,8 +20,6 @@ defmodule Exonerate.Filter.Number do
   def filter(_schema, state) do
     {[], state}
   end
-
-  defdelegate drop_type(state, type), to: Exonerate.Filter
 
   defp number_filter(schema, schema_path) do
     guard_clauses =

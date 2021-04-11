@@ -35,8 +35,17 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "things that match none don't match" do
-      assert  {:mismatch, {"#", "too long"}} == Combining.combining("too long")
-      assert  {:mismatch, {"#", -5}} == Combining.combining(-5)
+      assert  {:error, list} = Combining.combining("too long")
+
+      assert list[:schema_path] == "combining#!/anyOf"
+      assert list[:error_value] == "too long"
+      assert list[:json_path] == "/"
+
+      assert  {:error, list} = Combining.combining(-5)
+
+      assert list[:schema_path] == "combining#!/anyOf"
+      assert list[:error_value] == -5
+      assert list[:json_path] == "/"
     end
   end
 
@@ -73,14 +82,27 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "things that mismatch one don't match" do
-      assert  {:mismatch, {"#", "too long"}} == AllOf.allof("too long")
+      assert  {:error, list} = AllOf.allof("too long")
+
+      assert list[:schema_path] == "allof#!/allOf/1/maxLength"
+      assert list[:error_value] == "too long"
+      assert list[:json_path] == "/"
     end
   end
 
   describe "logical impossibilities" do
     test "are possible of allof" do
-      assert  {:mismatch, {"#", "No way"}} = AllOf.impossible("No way")
-      assert  {:mismatch, {"#", -1}} = AllOf.impossible(-1)
+      assert  {:error, list} = AllOf.impossible("No way")
+
+      assert list[:schema_path] == "impossible#!/allOf/1/type"
+      assert list[:error_value] == "No way"
+      assert list[:json_path] == "/"
+
+      assert  {:error, list} = AllOf.impossible(-1)
+
+      assert list[:schema_path] == "impossible#!/allOf/0/type"
+      assert list[:error_value] == -1
+      assert list[:json_path] == "/"
     end
   end
 
@@ -109,9 +131,12 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "things that mismatch one don't match" do
-      assert  {:mismatch,
-      {"#", %{"Not a" => "string or number"}}} ==
+      assert  {:error, list} =
         AnyOf.anyof(%{"Not a" => "string or number"})
+
+      assert list[:schema_path] == "impossible#!/anyOf"
+      assert list[:error_value] == %{"Not a" => "string or number"}
+      assert list[:json_path] == "/"
     end
   end
 

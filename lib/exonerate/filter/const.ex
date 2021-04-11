@@ -4,6 +4,8 @@ defmodule Exonerate.Filter.Const do
   @behaviour Exonerate.Filter
   # the filter for the "const" parameter.
 
+  import Exonerate.Filter, only: [filter_type: 2]
+
   @impl true
   def filter(%{"const" => const}, state) do
     {[quote do
@@ -13,7 +15,5 @@ defmodule Exonerate.Filter.Const do
     end], filter_type(state, const)}
   end
   def filter(_spec, state), do: {[], state}
-
-  defdelegate filter_type(state, value), to: Exonerate.Filter
 
 end
