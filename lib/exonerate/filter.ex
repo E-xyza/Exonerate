@@ -46,8 +46,10 @@ defmodule Exonerate.Filter do
     alias Exonerate.Filter.Const
     alias Exonerate.Filter.Enum
     alias Exonerate.Filter.Integer
+    alias Exonerate.Filter.Not
     alias Exonerate.Filter.Number
     alias Exonerate.Filter.Object
+    alias Exonerate.Filter.OneOf
     alias Exonerate.Filter.String
     alias Exonerate.Filter.Type
 
@@ -56,7 +58,7 @@ defmodule Exonerate.Filter do
     end
 
     {filter_ast, state} = Elixir.Enum.flat_map_reduce(
-      [Const, Enum, Type, AllOf, AnyOf, String, Number, Integer, Object, Array],
+      [Const, Enum, Type, AllOf, AnyOf, OneOf, Not, String, Number, Integer, Object, Array],
       %__MODULE__{
         path: spec_path,
         footer: default_footer

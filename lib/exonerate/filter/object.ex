@@ -204,16 +204,14 @@ defmodule Exonerate.Filter.Object do
 
   defp schema_dependencies_helpers(%{"dependencies" => deps}, schema_path) do
     deps_root = Exonerate.join(schema_path, "dependencies")
-    q = deps |> IO.inspect(label: "206")
-    |> Enum.filter(&is_map(elem(&1, 1))) |> IO.inspect(label: "207")
+    deps
+    |> Enum.filter(&is_map(elem(&1, 1)))
     |> Enum.map(fn {key, inner_spec} ->
       dep_path = Exonerate.join(deps_root, key)
       inner_spec
       |> Map.put("type", "object")
       |> Filter.from_schema(dep_path)
     end)
-    q |> Macro.to_string |> IO.puts
-    q
   end
   defp schema_dependencies_helpers(_spec, _path), do: []
 

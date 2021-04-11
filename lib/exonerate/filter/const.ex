@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.Const do
   @impl true
   def filter(%{"const" => const}, state) do
     {[quote do
-      defp unquote(state.path)(value, path) when value !== unquote(const) do
+      defp unquote(state.path)(value, path) when value !== unquote(Macro.escape(const)) do
         Exonerate.mismatch(value, path, schema_subpath: "const")
       end
     end], filter_type(state, const)}

@@ -34,7 +34,7 @@ defmodule Exonerate do
     #  end
     #end
 
-    q = quote do
+    quote do
       require Exonerate
 
       unquote_splicing(id_special_ast(path, schema))
@@ -49,10 +49,6 @@ defmodule Exonerate do
 
       unquote(Filter.from_schema(schema, :"#{path}#!/"))
     end
-    if path == :combining do
-      q |> Macro.to_string |> IO.puts
-    end
-    q
   end
 
   # special forms

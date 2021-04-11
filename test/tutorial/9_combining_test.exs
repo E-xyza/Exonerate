@@ -134,7 +134,7 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
       assert  {:error, list} =
         AnyOf.anyof(%{"Not a" => "string or number"})
 
-      assert list[:schema_path] == "impossible#!/anyOf"
+      assert list[:schema_path] == "anyof#!/anyOf"
       assert list[:error_value] == %{"Not a" => "string or number"}
       assert list[:json_path] == "/"
     end
@@ -175,11 +175,19 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "multiples of neither don't" do
-      assert  {:mismatch, {"#", 2}} == OneOf.oneof(2)
+      assert {:error, list} = OneOf.oneof(2)
+
+      assert list[:schema_path] == "oneof#!/oneOf"
+      assert list[:error_value] == 2
+      assert list[:json_path] == "/"
     end
 
     test "multiples of both don't" do
-      assert  {:mismatch, {"#", 15}} == OneOf.oneof(15)
+      assert  {:error, list} = OneOf.oneof(15)
+
+      assert list[:schema_path] == "oneof#!/oneOf"
+      assert list[:error_value] == 15
+      assert list[:json_path] == "/"
     end
   end
 
@@ -190,11 +198,19 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "multiples of neither don't" do
-      assert  {:mismatch, {"#", 2}} == OneOf.factorout(2)
+      assert  {:error, list} = OneOf.factorout(2)
+
+      assert list[:schema_path] == "factorout#!/oneOf"
+      assert list[:error_value] == 2
+      assert list[:json_path] == "/"
     end
 
     test "multiples of both don't" do
-      assert  {:mismatch, {"#", 15}} == OneOf.factorout(15)
+      assert  {:error, list} = OneOf.factorout(15)
+
+      assert list[:schema_path] == "factorout#!/oneOf"
+      assert list[:error_value] == 15
+      assert list[:json_path] == "/"
     end
   end
 
@@ -219,7 +235,11 @@ defmodule ExonerateTest.Tutorial.CombiningTest do
     end
 
     test "things that mismatch one don't match" do
-      assert  {:mismatch, {"#", "I am a string"}} = Not.no("I am a string")
+      assert  {:error, list} = Not.no("I am a string")
+
+      assert list[:schema_path] == "no#!/not"
+      assert list[:error_value] == "I am a string"
+      assert list[:json_path] == "/"
     end
   end
 end
