@@ -11,6 +11,8 @@ defmodule ExonerateTest.Tutorial.StringTest do
   Literally conforms to all the tests presented in this document.
   """
 
+  @moduletag :tutorial
+
   defmodule String do
 
     @moduledoc """

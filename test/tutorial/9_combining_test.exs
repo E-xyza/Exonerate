@@ -1,7 +1,8 @@
 defmodule ExonerateTest.Tutorial.CombiningTest do
   use ExUnit.Case, async: true
 
-  @moduletag :one #:combining
+  @moduletag :combining
+  @moduletag :tutorial
 
   @moduledoc """
   basic tests from:

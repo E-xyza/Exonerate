@@ -2,6 +2,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
   use ExUnit.Case, async: true
 
   @moduletag :numeric
+  @moduletag :tutorial
 
   @moduledoc """
   basic tests from:

@@ -9,6 +9,8 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
   Literally conforms to all the tests presented in this document.
   """
 
+  @moduletag :tutorial
+
   defmodule Type do
     @moduledoc """
     tests from:

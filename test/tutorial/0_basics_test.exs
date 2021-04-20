@@ -9,6 +9,8 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
   Literally conforms to all the tests presented in this document.
   """
 
+  @moduletag :tutorial
+
   defmodule HelloWorld do
     @moduledoc """
     tests from:

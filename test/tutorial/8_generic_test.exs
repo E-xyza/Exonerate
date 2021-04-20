@@ -2,6 +2,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
   use ExUnit.Case, async: true
 
   @moduletag :generic
+  @moduletag :tutorial
 
   @moduledoc """
   basic tests from:

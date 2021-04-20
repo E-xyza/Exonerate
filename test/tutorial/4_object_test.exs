@@ -2,6 +2,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   use ExUnit.Case, async: true
 
   @moduletag :object
+  @moduletag :tutorial
 
   @moduledoc """
   basic tests from:

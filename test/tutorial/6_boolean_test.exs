@@ -8,6 +8,9 @@ defmodule ExonerateTest.Tutorial.BooleanTest do
 
   Literally conforms to all the tests presented in this document.
   """
+
+  @moduletag :tutorial
+
   defmodule Boolean do
     @moduledoc """
     tests from:

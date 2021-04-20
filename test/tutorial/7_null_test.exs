@@ -10,6 +10,8 @@ defmodule ExonerateTest.Tutorial.NullTest do
   Literally conforms to all the tests presented in this document.
   """
 
+  @moduletag :tutorial
+
   defmodule Null do
     @moduledoc """
     tests from:
