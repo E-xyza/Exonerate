@@ -1,5 +1,4 @@
 defmodule ExonerateTest.AutomatedTests do
-
   @test_base_dir __DIR__
   |> Path.join("draft2020-12")
   |> Path.expand()
@@ -22,18 +21,18 @@ defmodule ExonerateTest.AutomatedTests do
         true -> []
       end
     end)
-    |> Enum.map(fn path ->
+    |> Enum.each(fn path ->
       path
       |> File.read!
       |> Jason.decode!
       |> to_test_module(Path.basename(path, ".json"), Path.basename(path))
+      |> Code.eval_quoted([], file: path)
     end)
-    |> Code.eval_quoted
   end
 
   defp to_test_module(test_list, modulename, path) do
 
-    module = Module.concat([ExonerateTest, modulename, Test])
+    module = Module.concat([ExonerateTest, String.capitalize(modulename), Test])
     describe_blocks = test_list
     |> Enum.with_index
     |> Enum.map(&to_describe_block(&1, path))
@@ -81,6 +80,32 @@ defmodule ExonerateTest.AutomatedTests do
       end
     end
   end
+
+  defmacro make(file, index) do
+    path = __DIR__
+    |> Path.join("draft2020-12/")
+    |> Path.join(file)
+
+    path
+    |> File.read!
+    |> Jason.decode!
+    |> Enum.with_index
+    |> Enum.at(index)
+    |> to_describe_block(path)
+  end
 end
 
-ExonerateTest.AutomatedTests.build_tests()
+unless :isolate in ExUnit.configuration()[:include] do
+  ExonerateTest.AutomatedTests.build_tests()
+end
+
+defmodule TestOneTest do
+  use ExUnit.Case, async: true
+
+  require ExonerateTest.AutomatedTests
+  import Exonerate
+
+  @moduletag :isolate
+
+  ExonerateTest.AutomatedTests.make("properties.json", 0)
+end

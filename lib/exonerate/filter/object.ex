@@ -34,10 +34,10 @@ defmodule Exonerate.Filter.Object do
   #   - required
   #   - property dependencies
   # - properties filtering with its own pipeline
-  #   - pattern_properties
-  #   - property_names
   #   - properties
+  #   - pattern_properties
   #   - fallback on additional properties
+  # - or: property_names
   # - schema dependencies
 
   defp object_filter(schema, schema_path) do
@@ -47,16 +47,19 @@ defmodule Exonerate.Filter.Object do
       required_branches(schema["required"], schema_path) ++
       property_dependencies(schema["dependencies"], schema_path)
 
-    quote do
+    q = quote do
       unquote_splicing(guard_properties)
-      defp unquote(schema_path)(object, path) when is_map(object) do
-        unquote(properties_filter_call(schema, schema_path))
-        unquote_splicing(schema_dependencies_calls(schema, schema_path))
-        :ok
-      end
-      unquote_splicing(properties_filter_helpers(schema, schema_path))
+      unquote(property_names_validator(schema, schema_path))
+      unquote(properties_validator(schema, schema_path))
+      unquote_splicing(properties_helper(schema, schema_path))
+      unquote(pattern_properties_helper(schema, schema_path))
+      unquote(additional_properties_helper(schema, schema_path))
       unquote_splicing(schema_dependencies_helpers(schema, schema_path))
     end
+    #if Atom.to_string(schema_path) =~ "test0" do
+    #  q |> Macro.to_string |> IO.puts()
+    #end
+    q
   end
 
   @operands %{
@@ -109,85 +112,121 @@ defmodule Exonerate.Filter.Object do
     end)
   end
 
-  defp properties_filter_call(%{"properties" => _}, schema_path) do
-    props_path = Exonerate.join(schema_path, "properties")
+  defp property_names_validator(%{"property_names" => _names}, schema_path) do
     quote do
-      Enum.each(object, fn {k, v} ->
-        unquote(props_path)(k, v, path)
-      end)
+      defp unquote(schema_path)(object, path) when is_map(object) do
+        :ok
+      end
     end
   end
-  defp properties_filter_call(%{"patternProperties" => _}, schema_path) do
-    props_path = Exonerate.join(schema_path, "patternProperties")
+  defp property_names_validator(_, _), do: nil
+
+  defp properties_validator(spec, schema_path) when
+    is_map_key(spec, "properties") or
+    is_map_key(spec, "patternProperties") or
+    is_map_key(spec, "additionalProperties") do
     quote do
-      unquote(props_path)(object, path)
-    end
-  end
-  defp properties_filter_call(%{"propertyNames" => _}, schema_path) do
-    props_path = Exonerate.join(schema_path, "propertyNames")
-    quote do
-      Enum.each(object, fn {key, param} ->
-        unquote(props_path)(key, path)
-      end)
-    end
-  end
-  defp properties_filter_call(_, _), do: :ok
-
-  defp properties_filter_helpers(schema = %{"properties" => p}, schema_path) do
-    props_path = Exonerate.join(schema_path, "properties")
-    {shims, helpers} = p
-    |> Enum.map(fn {k, v} ->
-      prop_path = Exonerate.join(props_path, k)
-      {
-        quote do
-          defp unquote(props_path)(unquote(k), value, path) do
-            unquote(prop_path)(value, Path.join(path, unquote(k)))
-          end
-        end,
-        Filter.from_schema(v, prop_path)
-      }
-    end)
-    |> Enum.unzip
-
-    shims ++ [additional_properties_footer(schema, schema_path)] ++ helpers
-  end
-  defp properties_filter_helpers(schema = %{"patternProperties" => p}, schema_path) do
-    props_path = Exonerate.join(schema_path, "patternProperties")
-
-    {calls, helpers} = p
-    |> Enum.map(fn {pattern, subspec} ->
-      pattern_path = Exonerate.join(props_path, pattern)
-      {
-        quote do
-          checked! = if key =~ sigil_r(<<unquote(pattern)>>, []) do
-            unquote(pattern_path)(value, Path.join(path, key))
-            true
-          else
-            checked!
-          end
-        end,
-        Filter.from_schema(subspec, pattern_path)
-      }
-    end)
-    |> Enum.unzip
-
-    [quote do
-      defp unquote(props_path)(object, path) do
-        Enum.each(object, fn {key, value} ->
-          checked! = false
-          unquote_splicing(calls)
-          unless checked! do
-            unquote(additional_properties_call(schema, schema_path))
-          end
+      defp unquote(schema_path)(object, path) when is_map(object) do
+        Enum.each(object, fn {k, v} ->
+          unquote(properties_call(spec, schema_path)) ||
+          unquote(pattern_properties_call(spec, schema_path)) ||
+          unquote(additional_properties_call(spec, schema_path))
         end)
       end
-    end] ++ helpers ++ [additional_properties_helper(schema, schema_path)]
+    end
   end
-  defp properties_filter_helpers(%{"propertyNames" => p}, schema_path) do
-    property_names_path = Exonerate.join(schema_path, "propertyNames")
-    [Filter.from_schema(p, property_names_path)]
+  defp properties_validator(_spec, schema_path) do
+    quote do
+      defp unquote(schema_path)(object, path) when is_map(object), do: :ok
+    end
   end
-  defp properties_filter_helpers(_, _), do: []
+
+  defp properties_call(spec, schema_path)
+      when is_map_key(spec, "properties") do
+    call = Exonerate.join(schema_path, "properties")
+    quote do
+      unquote(call)(k, v, Path.join(path, k))
+    end
+  end
+  defp properties_call(_, _), do: nil
+
+  defp pattern_properties_call(spec, schema_path)
+      when is_map_key(spec, "patternProperties") do
+    call = Exonerate.join(schema_path, "patternProperties")
+    quote do
+      unquote(call)(k, v, Path.join(path, k))
+    end
+  end
+  defp pattern_properties_call(_, _), do: nil
+
+  defp additional_properties_call(spec, schema_path)
+      when is_map_key(spec, "additionalProperties") do
+    call = Exonerate.join(schema_path, "additionalProperties")
+    quote do
+      unquote(call)(v, Path.join(path, k))
+    end
+  end
+  defp additional_properties_call(_, _), do: nil
+
+  @spec properties_helper(Type.json, atom) :: Macro.t
+  defp properties_helper(%{"properties" => nil}, _), do: []
+  defp properties_helper(%{"properties" => properties_schemata}, schema_path) do
+    properties_path = Exonerate.join(schema_path, "properties")
+    {matches, clauses} = properties_schemata
+    |> Enum.map(fn {key, schema} ->
+      key_path = Exonerate.join(properties_path, key)
+      match = quote do
+        defp unquote(properties_path)(unquote(key), value, path) do
+          unquote(key_path)(value, path)
+        end
+      end
+      clause = Filter.from_schema(schema, key_path)
+      {match, clause}
+    end)
+    |> Enum.unzip
+
+    default_match = quote do
+      defp unquote(properties_path)(_, _, _), do: false
+    end
+
+    matches ++ [default_match] ++ clauses
+  end
+  defp properties_helper(_, _), do: []
+
+  @spec pattern_properties_helper(Type.json, atom) :: Macro.t
+  defp pattern_properties_helper(%{"patternProperties" => nil}, _), do: :ok
+  defp pattern_properties_helper(%{"patternProperties" => inner_schema}, schema_path) do
+    pattern_properties_path = Exonerate.join(schema_path, "patternProperties")
+    {matches, clauses} = inner_schema
+    |> Enum.map(fn
+      {k, v} ->
+        call = Exonerate.join(pattern_properties_path, k)
+        match = quote do
+          Regex.match?(sigil_r(<<unquote(k)>>, []), key) and unquote(call)(value, Path.join(path, key))
+        end
+        clause = Filter.from_schema(v, call)
+
+        {match, clause}
+    end)
+    |> Enum.unzip
+
+    quote do
+      defp unquote(pattern_properties_path)(key, value, path) do
+        unquote_splicing(matches)
+        :ok
+      end
+      unquote_splicing(clauses)
+    end
+  end
+  defp pattern_properties_helper(_, _), do: :ok
+
+  @spec additional_properties_helper(Type.json, atom) :: Macro.t
+  defp additional_properties_helper(%{"additionalProperties" => nil}, _), do: :ok
+  defp additional_properties_helper(%{"additionalProperties" => inner_schema}, schema_path) do
+    additional_properties_path = Exonerate.join(schema_path, "additionalProperties")
+    Filter.from_schema(inner_schema, additional_properties_path)
+  end
+  defp additional_properties_helper(_, _), do: :ok
 
   defp schema_dependencies_calls(%{"dependencies" => deps}, schema_path) do
     deps_root = Exonerate.join(schema_path, "dependencies")
@@ -214,51 +253,4 @@ defmodule Exonerate.Filter.Object do
     end)
   end
   defp schema_dependencies_helpers(_spec, _path), do: []
-
-  defp additional_properties_footer(
-      schema = %{"additionalProperties" => aps},
-      schema_path) when aps != true do
-
-    props_path = Exonerate.join(schema_path, "properties")
-    quote do
-      defp unquote(props_path)(key, value, path) do
-        unquote(additional_properties_call(schema, schema_path))
-      end
-      unquote(additional_properties_helper(schema, schema_path))
-    end
-  end
-  defp additional_properties_footer(_, schema_path) do
-    props_path = Exonerate.join(schema_path, "properties")
-    quote do
-      defp unquote(props_path)(_key, _value, _path), do: :ok
-    end
-  end
-
-  defp additional_properties_call(%{"additionalProperties" => nil}, _), do: :ok
-  defp additional_properties_call(%{"additionalProperties" => false}, schema_path) do
-    additional_props_path = Exonerate.join(schema_path, "additionalProperties")
-    quote do
-      try do
-        unquote(additional_props_path)(value, path)
-      catch
-        {:mismatch, error} ->
-          throw {:mismatch, Keyword.put(error, :error_value, %{key => value})}
-      end
-    end
-  end
-  defp additional_properties_call(%{"additionalProperties" => _}, schema_path) do
-    additional_properties_path = Exonerate.join(schema_path, "additionalProperties")
-    quote do
-      unquote(additional_properties_path)(value, Path.join(path, key))
-    end
-  end
-  defp additional_properties_call(_, _), do: :ok
-
-  @spec additional_properties_helper(Type.json, atom) :: Macro.t
-  defp additional_properties_helper(%{"additionalProperties" => nil}, _), do: :ok
-  defp additional_properties_helper(%{"additionalProperties" => inner_schema}, schema_path) do
-    additional_properties_path = Exonerate.join(schema_path, "additionalProperties")
-    Filter.from_schema(inner_schema, additional_properties_path)
-  end
-  defp additional_properties_helper(_, _), do: :ok
 end
