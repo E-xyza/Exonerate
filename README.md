@@ -4,6 +4,7 @@
 
 Currently supports JSONSchema draft 0.7.  *except:*
 
+- integer filters do not match exact integer floating point values.
 - multipleOf is not supported for number types.  This is because
 elixir does not support a floating point remainder guard, and also
 because it is impossible for a floating point to guarantee sane results

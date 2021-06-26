@@ -9,8 +9,8 @@ defmodule Exonerate.Filter.Number do
   defguardp has_number_props(schema) when
     is_map_key(schema, "minimum") or
     is_map_key(schema, "maximum") or
-    is_map_key(schema, "exlcusiveMinimum") or
-    is_map_key(schema, "exlcusiveMaximum") or
+    is_map_key(schema, "exclusiveMinimum") or
+    is_map_key(schema, "exclusiveMaximum") or
     is_map_key(schema, "multipleOf")
 
   @impl true
@@ -46,7 +46,7 @@ defmodule Exonerate.Filter.Number do
   defp compare_guard(schema, op, schema_path) do
     compexpr = {@operands[op], [], [quote do number end, schema[op]]}
     [quote do
-      defp unquote(schema_path)(number, path) when unquote(compexpr) do
+      defp unquote(schema_path)(number, path) when is_number(number) and unquote(compexpr) do
         Exonerate.mismatch(number, path, schema_subpath: unquote(op))
       end
     end]

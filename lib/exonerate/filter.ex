@@ -72,10 +72,17 @@ defmodule Exonerate.Filter do
       _ -> state.footer.(state.path)
     end
 
-    quote do
+    q = quote do
       unquote_splicing(filter_ast)
       unquote(fallthrough)
     end
+
+    if Atom.to_string(spec_path) =~ "test0" do
+      filter_ast |> IO.inspect(label: "81")
+      q |> Macro.to_string |> IO.puts
+    end
+
+    q
   end
 
   #################################################################################

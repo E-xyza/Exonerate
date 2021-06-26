@@ -25,9 +25,6 @@ defmodule Exonerate.Filter.Array do
 
   def array_filter(schema, schema_path) do
     quote do
-      defp unquote(schema_path)(value, path) when not is_list(value) do
-        Exonerate.mismatch(value, path, subpath: "type")
-      end
       defp unquote(schema_path)(list, path) when is_list(list) do
         initial! = %{index: 0}
         unquote(unique_initializer(schema))

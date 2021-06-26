@@ -47,7 +47,7 @@ defmodule Exonerate.Filter.Object do
       required_branches(schema["required"], schema_path) ++
       property_dependencies(schema["dependencies"], schema_path)
 
-    q = quote do
+    quote do
       unquote_splicing(guard_properties)
       unquote(property_names_validator(schema, schema_path))
       unquote(properties_validator(schema, schema_path))
@@ -56,10 +56,6 @@ defmodule Exonerate.Filter.Object do
       unquote(additional_properties_helper(schema, schema_path))
       unquote_splicing(schema_dependencies_helpers(schema, schema_path))
     end
-    #if Atom.to_string(schema_path) =~ "patternprop1" do
-    #  q |> Macro.to_string |> IO.puts()
-    #end
-    q
   end
 
   @operands %{
@@ -221,8 +217,10 @@ defmodule Exonerate.Filter.Object do
     |> Enum.map(fn
       {k, v} ->
         call = Exonerate.join(pattern_properties_path, k)
+        # TODO: clean this MFer up.
         match = quote do
-          Regex.match?(sigil_r(<<unquote(k)>>, []), key) and unquote(call)(value, Path.join(path, key))
+          this_match = Regex.match?(sigil_r(<<unquote(k)>>, []), key) and unquote(call)(value, Path.join(path, key))
+          matched! = matched! || this_match
         end
         clause = Filter.from_schema(v, call)
 
@@ -230,11 +228,11 @@ defmodule Exonerate.Filter.Object do
     end)
     |> Enum.unzip
 
-    match_expr = Enum.reduce(matches, &quote do unquote(&1) || unquote(&2) end)
-
     quote do
       defp unquote(pattern_properties_path)(key, value, path) do
-        unquote(match_expr)
+        matched! = false
+        unquote_splicing(matches)
+        matched!
       end
       unquote_splicing(clauses)
     end
