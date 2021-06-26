@@ -204,8 +204,8 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       assert {:error, list} = Properties.address3(addr5)
 
       assert list[:schema_path] == "address3#!/additionalProperties/type"
-      assert list[:error_value] == 201
-      assert list[:json_path] == "/office_number"
+      assert list[:error_value] == %{"office_number" => 201}
+      assert list[:json_path] == "/"
     end
   end
 
@@ -315,7 +315,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
       assert list[:schema_path] == "token#!/propertyNames/pattern"
       assert list[:error_value] == "001 invalid"
-      assert list[:json_path] == "/"
+      assert list[:json_path] == "/001 invalid"
     end
   end
 
@@ -618,6 +618,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       |> Jason.decode!
       |> PatternProperties.patternprop1
     end
+    
     test "integer pattern works" do
       assert :ok = @patternmatch2
       |> Jason.decode!

@@ -56,9 +56,9 @@ defmodule Exonerate.Filter.Object do
       unquote(additional_properties_helper(schema, schema_path))
       unquote_splicing(schema_dependencies_helpers(schema, schema_path))
     end
-    if Atom.to_string(schema_path) =~ "test0" do
-      q |> Macro.to_string |> IO.puts()
-    end
+    #if Atom.to_string(schema_path) =~ "patternprop1" do
+    #  q |> Macro.to_string |> IO.puts()
+    #end
     q
   end
 
@@ -118,7 +118,7 @@ defmodule Exonerate.Filter.Object do
       is_map_key(schema, "additionalProperties") do
         raise CompileError, description: "propertyNames can't be used in conjection with properties, patternProperties, or additionalProperties"
     end
-    name_filter_path = Exonerate.join(schema_path, "additionalProperties")
+    name_filter_path = Exonerate.join(schema_path, "propertyNames")
     name_filter = Filter.from_schema(name_schema, name_filter_path)
     # TODO: optimize out second function guard?  We know this should always be string.
     quote do
@@ -141,8 +141,16 @@ defmodule Exonerate.Filter.Object do
       defp unquote(schema_path)(object, path) when is_map(object) do
         Enum.each(object, fn {k, v} ->
           unquote(properties_call(spec, schema_path)) ||
-          unquote(pattern_properties_call(spec, schema_path)) ||
-          unquote(additional_properties_call(spec, schema_path))
+          unquote(pattern_properties_call(spec, schema_path)) || try do
+            unquote(additional_properties_call(spec, schema_path))
+          catch
+            {:mismatch, params} ->
+              new_params = Keyword.merge(
+                params,
+                error_value: %{k => params[:error_value]},
+                json_path: Path.dirname(params[:json_path]))
+              throw {:mismatch, new_params}
+          end
         end)
       end
     end
@@ -166,7 +174,7 @@ defmodule Exonerate.Filter.Object do
       when is_map_key(spec, "patternProperties") do
     call = Exonerate.join(schema_path, "patternProperties")
     quote do
-      unquote(call)(k, v, Path.join(path, k))
+      unquote(call)(k, v, path)
     end
   end
   defp pattern_properties_call(_, _), do: false
@@ -222,9 +230,11 @@ defmodule Exonerate.Filter.Object do
     end)
     |> Enum.unzip
 
+    match_expr = Enum.reduce(matches, &quote do unquote(&1) || unquote(&2) end)
+
     quote do
       defp unquote(pattern_properties_path)(key, value, path) do
-        unquote_splicing(matches)
+        unquote(match_expr)
       end
       unquote_splicing(clauses)
     end
