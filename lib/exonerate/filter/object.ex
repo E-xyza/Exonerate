@@ -56,9 +56,9 @@ defmodule Exonerate.Filter.Object do
       unquote(additional_properties_helper(schema, schema_path))
       unquote_splicing(schema_dependencies_helpers(schema, schema_path))
     end
-    #if Atom.to_string(schema_path) =~ "test0" do
-    #  q |> Macro.to_string |> IO.puts()
-    #end
+    if Atom.to_string(schema_path) =~ "test0" do
+      q |> Macro.to_string |> IO.puts()
+    end
     q
   end
 
@@ -112,15 +112,27 @@ defmodule Exonerate.Filter.Object do
     end)
   end
 
-  defp property_names_validator(%{"property_names" => _names}, schema_path) do
+  defp property_names_validator(schema = %{"propertyNames" => name_schema}, schema_path) do
+    if is_map_key(schema, "properties") or
+      is_map_key(schema, "patternProperties") or
+      is_map_key(schema, "additionalProperties") do
+        raise CompileError, description: "propertyNames can't be used in conjection with properties, patternProperties, or additionalProperties"
+    end
+    name_filter_path = Exonerate.join(schema_path, "additionalProperties")
+    name_filter = Filter.from_schema(name_schema, name_filter_path)
+    # TODO: optimize out second function guard?  We know this should always be string.
     quote do
       defp unquote(schema_path)(object, path) when is_map(object) do
-        :ok
+        object
+        |> Map.keys
+        |> Enum.each(&(unquote(name_filter_path)(&1, Path.join(path, &1))))
       end
+      unquote(name_filter)
     end
   end
   defp property_names_validator(_, _), do: nil
 
+  defp properties_validator(%{"propertyNames" => _}, _), do: nil
   defp properties_validator(spec, schema_path) when
     is_map_key(spec, "properties") or
     is_map_key(spec, "patternProperties") or
@@ -148,7 +160,7 @@ defmodule Exonerate.Filter.Object do
       unquote(call)(k, v, Path.join(path, k))
     end
   end
-  defp properties_call(_, _), do: nil
+  defp properties_call(_, _), do: false
 
   defp pattern_properties_call(spec, schema_path)
       when is_map_key(spec, "patternProperties") do
@@ -157,7 +169,7 @@ defmodule Exonerate.Filter.Object do
       unquote(call)(k, v, Path.join(path, k))
     end
   end
-  defp pattern_properties_call(_, _), do: nil
+  defp pattern_properties_call(_, _), do: false
 
   defp additional_properties_call(spec, schema_path)
       when is_map_key(spec, "additionalProperties") do
@@ -166,7 +178,7 @@ defmodule Exonerate.Filter.Object do
       unquote(call)(v, Path.join(path, k))
     end
   end
-  defp additional_properties_call(_, _), do: nil
+  defp additional_properties_call(_, _), do: false
 
   @spec properties_helper(Type.json, atom) :: Macro.t
   defp properties_helper(%{"properties" => nil}, _), do: []
@@ -213,7 +225,6 @@ defmodule Exonerate.Filter.Object do
     quote do
       defp unquote(pattern_properties_path)(key, value, path) do
         unquote_splicing(matches)
-        :ok
       end
       unquote_splicing(clauses)
     end
