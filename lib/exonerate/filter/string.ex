@@ -2,8 +2,9 @@ defmodule Exonerate.Filter.String do
   @moduledoc false
   # the filter for "string" parameters
 
-  @behaviour Exonerate.Filter
-  import Exonerate.Filter, only: [drop_type: 2]
+  alias Exonerate.Filter
+  @behaviour Filter
+  import Filter, only: [drop_type: 2]
 
   defguardp has_string_props(schema) when
     is_map_key(schema, "pattern") or
@@ -12,13 +13,13 @@ defmodule Exonerate.Filter.String do
 
   @impl true
   def filter(schema, state = %{types: types}) when has_string_props(schema) and is_map_key(types, :string) do
-    {[string_filter(schema, state.path)], drop_type(state, :string)}
+    {[string_filter(schema, state.path, state.extra_validations)], drop_type(state, :string)}
   end
   def filter(_schema, state) do
     {[], state}
   end
 
-  defp string_filter(schema, schema_path) do
+  defp string_filter(schema, schema_path, extra_validations) do
     uses_length = if schema["minLength"] || schema["maxLength"] do
       quote do length = String.length(string) end
     end
@@ -39,6 +40,8 @@ defmodule Exonerate.Filter.String do
         unquote(min_length)
         unquote(max_length)
         unquote(pattern_call(schema["pattern"], schema_path))
+        require Exonerate.Filter
+        Exonerate.Filter.apply_extra(unquote(extra_validations), string, path)
       end
       unquote_splicing(pattern_helper(schema["pattern"], schema_path))
     end

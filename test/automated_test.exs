@@ -96,12 +96,16 @@ defmodule ExonerateTest.AutomatedTests do
     |> Path.join("draft2020-12/")
     |> Path.join(file)
 
-    path
+    q = path
     |> File.read!
     |> Jason.decode!
     |> Enum.with_index
     |> Enum.at(index)
     |> to_describe_block(path)
+
+    q |> Macro.to_string |> IO.puts
+
+    q
   end
 end
 
@@ -117,5 +121,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("enum.json", 7)
+  ExonerateTest.AutomatedTests.make("allOf.json", 1)
 end

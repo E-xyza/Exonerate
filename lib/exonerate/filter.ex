@@ -16,11 +16,12 @@ defmodule Exonerate.Filter do
   )a, &{&1, []})
 
   @enforce_keys [:path, :footer]
-  defstruct @enforce_keys ++ [types: @default_types]
+  defstruct @enforce_keys ++ [types: @default_types, extra_validations: []]
 
   @type state :: %__MODULE__{
     path: atom,
     types: %{Type.t => []},
+    extra_validations: list(Macro.t),
     footer: Macro.t
   }
 
@@ -38,7 +39,6 @@ defmodule Exonerate.Filter do
     end
   end
 
-  @spec from_schema(Type.json, atom) :: Macro.t
   def from_schema(schema, spec_path) do
     alias Exonerate.Filter.AllOf
     alias Exonerate.Filter.AnyOf
@@ -77,9 +77,9 @@ defmodule Exonerate.Filter do
       unquote(fallthrough)
     end
 
-    if Atom.to_string(spec_path) =~ "test7" do
-      q |> Macro.to_string |> IO.puts
-    end
+    #if Atom.to_string(spec_path) =~ "test1" do
+    #  q |> Macro.to_string |> IO.puts
+    #end
 
     q
   end
@@ -101,5 +101,15 @@ defmodule Exonerate.Filter do
   @spec drop_type(state, Type.t) :: state
   def drop_type(state, type) do
     %{state | types: Map.delete(state.types, type)}
+  end
+
+  defmacro apply_extra([], _, _), do: :ok
+  defmacro apply_extra(validations, value, path) do
+    {:__block__, [], Enum.map(
+      validations,
+      &quote do
+        unquote(&1)(unquote(value), unquote(path))
+      end
+    )}
   end
 end

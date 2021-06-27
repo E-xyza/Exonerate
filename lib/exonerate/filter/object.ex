@@ -21,7 +21,7 @@ defmodule Exonerate.Filter.Object do
   @impl true
   def filter(schema, state = %{types: types})
       when has_object_props(schema) and is_map_key(types, :object) do
-    {[object_filter(schema, state.path)], drop_type(state, :object)}
+    {[object_filter(schema, state.path, state.extra_validations)], drop_type(state, :object)}
   end
   def filter(_schema, state) do
     {[], state}
@@ -40,7 +40,7 @@ defmodule Exonerate.Filter.Object do
   # - or: property_names
   # - schema dependencies
 
-  defp object_filter(schema, schema_path) do
+  defp object_filter(schema, schema_path, extra_validations) do
     guard_properties =
       size_branch(schema, "minProperties", schema_path) ++
       size_branch(schema, "maxProperties", schema_path) ++
@@ -49,8 +49,8 @@ defmodule Exonerate.Filter.Object do
 
     quote do
       unquote_splicing(guard_properties)
-      unquote(property_names_validator(schema, schema_path))
-      unquote(properties_validator(schema, schema_path))
+      unquote(property_names_validator(schema, schema_path, extra_validations))
+      unquote(properties_validator(schema, schema_path, extra_validations))
       unquote_splicing(properties_helper(schema, schema_path))
       unquote(pattern_properties_helper(schema, schema_path))
       unquote(additional_properties_helper(schema, schema_path))
@@ -108,7 +108,7 @@ defmodule Exonerate.Filter.Object do
     end)
   end
 
-  defp property_names_validator(schema = %{"propertyNames" => name_schema}, schema_path) do
+  defp property_names_validator(schema = %{"propertyNames" => name_schema}, schema_path, extra_validations) do
     if is_map_key(schema, "properties") or
       is_map_key(schema, "patternProperties") or
       is_map_key(schema, "additionalProperties") do
@@ -122,14 +122,17 @@ defmodule Exonerate.Filter.Object do
         object
         |> Map.keys
         |> Enum.each(&(unquote(name_filter_path)(&1, Path.join(path, &1))))
+
+        require Exonerate.Filter
+        Exonerate.Filter.apply_extra(unquote(extra_validations), object, path)
       end
       unquote(name_filter)
     end
   end
-  defp property_names_validator(_, _), do: nil
+  defp property_names_validator(_, _, _), do: nil
 
-  defp properties_validator(%{"propertyNames" => _}, _), do: nil
-  defp properties_validator(spec, schema_path) when
+  defp properties_validator(%{"propertyNames" => _}, _, _), do: nil
+  defp properties_validator(spec, schema_path, extra_validations) when
     is_map_key(spec, "properties") or
     is_map_key(spec, "patternProperties") or
     is_map_key(spec, "additionalProperties") do
@@ -147,13 +150,20 @@ defmodule Exonerate.Filter.Object do
                 json_path: Path.dirname(params[:json_path]))
               throw {:mismatch, new_params}
           end
+          :ok
         end)
+
+        require Exonerate.Filter
+        Exonerate.Filter.apply_extra(unquote(extra_validations), object, path)
       end
     end
   end
-  defp properties_validator(_spec, schema_path) do
+  defp properties_validator(_spec, schema_path, extra_validations) do
     quote do
-      defp unquote(schema_path)(object, path) when is_map(object), do: :ok
+      defp unquote(schema_path)(object, path) when is_map(object) do
+        require Exonerate.Filter
+        Exonerate.Filter.apply_extra(unquote(extra_validations), object, path)
+      end
     end
   end
 

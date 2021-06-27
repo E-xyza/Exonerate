@@ -2,9 +2,10 @@ defmodule Exonerate.Filter.Number do
   @moduledoc false
   # the filter for "number" parameters
 
-  @behaviour Exonerate.Filter
+  alias Exonerate.Filter
 
-  import Exonerate.Filter, only: [drop_type: 2]
+  @behaviour Filter
+  import Filter, only: [drop_type: 2]
 
   defguardp has_number_props(schema) when
     is_map_key(schema, "minimum") or
@@ -15,13 +16,13 @@ defmodule Exonerate.Filter.Number do
 
   @impl true
   def filter(schema, state = %{types: types}) when has_number_props(schema) and is_map_key(types, :number) do
-    {[number_filter(schema, state.path)], drop_type(state, :number)}
+    {[number_filter(schema, state.path, state.extra_validations)], drop_type(state, :number)}
   end
   def filter(_schema, state) do
     {[], state}
   end
 
-  defp number_filter(schema, schema_path) do
+  defp number_filter(schema, schema_path, extra_validations) do
     guard_clauses =
       compare_guard(schema, "minimum", schema_path) ++
       compare_guard(schema, "maximum", schema_path) ++
@@ -31,7 +32,10 @@ defmodule Exonerate.Filter.Number do
 
     quote do
       unquote_splicing(guard_clauses)
-      defp unquote(schema_path)(value, _path) when is_number(value), do: :ok
+      defp unquote(schema_path)(value, path) when is_number(value) do
+        require Exonerate.Filter
+        Exonerate.Filter.apply_extra(unquote(extra_validations), value, path)
+      end
     end
   end
 
@@ -56,7 +60,7 @@ defmodule Exonerate.Filter.Number do
   defp multiple_guard(schema, schema_path) do
     factor = schema["multipleOf"]
     [quote do
-      defp unquote(schema_path)(number, path) when rem(number, unquote(factor)) != 0 do
+      defp unquote(schema_path)(number, path) when is_integer(number) and rem(number, unquote(factor)) != 0 do
         Exonerate.mismatch(number, path, schema_subpath: "multipleOf")
       end
     end]

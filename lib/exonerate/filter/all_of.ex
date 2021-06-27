@@ -12,24 +12,11 @@ defmodule Exonerate.Filter.AllOf do
     |> Enum.with_index
     |> Enum.map(fn {schema, index} ->
       all_of_branch = Exonerate.join(state.path, "allOf/#{index}")
-
-      {
-        quote do
-          unquote(all_of_branch)(value, path)
-        end,
-        Filter.from_schema(schema, all_of_branch)
-      }
-
+      {all_of_branch, Filter.from_schema(schema, all_of_branch)}
     end)
     |> Enum.unzip
 
-    footer = &quote do
-      defp unquote(&1)(value, path) do
-        unquote_splicing(calls)
-      end
-    end
-
-    {helpers, %{state | footer: footer}}
+    {helpers, %{state | extra_validations: calls ++ state.extra_validations}}
   end
   def filter(_schema, state), do: {[], state}
 end

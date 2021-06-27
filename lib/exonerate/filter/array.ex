@@ -18,13 +18,13 @@ defmodule Exonerate.Filter.Array do
 
   @impl true
   def filter(schema, state = %{types: types}) when has_array_props(schema) and is_map_key(types, :array) do
-    {[array_filter(schema, state.path)], drop_type(state, :array)}
+    {[array_filter(schema, state.path, state.extra_validations)], drop_type(state, :array)}
   end
   def filter(_schema, state) do
     {[], state}
   end
 
-  def array_filter(schema, schema_path) do
+  def array_filter(schema, schema_path, extra_validations) do
     quote do
       defp unquote(schema_path)(list, path) when is_list(list) do
         unquote(prefix_validation(schema, schema_path))
@@ -42,7 +42,8 @@ defmodule Exonerate.Filter.Array do
         end)
         unquote(min_items_validation(schema))
         unquote(contains_validation(schema))
-        :ok
+        require Exonerate.Filter
+        Exonerate.Filter.apply_extra(unquote(extra_validations), list, path)
       end
       unquote(items_helper(schema, schema_path))
       unquote(contains_helper(schema, schema_path))

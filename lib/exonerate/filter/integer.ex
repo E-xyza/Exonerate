@@ -15,13 +15,13 @@ defmodule Exonerate.Filter.Integer do
 
   @impl true
   def filter(schema, state = %{types: types}) when has_integer_props(schema) and is_map_key(types, :integer) do
-    {[integer_filter(schema, state.path)], drop_type(state, :integer)}
+    {[integer_filter(schema, state.path, state.extra_validations)], drop_type(state, :integer)}
   end
   def filter(_schema, state) do
     {[], state}
   end
 
-  defp integer_filter(schema, schema_path) do
+  defp integer_filter(schema, schema_path, extra_validations) do
     guard_clauses =
       compare_guard(schema, "minimum", schema_path) ++
       compare_guard(schema, "maximum", schema_path) ++
@@ -31,7 +31,10 @@ defmodule Exonerate.Filter.Integer do
 
     quote do
       unquote_splicing(guard_clauses)
-      defp unquote(schema_path)(value, _path) when is_integer(value), do: :ok
+      defp unquote(schema_path)(integer, path) when is_integer(integer) do
+        require Exonerate.Filter
+        Exonerate.Filter.apply_extra(unquote(extra_validations), integer, path)
+      end
     end
   end
 
