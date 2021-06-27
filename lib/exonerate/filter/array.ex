@@ -13,7 +13,8 @@ defmodule Exonerate.Filter.Array do
     is_map_key(schema, "minItems") or
     is_map_key(schema, "maxItems") or
     is_map_key(schema, "uniqueItems") or
-    is_map_key(schema, "additionalItems")
+    is_map_key(schema, "additionalItems") or
+    is_map_key(schema, "prefixItems")
 
   @impl true
   def filter(schema, state = %{types: types}) when has_array_props(schema) and is_map_key(types, :array) do
@@ -26,6 +27,7 @@ defmodule Exonerate.Filter.Array do
   def array_filter(schema, schema_path) do
     quote do
       defp unquote(schema_path)(list, path) when is_list(list) do
+        unquote(prefix_validation(schema, schema_path))
         initial! = %{index: 0}
         unquote(unique_initializer(schema))
         unquote(contains_initializer(schema, schema_path))
@@ -45,6 +47,7 @@ defmodule Exonerate.Filter.Array do
       unquote(items_helper(schema, schema_path))
       unquote(contains_helper(schema, schema_path))
       unquote_splicing(tuple_helpers(schema, schema_path))
+      unquote_splicing(prefix_helpers(schema, schema_path))
       unquote(additional_items_helpers(schema, schema_path))
     end
   end
@@ -209,6 +212,63 @@ defmodule Exonerate.Filter.Array do
     end
   end
   defp min_items_validation(_), do: :ok
+
+  defp prefix_validation(%{"prefixItems" => _items}, schema_path) do
+    prefix_path = Exonerate.join(schema_path, "prefixItems")
+    quote do
+      unquote(prefix_path)(list, path)
+    end
+  end
+  defp prefix_validation(_, _), do: :ok
+
+  defp prefix_helpers(%{"prefixItems" => schemas}, schema_path) do
+    prefix_path = Exonerate.join(schema_path, "prefixItems")
+
+    {call_list, filters} = schemas
+    |> Enum.with_index
+    |> Enum.map(fn {schema, index} ->
+      call_path = Exonerate.join(prefix_path, to_string(index))
+      filter = Filter.from_schema(schema, call_path)
+      {{:&, [], [{:/, [], [{call_path, [], Elixir}, 2]}]}, filter}
+    end)
+    |> Enum.unzip
+
+    [quote do
+      defp unquote(prefix_path)(list, path) do
+        list
+        |> Enum.with_index()
+        |> Enum.zip(unquote(call_list))
+        |> Enum.each(fn {{item, index}, validator} ->
+          validator.(item, Path.join(path, to_string(index)))
+        end)
+      end
+    end] ++ filters
+
+    #{args, checks} = schemas
+    #|> Enum.with_index
+    #|> Enum.map(fn {schema, index} ->
+    #  arg = {String.to_atom("arg#{index}"), [], Elixir}
+    #  check_path = Exonerate.join(prefix_path, "#{index}")
+    #  call = {check_path, [], [arg, quote do Path.join(unquote({:path, [], Elixir}), unquote(to_string index)) end]}
+    #  validator = Filter.from_schema(schema, check_path)
+    #  {arg, {call, validator}}
+    #end)
+    #|> Enum.unzip
+#
+    #[first | rest] = Enum.reverse(args)
+    #args_with_rest = Enum.reverse(rest, [{:|, [], [first, {:_, [], Elixir}]}])
+#
+    #{body, validators} = Enum.unzip(checks)
+#
+    #args = [args_with_rest, {:path, [], Elixir}]
+    #fallback = quote do
+    #  defp unquote(prefix_path)(list, path) do
+    #    Exonerate.mismatch(list, path)
+    #  end
+    #end
+    #[{:defp, [], [{prefix_path, [], args}, [do: {:__block__, [], body}]]}, fallback] ++ validators
+  end
+  defp prefix_helpers(_, _), do: []
 
   defp items_validation(%{"items" => items}, schema_path) when is_map(items) or is_boolean(items) do
     items_path = Exonerate.join(schema_path, "items")
