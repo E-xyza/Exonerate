@@ -4,7 +4,7 @@ defmodule Exonerate do
     creates the defschema macro.
   """
 
-  alias Exonerate.Filter
+  alias Exonerate.Validation
 
   # TODO: fill tihs out with more descriptive terms
   @type error :: {:error, keyword}
@@ -35,24 +35,21 @@ defmodule Exonerate do
     #end
 
     q = quote do
-      require Exonerate
-
       unquote_splicing(id_special_ast(path, schema))
       unquote_splicing(schema_special_ast(path, schema))
       unquote_splicing(metadata_ast(path, schema))
 
       def unquote(path)(value) do
         unquote(:"#{path}#!/")(value, "/")
+        :ok
       catch
-        {:mismatch, list} -> {:error, list}
+        error = {:error, list} -> error
       end
 
-      unquote(Filter.from_schema(schema, :"#{path}#!/"))
+      unquote(Validation.from_schema(schema, ["#{path}#!/"]))
     end
 
-    if __CALLER__.module == TestOneTest do
     q |> Macro.to_string |> IO.puts
-    end
 
     q
   end
@@ -106,16 +103,28 @@ defmodule Exonerate do
 
   @doc false
   defmacro mismatch(value, path, opts \\ []) do
-    schema_path = __CALLER__.function
+    schema_path! = __CALLER__.function
     |> elem(0)
     |> to_string
-    |> join(opts[:schema_subpath])
+
+    schema_path! = if guard = opts[:guard] do
+      Path.join(schema_path!, guard)
+    else
+      schema_path!
+    end
 
     quote do
-      throw {:mismatch,
-      schema_path: unquote(schema_path),
+      throw {:error,
+      schema_path: unquote(schema_path!),
       error_value: unquote(value),
       json_path: unquote(path)}
     end
+  end
+
+  def path(schema_path) do
+    schema_path
+    |> Enum.reverse
+    |> Path.join
+    |> String.to_atom
   end
 end

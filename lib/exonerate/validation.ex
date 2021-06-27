@@ -1,0 +1,113 @@
+defmodule Exonerate.Validation do
+  alias Exonerate.Type
+
+  @enforce_keys [:path]
+
+  @default_types Map.new(~w(
+    array
+    boolean
+    integer
+    null
+    number
+    object
+    string
+  )a, &{&1, []})
+
+  @behaviour Access
+  defstruct @enforce_keys ++ [guards: [], calls: %{}, children: [], types: @default_types]
+
+  @type t :: %__MODULE__{
+    path: Path.t,
+    guards: [Macro.t],
+    calls: %{Type.t => [Macro.t]},
+    children: [Macro.t],
+    # compile-time optimization
+    types: %{Type.t => []},
+  }
+
+  @impl true
+  @spec get_and_update(t, atom, (atom -> :pop | {any, any})) :: {any, t}
+  defdelegate get_and_update(val, k, v), to: Map
+  @impl true
+  @spec fetch(t, atom) :: :error | {:ok, any}
+  defdelegate fetch(val, key), to: Map
+  @impl true
+  @spec pop(t, atom) :: {any, t}
+  defdelegate pop(val, key), to: Map
+
+  @reserved_keys ~w($schema $id)
+
+  def from_schema(true, schema_path) do
+    fun = Exonerate.path(schema_path)
+    quote do
+      defp unquote(fun)(_, _), do: :ok
+    end
+  end
+  def from_schema(false, schema_path) do
+    fun = Exonerate.path(schema_path)
+    quote do
+      defp unquote(fun)(value, path) do
+        Exonerate.mismatch(value, path)
+      end
+    end
+  end
+  def from_schema(schema, schema_path) when is_map(schema) do
+    fun = Exonerate.path(schema_path)
+
+    validation = schema
+    |> Enum.reject(&(elem(&1, 0) in @reserved_keys))
+    |> Enum.sort(&types_first/2)
+    |> Enum.reduce(%__MODULE__{path: schema_path}, fn
+      {k, v}, so_far ->
+        filter_for(k).append_filter(v, so_far)
+    end)
+
+    active_types = Map.keys(validation.types)
+
+    {calls!, types_left} = Enum.flat_map_reduce(active_types, active_types, fn type, types_left ->
+      if is_map_key(validation.calls, type) do
+        guard = Exonerate.Type.guard(type)
+        calls = Enum.map(validation.calls[type],
+          &quote do unquote(&1)(value, path) end)
+
+        {[quote do
+           defp unquote(fun)(value, path) when unquote(guard)(value) do
+             unquote_splicing(calls)
+             :ok
+           end
+         end],
+         types_left -- [type]}
+      else
+        {[], types_left}
+      end
+    end)
+
+    calls! = if types_left == [] do
+      calls!
+    else
+      calls! ++ [quote do
+        defp unquote(fun)(_value, _path), do: :ok
+      end]
+    end
+
+    quote do
+      unquote_splicing(validation.guards)
+      unquote_splicing(calls!)
+      unquote_splicing(validation.children)
+    end
+  end
+
+  defp types_first(a, a), do: true
+  defp types_first({"type", _}, _), do: true
+  defp types_first(_, {"type", _}), do: false
+  defp types_first(a, b), do: a >= b
+
+  defp filter_for(key) do
+    Module.concat(Exonerate.Filter, capitalize(key))
+  end
+
+  defp capitalize(<<f::binary-size(1), rest::binary>>) do
+    String.upcase(f) <> rest
+  end
+
+end

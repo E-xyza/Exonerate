@@ -1,41 +1,41 @@
 defmodule Exonerate.Filter.Type do
   @moduledoc false
+  
   # the filter for the "type" parameter.
 
   @behaviour Exonerate.Filter
 
   @impl true
-  def filter(%{"type" => type}, state) do
-    # establish the list of types that we are actually going to support.  This is
-    # strictly for compilation optimization purposes.
-    types = for t <- Map.keys(state.types),
-              Atom.to_string(t) in List.wrap(type),
-              into: %{},
-              do: {t, []}
+  def append_filter(types_spec, validation) when is_list(types_spec) do
+    types = Enum.map(types_spec, &String.to_atom/1)
 
-    {[type_filter(types, state.path)], %{state | types: types}}
-  end
-  def filter(_spec, state), do: {[], state}
+    type_guard = types
+    |> Enum.map(&to_guard/1)
+    |> Enum.reduce(&quote do unquote(&1) and unquote(&2) end)
 
-  defp type_filter(types, path) do
-    type_filter = types
-    |> Map.keys
-    |> Enum.map(fn
-      :array -> quote do is_list(value) end
-      :boolean -> quote do is_boolean(value) end
-      :integer -> quote do is_integer(value) end
-      :null -> quote do is_nil(value) end
-      :number -> quote do is_number(value) end
-      :object -> quote do is_map(value) end
-      :string -> quote do is_binary(value) end
-    end)
-    |> Enum.reduce(&quote do unquote(&1) or unquote(&2) end)
+    fun = Exonerate.path([validation.path])
 
-    quote do
-      defp unquote(path)(value, path) when not unquote(type_filter) do
-        Exonerate.mismatch(value, path, schema_subpath: "type")
-      end
+    type_filter = quote do
+      defp unquote(fun)(value, path) when unquote(type_guard), do: Exonerate.mismatch(value, path, guard: "type")
     end
+
+    %{validation |
+      guards: [type_filter | validation.guards],
+      types: Map.new(types, &{&1, []})
+    }
   end
+  def append_filter(type, validation) do
+    type
+    |> List.wrap
+    |> append_filter(validation)
+  end
+
+  @valid_types ~w(array boolean integer null number object string)a
+
+  defp to_guard(type) when type in @valid_types do
+    guard = Exonerate.Type.guard(type)
+    quote do not unquote(guard)(value) end
+  end
+  defp to_guard(type), do: raise CompileError, description: "invalid type #{inspect type} found"
 
 end

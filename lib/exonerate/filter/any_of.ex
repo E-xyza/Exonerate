@@ -39,7 +39,7 @@ defmodule Exonerate.Filter.AnyOf do
       end
     end
 
-    {helpers, %{state | footer: footer}}
+    {helpers, state}# | footer: footer}}
   end
   def filter(_schema, state), do: {[], state}
 end
