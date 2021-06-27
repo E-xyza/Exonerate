@@ -46,7 +46,7 @@ defmodule Exonerate.Filter.Integer do
   defp compare_guard(schema, op, schema_path) do
     compexpr = {@operands[op], [], [quote do integer end, schema[op]]}
     [quote do
-      defp unquote(schema_path)(integer, path) when unquote(compexpr) do
+      defp unquote(schema_path)(integer, path) when is_integer(integer) and unquote(compexpr) do
         Exonerate.mismatch(integer, path, schema_subpath: unquote(op))
       end
     end]
