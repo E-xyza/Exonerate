@@ -112,5 +112,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("prefixItems.json", 0)
+  ExonerateTest.AutomatedTests.make("enum.json", 6)
 end

@@ -7,6 +7,15 @@ defmodule Exonerate.Filter.Enum do
   import Exonerate.Filter, only: [filter_types: 2]
 
   @impl true
+  # special case due to elixirlang bug:  https://github.com/elixir-lang/elixir/issues/11088
+  def filter(%{"enum" => [true]}, state) do
+    {[quote do
+      defp unquote(state.path)(value, path) when value != true do
+        Exonerate.mismatch(value, path, schema_subpath: "enum")
+      end
+    end
+    ], state}
+  end
   def filter(%{"enum" => enum}, state) do
     {[quote do
       defp unquote(state.path)(value, path) when value not in unquote(Macro.escape(enum)) do

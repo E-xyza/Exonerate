@@ -77,9 +77,9 @@ defmodule Exonerate.Filter do
       unquote(fallthrough)
     end
 
-    #if Atom.to_string(spec_path) =~ "test0" do
-    #  q |> Macro.to_string |> IO.puts
-    #end
+    if Atom.to_string(spec_path) =~ "test6" do
+      q |> Macro.to_string |> IO.puts
+    end
 
     q
   end
