@@ -7,7 +7,9 @@ defmodule ExonerateTest.AutomatedTests do
     refRemote.json unevaluatedItems.json unevaluatedProperties.json)
 
   @specific_omissions [
-    {"type.json", 0},  # integer filters do not match exact integer floating point values.
+    {"type.json", 0, 1},  # integer filters do not match float values.
+    {"enum.json", 7, 2},  # integer filters do not match float values.
+    {"enum.json", 8, 2},  # integer filters do not match float values.
   ]
 
   def build_tests(directory \\ @test_base_dir) do
@@ -39,7 +41,6 @@ defmodule ExonerateTest.AutomatedTests do
     module = Module.concat([ExonerateTest, String.capitalize(modulename), Test])
     describe_blocks = test_list
     |> Enum.with_index
-    |> Enum.reject(fn {_, index} -> {path, index} in @specific_omissions end)
     |> Enum.map(&to_describe_block(&1, path))
 
     quote do
@@ -59,7 +60,11 @@ defmodule ExonerateTest.AutomatedTests do
     description! = "#{path}(#{index}) #{description!}"
     schema_name = :"test#{index}"
     schema! = Jason.encode!(schema!)
-    test_blocks = Enum.map(tests, &to_test_block(&1, schema_name))
+    test_blocks = tests
+    |> Enum.with_index
+    |> Enum.reject(fn {test, inner_index} -> {path, index, inner_index} in @specific_omissions end)
+    |> Enum.map(&(elem(&1, 0)))
+    |> Enum.map(&to_test_block(&1, schema_name))
     quote do
       describe unquote(description!) do
         defschema([{unquote(schema_name), unquote(schema!)}])
@@ -112,5 +117,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("enum.json", 6)
+  ExonerateTest.AutomatedTests.make("enum.json", 7)
 end
