@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.MaxLength do
   end
 
   # if string is the only type, avoid the guard.
-  defp code(length, validation = %{types: types}) when types == [:string] do
+  defp code(length, validation = %{types: [:string]}) do
     quote do
       defp unquote(name(validation))(string, path) when is_binary(string) do
         if String.length(string) > unquote(length) do

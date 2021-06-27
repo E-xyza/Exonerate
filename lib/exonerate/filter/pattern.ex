@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.Pattern do
   end
 
   # if string is the only type, avoid the guard.
-  defp code(pattern, validation = %{types: types}) when types == [:string] do
+  defp code(pattern, validation = %{types: [:string]}) do
     quote do
       defp unquote(name(validation))(string, path) when is_binary(string) do
         unless Regex.match?(sigil_r(<<unquote(pattern)>>, []), string) do
