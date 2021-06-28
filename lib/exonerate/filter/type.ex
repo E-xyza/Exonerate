@@ -1,6 +1,6 @@
 defmodule Exonerate.Filter.Type do
   @moduledoc false
-  
+
   # the filter for the "type" parameter.
 
   @behaviour Exonerate.Filter
@@ -13,7 +13,7 @@ defmodule Exonerate.Filter.Type do
     |> Enum.map(&to_guard/1)
     |> Enum.reduce(&quote do unquote(&1) and unquote(&2) end)
 
-    fun = Exonerate.path([validation.path])
+    fun = Exonerate.path(validation.path)
 
     type_filter = quote do
       defp unquote(fun)(value, path) when unquote(type_guard), do: Exonerate.mismatch(value, path, guard: "type")
