@@ -26,8 +26,8 @@ defmodule Exonerate.Validation do
   @type t :: %__MODULE__{
     path: Path.t,
     guards: [Macro.t],
-    calls: %{Type.t => [Macro.t]},
-    collection_calls: %{Type.t => [Macro.t]},
+    calls: %{(Type.t | :all) => [Macro.t]},
+    collection_calls: %{(:array | :object) => [Macro.t]},
     children: [Macro.t],
     accumulator: %{atom => boolean},
     # compile-time optimization
@@ -73,10 +73,16 @@ defmodule Exonerate.Validation do
 
     active_types = Map.keys(validation.types)
 
+    all_calls = validation.calls[:all]
+    |> List.wrap
+    |> Enum.reverse
+    |> Enum.map(&quote do unquote(&1)(value, path) end)
+
     {calls!, types_left} = Enum.flat_map_reduce(active_types, active_types, fn type, types_left ->
-      if is_map_key(validation.calls, type) or is_map_key(validation.collection_calls, type) do
+      if is_map_key(validation.calls, type) or
+         is_map_key(validation.collection_calls, type) do
         guard = Exonerate.Type.guard(type)
-        calls = validation.calls[type]
+        type_calls = validation.calls[type]
         |> List.wrap
         |> Enum.reverse
         |> Enum.map(&quote do unquote(&1)(value, path) end)
@@ -120,7 +126,7 @@ defmodule Exonerate.Validation do
 
         {[quote do
            defp unquote(fun)(value, path) when unquote(guard)(value) do
-             unquote_splicing(calls)
+             unquote_splicing(type_calls ++ all_calls)
              unquote(collection_validation)
              :ok
            end
@@ -131,11 +137,15 @@ defmodule Exonerate.Validation do
       end
     end)
 
-    calls! = if types_left == [] do
-      calls!
-    else
-      calls! ++ [quote do
+    calls! = cond do
+      types_left == [] -> calls!
+      all_calls == [] -> calls! ++ [quote do
         defp unquote(fun)(_value, _path), do: :ok
+      end]
+      true -> calls! ++ [quote do
+        defp unquote(fun)(value, path) do
+          unquote_splicing(all_calls)
+        end
       end]
     end
 

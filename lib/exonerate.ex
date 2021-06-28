@@ -49,9 +49,9 @@ defmodule Exonerate do
       unquote(Validation.from_schema(schema, ["#{path}#!/"]))
     end
 
-    #if Atom.to_string(path) =~ "tuple_noadditional" do
-    #  q |> Macro.to_string |> IO.puts
-    #end
+    if Atom.to_string(path) =~ "schemadependency" do
+      q |> Macro.to_string |> IO.puts
+    end
 
     q
   end
@@ -110,7 +110,9 @@ defmodule Exonerate do
     |> to_string
 
     schema_path! = if guard = opts[:guard] do
-      Path.join(schema_path!, guard)
+      quote do
+        Path.join(unquote(schema_path!), unquote(guard))
+      end
     else
       schema_path!
     end

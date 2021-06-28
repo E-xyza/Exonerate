@@ -1,30 +1,40 @@
 defmodule Exonerate.Filter.Not do
   @moduledoc false
-  # the filter for "anyOf" parameters
 
-  alias Exonerate.Filter
-
-  @behaviour Filter
+  @behaviour Exonerate.Filter
 
   @impl true
-  def filter(%{"not" => schema}, state) do
-    not_branch = Exonerate.join(state.path, "not")
+  def append_filter(inversion, validation) do
+    calls = validation.calls
+    |> Map.get(:all, [])
+    |> List.insert_at(0, name(validation))
 
-    footer = &quote do
-      defp unquote(&1)(value, path) do
-        try do
-          unquote(not_branch)(value, path)
+    children = code(inversion, validation) ++ validation.children
+
+    validation
+    |> put_in([:calls, :all], calls)
+    |> put_in([:children], children)
+  end
+
+  def name(validation) do
+    Exonerate.path(["not" | validation.path])
+  end
+
+  def code(inversion, validation) do
+    inner_path = Exonerate.path(["not_" | validation.path])
+    [quote do
+      def unquote(name(validation))(inversion, path) do
+        result = try do
+          unquote(inner_path)(inversion, path)
         catch
-          mismatch = {:mismatch, _} -> mismatch
+          {:error, _} -> :error
         end
-        |> case do
-          :ok -> Exonerate.mismatch(value, path, schema_subpath: "not")
-          {:mismatch, _} -> :ok
+        case result do
+          :ok -> Exonerate.mismatch(inversion, path)
+          :error -> :ok
         end
       end
-    end
-
-    {[Filter.from_schema(schema, not_branch)], %{state | footer: footer}}
+    end,
+    Exonerate.Validation.from_schema(inversion, ["not_" | validation.path])]
   end
-  def filter(_schema, state), do: {[], state}
 end

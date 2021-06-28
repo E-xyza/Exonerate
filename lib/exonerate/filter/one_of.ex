@@ -1,51 +1,48 @@
 defmodule Exonerate.Filter.OneOf do
   @moduledoc false
-  # the filter for "oneOf" parameters
 
-  alias Exonerate.Filter
-
-  @behaviour Filter
+  @behaviour Exonerate.Filter
 
   @impl true
-  def filter(%{"oneOf" => schemas}, state) do
-    {calls, helpers} = schemas
+  def append_filter(schema, validation) do
+    calls = validation.calls
+    |> Map.get(:all, [])
+    |> List.insert_at(0, name(validation))
+
+    children = code(schema, validation) ++ validation.children
+
+    validation
+    |> put_in([:calls, :all], calls)
+    |> put_in([:children], children)
+  end
+
+  def name(validation) do
+    Exonerate.path(["oneOf" | validation.path])
+  end
+
+  def code(schema, validation) do
+    {calls, funs} = schema
     |> Enum.with_index
-    |> Enum.map(fn {schema, index} ->
-      any_of_branch = Exonerate.join(state.path, "oneOf/#{index}")
-
+    |> Enum.map(fn {subschema, index} ->
+      subpath = [to_string(index) , "oneOf" | validation.path]
       {
-        quote do
-          if found! == 2 do
-            Exonerate.mismatch(value, path, schema_subpath: "oneOf")
-          end
-
-          found! =
-            try do
-              unquote(any_of_branch)(value, path)
-              found! + 1
-            catch
-              {:mismatch, _} -> found!
-            end
-        end,
-        Filter.from_schema(schema, any_of_branch)
+        {:&, [], [{:/, [], [{Exonerate.path(subpath), [], Elixir}, 2]}]},
+        Exonerate.Validation.from_schema(subschema, subpath)
       }
-
-      end)
+    end)
     |> Enum.unzip
 
-    footer = &quote do
-      defp unquote(&1)(value, path) do
-        found! = 0
-        unquote_splicing(calls)
-        if found! == 1 do
-          :ok
-        else
-          Exonerate.mismatch(value, path, schema_subpath: "oneOf")
-        end
+    [quote do
+      def unquote(name(validation))(value, path) do
+        count = Enum.count(unquote(calls), fn fun ->
+          try do
+            fun.(value, path)
+          catch
+            {:error, _} -> false
+          end 
+        end)
+        if (count == 1), do: :ok, else: Exonerate.mismatch(value, path)
       end
-    end
-
-    {helpers, %{state | footer: footer}}
+    end] ++ funs
   end
-  def filter(_schema, state), do: {[], state}
 end
