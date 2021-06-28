@@ -1,6 +1,9 @@
 defmodule Exonerate.Filter.Items do
   @behaviour Exonerate.Filter
 
+  alias Exonerate.Type
+  require Type
+
   # enumerated, tuple validation
   def append_filter(schema, validation) when is_list(schema) do
     calls = validation.collection_calls
@@ -15,7 +18,7 @@ defmodule Exonerate.Filter.Items do
     |> put_in([:accumulator, :tuple_size], length(schema))
   end
   # generic validation
-  def append_filter(schema, validation) when is_map(schema) do
+  def append_filter(schema, validation) when Type.is_schema(schema) do
     calls = validation.collection_calls
     |> Map.get(:array, [])
     |> List.insert_at(0, name(validation))

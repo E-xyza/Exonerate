@@ -6,10 +6,18 @@ defmodule ExonerateTest.AutomatedTests do
   @omit ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json items.json ref.json
     refRemote.json unevaluatedItems.json unevaluatedProperties.json)
 
-  @specific_omissions [
-    {"type.json", 0, 1},  # integer filters do not match float values.
-    {"enum.json", 7, 2},  # integer filters do not match float values.
-    {"enum.json", 8, 2},  # integer filters do not match float values.
+  @test_omissions [
+    # integer filters do not match float values:
+    {"type.json", 0, 1},
+    {"enum.json", 7, 2},
+    {"enum.json", 8, 2}
+  ]
+
+  @describe_omissions [
+    # integer filters do not match float values:
+    {"multipleOf.json", 1},
+    {"multipleOf.json", 2},
+    {"multipleOf.json", 3}
   ]
 
   def build_tests(directory \\ @test_base_dir) do
@@ -41,6 +49,7 @@ defmodule ExonerateTest.AutomatedTests do
     module = Module.concat([ExonerateTest, String.capitalize(modulename), Test])
     describe_blocks = test_list
     |> Enum.with_index
+    |> Enum.reject(fn {_, index} -> {path, index} in @describe_omissions end)
     |> Enum.map(&to_describe_block(&1, path))
 
     quote do
@@ -62,7 +71,7 @@ defmodule ExonerateTest.AutomatedTests do
     schema! = Jason.encode!(schema!)
     test_blocks = tests
     |> Enum.with_index
-    |> Enum.reject(fn {test, inner_index} -> {path, index, inner_index} in @specific_omissions end)
+    |> Enum.reject(fn {test, inner_index} -> {path, index, inner_index} in @test_omissions end)
     |> Enum.map(&(elem(&1, 0)))
     |> Enum.map(&to_test_block(&1, schema_name))
     quote do

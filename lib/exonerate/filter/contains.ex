@@ -11,7 +11,7 @@ defmodule Exonerate.Filter.Contains do
     validation
     |> put_in([:collection_calls, :array], calls)
     |> put_in([:children], children)
-    |> put_in([:accumulator, :contains], false)
+    |> put_in([:accumulator, :contains], 0)
   end
 
   defp name(validation) do
@@ -35,7 +35,7 @@ defmodule Exonerate.Filter.Contains do
   defmacro postprocess(nil, _, _, _), do: :ok
   defmacro postprocess(_, acc, list, path) do
     quote do
-      unless unquote(acc).contains, do: Exonerate.mismatch(unquote(list), unquote(path), guard: "contains")
+      unless unquote(acc).contains > 0, do: Exonerate.mismatch(unquote(list), unquote(path), guard: "contains")
     end
   end
 end

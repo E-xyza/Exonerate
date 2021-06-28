@@ -103,14 +103,16 @@ defmodule Exonerate.Validation do
               end)
             end
           :array ->
+            exit_early = Map.has_key?(schema, "maxItems") or Map.has_key?(schema, "maxContains")
             quote do
-              require Exonerate.Filter.MaxItems
+              require Exonerate.Filter
               require Exonerate.Filter.MinItems
               require Exonerate.Filter.Contains
+              require Exonerate.Filter.MinContains
 
               acc =
-                Exonerate.Filter.MaxItems.wrap(
-                  unquote(schema["maxItems"]),
+                Exonerate.Filter.wrap(
+                  unquote(exit_early),
                   value
                   |> Enum.with_index
                   |> Enum.reduce(unquote(Macro.escape(validation.accumulator)), fn unit, acc ->
@@ -121,6 +123,7 @@ defmodule Exonerate.Validation do
               # special case for MinItems
               Exonerate.Filter.MinItems.postprocess(unquote(schema["minItems"]), acc, value, path)
               Exonerate.Filter.Contains.postprocess(unquote(schema["contains"]), acc, value, path)
+              Exonerate.Filter.MinContains.postprocess(unquote(schema["minContains"]), acc, value, path)
             end
         end
 
@@ -175,5 +178,4 @@ defmodule Exonerate.Validation do
   defp capitalize(<<f::binary-size(1), rest::binary>>) do
     String.upcase(f) <> rest
   end
-
 end

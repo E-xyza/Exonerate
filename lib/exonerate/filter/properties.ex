@@ -1,7 +1,10 @@
 defmodule Exonerate.Filter.Properties do
   @behaviour Exonerate.Filter
 
-  def append_filter(object, validation) when is_map(object) do
+  alias Exonerate.Type
+  require Type
+
+  def append_filter(object, validation) when Type.is_schema(object) do
     calls = validation.collection_calls
     |> Map.get(:object, [])
     |> List.insert_at(0, name(validation))

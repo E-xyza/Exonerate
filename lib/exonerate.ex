@@ -49,7 +49,7 @@ defmodule Exonerate do
       unquote(Validation.from_schema(schema, ["#{path}#!/"]))
     end
 
-    if Atom.to_string(path) =~ "schemadependency" do
+    if Atom.to_string(path) =~ "items" do
       q |> Macro.to_string |> IO.puts
     end
 

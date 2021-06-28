@@ -22,4 +22,5 @@ defmodule Exonerate.Type do
 
   def guard(type), do: Map.fetch!(@guards, type)
 
+  defguard is_schema(schema) when is_map(schema) or is_boolean(schema)
 end

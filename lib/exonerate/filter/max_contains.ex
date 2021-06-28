@@ -1,4 +1,4 @@
-defmodule Exonerate.Filter.MaxItems do
+defmodule Exonerate.Filter.MaxContains do
   @behaviour Exonerate.Filter
 
   @impl true
@@ -15,27 +15,15 @@ defmodule Exonerate.Filter.MaxItems do
   end
 
   defp name(validation) do
-    Exonerate.path(["maxItems" | validation.path])
+    Exonerate.path(["maxContains" | validation.path])
   end
 
   defp code(maximum, validation) do
     [quote do
        defp unquote(name(validation))({_, index}, acc, path) do
-         if index >= unquote(maximum), do: throw {:max, "maxItems"}
+         if index >= unquote(maximum), do: throw {:max, "maxContains"}
          acc
        end
      end]
-  end
-
-  defmacro wrap(nil, acc, _, _), do: acc
-  defmacro wrap(_, acc, value, path) do
-    quote do
-      try do
-        unquote(acc)
-      catch
-        {:max, what} ->
-          Exonerate.mismatch(unquote(value), unquote(path), guard: what)
-      end
-    end
   end
 end

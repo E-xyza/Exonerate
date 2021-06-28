@@ -1,7 +1,10 @@
 defmodule Exonerate.Filter.Dependencies do
   @behaviour Exonerate.Filter
 
-  def append_filter(dependency, validation) when is_map(dependency) do
+  alias Exonerate.Type
+  require Type
+
+  def append_filter(dependency, validation) when Type.is_schema(dependency) do
     calls = validation.calls
     |> Map.get(:object, [])
     |> List.insert_at(0, name(validation))
@@ -34,7 +37,7 @@ defmodule Exonerate.Filter.Dependencies do
             end)
           end
         end, :ok}
-      {key, schema} when is_map(schema) ->
+      {key, schema} when Type.is_schema(schema) ->
         next_path = [key, "dependencies" | validation.path]
         {quote do
           defp unquote(name(validation))(object = %{unquote(key) => _}, path) do
