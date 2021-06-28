@@ -12,6 +12,7 @@ defmodule Exonerate.Filter.Contains do
     |> put_in([:collection_calls, :array], calls)
     |> put_in([:children], children)
     |> put_in([:accumulator, :contains], 0)
+    |> put_in([:post_accumulate], [name(validation) | validation.post_accumulate])
   end
 
   defp name(validation) do
@@ -23,19 +24,16 @@ defmodule Exonerate.Filter.Contains do
       defp unquote(name(validation))({item, _index}, acc, path) do
         try do
           unquote(name(validation))(item, path)
-          %{acc | contains: true}
+          %{acc | contains: acc.contains + 1}
         catch
           {:error, _} -> acc
         end
       end
+      defp unquote(name(validation))(%{contains: count}, list, path) do
+        unless count > 0, do: Exonerate.mismatch(list, path)
+      end
+
       unquote(Exonerate.Validation.from_schema(schema, ["contains" | validation.path]))
     end]
-  end
-
-  defmacro postprocess(nil, _, _, _), do: :ok
-  defmacro postprocess(_, acc, list, path) do
-    quote do
-      unless unquote(acc).contains > 0, do: Exonerate.mismatch(unquote(list), unquote(path), guard: "contains")
-    end
   end
 end

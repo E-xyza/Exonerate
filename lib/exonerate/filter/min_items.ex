@@ -13,6 +13,7 @@ defmodule Exonerate.Filter.MinItems do
     |> put_in([:collection_calls, :array], calls)
     |> put_in([:children], children)
     |> put_in([:accumulator, :min], false)
+    |> put_in([:post_accumulate], [name(validation) | validation.post_accumulate])
   end
 
   defp name(validation) do
@@ -28,13 +29,10 @@ defmodule Exonerate.Filter.MinItems do
            acc
          end
        end
+       defp unquote(name(validation))(acc = %{min: satisfied}, list, path) do
+         unless satisfied, do: Exonerate.mismatch(list, path)
+       end
+       defp unquote(name(validation))(_, _, _), do: :ok
      end]
-  end
-
-  defmacro postprocess(nil, _, _, _), do: :ok
-  defmacro postprocess(_, acc, list, path) do
-    quote do
-      unless unquote(acc).min, do: Exonerate.mismatch(unquote(list), unquote(path), guard: "minItems")
-    end
   end
 end

@@ -20,16 +20,18 @@ defmodule Exonerate.Validation do
     collection_calls: %{},
     children: [],
     accumulator: %{},
+    post_accumulate: [],
     types: @default_types
   ]
 
   @type t :: %__MODULE__{
     path: Path.t,
     guards: [Macro.t],
-    calls: %{(Type.t | :all) => [Macro.t]},
-    collection_calls: %{(:array | :object) => [Macro.t]},
+    calls: %{(Type.t | :all) => [atom]},
+    collection_calls: %{(:array | :object) => [atom]},
     children: [Macro.t],
     accumulator: %{atom => boolean},
+    post_accumulate: [atom],
     # compile-time optimization
     types: %{Type.t => []},
   }
@@ -104,11 +106,12 @@ defmodule Exonerate.Validation do
             end
           :array ->
             exit_early = Map.has_key?(schema, "maxItems") or Map.has_key?(schema, "maxContains")
+
+            post_accumulate =
+              Enum.map(validation.post_accumulate, &quote do unquote(&1)(acc, value, path) end)
+
             quote do
               require Exonerate.Filter
-              require Exonerate.Filter.MinItems
-              require Exonerate.Filter.Contains
-              require Exonerate.Filter.MinContains
 
               acc =
                 Exonerate.Filter.wrap(
@@ -120,10 +123,7 @@ defmodule Exonerate.Validation do
                     acc
                   end), value, path)
 
-              # special case for MinItems
-              Exonerate.Filter.MinItems.postprocess(unquote(schema["minItems"]), acc, value, path)
-              Exonerate.Filter.Contains.postprocess(unquote(schema["contains"]), acc, value, path)
-              Exonerate.Filter.MinContains.postprocess(unquote(schema["minContains"]), acc, value, path)
+              unquote_splicing(post_accumulate)
             end
         end
 
@@ -160,11 +160,15 @@ defmodule Exonerate.Validation do
   end
 
   defp tag_reorder(a, a), do: true
-  # type, enum to the top, additionalItems and additionalProperties to the bottom
+  # type, enum to the top; maxContains, minContains, additionalItems and additionalProperties to the bottom
   defp tag_reorder({"type", _}, _), do: true
   defp tag_reorder(_, {"type", _}), do: false
   defp tag_reorder({"enum", _}, _), do: true
   defp tag_reorder(_, {"enum", _}), do: false
+  defp tag_reorder({"maxContains", _}, _), do: false
+  defp tag_reorder(_, {"maxContains", _}), do: true
+  defp tag_reorder({"minContains", _}, _), do: false
+  defp tag_reorder(_, {"minContains", _}), do: true
   defp tag_reorder({"additionalItems", _}, _), do: false
   defp tag_reorder(_, {"additionalItems", _}), do: true
   defp tag_reorder({"additionalProperties", _}, _), do: false

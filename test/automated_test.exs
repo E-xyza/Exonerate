@@ -52,6 +52,10 @@ defmodule ExonerateTest.AutomatedTests do
     |> Enum.reject(fn {_, index} -> {path, index} in @describe_omissions end)
     |> Enum.map(&to_describe_block(&1, path))
 
+    path_atom = path
+    |> Path.basename
+    |> String.to_atom
+
     quote do
       defmodule unquote(module) do
         use ExUnit.Case, async: true
@@ -59,6 +63,7 @@ defmodule ExonerateTest.AutomatedTests do
         import Exonerate
 
         @moduletag :automated
+        @moduletag unquote(path_atom)
 
         unquote(describe_blocks)
       end

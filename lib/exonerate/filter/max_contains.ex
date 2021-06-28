@@ -20,10 +20,11 @@ defmodule Exonerate.Filter.MaxContains do
 
   defp code(maximum, validation) do
     [quote do
-       defp unquote(name(validation))({_, index}, acc, path) do
-         if index >= unquote(maximum), do: throw {:max, "maxContains"}
+       defp unquote(name(validation))({_, index}, acc = %{contains: contains}, path) do
+         if contains > unquote(maximum), do: throw {:max, "maxContains"}
          acc
        end
+       defp unquote(name(validation))(_, _, _), do: :ok
      end]
   end
 end
