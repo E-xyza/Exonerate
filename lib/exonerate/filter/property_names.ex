@@ -23,7 +23,7 @@ defmodule Exonerate.Filter.PropertyNames do
 
   defp code(_schema, validation) do
     quote do
-      defp unquote(name(validation))({key, _value}, path) do
+      defp unquote(name(validation))({key, _value}, _acc, path) do
         unquote(name(validation))(key, Path.join(path, key))
       end
     end

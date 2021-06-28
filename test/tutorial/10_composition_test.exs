@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Tutorial.CombiningTest do
+defmodule ExonerateTest.Tutorial.CompositionTest do
   use ExUnit.Case, async: true
 
   @moduletag :combining

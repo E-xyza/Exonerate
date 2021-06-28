@@ -19,6 +19,7 @@ defmodule Exonerate.Validation do
     calls: %{},
     collection_calls: %{},
     children: [],
+    accumulator: %{},
     types: @default_types
   ]
 
@@ -28,6 +29,7 @@ defmodule Exonerate.Validation do
     calls: %{Type.t => [Macro.t]},
     collection_calls: %{Type.t => [Macro.t]},
     children: [Macro.t],
+    accumulator: %{atom => boolean},
     # compile-time optimization
     types: %{Type.t => []},
   }
@@ -63,7 +65,7 @@ defmodule Exonerate.Validation do
 
     validation = schema
     |> Enum.reject(&(elem(&1, 0) in @reserved_keys))
-    |> Enum.sort(&types_first/2)
+    |> Enum.sort(&tag_reorder/2)
     |> Enum.reduce(%__MODULE__{path: schema_path}, fn
       {k, v}, so_far ->
         filter_for(k).append_filter(v, so_far)
@@ -76,19 +78,43 @@ defmodule Exonerate.Validation do
         guard = Exonerate.Type.guard(type)
         calls = validation.calls[type]
         |> List.wrap
+        |> Enum.reverse
         |> Enum.map(&quote do unquote(&1)(value, path) end)
 
         collection_calls = validation.collection_calls[type]
         |> List.wrap
-        |> Enum.map(&quote do unquote(&1)(unit, path) end)
+        |> Enum.reverse
+        |> Enum.map(&quote do acc = unquote(&1)(unit, acc, path) end)
 
         collection_validation = case type do
           _ when collection_calls == [] -> quote do end
           :object ->
             quote do
               Enum.each(value, fn unit ->
+                acc = false
                 unquote_splicing(collection_calls)
+                acc
               end)
+            end
+          :array ->
+            quote do
+              require Exonerate.Filter.MaxItems
+              require Exonerate.Filter.MinItems
+              require Exonerate.Filter.Contains
+
+              acc =
+                Exonerate.Filter.MaxItems.wrap(
+                  unquote(schema["maxItems"]),
+                  value
+                  |> Enum.with_index
+                  |> Enum.reduce(unquote(Macro.escape(validation.accumulator)), fn unit, acc ->
+                    unquote_splicing(collection_calls)
+                    acc
+                  end), value, path)
+
+              # special case for MinItems
+              Exonerate.Filter.MinItems.postprocess(unquote(schema["minItems"]), acc, value, path)
+              Exonerate.Filter.Contains.postprocess(unquote(schema["contains"]), acc, value, path)
             end
         end
 
@@ -120,10 +146,17 @@ defmodule Exonerate.Validation do
     end
   end
 
-  defp types_first(a, a), do: true
-  defp types_first({"type", _}, _), do: true
-  defp types_first(_, {"type", _}), do: false
-  defp types_first(a, b), do: a >= b
+  defp tag_reorder(a, a), do: true
+  # type, enum to the top, additionalItems and additionalProperties to the bottom
+  defp tag_reorder({"type", _}, _), do: true
+  defp tag_reorder(_, {"type", _}), do: false
+  defp tag_reorder({"enum", _}, _), do: true
+  defp tag_reorder(_, {"enum", _}), do: false
+  defp tag_reorder({"additionalItems", _}, _), do: false
+  defp tag_reorder(_, {"additionalItems", _}), do: true
+  defp tag_reorder({"additionalProperties", _}, _), do: false
+  defp tag_reorder(_, {"additionalProperties", _}), do: true
+  defp tag_reorder(a, b), do: a >= b
 
   defp filter_for(key) do
     Module.concat(Exonerate.Filter, capitalize(key))

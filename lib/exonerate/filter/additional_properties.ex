@@ -2,14 +2,14 @@ defmodule Exonerate.Filter.AdditionalProperties do
   @behaviour Exonerate.Filter
 
   def append_filter(schema, validation) do
-    calls = validation.calls
+    calls = validation.collection_calls
     |> Map.get(:object, [])
     |> List.insert_at(0, name(validation))
 
-    children = List.insert_at(validation.children, 0, code(schema, validation))
+    children = code(schema, validation) ++ validation.children
 
     validation
-    |> put_in([:calls, :object], calls)
+    |> put_in([:collection_calls, :object], calls)
     |> put_in([:children], children)
   end
 
@@ -17,22 +17,21 @@ defmodule Exonerate.Filter.AdditionalProperties do
     Exonerate.path(["additionalProperties" | validation.path])
   end
 
-  # if string is the only type, avoid the guard.
-  defp code(schema, validation = %{types: [:object]}) do
-    quote do
-      defp unquote(name(validation))(object, path) when is_map(object) do
-        :ok
-      end
-    end
-  end
-
   defp code(schema, validation) do
-    quote do
-      defp unquote(name(validation))(object, path) when is_map(object) do
-        :ok
+    [quote do
+      defp unquote(name(validation))({key, object}, acc, path) do
+        unless acc do
+          try do
+            unquote(name(validation))(object, path)
+          catch
+            err = {:error, opts} ->
+              err_val = opts[:error_value]
+              throw {:error, Keyword.put(opts, :error_value, %{key => err_val})}
+          end
+        end
       end
-      defp unquote(name(validation))(_, _), do: :ok
-    end
+      unquote(Exonerate.Validation.from_schema(schema, ["additionalProperties" | validation.path]))
+    end]
   end
 
 end

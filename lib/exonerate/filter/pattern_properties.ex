@@ -24,14 +24,15 @@ defmodule Exonerate.Filter.PatternProperties do
         subpath = [pattern, "patternProperties" | validation.path]
 
         {quote do
-           unquote(Exonerate.path(subpath))(key, value, Path.join(path, key))
+           acc = unquote(Exonerate.path(subpath))(key, value, acc, Path.join(path, key))
          end,
          quote do
-           defp unquote(Exonerate.path(subpath))(key, value, path) do
+           defp unquote(Exonerate.path(subpath))(key, value, acc, path) do
              if Regex.match?(sigil_r(<<unquote(pattern)>>, []), key) do
                unquote(Exonerate.path(subpath))(value, path)
+               true
              else
-               :ok
+               acc
              end
            end
            unquote(Exonerate.Validation.from_schema(schema, subpath))
@@ -40,8 +41,9 @@ defmodule Exonerate.Filter.PatternProperties do
     |> Enum.unzip
 
     [quote do
-      defp unquote(name(validation))({key, value}, path) do
+      defp unquote(name(validation))({key, value}, acc, path) do
         unquote_splicing(calls)
+        acc
       end
     end] ++ funs
   end
