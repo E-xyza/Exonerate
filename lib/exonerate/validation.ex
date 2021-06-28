@@ -44,7 +44,7 @@ defmodule Exonerate.Validation do
   @spec pop(t, atom) :: {any, t}
   defdelegate pop(val, key), to: Map
 
-  @reserved_keys ~w($schema $id)
+  @reserved_keys ~w($schema $id title description default examples)
 
   def from_schema(true, schema_path) do
     fun = Exonerate.path(schema_path)
