@@ -18,21 +18,11 @@ defmodule Exonerate.Filter.Properties do
   end
 
   # if string is the only type, avoid the guard.
-  defp code(object, validation = %{types: [:object]}) do
-    quote do
-      defp unquote(name(validation))(object, path) when is_map(object) do
-        :ok
-      end
-    end
-  end
-
   defp code(object, validation) do
     quote do
-      defp unquote(name(validation))(object, path) when is_map(object) do
+      defp unquote(name(validation))(object, path) do
         :ok
       end
-      defp unquote(name(validation))(_, _), do: :ok
     end
   end
-
 end

@@ -10,7 +10,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   https://json-schema.org/understanding-json-schema/reference/object.html
   Literally conforms to all the tests presented in this document.
   """
-
+  
   defmodule Object do
 
     @moduledoc """
@@ -618,7 +618,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       |> Jason.decode!
       |> PatternProperties.patternprop1
     end
-    
+
     test "integer pattern works" do
       assert :ok = @patternmatch2
       |> Jason.decode!

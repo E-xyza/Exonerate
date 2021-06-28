@@ -49,7 +49,9 @@ defmodule Exonerate do
       unquote(Validation.from_schema(schema, ["#{path}#!/"]))
     end
 
-    q |> Macro.to_string |> IO.puts
+    if Atom.to_string(path) =~ "patternprop1" do
+      q |> Macro.to_string |> IO.puts
+    end
 
     q
   end

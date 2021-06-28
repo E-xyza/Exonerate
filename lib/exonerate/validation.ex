@@ -14,12 +14,19 @@ defmodule Exonerate.Validation do
   )a, &{&1, []})
 
   @behaviour Access
-  defstruct @enforce_keys ++ [guards: [], calls: %{}, children: [], types: @default_types]
+  defstruct @enforce_keys ++ [
+    guards: [],
+    calls: %{},
+    collection_calls: %{},
+    children: [],
+    types: @default_types
+  ]
 
   @type t :: %__MODULE__{
     path: Path.t,
     guards: [Macro.t],
     calls: %{Type.t => [Macro.t]},
+    collection_calls: %{Type.t => [Macro.t]},
     children: [Macro.t],
     # compile-time optimization
     types: %{Type.t => []},
@@ -65,14 +72,30 @@ defmodule Exonerate.Validation do
     active_types = Map.keys(validation.types)
 
     {calls!, types_left} = Enum.flat_map_reduce(active_types, active_types, fn type, types_left ->
-      if is_map_key(validation.calls, type) do
+      if is_map_key(validation.calls, type) or is_map_key(validation.collection_calls, type) do
         guard = Exonerate.Type.guard(type)
-        calls = Enum.map(validation.calls[type],
-          &quote do unquote(&1)(value, path) end)
+        calls = validation.calls[type]
+        |> List.wrap
+        |> Enum.map(&quote do unquote(&1)(value, path) end)
+
+        collection_calls = validation.collection_calls[type]
+        |> List.wrap
+        |> Enum.map(&quote do unquote(&1)(unit, path) end)
+
+        collection_validation = case type do
+          _ when collection_calls == [] -> quote do end
+          :object ->
+            quote do
+              Enum.each(value, fn unit ->
+                unquote_splicing(collection_calls)
+              end)
+            end
+        end
 
         {[quote do
            defp unquote(fun)(value, path) when unquote(guard)(value) do
              unquote_splicing(calls)
+             unquote(collection_validation)
              :ok
            end
          end],

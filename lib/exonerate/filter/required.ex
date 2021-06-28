@@ -6,7 +6,7 @@ defmodule Exonerate.Filter.Required do
     |> Map.get(:object, [])
     |> List.insert_at(0, name(validation))
 
-    children = List.insert_at(validation.children, 0, code(required, validation))
+    children = code(required, validation) ++ validation.children
 
     validation
     |> put_in([:calls, :object], calls)
@@ -18,21 +18,27 @@ defmodule Exonerate.Filter.Required do
   end
 
   # if string is the only type, avoid the guard.
-  defp code(required, validation = %{types: [:object]}) do
-    quote do
-      defp unquote(name(validation))(object, path) when is_map(object) do
-        :ok
-      end
-    end
-  end
-
   defp code(required, validation) do
-    quote do
-      defp unquote(name(validation))(object, path) when is_map(object) do
-        :ok
+    {calls, funs} = required
+    |> Enum.with_index
+    |> Enum.map(fn {key, index} ->
+      subpath = Exonerate.path([to_string(index), "required" | validation.path])
+      {quote do
+        unquote(subpath)(object, keys, path)
+      end, quote do
+        defp unquote(subpath)(object, keys, path) do
+          unquote(key) in keys or Exonerate.mismatch(object, path)
+        end
+      end}
+    end)
+    |> Enum.unzip
+
+    [quote do
+      defp unquote(name(validation))(object, path) do
+        keys = Map.keys(object)
+        unquote_splicing(calls)
       end
-      defp unquote(name(validation))(_, _), do: :ok
-    end
+    end] ++ funs
   end
 
 end
