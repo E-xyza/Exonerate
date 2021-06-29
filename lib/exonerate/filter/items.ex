@@ -12,6 +12,11 @@ defmodule Exonerate.Filter.Items do
 
     children = code(schema, validation, :list) ++ validation.children
 
+    # raise if
+    if has_prefix_items?(validation) do
+      raise CompileError, description: "can't use list form of items with prefixItems"
+    end
+
     validation
     |> put_in([:collection_calls, :array], calls)
     |> put_in([:children], children)
@@ -23,7 +28,7 @@ defmodule Exonerate.Filter.Items do
     |> Map.get(:array, [])
     |> List.insert_at(0, name(validation))
 
-    children = code(schema, validation, :map) ++ validation.children
+    children = code(schema, validation, :schema) ++ validation.children
 
     validation
     |> put_in([:collection_calls, :array], calls)
@@ -58,13 +63,29 @@ defmodule Exonerate.Filter.Items do
     end] ++ funs
   end
 
-  defp code(schema, validation, :map) do
-    [quote do
-       defp unquote(name(validation))({item, index}, acc, path) do
-         unquote(name(validation))(item, Path.join(path, to_string(index)))
-         acc
-       end
-     end,
-     Exonerate.Validation.from_schema(schema, ["items" | validation.path])]
+  defp code(schema, validation, :schema) do
+    if has_prefix_items?(validation) do
+      [quote do
+        defp unquote(name(validation))({item, index}, acc, path) do
+          if (index >= acc.prefix_size) do
+            unquote(name(validation))(item, Path.join(path, to_string(index)))
+          end
+          acc
+        end
+        unquote(Exonerate.Validation.from_schema(schema, ["items" | validation.path]))
+      end]
+    else
+      [quote do
+        defp unquote(name(validation))({item, index}, acc, path) do
+          unquote(name(validation))(item, Path.join(path, to_string(index)))
+          acc
+        end
+        unquote(Exonerate.Validation.from_schema(schema, ["items" | validation.path]))
+      end]
+    end
+  end
+
+  defp has_prefix_items?(validation) do
+    Exonerate.path(["prefixItems" | validation.path]) in List.wrap(validation.collection_calls[:array])
   end
 end

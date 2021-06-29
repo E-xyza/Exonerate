@@ -82,7 +82,7 @@ defmodule ExonerateTest.AutomatedTests do
     quote do
       describe unquote(description!) do
         defschema([{unquote(schema_name), unquote(schema!)}])
-        unquote(test_blocks)
+        unquote_splicing(test_blocks)
       end
     end
   end
@@ -110,16 +110,12 @@ defmodule ExonerateTest.AutomatedTests do
     |> Path.join("draft2020-12/")
     |> Path.join(file)
 
-    q = path
+    path
     |> File.read!
     |> Jason.decode!
     |> Enum.with_index
     |> Enum.at(index)
     |> to_describe_block(path)
-
-    q |> Macro.to_string |> IO.puts
-
-    q
   end
 end
 
@@ -135,5 +131,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("allOf.json", 1)
+  ExonerateTest.AutomatedTests.make("uniqueItems.json", 2)
 end

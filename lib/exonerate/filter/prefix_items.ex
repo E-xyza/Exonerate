@@ -1,17 +1,21 @@
 defmodule Exonerate.Filter.PrefixItems do
   @behaviour Exonerate.Filter
 
-  @impl true
-  def append_filter(prefix, validation) when is_list(prefix) do
+  alias Exonerate.Type
+  require Type
+
+  # enumerated, tuple validation
+  def append_filter(schema, validation) when is_list(schema) do
     calls = validation.collection_calls
     |> Map.get(:array, [])
     |> List.insert_at(0, name(validation))
 
-    children = code(prefix, validation) ++ validation.children
+    children = code(schema, validation) ++ validation.children
 
     validation
     |> put_in([:collection_calls, :array], calls)
     |> put_in([:children], children)
+    |> put_in([:accumulator, :prefix_size], length(schema))
   end
 
   defp name(validation) do
@@ -21,8 +25,8 @@ defmodule Exonerate.Filter.PrefixItems do
     Exonerate.path([to_string(index), "prefixItems" | validation.path])
   end
 
-  defp code(prefix, validation) do
-    {calls, funs} = prefix
+  defp code(schema, validation) do
+    {calls, funs} = schema
     |> Enum.with_index
     |> Enum.map(fn {item_schema, index} ->
       {

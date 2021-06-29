@@ -160,11 +160,15 @@ defmodule Exonerate.Validation do
   end
 
   defp tag_reorder(a, a), do: true
-  # type, enum to the top; if, maxContains, minContains, additionalItems and additionalProperties to the bottom
+  # type, enum to the top;
+  # items, if, maxContains, minContains, additionalItems and additionalProperties to the bottom
   defp tag_reorder({"type", _}, _), do: true
   defp tag_reorder(_, {"type", _}), do: false
   defp tag_reorder({"enum", _}, _), do: true
   defp tag_reorder(_, {"enum", _}), do: false
+  #--------------------------------------------------------------------------------------------
+  defp tag_reorder({"items", _}, _), do: false
+  defp tag_reorder(_, {"items", _}), do: true
   defp tag_reorder({"if", _}, _), do: false
   defp tag_reorder(_, {"if", _}), do: true
   defp tag_reorder({"maxContains", _}, _), do: false
