@@ -27,7 +27,7 @@ defmodule Exonerate.Validation do
   @type t :: %__MODULE__{
     path: Path.t,
     guards: [Macro.t],
-    calls: %{(Type.t | :all) => [atom]},
+    calls: %{(Type.t | :then | :else | :all) => [atom]},
     collection_calls: %{(:array | :object) => [atom]},
     children: [Macro.t],
     accumulator: %{atom => boolean},
@@ -160,11 +160,13 @@ defmodule Exonerate.Validation do
   end
 
   defp tag_reorder(a, a), do: true
-  # type, enum to the top; maxContains, minContains, additionalItems and additionalProperties to the bottom
+  # type, enum to the top; if, maxContains, minContains, additionalItems and additionalProperties to the bottom
   defp tag_reorder({"type", _}, _), do: true
   defp tag_reorder(_, {"type", _}), do: false
   defp tag_reorder({"enum", _}, _), do: true
   defp tag_reorder(_, {"enum", _}), do: false
+  defp tag_reorder({"if", _}, _), do: false
+  defp tag_reorder(_, {"if", _}), do: true
   defp tag_reorder({"maxContains", _}, _), do: false
   defp tag_reorder(_, {"maxContains", _}), do: true
   defp tag_reorder({"minContains", _}, _), do: false

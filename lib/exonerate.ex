@@ -49,7 +49,7 @@ defmodule Exonerate do
       unquote(Validation.from_schema(schema, ["#{path}#!/"]))
     end
 
-    if Atom.to_string(path) =~ "test0" and __CALLER__.file =~ "prefixItems" do
+    if is_map(schema) and schema["if"] do
       q |> Macro.to_string |> IO.puts
     end
 

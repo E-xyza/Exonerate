@@ -2,30 +2,17 @@ defmodule Exonerate.Filter.Then do
   @behaviour Exonerate.Filter
 
   @impl true
-  def append_filter(format, validation) do
-    format |> IO.inspect(label: "6")
-    #calls = validation.collection_calls
-    #|> Map.get(:array, [])
-    #|> List.insert_at(0, name(validation))
-#
-    #children = code(maximum, validation) ++ validation.children
-#
-    #validation
-    #|> put_in([:collection_calls, :array], calls)
-    #|> put_in([:children], children)
+  def append_filter(schema, validation) do
     validation
+    |> put_in([:calls, :then], [name(validation)])
+    |> put_in([:children], [code(schema, validation) | validation.children])
   end
 
-  #defp name(validation) do
-  #  Exonerate.path(["maxItems" | validation.path])
-  #end
-#
-  #defp code(maximum, validation) do
-  #  [quote do
-  #     defp unquote(name(validation))({_, index}, acc, path) do
-  #       if index >= unquote(maximum), do: throw {:max, "maxItems"}
-  #       acc
-  #     end
-  #   end]
-  #end
+  defp name(validation) do
+    Exonerate.path(["then" | validation.path])
+  end
+
+  defp code(schema, validation) do
+    [Exonerate.Validation.from_schema(schema, ["then" | validation.path])]
+  end
 end
