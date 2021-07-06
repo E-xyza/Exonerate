@@ -6,87 +6,87 @@ defmodule Exonerate do
 
   alias Exonerate.Validator
 
-  # TODO: fill tihs out with more descriptive terms
-  @type error :: {:error, keyword}
-
-  defmacro defschema([{path, json} | opts]) do
-    #path = Keyword.get(opts, :path, [])
-
-    schema = json
-    |> Macro.expand(__CALLER__)
-    |> Jason.decode!
-
-    #docstr = """
-    #Defined by the jsonschema:
-    #```
-    ##{json}
-    #```
-    #"""
-
-    #docblock = quote do
-    #  if Module.get_attribute(__MODULE__, :schemadoc) do
-    #    @doc """
-    #    #{@schemadoc}
-    #    #{unquote(docstr)}
-    #    """
-    #  else
-    #    @doc unquote(docstr)
-    #  end
-    #end
-
-    state = %Validator{path: ["#{path}#!/"], full_schema: json}
-
-    q = quote do
-      unquote_splicing(id_special_ast(path, schema))
-      unquote_splicing(schema_special_ast(path, schema))
-      unquote_splicing(metadata_ast(path, schema))
-
-      def unquote(path)(value) do
-        unquote(:"#{path}#!/")(value, "/")
-        :ok
-      catch
-        error = {:error, list} -> error
-      end
-
-      unquote(Validation.from_schema(schema, state))
-    end
-
-    if Atom.to_string(path) =~ "test0" and __CALLER__.file =~ "unevaluatedItems.json" do
-      q |> Macro.to_string |> IO.puts
-    end
-
-    q
-  end
-
-  # special forms
-  defp id_special_ast(path, %{"$id" => id}) do
-    [quote do
-      def unquote(path)(:id), do: unquote(id)
-    end]
-  end
-  defp id_special_ast(_, _), do: []
-
-  defp schema_special_ast(path, %{"$schema" => schema}) do
-    [quote do
-      def unquote(path)(:schema), do: unquote(schema)
-    end]
-  end
-  defp schema_special_ast(_, _), do: []
-
-  @metadata_fields ~w(title description default examples)
-  defp metadata_ast(_path, bool) when is_boolean(bool), do: []
-  defp metadata_ast(path, schema_map) do
-    Enum.flat_map(@metadata_fields, fn field ->
-      if is_map_key(schema_map, field) do
-        symbol = String.to_atom(field)
-        [quote do
-          def unquote(path)(unquote(symbol)), do: unquote(schema_map[field])
-        end]
-      else
-        []
-      end
-    end)
-  end
+#  # TODO: fill tihs out with more descriptive terms
+#  @type error :: {:error, keyword}
+#
+#  defmacro defschema([{path, json} | opts]) do
+#    #path = Keyword.get(opts, :path, [])
+#
+#    schema = json
+#    |> Macro.expand(__CALLER__)
+#    |> Jason.decode!
+#
+#    #docstr = """
+#    #Defined by the jsonschema:
+#    #```
+#    ##{json}
+#    #```
+#    #"""
+#
+#    #docblock = quote do
+#    #  if Module.get_attribute(__MODULE__, :schemadoc) do
+#    #    @doc """
+#    #    #{@schemadoc}
+#    #    #{unquote(docstr)}
+#    #    """
+#    #  else
+#    #    @doc unquote(docstr)
+#    #  end
+#    #end
+#
+#    state = %Validator{path: ["#{path}#!/"], full_schema: json}
+#
+#    q = quote do
+#      unquote_splicing(id_special_ast(path, schema))
+#      unquote_splicing(schema_special_ast(path, schema))
+#      unquote_splicing(metadata_ast(path, schema))
+#
+#      def unquote(path)(value) do
+#        unquote(:"#{path}#!/")(value, "/")
+#        :ok
+#      catch
+#        error = {:error, list} -> error
+#      end
+#
+#      unquote(Validation.from_schema(schema, state))
+#    end
+#
+#    if Atom.to_string(path) =~ "test0" and __CALLER__.file =~ "unevaluatedItems.json" do
+#      q |> Macro.to_string |> IO.puts
+#    end
+#
+#    q
+#  end
+#
+#  # special forms
+#  defp id_special_ast(path, %{"$id" => id}) do
+#    [quote do
+#      def unquote(path)(:id), do: unquote(id)
+#    end]
+#  end
+#  defp id_special_ast(_, _), do: []
+#
+#  defp schema_special_ast(path, %{"$schema" => schema}) do
+#    [quote do
+#      def unquote(path)(:schema), do: unquote(schema)
+#    end]
+#  end
+#  defp schema_special_ast(_, _), do: []
+#
+#  @metadata_fields ~w(title description default examples)
+#  defp metadata_ast(_path, bool) when is_boolean(bool), do: []
+#  defp metadata_ast(path, schema_map) do
+#    Enum.flat_map(@metadata_fields, fn field ->
+#      if is_map_key(schema_map, field) do
+#        symbol = String.to_atom(field)
+#        [quote do
+#          def unquote(path)(unquote(symbol)), do: unquote(schema_map[field])
+#        end]
+#      else
+#        []
+#      end
+#    end)
+#  end
 
   #################################################################
   ## PRIVATE HELPER FUNCTIONS

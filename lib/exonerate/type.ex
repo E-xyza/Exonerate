@@ -1,30 +1,34 @@
 defmodule Exonerate.Type do
- @type json ::
-   %{optional(String.t) => json}
-   | list(json)
-   | String.t
-   | number
-   | boolean
-   | nil
+  @type json ::
+    %{optional(String.t) => json}
+    | list(json)
+    | String.t
+    | number
+    | boolean
+    | nil
 
   # a JsonSchema must be either true, false, or a json map.
   @type schema :: boolean | %{optional(String.t) => json}
 
-  @type t :: :string | :integer | :number | :object | :array | :boolean | :null
+  alias Exonerate.Type.{Array, Boolean, Null, Integer, Number, Object, String}
+
+  @type t :: String | Integer | Number | Object | Array | Boolean | Null
 
   @guards %{
-    string: :is_binary,
-    integer: :is_integer,
-    number: :is_number,
-    object: :is_map,
-    array: :is_list,
-    boolean: :is_boolean,
-    null: :is_nil
+    String => :is_binary,
+    Integer => :is_integer,
+    Number => :is_number,
+    Object => :is_map,
+    Array => :is_list,
+    Boolean => :is_boolean,
+    Null => :is_nil
   }
 
   def guard(type), do: Map.fetch!(@guards, type)
 
   defguard is_schema(schema) when is_map(schema) or is_boolean(schema)
+
+  def all, do: [String, Integer, Number, Object, Array, Boolean, Null]
 
   def of(string) when is_binary(string), do: "string"
   def of(integer) when is_integer(integer), do: "integer"
