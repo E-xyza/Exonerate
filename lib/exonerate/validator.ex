@@ -5,7 +5,7 @@ defmodule Exonerate.Validator do
   @enforce_keys [:pointer, :schema]
 
   defstruct @enforce_keys ++ [
-    boolean: nil,
+    context: nil,
     required_refs: [],
 #    guards: [],
 #    calls: %{},
@@ -20,7 +20,6 @@ defmodule Exonerate.Validator do
     # global state
     pointer: Pointer.t,
     schema: Type.schema,
-    boolean: nil | boolean,
     required_refs: [[String.t]],
     # local state
 #    path: [String.t],
@@ -39,22 +38,41 @@ defmodule Exonerate.Validator do
     %__MODULE__{schema: schema, pointer: pointer}
   end
 
-  @spec parse(Type.json, Pointer.t) :: t
-  def parse(schema, pointer) do
+  @spec parse(Type.json, Pointer.t, keyword) :: t
+  def parse(schema, pointer, opts \\ []) do
     pointer
     |> Pointer.eval(schema)
     |> analyze(schema, pointer)
+    |> struct(opts)
   end
 
   @spec analyze(Type.schema, Type.json, Pointer.t) :: t
   defp analyze(bool, schema, path) when is_boolean(bool) do
-    %{new(schema, path) | boolean: bool}
+    new(schema, path)
   end
   defp analyze(inner_schema, schema, path) when is_map(inner_schema) do
     new(schema, path)
   end
   defp analyze(invalid, _, _) do
     raise ArgumentError, "#{inspect invalid} is not a valid JSONSchema"
+  end
+
+  @spec compile(t) :: Macro.t
+  def compile(%__MODULE__{pointer: pointer, schema: schema, context: context}) do
+    case Pointer.eval(pointer, schema) do
+      true ->
+        quote do
+          def unquote(Pointer.to_fun(pointer, context: context))(_, _), do: :ok
+        end
+      false ->
+        quote do
+          def unquote(Pointer.to_fun(pointer, context: context))(value, path) do
+            Exonerate.mismatch(value, path)
+          end
+        end
+      object when is_map(object) ->
+        quote do end
+    end
   end
 
 

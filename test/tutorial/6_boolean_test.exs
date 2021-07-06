@@ -17,9 +17,9 @@ defmodule ExonerateTest.Tutorial.BooleanTest do
 
     https://json-schema.org/understanding-json-schema/boolean.html#boolean
     """
-    import Exonerate
 
-    defschema boolean: ~s({ "type": "boolean" })
+    require Exonerate
+    Exonerate.function_from_string(:def, :boolean, ~s({ "type": "boolean" }))
   end
 
   describe "the boolean test" do

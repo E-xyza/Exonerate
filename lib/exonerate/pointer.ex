@@ -7,23 +7,28 @@ defmodule Exonerate.Pointer do
   @type t :: [String.t]
   alias Exonerate.Type
 
-  @spec to_fun(path :: t) :: atom
+  @spec to_fun(path :: t, keyword) :: atom
   @doc """
   creates a function call for a specific JSONPointer.
+
+  options:
+  - context: prepends a context to the uri
 
   ```elixir
   iex> alias Exonerate.Pointer
   iex> Pointer.to_fun(["foo", "bar"])
-  :"#/bar/foo"
+  :"/bar/foo"
   iex> Pointer.to_fun(["foo~bar", "baz"])
-  :"#/baz/foo~0bar"
+  :"/baz/foo~0bar"
   iex> Pointer.to_fun(["€", "currency"])
-  :"#/currency/%E2%82%AC"
+  :"/currency/%E2%82%AC"
+  iex> Pointer.to_uri([], context: "foo")
+  :"foo/"
   ```
   """
-  def to_fun(path) do
+  def to_fun(path, opts \\ []) do
     path
-    |> to_uri
+    |> to_uri(opts)
     |> String.to_atom
   end
 
@@ -33,43 +38,55 @@ defmodule Exonerate.Pointer do
 
   ```elixir
   iex> alias Exonerate.Pointer
-  iex> Pointer.from_uri("#/bar/foo")
+  iex> Pointer.from_uri("/") # the root-only case
+  []
+  iex> Pointer.from_uri("/bar/foo")
   ["foo", "bar"]
-  iex> Pointer.from_uri("#/baz/foo~0bar")
+  iex> Pointer.from_uri("/baz/foo~0bar")
   ["foo~bar", "baz"]
-  iex> Pointer.from_uri("#/currency/%E2%82%AC")
+  iex> Pointer.from_uri("/currency/%E2%82%AC")
   ["€", "currency"]
   ```
   """
-  def from_uri("#/" <> rest) do
+  def from_uri("/" <> rest) do
     rest
     |> URI.decode()
     |> String.split("/")
     |> Enum.map(&deescape/1)
     |> Enum.reverse
+    |> case do
+      [""] -> []
+      pointer -> pointer
+    end
   end
 
-  @spec to_uri(t) :: String.t
+  @spec to_uri(t, keyword) :: String.t
   @doc """
-  creates a JSONPointer to its URI equivalent
+  creates a JSONPointer to its URI equivalent.
+
+  options
+  - context: prepends a context to the uri.
 
   ```elixir
   iex> alias Exonerate.Pointer
   iex> Pointer.to_uri(["foo", "bar"])
-  "#/bar/foo"
+  "/bar/foo"
   iex> Pointer.to_uri(["foo~bar", "baz"])
-  "#/baz/foo~0bar"
+  "/baz/foo~0bar"
   iex> Pointer.to_uri(["€", "currency"])
-  "#/currency/%E2%82%AC"
+  "/currency/%E2%82%AC"
+  iex> Pointer.to_uri([], context: "foo")
+  "foo#/"
   ```
   """
-  def to_uri(path) do
+  def to_uri(path, opts \\ []) do
     str = path
     |> Enum.reverse
     |> Enum.map(&escape/1)
     |> Enum.map(&URI.encode/1)
     |> Enum.join("/")
-    "#/" <> str
+
+    IO.iodata_to_binary([List.wrap(opts[:context]), "/", str])
   end
 
   @spec eval(pointer :: t, data :: Type.json) :: Type.json

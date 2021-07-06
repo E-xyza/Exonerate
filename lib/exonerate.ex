@@ -5,6 +5,40 @@ defmodule Exonerate do
   """
 
   alias Exonerate.Validator
+  alias Exonerate.Pointer
+
+  defmacro function_from_string(type, name, schema, opts \\ [])
+  defmacro function_from_string(:def, name, schema, opts) do
+    entrypoint = opts
+    |> Keyword.get(:entrypoint, "/")
+    |> Pointer.from_uri
+
+    opts = Keyword.merge(opts, context: Atom.to_string(name) <> "#")
+
+    impl = schema
+    |> Macro.expand(__CALLER__)
+    |> Jason.decode!
+    |> Validator.parse(entrypoint, opts)
+    |> Validator.compile
+
+    quote do
+      @spec unquote(name)(map) :: :ok |
+        {:error, [
+          schema_pointer: Path.t,
+          error_value: term,
+          json_pointer: Path.t
+        ]}
+      def unquote(name)(value) do
+        try do
+          unquote(Pointer.to_fun(entrypoint, opts))(value, "/")
+        catch
+          error = {:error, e} when is_list(e) -> error
+        end
+      end
+
+      unquote(impl)
+    end |> Exonerate.Tools.inspect
+  end
 
 #  # TODO: fill tihs out with more descriptive terms
 #  @type error :: {:error, keyword}
@@ -107,9 +141,9 @@ defmodule Exonerate do
 
     quote do
       throw {:error,
-      schema_path: unquote(schema_path!),
+      schema_pointer: unquote(schema_path!),
       error_value: unquote(value),
-      json_path: unquote(path)}
+      json_pointer: unquote(path)}
     end
   end
 end
