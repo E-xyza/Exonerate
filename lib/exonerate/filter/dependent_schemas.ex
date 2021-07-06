@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.DependentSchemas do
   end
 
   defp name(validation) do
-    Exonerate.path(["dependentSchemas" | validation.path])
+    Exonerate.path_to_call(["dependentSchemas" | validation.path])
   end
 
   # TODO: guard when object is the only type
@@ -30,7 +30,7 @@ defmodule Exonerate.Filter.DependentSchemas do
         next_path = [key, "dependentSchemas" | validation.path]
         {quote do
           defp unquote(name(validation))(object = %{unquote(key) => _}, path) do
-            unquote(Exonerate.path(next_path))(object, path)
+            unquote(Exonerate.path_to_call(next_path))(object, path)
           end
         end,
         Exonerate.Validation.from_schema(schema, next_path)

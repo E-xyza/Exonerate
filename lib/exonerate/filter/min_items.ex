@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.MinItems do
   end
 
   defp name(validation) do
-    Exonerate.path(["minItems" | validation.path])
+    Exonerate.path_to_call(["minItems" | validation.path])
   end
 
   defp code(minimum, validation) do

@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.DependentRequired do
   end
 
   defp name(validation) do
-    Exonerate.path(["dependentRequired" | validation.path])
+    Exonerate.path_to_call(["dependentRequired" | validation.path])
   end
 
   defp code(dependencies, validation) do

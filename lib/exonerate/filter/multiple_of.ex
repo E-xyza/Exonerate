@@ -7,7 +7,7 @@ defmodule Exonerate.Filter.MultipleOf do
 
   defp code(factor, validation = %{types: [:integer]}) do
     quote do
-      defp unquote(Exonerate.path(validation.path))(integer, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(integer, path)
         when rem(integer, unquote(factor)) != 0 do
           Exonerate.mismatch(integer, path, guard: "multipleOf")
       end
@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.MultipleOf do
 
   defp code(factor, validation) do
     quote do
-      defp unquote(Exonerate.path(validation.path))(integer, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(integer, path)
         when is_integer(integer) and rem(integer, unquote(factor)) != 0 do
           Exonerate.mismatch(integer, path, guard: "multipleOf")
       end

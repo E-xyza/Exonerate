@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.PropertyNames do
   end
 
   defp name(validation) do
-    Exonerate.path(["propertyNames" | validation.path])
+    Exonerate.path_to_call(["propertyNames" | validation.path])
   end
 
   defp code(_schema, validation) do

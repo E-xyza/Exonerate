@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.Contains do
   end
 
   defp name(validation) do
-    Exonerate.path(["contains" | validation.path])
+    Exonerate.path_to_call(["contains" | validation.path])
   end
 
   defp code(schema, validation) do

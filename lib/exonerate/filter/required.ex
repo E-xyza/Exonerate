@@ -14,7 +14,7 @@ defmodule Exonerate.Filter.Required do
   end
 
   defp name(validation) do
-    Exonerate.path(["required" | validation.path])
+    Exonerate.path_to_call(["required" | validation.path])
   end
 
   # if string is the only type, avoid the guard.
@@ -22,7 +22,7 @@ defmodule Exonerate.Filter.Required do
     {calls, funs} = required
     |> Enum.with_index
     |> Enum.map(fn {key, index} ->
-      subpath = Exonerate.path([to_string(index), "required" | validation.path])
+      subpath = Exonerate.path_to_call([to_string(index), "required" | validation.path])
       {quote do
         unquote(subpath)(object, keys, path)
       end, quote do

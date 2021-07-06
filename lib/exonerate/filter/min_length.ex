@@ -14,7 +14,7 @@ defmodule Exonerate.Filter.MinLength do
   end
 
   defp name(validation) do
-    Exonerate.path(["minLength" | validation.path])
+    Exonerate.path_to_call(["minLength" | validation.path])
   end
 
   # if string is the only type, avoid the guard.

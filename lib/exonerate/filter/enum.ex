@@ -16,13 +16,13 @@ defmodule Exonerate.Filter.Enum do
     # this is due to a bug in erlang compiler.
     true_escape = if true in enum do
       quote do
-        defp unquote(Exonerate.path(validation.path))(true, path), do: :ok
+        defp unquote(Exonerate.path_to_call(validation.path))(true, path), do: :ok
       end
     end
 
     quote do
       unquote(true_escape)
-      defp unquote(Exonerate.path(validation.path))(value, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(value, path)
         when value not in unquote(Macro.escape(enum -- [true])) do
           Exonerate.mismatch(value, path, guard: "enum")
       end

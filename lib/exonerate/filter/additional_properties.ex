@@ -14,7 +14,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
   end
 
   defp name(validation) do
-    Exonerate.path(["additionalProperties" | validation.path])
+    Exonerate.path_to_call(["additionalProperties" | validation.path])
   end
 
   defp code(schema, validation) do

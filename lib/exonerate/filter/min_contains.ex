@@ -9,12 +9,12 @@ defmodule Exonerate.Filter.MinContains do
   end
 
   defp name(validation) do
-    Exonerate.path(["minContains" | validation.path])
+    Exonerate.path_to_call(["minContains" | validation.path])
   end
 
   # minContains overrides the contains value.
   defp contains(validation) do
-    [Exonerate.path(["contains" | validation.path])]
+    [Exonerate.path_to_call(["contains" | validation.path])]
   end
 
   defp code(minimum, validation) do

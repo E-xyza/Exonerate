@@ -7,7 +7,7 @@ defmodule Exonerate.Filter.MaxProperties do
 
   defp code(maximum, validation = %{types: [:object]}) do
     quote do
-      defp unquote(Exonerate.path(validation.path))(map, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(map, path)
         when :erlang.map_size(map) > unquote(maximum) do
           Exonerate.mismatch(map, path, guard: "maxProperties")
       end
@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.MaxProperties do
 
   defp code(maximum, validation) do
     quote do
-      defp unquote(Exonerate.path(validation.path))(map, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(map, path)
         when is_map(map) and :erlang.map_size(map) > unquote(maximum) do
           Exonerate.mismatch(map, path, guard: "maxProperties")
       end

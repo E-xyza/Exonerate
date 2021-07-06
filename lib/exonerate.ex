@@ -4,7 +4,7 @@ defmodule Exonerate do
     creates the defschema macro.
   """
 
-  alias Exonerate.Validation
+  alias Exonerate.Validator
 
   # TODO: fill tihs out with more descriptive terms
   @type error :: {:error, keyword}
@@ -34,6 +34,8 @@ defmodule Exonerate do
     #  end
     #end
 
+    state = %Validator{path: ["#{path}#!/"], full_schema: json}
+
     q = quote do
       unquote_splicing(id_special_ast(path, schema))
       unquote_splicing(schema_special_ast(path, schema))
@@ -46,10 +48,10 @@ defmodule Exonerate do
         error = {:error, list} -> error
       end
 
-      unquote(Validation.from_schema(schema, ["#{path}#!/"]))
+      unquote(Validation.from_schema(schema, state))
     end
 
-    if Atom.to_string(path) =~ "test2" do
+    if Atom.to_string(path) =~ "test0" and __CALLER__.file =~ "unevaluatedItems.json" do
       q |> Macro.to_string |> IO.puts
     end
 
@@ -89,20 +91,6 @@ defmodule Exonerate do
   #################################################################
   ## PRIVATE HELPER FUNCTIONS
 
-  @spec join(atom, String.t | nil) :: atom
-  @spec join(Path.t, String.t | nil) :: Path.t
-  @doc false
-  def join(path, nil), do: path
-  def join(path, subpath) when is_atom(path) do
-    path
-    |> Atom.to_string
-    |> join(subpath)
-    |> String.to_atom
-  end
-  def join(path, subpath) do
-    Path.join(path, subpath)
-  end
-
   @doc false
   defmacro mismatch(value, path, opts \\ []) do
     schema_path! = __CALLER__.function
@@ -123,12 +111,5 @@ defmodule Exonerate do
       error_value: unquote(value),
       json_path: unquote(path)}
     end
-  end
-
-  def path(schema_path) do
-    schema_path
-    |> Enum.reverse
-    |> Path.join
-    |> String.to_atom
   end
 end

@@ -19,10 +19,10 @@ defmodule Exonerate.Filter.PrefixItems do
   end
 
   defp name(validation) do
-    Exonerate.path(["prefixItems" | validation.path])
+    Exonerate.path_to_call(["prefixItems" | validation.path])
   end
   defp name(validation, index) do
-    Exonerate.path([to_string(index), "prefixItems" | validation.path])
+    Exonerate.path_to_call([to_string(index), "prefixItems" | validation.path])
   end
 
   defp code(schema, validation) do

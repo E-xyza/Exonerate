@@ -7,7 +7,7 @@ defmodule Exonerate.Filter.MinProperties do
 
   defp code(minimum, validation = %{types: [:object]}) do
     quote do
-      defp unquote(Exonerate.path(validation.path))(map, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(map, path)
         when :erlang.map_size(map) < unquote(minimum) do
           Exonerate.mismatch(map, path, guard: "minProperties")
       end
@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.MinProperties do
 
   defp code(minimum, validation) do
     quote do
-      defp unquote(Exonerate.path(validation.path))(map, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(map, path)
         when is_map(map) and :erlang.map_size(map) < unquote(minimum) do
           Exonerate.mismatch(map, path, guard: "minProperties")
       end

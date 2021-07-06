@@ -15,7 +15,7 @@ defmodule Exonerate.Filter.MaxContains do
   end
 
   defp name(validation) do
-    Exonerate.path(["maxContains" | validation.path])
+    Exonerate.path_to_call(["maxContains" | validation.path])
   end
 
   defp code(maximum, validation) do

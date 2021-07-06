@@ -14,7 +14,7 @@ defmodule Exonerate.Filter.Pattern do
   end
 
   defp name(validation) do
-    Exonerate.path(["pattern" | validation.path])
+    Exonerate.path_to_call(["pattern" | validation.path])
   end
 
   # if string is the only type, avoid the guard.

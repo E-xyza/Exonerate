@@ -36,10 +36,10 @@ defmodule Exonerate.Filter.Items do
   end
 
   defp name(validation) do
-    Exonerate.path(["items" | validation.path])
+    Exonerate.path_to_call(["items" | validation.path])
   end
   defp name(validation, index) do
-    Exonerate.path([to_string(index), "items" | validation.path])
+    Exonerate.path_to_call([to_string(index), "items" | validation.path])
   end
 
   defp code(schema, validation, :list) do
@@ -86,6 +86,6 @@ defmodule Exonerate.Filter.Items do
   end
 
   defp has_prefix_items?(validation) do
-    Exonerate.path(["prefixItems" | validation.path]) in List.wrap(validation.collection_calls[:array])
+    Exonerate.path_to_call(["prefixItems" | validation.path]) in List.wrap(validation.collection_calls[:array])
   end
 end

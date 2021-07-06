@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.PatternProperties do
   end
 
   defp name(validation) do
-    Exonerate.path(["patternProperties" | validation.path])
+    Exonerate.path_to_call(["patternProperties" | validation.path])
   end
 
   defp code(object, validation) do
@@ -27,12 +27,12 @@ defmodule Exonerate.Filter.PatternProperties do
         subpath = [pattern, "patternProperties" | validation.path]
 
         {quote do
-           acc = unquote(Exonerate.path(subpath))(key, value, acc, Path.join(path, key))
+           acc = unquote(Exonerate.path_to_call(subpath))(key, value, acc, Path.join(path, key))
          end,
          quote do
-           defp unquote(Exonerate.path(subpath))(key, value, acc, path) do
+           defp unquote(Exonerate.path_to_call(subpath))(key, value, acc, path) do
              if Regex.match?(sigil_r(<<unquote(pattern)>>, []), key) do
-               unquote(Exonerate.path(subpath))(value, path)
+               unquote(Exonerate.path_to_call(subpath))(value, path)
                true
              else
                acc

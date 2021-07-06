@@ -3,7 +3,6 @@ defmodule Exonerate.Filter.ContentEncoding do
 
   @impl true
   def append_filter(encoding, validation) do
-    encoding |> IO.inspect(label: "6")
     #calls = validation.collection_calls
     #|> Map.get(:array, [])
     #|> List.insert_at(0, name(validation))
@@ -17,7 +16,7 @@ defmodule Exonerate.Filter.ContentEncoding do
   end
 
   #defp name(validation) do
-  #  Exonerate.path(["maxItems" | validation.path])
+  #  Exonerate.path_to_call(["maxItems" | validation.path])
   #end
 #
   #defp code(maximum, validation) do

@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.If do
   end
 
   defp name(validation) do
-    Exonerate.path(["if" | validation.path])
+    Exonerate.path_to_call(["if" | validation.path])
   end
 
   defp then_clause(validation) do
@@ -41,7 +41,7 @@ defmodule Exonerate.Filter.If do
     [quote do
        defp unquote(name(validation))(value, path) do
          result = try do
-           unquote(Exonerate.path(shim))(value, path)
+           unquote(Exonerate.path_to_call(shim))(value, path)
            true
          catch
            {:error, _} -> false

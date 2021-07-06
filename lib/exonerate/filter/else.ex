@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.Else do
   end
 
   defp name(validation) do
-    Exonerate.path(["else" | validation.path])
+    Exonerate.path_to_call(["else" | validation.path])
   end
 
   defp code(schema, validation) do

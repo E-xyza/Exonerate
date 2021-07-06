@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.Minimum do
 
   defp code(minimum, validation = %{types: types}) when types in @numeric_types do
     quote do
-      defp unquote(Exonerate.path(validation.path))(number, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(number, path)
         when number < unquote(minimum) do
           Exonerate.mismatch(number, path, guard: "minimum")
       end
@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.Minimum do
 
   defp code(minimum, validation) do
     quote do
-      defp unquote(Exonerate.path(validation.path))(number, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(number, path)
         when is_number(number) and number < unquote(minimum) do
           Exonerate.mismatch(number, path, guard: "minimum")
       end

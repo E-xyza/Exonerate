@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.OneOf do
   end
 
   def name(validation) do
-    Exonerate.path(["oneOf" | validation.path])
+    Exonerate.path_to_call(["oneOf" | validation.path])
   end
 
   def code(schema, validation) do
@@ -26,7 +26,7 @@ defmodule Exonerate.Filter.OneOf do
     |> Enum.map(fn {subschema, index} ->
       subpath = [to_string(index) , "oneOf" | validation.path]
       {
-        {:&, [], [{:/, [], [{Exonerate.path(subpath), [], Elixir}, 2]}]},
+        {:&, [], [{:/, [], [{Exonerate.path_to_call(subpath), [], Elixir}, 2]}]},
         Exonerate.Validation.from_schema(subschema, subpath)
       }
     end)
@@ -39,7 +39,7 @@ defmodule Exonerate.Filter.OneOf do
             fun.(value, path)
           catch
             {:error, _} -> false
-          end 
+          end
         end)
         if (count == 1), do: :ok, else: Exonerate.mismatch(value, path)
       end

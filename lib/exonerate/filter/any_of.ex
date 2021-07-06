@@ -17,16 +17,16 @@ defmodule Exonerate.Filter.AnyOf do
   end
 
   def name(validation) do
-    Exonerate.path(["anyOf" | validation.path])
+    Exonerate.path_to_call(["anyOf" | validation.path])
   end
 
   def code(schema, validation) do
-    {calls, funs} = schema
+    {{calls, funs}, new_validation} = schema
     |> Enum.with_index
-    |> Enum.map(fn {subschema, index} ->
+    |> Enum.map_reduce(fn {subschema, index} ->
       subpath = [to_string(index) , "anyOf" | validation.path]
       {
-        {:&, [], [{:/, [], [{Exonerate.path(subpath), [], Elixir}, 2]}]},
+        {:&, [], [{:/, [], [{Exonerate.path_to_call(subpath), [], Elixir}, 2]}]},
         Exonerate.Validation.from_schema(subschema, subpath)
       }
     end)

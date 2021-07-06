@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.Properties do
   end
 
   defp name(validation) do
-    Exonerate.path(["properties" | validation.path])
+    Exonerate.path_to_call(["properties" | validation.path])
   end
 
   defp code(object, validation) do
@@ -26,7 +26,7 @@ defmodule Exonerate.Filter.Properties do
       key_path = [key, "properties" | validation.path]
       {quote do
         defp unquote(name(validation))({unquote(key), value}, _acc, path) do
-          unquote(Exonerate.path(key_path))(value, Path.join(path, unquote(key)))
+          unquote(Exonerate.path_to_call(key_path))(value, Path.join(path, unquote(key)))
           true
         end
       end,

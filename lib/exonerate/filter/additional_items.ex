@@ -15,7 +15,7 @@ defmodule Exonerate.Filter.AdditionalItems do
   end
 
   defp name(validation) do
-    Exonerate.path(["additionalItems" | validation.path])
+    Exonerate.path_to_call(["additionalItems" | validation.path])
   end
 
   defp code(schema, validation) do

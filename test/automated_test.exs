@@ -3,7 +3,7 @@ defmodule ExonerateTest.AutomatedTests do
   |> Path.join("draft2020-12")
   |> Path.expand()
 
-  @omit ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json items.json ref.json
+  @omit ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json items.json
     refRemote.json unevaluatedItems.json unevaluatedProperties.json)
 
   @test_omissions [

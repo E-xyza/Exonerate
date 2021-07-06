@@ -14,7 +14,7 @@ defmodule Exonerate.Filter.MaxLength do
   end
 
   defp name(validation) do
-    Exonerate.path(["maxLength" | validation.path])
+    Exonerate.path_to_call(["maxLength" | validation.path])
   end
 
   # if string is the only type, avoid the guard.

@@ -13,7 +13,7 @@ defmodule Exonerate.Filter.Const do
   defp code(const, validation) do
     # TODO: DO MORE SOPHISTICATED TYPE FILTERING HERE.
     quote do
-      defp unquote(Exonerate.path(validation.path))(value, path)
+      defp unquote(Exonerate.path_to_call(validation.path))(value, path)
         when value != unquote(Macro.escape(const)) do
           Exonerate.mismatch(value, path, guard: "const")
       end

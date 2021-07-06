@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.UniqueItems do
   def append_filter(false, validation), do: validation
 
   defp name(validation) do
-    Exonerate.path(["uniqueItems" | validation.path])
+    Exonerate.path_to_call(["uniqueItems" | validation.path])
   end
 
   defp code(validation) do

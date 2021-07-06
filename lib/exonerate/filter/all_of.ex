@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.AllOf do
   end
 
   def name(validation) do
-    Exonerate.path(["allOf" | validation.path])
+    Exonerate.path_to_call(["allOf" | validation.path])
   end
 
   def code(schema, validation) do
@@ -26,7 +26,7 @@ defmodule Exonerate.Filter.AllOf do
     |> Enum.map(fn {subschema, index} ->
       subpath = [to_string(index) , "allOf" | validation.path]
       {
-        quote do unquote(Exonerate.path(subpath))(value, path) end,
+        quote do unquote(Exonerate.path_to_call(subpath))(value, path) end,
         Exonerate.Validation.from_schema(subschema, subpath)
       }
     end)

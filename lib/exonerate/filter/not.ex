@@ -17,11 +17,11 @@ defmodule Exonerate.Filter.Not do
   end
 
   def name(validation) do
-    Exonerate.path(["not" | validation.path])
+    Exonerate.path_to_call(["not" | validation.path])
   end
 
   def code(inversion, validation) do
-    inner_path = Exonerate.path(["not_" | validation.path])
+    inner_path = Exonerate.path_to_call(["not_" | validation.path])
     [quote do
       def unquote(name(validation))(inversion, path) do
         result = try do
