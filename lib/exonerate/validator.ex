@@ -71,7 +71,11 @@ defmodule Exonerate.Validator do
           end
         end
       object when is_map(object) ->
-        quote do end
+        quote do
+          def unquote(Pointer.to_fun(pointer, context: context))(value, path) do
+            :ok
+          end
+        end
     end
   end
 

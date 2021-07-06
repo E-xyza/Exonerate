@@ -19,17 +19,17 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     """
     require Exonerate
 
-#    defschema helloworld1: "{}"
+    Exonerate.function_from_string(:def, :helloworld1, "{}")
     Exonerate.function_from_string(:def, :helloworld2, "true")
     Exonerate.function_from_string(:def, :helloworld3, "false")
   end
 
   describe "the hello world basic test" do
-#    test "empty object matches everything" do
-#      assert :ok = HelloWorld.helloworld1(42)
-#      assert :ok = HelloWorld.helloworld1("i'm a string")
-#      assert :ok = HelloWorld.helloworld1(%{ "an" => [ "arbitrarily", "nested" ], "data" => "structure" })
-#    end
+    test "empty object matches everything" do
+      assert :ok = HelloWorld.helloworld1(42)
+      assert :ok = HelloWorld.helloworld1("i'm a string")
+      assert :ok = HelloWorld.helloworld1(%{ "an" => [ "arbitrarily", "nested" ], "data" => "structure" })
+    end
 
     test "true matches everything" do
       assert :ok = HelloWorld.helloworld2(42)
