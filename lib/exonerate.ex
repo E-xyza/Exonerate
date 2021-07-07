@@ -3,26 +3,41 @@ defmodule Exonerate do
   alias Exonerate.Pointer
 
   defmacro function_from_string(type, name, schema, opts \\ [])
-  defmacro function_from_string(:def, name, schema, opts) do
+  defmacro function_from_string(:def, name, schema_json, opts) do
     entrypoint = opts
     |> Keyword.get(:entrypoint, "/")
     |> Pointer.from_uri
 
     opts = Keyword.merge(opts, context: Atom.to_string(name) <> "#")
 
-    impl = schema
+    schema_erl = schema_json
     |> Macro.expand(__CALLER__)
     |> Jason.decode!
+
+    impl = schema_erl
     |> Validator.parse(entrypoint, opts)
     |> Validator.compile
 
+    json_type = {:"#{name}_json", [], []}
+
     quote do
-      @spec unquote(name)(map) :: :ok |
+      @typep unquote(json_type) ::
+        bool
+        | nil
+        | number
+        | String.t
+        | [unquote(json_type)]
+        | %{String.t => unquote(json_type)}
+
+      @spec unquote(name)(unquote(json_type)) :: :ok |
         {:error, [
           schema_pointer: Path.t,
           error_value: term,
           json_pointer: Path.t
         ]}
+
+      unquote_splicing(metadata_functions(name, schema_erl, entrypoint))
+
       def unquote(name)(value) do
         try do
           unquote(Pointer.to_fun(entrypoint, opts))(value, "/")
@@ -33,6 +48,24 @@ defmodule Exonerate do
 
       unquote(impl)
     end # |> Exonerate.Tools.inspect
+  end
+
+  @metadata_call %{"$id" => :id, "$schema" => :schema}
+  @metadata_keys Map.keys(@metadata_call)
+  defp metadata_functions(name, schema, entrypoint) do
+    case Pointer.eval(entrypoint, schema) do
+      bool when is_boolean(bool) -> []
+      map when is_map(map) ->
+        for {k, v} when k in @metadata_keys <- map do
+          call = @metadata_call[k]
+          quote do
+            @spec unquote(name)(unquote(call)) :: String.t
+            def unquote(name)(unquote(call)) do
+              unquote(v)
+            end
+          end
+        end
+    end
   end
 
   #################################################################

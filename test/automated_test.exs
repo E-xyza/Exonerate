@@ -1,6 +1,6 @@
 defmodule ExonerateTest.AutomatedTests do
   @test_base_dir __DIR__
-  |> Path.join("draft2020-12")
+  |> Path.join("_draft2020-12")
   |> Path.expand()
 
   @omit ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json items.json

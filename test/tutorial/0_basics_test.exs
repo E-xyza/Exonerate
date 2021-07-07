@@ -69,37 +69,37 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     end
   end
 
-#  defmodule JsonSchema do
-#    @moduledoc """
-#    tests from:
-#
-#    https://json-schema.org/understanding-json-schema/basics.html#declaring-a-json-schema
-#    """
-#    import Exonerate
-#
-#    defschema schema: ~s({"$schema": "http://json-schema.org/schema#"})
-#  end
-#
-#  describe "the schema keyword test" do
-#    test "schema can be retrieved" do
-#      assert "http://json-schema.org/schema#" = JsonSchema.schema(:schema)
-#    end
-#  end
-#
-#  defmodule ID do
-#    @moduledoc """
-#    tests from:
-#
-#    https://json-schema.org/understanding-json-schema/basics.html#declaring-a-unique-identifier
-#    """
-#    import Exonerate
-#
-#    defschema id: ~s({"$id": "http://yourdomain.com/schemas/myschema.json"})
-#  end
-#
-#  describe "the id keyword test" do
-#    test "id can be retrieved" do
-#      assert "http://yourdomain.com/schemas/myschema.json" = ID.id(:id)
-#    end
-#  end
+  defmodule JsonSchema do
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/basics.html#declaring-a-json-schema
+    """
+    import Exonerate
+
+    Exonerate.function_from_string(:def, :schema, ~s({"$schema": "http://json-schema.org/schema#"}))
+  end
+
+  describe "the schema keyword test" do
+    test "schema can be retrieved" do
+      assert "http://json-schema.org/schema#" = JsonSchema.schema(:schema)
+    end
+  end
+
+  defmodule ID do
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/basics.html#declaring-a-unique-identifier
+    """
+    import Exonerate
+
+    Exonerate.function_from_string(:def, :id, ~s({"$id": "http://yourdomain.com/schemas/myschema.json"}))
+  end
+
+  describe "the id keyword test" do
+    test "id can be retrieved" do
+      assert "http://yourdomain.com/schemas/myschema.json" = ID.id(:id)
+    end
+  end
 end
