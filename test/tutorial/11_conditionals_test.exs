@@ -12,7 +12,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#property-dependencies
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema dependency1:
     """
@@ -132,7 +132,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#schema-dependencies
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema schemadependency:
     """

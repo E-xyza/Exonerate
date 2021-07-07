@@ -75,7 +75,7 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
 
     https://json-schema.org/understanding-json-schema/basics.html#declaring-a-json-schema
     """
-    import Exonerate
+    require Exonerate
 
     Exonerate.function_from_string(:def, :schema, ~s({"$schema": "http://json-schema.org/schema#"}))
   end
@@ -92,7 +92,7 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
 
     https://json-schema.org/understanding-json-schema/basics.html#declaring-a-unique-identifier
     """
-    import Exonerate
+    require Exonerate
 
     Exonerate.function_from_string(:def, :id, ~s({"$id": "http://yourdomain.com/schemas/myschema.json"}))
   end

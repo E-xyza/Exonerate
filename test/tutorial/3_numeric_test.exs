@@ -21,7 +21,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     NOTE: the elixir version is opinionated about accepting multiples for non-integer
     types and does not implement them for floating points.
     """
-    import Exonerate
+    require Exonerate
 
     defschema integer: ~s({ "type": "integer" })
   end
@@ -56,7 +56,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     https://json-schema.org/understanding-json-schema/reference/numeric.html#number
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema number: ~s({ "type": "number" })
   end
@@ -89,7 +89,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     NOTE: the elixir version is opinionated about accepting multiples for non-integer
     types and does not implement them for floating points.
     """
-    import Exonerate
+    require Exonerate
 
     defschema integer: ~s({ "type": "integer", "multipleOf": 10 })
   end
@@ -119,7 +119,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     https://json-schema.org/understanding-json-schema/reference/numeric.html#range
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema number: """
                       {

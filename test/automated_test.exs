@@ -60,7 +60,7 @@ defmodule ExonerateTest.AutomatedTests do
       defmodule unquote(module) do
         use ExUnit.Case, async: true
 
-        import Exonerate
+        require Exonerate
 
         @moduletag :automated
         @moduletag unquote(path_atom)
@@ -127,7 +127,7 @@ defmodule TestOneTest do
   use ExUnit.Case, async: true
 
   require ExonerateTest.AutomatedTests
-  import Exonerate
+  require Exonerate
 
   @moduletag :isolate
 

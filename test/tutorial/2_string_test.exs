@@ -20,7 +20,7 @@ defmodule ExonerateTest.Tutorial.StringTest do
 
     https://json-schema.org/understanding-json-schema/reference/string.html#string
     """
-    import Exonerate
+    require Exonerate
 
     defschema string: ~s({ "type": "string" })
   end
@@ -49,7 +49,7 @@ defmodule ExonerateTest.Tutorial.StringTest do
 
     https://json-schema.org/understanding-json-schema/reference/string.html#string
     """
-    import Exonerate
+    require Exonerate
 
     defschema string: """
                       {
@@ -89,7 +89,7 @@ defmodule ExonerateTest.Tutorial.StringTest do
 
     https://json-schema.org/understanding-json-schema/reference/string.html#regular-expressions
     """
-    import Exonerate
+    require Exonerate
 
     defschema string: """
                       {

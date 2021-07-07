@@ -19,7 +19,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#object
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema object: ~s({ "type": "object" })
   end
@@ -81,7 +81,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#properties
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema address1:
     """
@@ -217,7 +217,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#required-properties
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema contactinfo:
     """
@@ -286,7 +286,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#property-names
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema token:
     """
@@ -327,7 +327,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#size
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema object:
     """
@@ -394,7 +394,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#pattern-properties
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema patternprop1:
     """

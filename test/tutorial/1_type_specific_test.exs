@@ -17,7 +17,7 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
 
     https://json-schema.org/understanding-json-schema/reference/type.html#type-specific-keywords
     """
-    import Exonerate
+    require Exonerate
 
     Exonerate.function_from_string(:def, :one_type, ~s({ "type": "number" }))
     Exonerate.function_from_string(:def, :two_types, ~s({ "type": [ "number", "string" ] }))

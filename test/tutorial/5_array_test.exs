@@ -18,7 +18,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#array
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema array: ~s({ "type": "array" })
 
@@ -53,7 +53,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#list-validation
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema items: """
     {
@@ -127,7 +127,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#tuple-validation
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema tuple: """
     {
@@ -286,7 +286,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#length
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema length: """
     {
@@ -323,7 +323,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#uniqueness
 
     """
-    import Exonerate
+    require Exonerate
 
     defschema unique: """
     {

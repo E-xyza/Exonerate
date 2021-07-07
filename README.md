@@ -37,27 +37,27 @@ Add the following lines to your mix.exs
 ```elixir
 
 defmodule SchemaModule do
-  import Exonerate
+  require Exonerate
 
   @schemadoc """
   validates our input
   """
-  defschema validate_input: """
+  Exonerate.function_from_string(:def, :validate_input, """
   {
     "type":"object",
     "properties":{
       "parameter":{"type":"integer"}
     }
   }
-  """
+  """)
 end
 ```
 ```
 iex> SchemaModule.validate_input("some string")
-{:mismatch, {"#", "some string"}}
+{:error, schema_pointer: "#", error_value: "some string", json_pointer: "#/parameter"}}
 
 iex> SchemaModule.validate_input(%{"parameter" => "2"})
-{:mismatch, {"#/properties/parameter", "2"}}
+{:error, schema_pointer: "#/properties/parameter", error_value: "2", json_pointer: "#/parameter"}}
 
 iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok

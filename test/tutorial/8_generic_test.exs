@@ -17,7 +17,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
 
     https://json-schema.org/understanding-json-schema/reference/generic.html#metadata
     """
-    import Exonerate
+    require Exonerate
 
     defschema metadata: """
     {
@@ -60,7 +60,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
 
     https://json-schema.org/understanding-json-schema/reference/generic.html#enumerated-values
     """
-    import Exonerate
+    require Exonerate
 
     defschema enum1: """
     {
@@ -135,7 +135,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
 
     https://json-schema.org/understanding-json-schema/reference/generic.html#constant-values
     """
-    import Exonerate
+    require Exonerate
 
     defschema const: """
     {

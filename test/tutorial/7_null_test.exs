@@ -18,7 +18,7 @@ defmodule ExonerateTest.Tutorial.NullTest do
 
     https://json-schema.org/understanding-json-schema/null.html#null
     """
-    import Exonerate
+    require Exonerate
 
     defschema null: ~s({ "type": "null" })
   end

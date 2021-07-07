@@ -17,7 +17,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#combining-schemas
     """
-    import Exonerate
+    require Exonerate
 
     defschema combining: """
     {
@@ -56,7 +56,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#allof
     """
-    import Exonerate
+    require Exonerate
 
     defschema allof: """
     {
@@ -113,7 +113,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#anyof
     """
-    import Exonerate
+    require Exonerate
 
     defschema anyof: """
     {
@@ -147,7 +147,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#oneof
     """
-    import Exonerate
+    require Exonerate
 
     defschema oneof: """
     {
@@ -222,7 +222,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
 
     https://json-schema.org/understanding-json-schema/reference/combining.html#not
     """
-    import Exonerate
+    require Exonerate
 
     defschema no: """
     { "not": { "type": "string" } }
