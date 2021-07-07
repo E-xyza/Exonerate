@@ -19,8 +19,8 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
     """
     import Exonerate
 
-    defschema one_type: ~s({ "type": "number" })
-    defschema two_types: ~s({ "type": [ "number", "string" ] })
+    Exonerate.function_from_string(:def, :one_type, ~s({ "type": "number" }))
+    Exonerate.function_from_string(:def, :two_types, ~s({ "type": [ "number", "string" ] }))
   end
 
   describe "the type specific tests simple example" do
@@ -31,9 +31,9 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
 
     test "number mismatches a string" do
       assert {:error, list} = Type.one_type("42")
-      assert list[:schema_path] == "one_type#!/type"
+      assert list[:schema_pointer] == "one_type#/type"
       assert list[:error_value] == "42"
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -46,9 +46,9 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
     @struct_list ["Life", "the universe", "and everything"]
     test "number mismatches a structured type" do
       assert {:error, list} = Type.two_types(@struct_list)
-      assert list[:schema_path] == "two_types#!/type"
+      assert list[:schema_pointer] == "two_types#/type"
       assert list[:error_value] == @struct_list
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
