@@ -1,19 +1,9 @@
 defmodule Exonerate.Filter do
   @moduledoc false
 
-  # define the append_filter callback that all filters must implement
+  alias Exonerate.Validation
 
-  @callback append_filter(Exonerate.Type.json, Exonerate.Validation.t) :: Exonerate.Validation.t
+  @callback analyze(Validation.t) :: Validation.t
 
-  defmacro wrap(false, acc, _, _), do: acc
-  defmacro wrap(true, acc, value, path) do
-    quote do
-      try do
-        unquote(acc)
-      catch
-        {:max, what} ->
-          Exonerate.mismatch(unquote(value), unquote(path), guard: what)
-      end
-    end
-  end
+  def from_string(filter), do: String.to_atom("Elixir.Exonerate.Filter.#{String.capitalize(filter)}")
 end

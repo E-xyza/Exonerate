@@ -1,41 +1,21 @@
 defmodule Exonerate.Filter.Type do
   @moduledoc false
 
+  alias Exonerate.Type
+  alias Exonerate.Validator
+
   # the filter for the "type" parameter.
 
   @behaviour Exonerate.Filter
 
-  @impl true
-  def append_filter(types_spec, validation) when is_list(types_spec) do
-    types = Enum.map(types_spec, &String.to_atom/1)
-
-    type_guard = types
-    |> Enum.map(&to_guard/1)
-    |> Enum.reduce(&quote do unquote(&1) and unquote(&2) end)
-
-    fun = Exonerate.path_to_call(validation.path)
-
-    type_filter = quote do
-      defp unquote(fun)(value, path) when unquote(type_guard), do: Exonerate.mismatch(value, path, guard: "type")
-    end
-
-    %{validation |
-      guards: [type_filter | validation.guards],
-      types: Map.new(types, &{&1, []})
-    }
-  end
-  def append_filter(type, validation) do
-    type
+  @spec analyze(Validator.t) :: Validator.t
+  def analyze(validation) do
+    types = validation
+    |> Validator.traverse()
     |> List.wrap
-    |> append_filter(validation)
+    |> Enum.map(&Type.from_string/1)
+    |> MapSet.new
+
+    %{validation | types: MapSet.intersection(validation.types, types)}
   end
-
-  @valid_types ~w(array boolean integer null number object string)a
-
-  defp to_guard(type) when type in @valid_types do
-    guard = Exonerate.Type.guard(type)
-    quote do not unquote(guard)(value) end
-  end
-  defp to_guard(type), do: raise CompileError, description: "invalid type #{inspect type} found"
-
 end

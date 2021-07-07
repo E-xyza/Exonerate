@@ -32,7 +32,7 @@ defmodule Exonerate do
       end
 
       unquote(impl)
-    end #|> Exonerate.Tools.inspect
+    end # |> Exonerate.Tools.inspect
   end
 
   #################################################################
