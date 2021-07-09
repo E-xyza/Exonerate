@@ -8,5 +8,6 @@ defmodule Exonerate.Type.Object do
 
   def parse(_), do: %__MODULE__{}
 
-  def compile(_), do: :ok
+  @spec compile(t, Validator.t) :: Macro.t
+  def compile(_, _), do: :ok
 end

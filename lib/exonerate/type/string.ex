@@ -17,8 +17,8 @@ defmodule Exonerate.Type.String do
   end
 
   @impl true
-  @spec compile(Validator.t) :: Macro.t
-  def compile(validator) do
+  @spec compile(t, Validator.t) :: Macro.t
+  def compile(_, validator) do
     quote do
       def unquote(Validator.to_fun(validator))(string, path) when is_binary(string) do
         if String.valid?(string) do

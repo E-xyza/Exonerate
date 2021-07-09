@@ -73,7 +73,7 @@ defmodule Exonerate.Validator do
             v, _ -> v
           end)
         |> Tools.collect(@all_types, fn
-          v, type -> %{v | types: Map.put(v, type, type.parse(traverse(v)))}
+          v, type -> %{v | types: Map.put(v.types, type, type.parse(traverse(v)))}
         end)
       invalid ->
         raise ArgumentError, "#{inspect invalid} is not a valid JSONSchema"
@@ -137,7 +137,7 @@ defmodule Exonerate.Validator do
   def build_schema(validator) do
     funs = validator.types
       |> Map.values
-      |> Enum.map(&Compiler.compile(&1))
+      |> Enum.map(&Compiler.compile(&1, validator))
 
     quote do
       unquote_splicing(funs)

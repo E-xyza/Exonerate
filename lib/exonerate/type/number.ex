@@ -3,14 +3,16 @@ defmodule Exonerate.Type.Number do
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler
 
+  alias Exonerate.Validator
+  
   defstruct []
   @type t :: %__MODULE__{}
 
   def parse(_), do: %__MODULE__{}
 
   @impl true
-  @spec compile(Validator.t) :: Macro.t
-  def compile(validator) do
+  @spec compile(t, Validator.t) :: Macro.t
+  def compile(_, validator) do
     quote do
       def unquote(Validator.to_fun(validator))(number, path) when is_number(number) do
         :ok
