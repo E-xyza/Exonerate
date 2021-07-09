@@ -8,6 +8,8 @@ defmodule Exonerate.Type.Integer do
 
   def parse(_, _), do: %__MODULE__{}
 
-  @spec compile(t, Validator.t) :: Macro.t
-  def compile(_, _), do: :ok
+  @spec compile(t) :: Macro.t
+  def compile(_) do
+    {quote do end, []}
+  end
 end
