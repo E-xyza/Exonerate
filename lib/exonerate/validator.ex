@@ -1,16 +1,19 @@
 defmodule Exonerate.Validator do
+  alias Exonerate.Compiler
   alias Exonerate.Filter
+  alias Exonerate.Tools
   alias Exonerate.Type
   alias Exonerate.Pointer
 
   @enforce_keys [:pointer, :schema]
-  @all_types MapSet.new(Type.all())
+  @initial_typemap Type.all()
+  @all_types Map.keys(@initial_typemap)
 
   defstruct @enforce_keys ++ [
     context: nil,
     required_refs: [],
     # compile-time optimizations
-    types: @all_types
+    types: @initial_typemap
 #    guards: [],
 #    calls: %{},
 #    collection_calls: %{},
@@ -25,7 +28,8 @@ defmodule Exonerate.Validator do
     pointer: Pointer.t,
     schema: Type.schema,
     required_refs: [[String.t]],
-    types: MapSet.t(Type.t)
+    types: %{optional(Type.t) => nil | Type.type_struct}
+
     # local state
 #    path: [String.t],
 #    guards: [Macro.t],
@@ -58,18 +62,19 @@ defmodule Exonerate.Validator do
     case traverse(validator) do
       bool when is_boolean(bool) -> validator
       schema when is_map(schema) ->
-        Enum.reduce(
-          @validator_filters,
-          validator,
+        validator
+        |> Tools.collect(@validator_filters,
           fn
-            filter, v when is_map_key(schema, filter) ->
-              # restore the pointer location.
+            v, filter when is_map_key(schema, filter) ->
               v
               |> jump_into(filter)
               |> @validator_modules[filter].analyze()
-              |> merge_into(v)
-            _, v -> v
+              |> merge_into(v) # restore the pointer location.
+            v, _ -> v
           end)
+        |> Tools.collect(@all_types, fn
+          v, type -> %{v | types: Map.put(v, type, type.parse(traverse(v)))}
+        end)
       invalid ->
         raise ArgumentError, "#{inspect invalid} is not a valid JSONSchema"
     end
@@ -130,9 +135,9 @@ defmodule Exonerate.Validator do
   end
 
   def build_schema(validator) do
-    funs = Enum.map(
-      validator.types,
-      &(&1.compile(validator)))
+    funs = validator.types
+      |> Map.values
+      |> Enum.map(&Compiler.compile(&1))
 
     quote do
       unquote_splicing(funs)

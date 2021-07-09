@@ -1,7 +1,20 @@
 defmodule Exonerate.Type.String do
-  @behaviour Exonerate.Type
 
+  # boilerplate!!
+  @behaviour Exonerate.Type
+  @derive Exonerate.Compiler
+
+  defstruct []
+  @type t :: %__MODULE__{}
+
+  alias Exonerate.Type
   alias Exonerate.Validator
+
+  @impl true
+  @spec parse(Type.json) :: t
+  def parse(_schema) do
+    %__MODULE__{}
+  end
 
   @impl true
   @spec compile(Validator.t) :: Macro.t

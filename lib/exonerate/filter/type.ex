@@ -14,8 +14,8 @@ defmodule Exonerate.Filter.Type do
     |> Validator.traverse()
     |> List.wrap
     |> Enum.map(&Type.from_string/1)
-    |> MapSet.new
+    |> Map.new(&{&1, nil})
 
-    %{validation | types: MapSet.intersection(validation.types, types)}
+    %{validation | types: Type.intersection(validation.types, types)}
   end
 end

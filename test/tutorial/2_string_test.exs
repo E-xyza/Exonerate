@@ -78,7 +78,6 @@ defmodule ExonerateTest.Tutorial.StringTest do
       assert list[:schema_pointer] == "string#/maxLength"
       assert list[:error_value] == "ABCD"
       assert list[:json_pointer] == "/"
-
     end
   end
 
@@ -121,5 +120,8 @@ defmodule ExonerateTest.Tutorial.StringTest do
       assert list[:json_pointer] == "/"
     end
   end
+
+  # TODO
+  test "formats"
 
 end

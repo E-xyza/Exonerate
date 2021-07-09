@@ -11,4 +11,8 @@ defmodule Exonerate.Tools do
 
     macro
   end
+
+  def collect(accumulator, enumerable, reducer) do
+    Enum.reduce(enumerable, accumulator, &(reducer.(&2, &1)))
+  end
 end

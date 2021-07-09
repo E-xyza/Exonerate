@@ -1,7 +1,12 @@
 defmodule Exonerate.Type.Number do
+  # boilerplate!!
   @behaviour Exonerate.Type
+  @derive Exonerate.Compiler
 
-  alias Exonerate.Validator
+  defstruct []
+  @type t :: %__MODULE__{}
+
+  def parse(_), do: %__MODULE__{}
 
   @impl true
   @spec compile(Validator.t) :: Macro.t
