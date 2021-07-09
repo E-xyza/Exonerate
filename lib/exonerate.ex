@@ -92,4 +92,14 @@ defmodule Exonerate do
       json_pointer: unquote(path)}
     end
   end
+
+  @doc false
+  defmacro pipeline(variable_ast, path_ast, pipeline) do
+    build_pipe(variable_ast, path_ast, pipeline)
+  end
+
+  defp build_pipe(input_ast, path_ast, [{fun, args} | rest]) do
+    build_pipe({:|>, [], [input_ast, {fun, [], [path_ast | args]}]}, path_ast, rest)
+  end
+  defp build_pipe(input_ast, _path_ast, []), do: input_ast
 end

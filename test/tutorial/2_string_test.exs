@@ -104,7 +104,7 @@ defmodule ExonerateTest.Tutorial.StringTest do
       assert :ok = Pattern.string("(888)555-1212")
     end
 
-    test "string of incorrect sizes don't match" do
+    test "string of incorrect patterns don't match" do
       assert {:error, list} =
         Pattern.string("(888)555-1212 ext. 532")
 

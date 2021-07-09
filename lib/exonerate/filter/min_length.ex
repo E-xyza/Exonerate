@@ -1,43 +1,31 @@
 defmodule Exonerate.Filter.MinLength do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  def append_filter(length, validation) when is_integer(length) do
-    calls = validation.calls
-    |> Map.get(:string, [])
-    |> List.insert_at(0, name(validation))
+  alias Exonerate.Validator
+  defstruct [:context, :length]
 
-    children = List.insert_at(validation.children, 0, code(length, validation))
-
-    validation
-    |> put_in([:calls, :string], calls)
-    |> put_in([:children], children)
+  def parse(artifact = %Exonerate.Type.String{}, %{"minLength" => length}) do
+    %{artifact |
+      pipeline: [{fun(artifact), []} | artifact.pipeline],
+      filters: [%__MODULE__{context: artifact.context, length: length} | artifact.filters]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["minLength" | validation.path])
-  end
-
-  # if string is the only type, avoid the guard.
-  defp code(length, validation = %{types: [:string]}) do
-    quote do
-      defp unquote(name(validation))(string, path) when is_binary(string) do
-        if String.length(string) < unquote(length) do
+  def compile(filter = %__MODULE__{}) do
+    [quote do
+      defp unquote(fun(filter))(string, path) do
+        if String.length(string) < unquote(filter.length) do
           Exonerate.mismatch(string, path)
         end
-        :ok
+        string
       end
-    end
+    end]
   end
 
-  defp code(length, validation) do
-    quote do
-      defp unquote(name(validation))(string, path) when is_binary(string) do
-        if String.length(string) < unquote(length) do
-          Exonerate.mismatch(string, path)
-        end
-        :ok
-      end
-      defp unquote(name(validation))(_, _), do: :ok
-    end
+  defp fun(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("minLength")
+    |> Validator.to_fun
   end
+
 end

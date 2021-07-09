@@ -8,19 +8,13 @@ defmodule Exonerate.Validator do
   @enforce_keys [:pointer, :schema]
   @initial_typemap Type.all()
   @all_types Map.keys(@initial_typemap)
+  @types_count Enum.count(@all_types)
 
   defstruct @enforce_keys ++ [
     context: nil,
     required_refs: [],
     # compile-time optimizations
     types: @initial_typemap
-#    guards: [],
-#    calls: %{},
-#    collection_calls: %{},
-#    children: [],
-#    accumulator: %{},
-#    post_accumulate: [],
-#    types: @default_types
   ]
 
   @type t :: %__MODULE__{
@@ -29,16 +23,6 @@ defmodule Exonerate.Validator do
     schema: Type.schema,
     required_refs: [[String.t]],
     types: %{optional(Type.t) => nil | Type.type_struct}
-
-    # local state
-#    path: [String.t],
-#    guards: [Macro.t],
-#    calls: %{(Type.t | :then | :else | :all) => [atom]},
-#    collection_calls: %{(:array | :object) => [atom]},
-#    children: [Macro.t],
-#    accumulator: %{atom => boolean},
-#    post_accumulate: [atom],
-#    # compile-time optimization
   }
 
   @spec new(Type.json, Pointer.t, keyword) :: t
@@ -62,27 +46,22 @@ defmodule Exonerate.Validator do
     case traverse(validator) do
       bool when is_boolean(bool) -> validator
       schema when is_map(schema) ->
+        # TODO: put this into its own pipeline
         validator
         |> Tools.collect(@validator_filters,
           fn
             v, filter when is_map_key(schema, filter) ->
-              v
-              |> jump_into(filter)
-              |> @validator_modules[filter].analyze()
-              |> merge_into(v) # restore the pointer location.
+              Filter.parse(v, @validator_modules[filter], schema) # restore the pointer location.
             v, _ -> v
           end)
         |> Tools.collect(@all_types, fn
-          v, type -> %{v | types: Map.put(v.types, type, type.parse(traverse(v)))}
+          v = %{types: types}, type when is_map_key(types, type) ->
+            %{v | types: Map.put(v.types, type, type.parse(v, traverse(v)))}
+          v, type -> v
         end)
       invalid ->
         raise ArgumentError, "#{inspect invalid} is not a valid JSONSchema"
     end
-  end
-
-  @spec traverse(t) :: Type.json
-  def traverse(validator) do
-    Pointer.eval(validator.pointer, validator.schema)
   end
 
   @spec jump_into(t, String.t) :: t
@@ -119,7 +98,7 @@ defmodule Exonerate.Validator do
     end
   end
 
-  def build_schema(validator = %{types: @all_types}) do
+  def build_schema(validator = %{types: t}) when :erlang.map_size(t) == @types_count do
     # for now.
     quote do
       def unquote(to_fun(validator))(_, _), do: :ok
@@ -135,20 +114,27 @@ defmodule Exonerate.Validator do
   end
 
   def build_schema(validator) do
-    funs = validator.types
+    {funs, children} = validator.types
       |> Map.values
-      |> Enum.map(&Compiler.compile(&1, validator))
+      |> Enum.map(&Compiler.compile/1)
+      |> Enum.unzip
 
     quote do
       unquote_splicing(funs)
       def unquote(to_fun(validator))(value, path) do
         Exonerate.mismatch(value, path, guard: "type")
       end
-    end
+      unquote_splicing(Enum.flat_map(children, &(&1)))
+    end |> Tools.inspect
   end
 
   def to_fun(%{pointer: pointer, context: context}) do
     Pointer.to_fun(pointer, context: context)
+  end
+
+  @spec traverse(t) :: Type.json
+  def traverse(validator) do
+    Pointer.eval(validator.pointer, validator.schema)
   end
 
   @reserved_keys ~w($schema $id title description default examples $defs)

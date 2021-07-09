@@ -4,11 +4,11 @@ defmodule Exonerate.Type.Number do
   @derive Exonerate.Compiler
 
   alias Exonerate.Validator
-  
-  defstruct []
+
+  defstruct [:pointer, :schema]
   @type t :: %__MODULE__{}
 
-  def parse(_), do: %__MODULE__{}
+  def parse(_, _), do: %__MODULE__{}
 
   @impl true
   @spec compile(t, Validator.t) :: Macro.t

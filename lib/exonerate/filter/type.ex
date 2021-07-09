@@ -8,10 +8,9 @@ defmodule Exonerate.Filter.Type do
 
   @behaviour Exonerate.Filter
 
-  @spec analyze(Validator.t) :: Validator.t
-  def analyze(validation) do
-    types = validation
-    |> Validator.traverse()
+  @spec parse(Validator.t, Type.json) :: Validator.t
+  def parse(validation, %{"type" => schema}) do
+    types = schema
     |> List.wrap
     |> Enum.map(&Type.from_string/1)
     |> Map.new(&{&1, nil})

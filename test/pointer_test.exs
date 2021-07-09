@@ -5,7 +5,6 @@ defmodule ExonerateTest.PointerTest do
 
   doctest Pointer
 
-
   describe "for the eval/2 function" do
     test "a string path against an array raises" do
       assert_raise ArgumentError, fn ->
