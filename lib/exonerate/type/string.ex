@@ -12,7 +12,7 @@ defmodule Exonerate.Type.String do
   alias Exonerate.Type
   alias Exonerate.Validator
 
-  @validator_filters ~w(minLength maxLength)
+  @validator_filters ~w(minLength maxLength pattern)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true

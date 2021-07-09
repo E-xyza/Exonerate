@@ -1,43 +1,30 @@
 defmodule Exonerate.Filter.Pattern do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  def append_filter(pattern, validation) when is_binary(pattern) do
-    calls = validation.calls
-    |> Map.get(:string, [])
-    |> List.insert_at(0, name(validation))
+  alias Exonerate.Validator
+  defstruct [:context, :pattern]
 
-    children = List.insert_at(validation.children, 0, code(pattern, validation))
-
-    validation
-    |> put_in([:calls, :string], calls)
-    |> put_in([:children], children)
+  def parse(artifact = %Exonerate.Type.String{}, %{"pattern" => pattern}) do
+    %{artifact |
+      pipeline: [{fun(artifact), []} | artifact.pipeline],
+      filters: [%__MODULE__{context: artifact.context, pattern: pattern} | artifact.filters]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["pattern" | validation.path])
-  end
-
-  # if string is the only type, avoid the guard.
-  defp code(pattern, validation = %{types: [:string]}) do
-    quote do
-      defp unquote(name(validation))(string, path) when is_binary(string) do
-        unless Regex.match?(sigil_r(<<unquote(pattern)>>, []), string) do
+  def compile(filter = %__MODULE__{}) do
+    [quote do
+      defp unquote(fun(filter))(string, path) do
+        unless Regex.match?(sigil_r(<<unquote(filter.pattern)>>, []), string) do
           Exonerate.mismatch(string, path)
         end
-        :ok
+        string
       end
-    end
+    end]
   end
 
-  defp code(pattern, validation) do
-    quote do
-      defp unquote(name(validation))(string, path) when is_binary(string) do
-        unless Regex.match?(sigil_r(<<unquote(pattern)>>, []), string) do
-          Exonerate.mismatch(string, path)
-        end
-        :ok
-      end
-      defp unquote(name(validation))(_, _), do: :ok
-    end
+  defp fun(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("pattern")
+    |> Validator.to_fun
   end
 end

@@ -11,7 +11,6 @@ defmodule Exonerate.Type do
     ~w(string integer number object array boolean null),
     &{&1, String.to_atom("Elixir.Exonerate.Type." <> String.capitalize(&1))})
 
-  alias Exonerate.Compiler
   alias Exonerate.Type.{Array, Boolean, Null, Integer, Number, Object, String}
   alias Exonerate.Validator
 
@@ -23,7 +22,7 @@ defmodule Exonerate.Type do
 
   @callback __struct__() :: artifact
   @callback parse(Validator.t, json) :: artifact
-  @callback compile(Compiler.t, Validator.t) :: Macro.t
+  @callback compile(artifact) :: Macro.t
 
   @guards %{
     String => :is_binary,
