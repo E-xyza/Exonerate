@@ -23,7 +23,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     """
     require Exonerate
 
-    defschema integer: ~s({ "type": "integer" })
+    Exonerate.function_from_string(:def, :integer, ~s({ "type": "integer" }))
   end
 
   describe "basic integers example" do
@@ -58,7 +58,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     """
     require Exonerate
 
-    defschema number: ~s({ "type": "number" })
+    Exonerate.function_from_string(:def, :number, ~s({ "type": "number" }))
   end
 
   describe "basic numbers example" do
@@ -91,7 +91,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     """
     require Exonerate
 
-    defschema integer: ~s({ "type": "integer", "multipleOf": 10 })
+    Exonerate.function_from_string(:def, :integer, ~s({ "type": "integer", "multipleOf": 10 }))
   end
 
   describe "basic multiples example" do
@@ -121,13 +121,13 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     """
     require Exonerate
 
-    defschema number: """
+    Exonerate.function_from_string(:def, :number, """
                       {
                         "type": "number",
                         "minimum": 0,
                         "exclusiveMaximum": 100
                       }
-                      """
+                      """)
   end
 
   describe "basic ranging example" do
