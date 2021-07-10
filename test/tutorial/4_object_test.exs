@@ -21,7 +21,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    defschema object: ~s({ "type": "object" })
+    Exonerate.function_from_string(:def, :object, ~s({ "type": "object" }))
   end
 
   describe "basic objects example" do
@@ -83,7 +83,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    defschema address1:
+    Exonerate.function_from_string(:def, :address1,
     """
     {
       "type": "object",
@@ -95,9 +95,9 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
                        }
       }
     }
-    """
+    """)
 
-    defschema address2:
+    Exonerate.function_from_string(:def, :address2,
     """
     {
       "type": "object",
@@ -110,9 +110,9 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "additionalProperties": false
     }
-    """
+    """)
 
-    defschema address3:
+    Exonerate.function_from_string(:def, :address3,
     """
     {
       "type": "object",
@@ -125,7 +125,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "additionalProperties": { "type": "string" }
     }
-    """
+    """)
   end
 
   @addr1 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue" })
@@ -219,7 +219,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    defschema contactinfo:
+    Exonerate.function_from_string(:def, :contactinfo,
     """
     {
       "type": "object",
@@ -231,7 +231,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "required": ["name", "email"]
     }
-    """
+    """)
   end
 
   @contact1 """
@@ -288,7 +288,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    defschema token:
+    Exonerate.function_from_string(:def, :token,
     """
     {
       "type": "object",
@@ -296,7 +296,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
       }
     }
-    """
+    """)
   end
 
   @token1 ~s({ "_a_proper_token_001": "value" })
@@ -329,14 +329,14 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    defschema object:
+    Exonerate.function_from_string(:def, :object,
     """
     {
       "type": "object",
       "minProperties": 2,
       "maxProperties": 3
     }
-    """
+    """)
   end
 
   @objsize1 ~s({})
@@ -396,7 +396,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    defschema patternprop1:
+    Exonerate.function_from_string(:def, :patternprop1,
     """
     {
       "type": "object",
@@ -406,7 +406,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "additionalProperties": false
     }
-    """
+    """)
   end
 
   @patternmatch1 ~s({ "S_25": "This is a string" })
