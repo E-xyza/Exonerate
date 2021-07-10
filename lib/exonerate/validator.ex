@@ -85,11 +85,11 @@ defmodule Exonerate.Validator do
     case Pointer.eval(pointer, schema) do
       true ->
         quote do
-          def unquote(Pointer.to_fun(pointer, context: context))(_, _), do: :ok
+          defp unquote(Pointer.to_fun(pointer, context: context))(_, _), do: :ok
         end
       false ->
         quote do
-          def unquote(Pointer.to_fun(pointer, context: context))(value, path) do
+          defp unquote(Pointer.to_fun(pointer, context: context))(value, path) do
             Exonerate.mismatch(value, path)
           end
         end
@@ -101,13 +101,13 @@ defmodule Exonerate.Validator do
   def build_schema(validator = %{types: t}) when :erlang.map_size(t) == @types_count do
     # for now.
     quote do
-      def unquote(to_fun(validator))(_, _), do: :ok
+      defp unquote(to_fun(validator))(_, _), do: :ok
     end
   end
 
   def build_schema(validator = %{types: []}) do
     quote do
-      def unquote(to_fun(validator))(value, path) do
+      defp unquote(to_fun(validator))(value, path) do
         Exonerate.mismatch(value, path)
       end
     end
@@ -121,7 +121,7 @@ defmodule Exonerate.Validator do
 
     quote do
       unquote_splicing(funs)
-      def unquote(to_fun(validator))(value, path) do
+      defp unquote(to_fun(validator))(value, path) do
         Exonerate.mismatch(value, path, guard: "type")
       end
       unquote_splicing(Enum.flat_map(children, &(&1)))

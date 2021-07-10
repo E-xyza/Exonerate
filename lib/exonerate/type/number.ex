@@ -3,13 +3,22 @@ defmodule Exonerate.Type.Number do
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler
 
-  defstruct [:pointer, :schema]
+  alias Exonerate.Validator
+
+  defstruct [:context, filters: []]
   @type t :: %__MODULE__{}
 
-  def parse(_, _), do: %__MODULE__{}
+  @spec parse(Validator.t, Type.json) :: t
+  def parse(validator, _schema) do
+    %__MODULE__{context: validator}
+  end
 
   @spec compile(t) :: Macro.t
-  def compile(_) do
-    {quote do end, []}
+  def compile(artifact) do
+    quote do
+      defp unquote(Validator.to_fun(artifact.context))(number, path) when is_number(number) do
+        :ok
+      end
+    end
   end
 end

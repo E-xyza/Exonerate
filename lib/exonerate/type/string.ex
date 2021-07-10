@@ -29,20 +29,16 @@ defmodule Exonerate.Type.String do
   @impl true
   @spec compile(t) :: Macro.t
   def compile(artifact) do
-    validator = artifact.context
-    pipeline = artifact.pipeline
-
-    {quote do
-      def unquote(Validator.to_fun(validator))(string, path) when is_binary(string) do
+    quote do
+      defp unquote(Validator.to_fun(artifact.context))(string, path) when is_binary(string) do
         if String.valid?(string) do
-          Exonerate.pipeline(string, path, unquote(pipeline))
+          Exonerate.pipeline(string, path, unquote(artifact.pipeline))
           :ok
         else
           Exonerate.mismatch(string, path)
         end
       end
-    end,
-    Enum.flat_map(artifact.filters, &Compiler.compile/1)}
+    end
   end
 
 end
