@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.MultipleOf do
   def compile(filter = %__MODULE__{}) do
     {[quote do
       defp unquote(Validator.to_fun(filter.context))(integer, path)
-        when rem(integer, unquote(filter.factor)) != 0 do
+        when is_integer(integer) and rem(integer, unquote(filter.factor)) != 0 do
           Exonerate.mismatch(integer, path, guard: "multipleOf")
       end
     end], []}

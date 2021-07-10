@@ -1,27 +1,32 @@
 defmodule Exonerate.Filter.ExclusiveMinimum do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  def append_filter(maximum, validation) when is_number(maximum) do
-    %{validation | guards: [code(maximum, validation) | validation.guards]}
+  alias Exonerate.Type.Integer
+  alias Exonerate.Type.Number
+  alias Exonerate.Validator
+  defstruct [:context, :minimum, :parent]
+
+  def parse(artifact = %type{}, %{"exclusiveMinimum" => minimum}) when type in [Integer, Number] do
+    %{artifact |
+      filters: [%__MODULE__{context: artifact.context, minimum: minimum, parent: type} | artifact.filters]}
   end
 
-  @numeric_types [[:integer], [:number], [:integer, :number], [:number, :integer]]
-
-  defp code(maximum, validation = %{types: types}) when types in @numeric_types do
-    quote do
-      defp unquote(Exonerate.path_to_call(validation.path))(number, path)
-        when number <= unquote(maximum) do
-          Exonerate.mismatch(number, path, guard: "exclusiveMinimum")
+  def compile(filter = %__MODULE__{parent: Integer}) do
+    {[quote do
+      defp unquote(Validator.to_fun(filter.context))(integer, path)
+        when is_integer(integer) and integer <= unquote(filter.minimum) do
+          Exonerate.mismatch(integer, path, guard: "exclusiveMinimum")
       end
-    end
+    end], []}
   end
 
-  defp code(maximum, validation) do
-    quote do
-      defp unquote(Exonerate.path_to_call(validation.path))(number, path)
-        when is_number(number) and number <= unquote(maximum) do
+  def compile(filter = %__MODULE__{parent: Number}) do
+    {[quote do
+      defp unquote(Validator.to_fun(filter.context))(number, path)
+        when is_number(number) and number <= unquote(filter.minimum) do
           Exonerate.mismatch(number, path, guard: "exclusiveMinimum")
       end
-    end
+    end], []}
   end
 end
