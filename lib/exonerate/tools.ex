@@ -15,4 +15,13 @@ defmodule Exonerate.Tools do
   def collect(accumulator, enumerable, reducer) do
     Enum.reduce(enumerable, accumulator, &(reducer.(&2, &1)))
   end
+
+  def flatten([]), do: []
+  def flatten(list) when is_list(list) do
+    if Enum.all?(list, &is_list/1) do
+      flatten(Enum.flat_map(list, &(&1)))
+    else
+      list
+    end
+  end
 end

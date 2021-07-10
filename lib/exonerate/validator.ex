@@ -120,7 +120,7 @@ defmodule Exonerate.Validator do
       |> Enum.unzip
 
     quote do
-      unquote_splicing(funs)
+      unquote_splicing(Tools.flatten(funs))
       defp unquote(to_fun(validator))(value, path) do
         Exonerate.mismatch(value, path, guard: "type")
       end

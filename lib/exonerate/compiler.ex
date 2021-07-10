@@ -11,13 +11,15 @@ defprotocol Exonerate.Compiler do
 end
 
 defimpl Exonerate.Compiler, for: Any do
+  alias Exonerate.Tools
+
   @spec compile(struct()) :: {[Macro.t], [Macro.t]}
   def compile(artifact = %module{filters: filters}) do
     {guards, children} = filters
     |> Enum.map(&Exonerate.Compiler.compile/1)
     |> Enum.unzip
 
-    {guards ++ [module.compile(artifact)], children}
+    {Tools.flatten(guards) ++ [module.compile(artifact)], children}
   end
   def compile(artifact = %module{}) do
     module.compile(artifact)
