@@ -6,13 +6,11 @@ defmodule Exonerate.Type.Boolean do
   defstruct [:context, filters: []]
   @type t :: %__MODULE__{}
 
-  alias Exonerate.Filter
-  alias Exonerate.Tools
   alias Exonerate.Validator
 
   @impl true
   @spec parse(Validator.t, Type.json) :: t
-  def parse(validator, schema) do
+  def parse(validator, _schema) do
     %__MODULE__{context: validator}
   end
 

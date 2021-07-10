@@ -18,9 +18,9 @@ defmodule ExonerateTest.Tutorial.NullTest do
 
     https://json-schema.org/understanding-json-schema/null.html#null
     """
-    require Exonerate
 
-    defschema null: ~s({ "type": "null" })
+    require Exonerate
+    Exonerate.function_from_string(:def, :null, ~s({ "type": "null" }))
   end
 
   describe "the null test" do

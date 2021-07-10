@@ -3,11 +3,24 @@ defmodule Exonerate.Type.Null do
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler
 
-  defstruct [:pointer, :schema]
+  defstruct [:context, filters: []]
   @type t :: %__MODULE__{}
 
-  def parse(_, _), do: %__MODULE__{}
+  alias Exonerate.Validator
 
-  @spec compile(t, Validator.t) :: Macro.t
-  def compile(_, _), do: :ok
+  @impl true
+  @spec parse(Validator.t, Type.json) :: t
+  def parse(validator, _schema) do
+    %__MODULE__{context: validator}
+  end
+
+  @impl true
+  @spec compile(t) :: Macro.t
+  def compile(artifact) do
+    quote do
+      defp unquote(Validator.to_fun(artifact.context))(null, path) when is_nil(null) do
+        :ok
+      end
+    end
+  end
 end
