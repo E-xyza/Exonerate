@@ -8,13 +8,13 @@ defmodule Exonerate.Validator do
   @enforce_keys [:pointer, :schema]
   @initial_typemap Type.all()
   @all_types Map.keys(@initial_typemap)
-  @types_count Enum.count(@all_types)
 
   defstruct @enforce_keys ++ [
     context: nil,
     required_refs: [],
     # compile-time optimizations
-    types: @initial_typemap
+    types: @initial_typemap,
+    guards: []
   ]
 
   @type t :: %__MODULE__{
@@ -22,7 +22,8 @@ defmodule Exonerate.Validator do
     pointer: Pointer.t,
     schema: Type.schema,
     required_refs: [[String.t]],
-    types: %{optional(Type.t) => nil | Type.type_struct}
+    types: %{optional(Type.t) => nil | Type.type_struct},
+    guards: [module]
   }
 
   @spec new(Type.json, Pointer.t, keyword) :: t
@@ -38,7 +39,7 @@ defmodule Exonerate.Validator do
     |> analyze()
   end
 
-  @validator_filters ~w(type)
+  @validator_filters ~w(type enum const)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @spec analyze(t) :: t
@@ -57,7 +58,7 @@ defmodule Exonerate.Validator do
         |> Tools.collect(@all_types, fn
           v = %{types: types}, type when is_map_key(types, type) ->
             %{v | types: Map.put(v.types, type, type.parse(v, traverse(v)))}
-          v, type -> v
+          v, _type -> v
         end)
       invalid ->
         raise ArgumentError, "#{inspect invalid} is not a valid JSONSchema"
@@ -98,14 +99,8 @@ defmodule Exonerate.Validator do
     end
   end
 
-  def build_schema(validator = %{types: t}) when :erlang.map_size(t) == @types_count do
-    # for now.
-    quote do
-      defp unquote(to_fun(validator))(_, _), do: :ok
-    end
-  end
-
-  def build_schema(validator = %{types: []}) do
+  def build_schema(validator = %{types: [], guards: guards}) do
+    # no available types, go straight to mismatch.
     quote do
       defp unquote(to_fun(validator))(value, path) do
         Exonerate.mismatch(value, path)
@@ -114,15 +109,20 @@ defmodule Exonerate.Validator do
   end
 
   def build_schema(validator) do
+    guards = validator.guards
+    |> Enum.map(&%{&1 | context: validator})
+    |> Enum.map(&Compiler.compile/1)
+
     {funs, children} = validator.types
       |> Map.values
       |> Enum.map(&Compiler.compile/1)
       |> Enum.unzip
 
     quote do
+      unquote_splicing(Tools.flatten(guards))
       unquote_splicing(Tools.flatten(funs))
       defp unquote(to_fun(validator))(value, path) do
-        Exonerate.mismatch(value, path, guard: "type")
+        :ok
       end
       unquote_splicing(Enum.flat_map(children, &(&1)))
     end |> Tools.inspect
@@ -136,7 +136,4 @@ defmodule Exonerate.Validator do
   def traverse(validator) do
     Pointer.eval(validator.pointer, validator.schema)
   end
-
-  @reserved_keys ~w($schema $id title description default examples $defs)
-
 end

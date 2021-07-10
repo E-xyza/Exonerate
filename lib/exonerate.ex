@@ -1,6 +1,7 @@
 defmodule Exonerate do
-  alias Exonerate.Validator
   alias Exonerate.Pointer
+  alias Exonerate.Type
+  alias Exonerate.Validator
 
   defmacro function_from_string(type, name, schema, opts \\ [])
   defmacro function_from_string(:def, name, schema_json, opts) do
@@ -102,4 +103,13 @@ defmodule Exonerate do
     build_pipe({:|>, [], [input_ast, {fun, [], [path_ast | args]}]}, path_ast, rest)
   end
   defp build_pipe(input_ast, _path_ast, []), do: input_ast
+
+  @doc false
+  defmacro chain_guards(variable_ast, types) do
+    types
+    |> Enum.map(&apply_guard(&1, variable_ast))
+    |> Enum.reduce(&{:or, [], [&1, &2]})
+  end
+
+  defp apply_guard(type, variable_ast), do: {Type.guard(type), [], [variable_ast]}
 end

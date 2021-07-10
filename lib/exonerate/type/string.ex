@@ -6,7 +6,6 @@ defmodule Exonerate.Type.String do
   defstruct [:context, pipeline: [], filters: []]
   @type t :: %__MODULE__{}
 
-  alias Exonerate.Compiler
   alias Exonerate.Filter
   alias Exonerate.Tools
   alias Exonerate.Type

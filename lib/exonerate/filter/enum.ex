@@ -1,31 +1,48 @@
 defmodule Exonerate.Filter.Enum do
   @moduledoc false
-
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
+  defstruct [:context, :enums]
+
+  alias Exonerate.Type
+  alias Exonerate.Type.{Array, Boolean, Integer, Null, Number, Object, String}
+  alias Exonerate.Validator
 
   @impl true
-  def append_filter(enum, validation) when is_list(enum) do
-    # TODO: HOIST ENUMS TO THE TOP OF THE GUARDS LIST
-    # TODO: DO MORE SOPHISTICATED TYPE FILTERING HERE.
-    %{validation | guards: [code(enum, validation) | validation.guards]}
+  def parse(validation = %Validator{}, %{"enum" => enums}) do
+    types = Map.new(enums, &{Type.of(&1), nil})
+
+    %{validation |
+      types: Type.intersection(validation.types, types),
+      guards: [%__MODULE__{context: validation, enums: enums} | clean(validation.guards)]}
   end
 
-  defp code(enum, validation) do
-    # TODO: DO MORE SOPHISTICATED TYPE FILTERING HERE.
+  defp clean(guards) do
+    Enum.reject(guards, &(&1.__struct__ == Exonerate.Filter.Type))
+  end
 
-    # this is due to a bug in erlang compiler.
-    true_escape = if true in enum do
-      quote do
-        defp unquote(Exonerate.path_to_call(validation.path))(true, path), do: :ok
-      end
-    end
+  def compile(%__MODULE__{context: context, enums: enums}) do
+    context_types = Map.keys(context.types)
+    literals = Enum.filter(
+      enums,
+      fn enum ->
+          Enum.any?(context_types, &(to_guard(&1).(enum)))
+      end)
 
     quote do
-      unquote(true_escape)
-      defp unquote(Exonerate.path_to_call(validation.path))(value, path)
-        when value not in unquote(Macro.escape(enum -- [true])) do
+      defp unquote(Validator.to_fun(context))(value, path)
+        when value not in unquote(literals) do
           Exonerate.mismatch(value, path, guard: "enum")
       end
     end
   end
+
+  defp to_guard(Array), do: &is_list/1
+  defp to_guard(Boolean), do: &is_boolean/1
+  defp to_guard(Integer), do: &is_integer/1
+  defp to_guard(Null), do: &is_nil/1
+  defp to_guard(Number), do: &is_float/1
+  defp to_guard(Object), do: &is_map/1
+  defp to_guard(String), do: &is_binary/1
+
 end

@@ -105,7 +105,7 @@ defmodule Exonerate.Pointer do
   """
   def eval([], data), do: data
   def eval([_ | _], data) when not (is_list(data) or is_map(data)) do
-    raise ArgumentError, message: "#{Type.of data} can not take a path"
+    raise ArgumentError, message: "#{Type.name data} can not take a path"
   end
   def eval(pointer, data) do
     pointer

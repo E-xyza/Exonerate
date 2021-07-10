@@ -53,11 +53,19 @@ defmodule Exonerate.Type do
     end
   end
 
-  def of(string) when is_binary(string), do: "string"
-  def of(integer) when is_integer(integer), do: "integer"
-  def of(float) when is_float(float), do: "float"
-  def of(object) when is_map(object), do: "object"
-  def of(array) when is_list(array), do: "array"
-  def of(boolean) when is_boolean(boolean), do: "boolean"
-  def of(null) when is_nil(null), do: "null"
+  def name(string) when is_binary(string), do: "string"
+  def name(integer) when is_integer(integer), do: "integer"
+  def name(float) when is_float(float), do: "float"
+  def name(object) when is_map(object), do: "object"
+  def name(array) when is_list(array), do: "array"
+  def name(boolean) when is_boolean(boolean), do: "boolean"
+  def name(null) when is_nil(null), do: "null"
+
+  def of(array) when is_list(array), do: Array
+  def of(boolean) when is_boolean(boolean), do: Boolean
+  def of(integer) when is_integer(integer), do: Integer
+  def of(null) when is_nil(null), do: Null
+  def of(float) when is_float(float), do: Number
+  def of(object) when is_map(object), do: Object
+  def of(string) when is_binary(string), do: String
 end

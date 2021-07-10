@@ -14,6 +14,7 @@ defimpl Exonerate.Compiler, for: Any do
   alias Exonerate.Tools
 
   @spec compile(struct()) :: {[Macro.t], [Macro.t]}
+  def compile(%{filters: []}), do: {[], []}
   def compile(artifact = %module{filters: filters}) do
     {guards, children} = filters
     |> Enum.map(&Exonerate.Compiler.compile/1)

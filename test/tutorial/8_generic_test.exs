@@ -19,7 +19,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     """
     require Exonerate
 
-    defschema metadata: """
+    Exonerate.function_from_string(:def, :metadata, """
     {
       "title" : "Match anything",
       "description" : "This is a schema that matches anything.",
@@ -29,7 +29,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
         4035
       ]
     }
-    """
+    """)
   end
 
   describe "metadata are stored" do
@@ -62,25 +62,25 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     """
     require Exonerate
 
-    defschema enum1: """
+    Exonerate.function_from_string(:def, :enum1, """
     {
       "type": "string",
       "enum": ["red", "amber", "green"]
     }
-    """
+    """)
 
-    defschema enum2: """
+    Exonerate.function_from_string(:def, :enum2, """
     {
       "enum": ["red", "amber", "green", null, 42]
     }
-    """
+    """)
 
-    defschema enum3: """
+    Exonerate.function_from_string(:def, :enum3, """
     {
       "type": "string",
       "enum": ["red", "amber", "green", null]
     }
-    """
+    """)
   end
 
   @moduletag :one
@@ -93,9 +93,9 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = EnumeratedValues.enum1("blue")
 
-      assert list[:schema_path] == "enum1#!/enum"
+      assert list[:schema_pointer] == "enum1#/enum"
       assert list[:error_value] == "blue"
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -109,9 +109,9 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert  {:error, list} = EnumeratedValues.enum2(0)
 
-      assert list[:schema_path] == "enum2#!/enum"
+      assert list[:schema_pointer] == "enum2#/enum"
       assert list[:error_value] == 0
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -123,9 +123,9 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = EnumeratedValues.enum3(nil)
 
-      assert list[:schema_path] == "enum3#!/type"
+      assert list[:schema_pointer] == "enum3#/enum"
       assert list[:error_value] == nil
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -137,7 +137,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     """
     require Exonerate
 
-    defschema const: """
+    Exonerate.function_from_string(:def, :const, """
     {
       "properties": {
         "country": {
@@ -145,7 +145,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
         }
       }
     }
-    """
+    """)
   end
 
   describe "consts restrict to a single value" do
@@ -156,9 +156,9 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = ConstantValues.const(%{"country" => "Canada"})
 
-      assert list[:schema_path] == "const#!/properties/country/const"
+      assert list[:schema_pointer] == "const#/properties/country/const"
       assert list[:error_value] == "Canada"
-      assert list[:json_path] == "/country"
+      assert list[:json_pointer] == "/country"
     end
   end
 end
