@@ -75,13 +75,19 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  defp pattern_conditional(_target, patterns, key_ast, val_ast) do
+  defp pattern_conditional(target, patterns, key_ast, val_ast) do
+    final = if target do
+      call(target, Tools.variable(:value), Tools.variable(:key))
+    else
+      kv_mismatch(Tools.variable(:key), Tools.variable(:value))
+    end
+
     arrows = Enum.flat_map(patterns, fn {path, pattern} ->
       quote do
         Regex.match?(sigil_r(<<unquote(pattern)>>, []), unquote(key_ast)) ->
-          unquote(path)(unquote(key_ast), unquote(val_ast))
+          unquote(path)(unquote(val_ast), Path.join(path, unquote(key_ast)))
       end
-    end)
+    end) ++ [{:->, [], [[true], final]}]
 
     {:cond, [], [[do: arrows]]}
   end

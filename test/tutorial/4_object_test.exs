@@ -432,7 +432,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       patternmatch3 = Jason.decode!(@patternmatch3)
       assert {:error, list} = PatternProperties.patternprop1(patternmatch3)
 
-      assert list[:schema_pointer] == "patternprop1#/patternProperties/^S_/type"
+      assert list[:schema_pointer] == "patternprop1#/patternProperties/%5ES_/type"
       assert list[:error_value] == 42
       assert list[:json_pointer] == "/S_0"
     end
@@ -441,7 +441,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       patternmatch4 = Jason.decode!(@patternmatch4)
       assert {:error, list} = PatternProperties.patternprop1(patternmatch4)
 
-      assert list[:schema_pointer] == "patternprop1#/patternProperties/^I_/type"
+      assert list[:schema_pointer] == "patternprop1#/patternProperties/%5EI_/type"
       assert list[:error_value] == "This is a string"
       assert list[:json_pointer] == "/I_42"
     end
@@ -451,7 +451,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       assert {:error, list} = PatternProperties.patternprop1(patternmatch5)
 
       assert list[:schema_pointer] == "patternprop1#/additionalProperties"
-      assert list[:error_value] == %{"keyword" => "value"}
+      assert list[:error_value] == {"keyword", "value"}
       assert list[:json_pointer] == "/"
     end
   end
