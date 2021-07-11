@@ -6,7 +6,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
   defstruct [:context, :child]
 
   def parse(artifact, %{"additionalProperties" => false}) do
-    %{artifact | additional_properties: false}
+    %{artifact | fallback: false}
   end
   def parse(artifact = %{context: context}, %{"additionalProperties" => _}) do
     child = Validator.parse(
@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
 
     %{artifact |
       filters: [%__MODULE__{context: context, child: child} | artifact.filters],
-      additional_properties: fun(artifact)}
+      fallback: fun(artifact)}
   end
 
   def compile(%__MODULE__{child: child}) do

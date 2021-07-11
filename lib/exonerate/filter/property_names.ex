@@ -1,31 +1,30 @@
 defmodule Exonerate.Filter.PropertyNames do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  @impl true
-  def append_filter(schema, validation) do
-    calls = validation.collection_calls
-    |> Map.get(:object, [])
-    |> List.insert_at(0, name(validation))
+  alias Exonerate.Validator
+  defstruct [:context, :spec]
 
-    children = [
-        code(schema, validation),
-        Exonerate.Validation.from_schema(schema, ["propertyNames" | validation.path])
-      ] ++ validation.children
+  def parse(artifact = %{context: context}, %{"propertyNames" => spec})  do
+    spec = Exonerate.Type.String.parse(Validator.jump_into(artifact.context, "propertyNames", true), spec)
 
-    validation
-    |> put_in([:collection_calls, :object], calls)
-    |> put_in([:children], children)
+    %{artifact |
+      needs_enum: true,
+      fallback: {:name, fun(artifact)},
+      filters: [%__MODULE__{context: context, spec: spec} | artifact.filters]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["propertyNames" | validation.path])
+  def compile(%__MODULE__{spec: spec}) do
+    {[], [
+      Exonerate.Compiler.compile(spec)
+    ]}
   end
 
-  defp code(_schema, validation) do
-    quote do
-      defp unquote(name(validation))({key, _value}, _acc, path) do
-        unquote(name(validation))(key, Path.join(path, key))
-      end
-    end
+  # TODO: generalize this.
+  defp fun(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("propertyNames")
+    |> Validator.to_fun
   end
+
 end

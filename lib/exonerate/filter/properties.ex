@@ -17,6 +17,7 @@ defmodule Exonerate.Filter.Properties do
 
     %{artifact |
       arrows: arrows,
+      needs_enum: true,
       filters: [%__MODULE__{context: context, children: children} | artifact.filters]}
   end
 
