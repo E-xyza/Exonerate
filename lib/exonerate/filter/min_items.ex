@@ -1,38 +1,38 @@
 defmodule Exonerate.Filter.MinItems do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  @impl true
-  def append_filter(minimum, validation) when is_integer(minimum) do
-    calls = validation.collection_calls
-    |> Map.get(:array, [])
-    |> List.insert_at(0, name(validation))
+  alias Exonerate.Validator
+  defstruct [:context, :count]
 
-    children = code(minimum, validation) ++ validation.children
+  def parse(artifact, %{"minItems" => count}) do
+    index_key = fun0(artifact, ":index")
+    check_key = fun0(artifact, "minItems")
 
-    validation
-    |> put_in([:collection_calls, :array], calls)
-    |> put_in([:children], children)
-    |> put_in([:accumulator, :min], false)
-    |> put_in([:post_accumulate], [name(validation) | validation.post_accumulate])
+    %{artifact |
+      needs_enum: true,
+      enum_pipeline: Keyword.put_new(artifact.enum_pipeline, index_key, []),
+      post_enum_pipeline: [{check_key, []} | artifact.post_enum_pipeline],
+      enum_init: Map.put(artifact.enum_init, :index, 0),
+      filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["minItems" | validation.path])
+  def compile(filter = %__MODULE__{count: count}) do
+    {[], [
+      quote do
+        defp unquote(fun0(filter, "minItems"))(acc, path) do
+          if acc.index < unquote(count) do
+            Exonerate.mismatch(acc.array, path)
+          end
+          acc
+        end
+      end
+    ]}
   end
 
-  defp code(minimum, validation) do
-    [quote do
-       defp unquote(name(validation))({_, index}, acc, path) do
-         if (not acc.min) or index >= unquote(minimum) - 1 do
-           %{acc | min: true}
-         else
-           acc
-         end
-       end
-       defp unquote(name(validation))(acc = %{min: satisfied}, list, path) do
-         unless satisfied, do: Exonerate.mismatch(list, path)
-       end
-       defp unquote(name(validation))(_, _, _), do: :ok
-     end]
+  defp fun0(filter_or_artifact = %_{}, what) do
+    filter_or_artifact.context
+    |> Validator.jump_into(what)
+    |> Validator.to_fun
   end
 end
