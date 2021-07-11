@@ -181,7 +181,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       assert {:error, list} = Properties.address2(addr4)
 
       assert list[:schema_pointer] == "address2#/additionalProperties"
-      assert list[:error_value] == %{"direction" => "NW"}
+      assert list[:error_value] == {"direction", "NW"}
       assert list[:json_pointer] == "/"
     end
   end
@@ -204,8 +204,8 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       assert {:error, list} = Properties.address3(addr5)
 
       assert list[:schema_pointer] == "address3#/additionalProperties/type"
-      assert list[:error_value] == %{"office_number" => 201}
-      assert list[:json_pointer] == "/"
+      assert list[:error_value] == 201
+      assert list[:json_pointer] == "/office_number"
     end
   end
 

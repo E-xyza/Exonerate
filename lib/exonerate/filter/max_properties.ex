@@ -1,25 +1,24 @@
 defmodule Exonerate.Filter.MaxProperties do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  def append_filter(maximum, validation) when is_integer(maximum) do
-    %{validation | guards: [code(maximum, validation) | validation.guards]}
+  alias Exonerate.Validator
+  defstruct [:context, :count]
+
+  def parse(artifact, %{"maxProperties" => count}) do
+    %{artifact |
+      filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
   end
 
-  defp code(maximum, validation = %{types: [:object]}) do
-    quote do
-      defp unquote(Exonerate.path_to_call(validation.path))(map, path)
-        when :erlang.map_size(map) > unquote(maximum) do
-          Exonerate.mismatch(map, path, guard: "maxProperties")
+  def compile(filter = %__MODULE__{count: count}) do
+    {[quote do
+      defp unquote(fun(filter))(object, path) when is_map(object) and :erlang.map_size(object) > unquote(count) do
+        Exonerate.mismatch(object, path, guard: unquote("maxProperties"))
       end
-    end
+    end], []}
   end
 
-  defp code(maximum, validation) do
-    quote do
-      defp unquote(Exonerate.path_to_call(validation.path))(map, path)
-        when is_map(map) and :erlang.map_size(map) > unquote(maximum) do
-          Exonerate.mismatch(map, path, guard: "maxProperties")
-      end
-    end
+  defp fun(filter_or_artifact = %_{}) do
+    Validator.to_fun(filter_or_artifact.context)
   end
 end

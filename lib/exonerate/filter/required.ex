@@ -1,44 +1,28 @@
 defmodule Exonerate.Filter.Required do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  def append_filter(required, validation) when is_list(required) do
-    calls = validation.calls
-    |> Map.get(:object, [])
-    |> List.insert_at(0, name(validation))
+  alias Exonerate.Validator
+  defstruct [:context, :props]
 
-    children = code(required, validation) ++ validation.children
-
-    validation
-    |> put_in([:calls, :object], calls)
-    |> put_in([:children], children)
+  def parse(artifact, %{"required" => prop}) do
+    %{artifact |
+      filters: [%__MODULE__{context: artifact.context, props: prop} | artifact.filters]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["required" | validation.path])
-  end
-
-  # if string is the only type, avoid the guard.
-  defp code(required, validation) do
-    {calls, funs} = required
-    |> Enum.with_index
-    |> Enum.map(fn {key, index} ->
-      subpath = Exonerate.path_to_call([to_string(index), "required" | validation.path])
-      {quote do
-        unquote(subpath)(object, keys, path)
-      end, quote do
-        defp unquote(subpath)(object, keys, path) do
-          unquote(key) in keys or Exonerate.mismatch(object, path)
+  def compile(filter = %__MODULE__{props: props}) do
+    {props
+    |> Enum.with_index()
+    |> Enum.map(fn {prop, index} ->
+      quote do
+        defp unquote(fun(filter))(object, path) when is_map(object) and not is_map_key(object, unquote(prop)) do
+          Exonerate.mismatch(object, path, guard: unquote("required/#{index}"))
         end
-      end}
-    end)
-    |> Enum.unzip
-
-    [quote do
-      defp unquote(name(validation))(object, path) do
-        keys = Map.keys(object)
-        unquote_splicing(calls)
       end
-    end] ++ funs
+    end), []}
   end
 
+  defp fun(filter_or_artifact = %_{}) do
+    Validator.to_fun(filter_or_artifact.context)
+  end
 end

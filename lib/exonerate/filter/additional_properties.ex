@@ -1,37 +1,32 @@
 defmodule Exonerate.Filter.AdditionalProperties do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  def append_filter(schema, validation) do
-    calls = validation.collection_calls
-    |> Map.get(:object, [])
-    |> List.insert_at(0, name(validation))
+  alias Exonerate.Validator
+  defstruct [:context, :child]
 
-    children = code(schema, validation) ++ validation.children
+  def parse(artifact, %{"additionalProperties" => false}) do
+    %{artifact | additional_properties: false}
+  end
+  def parse(artifact = %{context: context}, %{"additionalProperties" => _}) do
+    child = Validator.parse(
+      context.schema,
+      ["additionalProperties" | context.pointer],
+      authority: context.authority)
 
-    validation
-    |> put_in([:collection_calls, :object], calls)
-    |> put_in([:children], children)
+    %{artifact |
+      filters: [%__MODULE__{context: context, child: child} | artifact.filters],
+      additional_properties: fun(artifact)}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["additionalProperties" | validation.path])
+  def compile(%__MODULE__{child: child}) do
+    {[], [Validator.compile(child)]}
   end
 
-  defp code(schema, validation) do
-    [quote do
-      defp unquote(name(validation))({key, object}, acc, path) do
-        unless acc do
-          try do
-            unquote(name(validation))(object, path)
-          catch
-            err = {:error, opts} ->
-              err_val = opts[:error_value]
-              throw {:error, Keyword.put(opts, :error_value, %{key => err_val})}
-          end
-        end
-      end
-      unquote(Exonerate.Validation.from_schema(schema, ["additionalProperties" | validation.path]))
-    end]
+  # TODO: generalize this.
+  defp fun(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("additionalProperties")
+    |> Validator.to_fun
   end
-
 end

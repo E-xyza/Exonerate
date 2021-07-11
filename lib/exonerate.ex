@@ -104,6 +104,8 @@ defmodule Exonerate do
   end
   defp build_pipe(input_ast, _path_ast, []), do: input_ast
 
+  # TODO: generalize these.
+
   @doc false
   defmacro chain_guards(variable_ast, types) do
     types

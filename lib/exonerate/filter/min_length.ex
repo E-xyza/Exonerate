@@ -12,14 +12,14 @@ defmodule Exonerate.Filter.MinLength do
   end
 
   def compile(filter = %__MODULE__{}) do
-    {[quote do
+    {[], [quote do
       defp unquote(fun(filter))(string, path) do
         if String.length(string) < unquote(filter.length) do
           Exonerate.mismatch(string, path)
         end
         string
       end
-    end], []}
+    end]}
   end
 
   defp fun(filter_or_artifact = %_{}) do
