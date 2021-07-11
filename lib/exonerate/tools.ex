@@ -27,7 +27,7 @@ defmodule Exonerate.Tools do
   ## AST TOOLS
 
   def variable(v), do: {v, [], Elixir}
-  def map_arrow(a1, a2, out) do
-    {:->, [], [[{a1, a2}], out]}
+  def arrow(preimage, out) do
+    {:->, [], [preimage, out]}
   end
 end
