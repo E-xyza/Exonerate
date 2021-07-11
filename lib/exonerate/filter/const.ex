@@ -9,8 +9,6 @@ defmodule Exonerate.Filter.Const do
   @impl true
   def parse(validation = %Validator{}, %{"const" => const}) do
     type = %{Type.of(const) => nil}
-    |> IO.inspect(label: "12")
-
     %{validation | types: Type.intersection(validation.types, type)}
   end
 

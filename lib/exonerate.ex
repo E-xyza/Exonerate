@@ -9,7 +9,7 @@ defmodule Exonerate do
     |> Keyword.get(:entrypoint, "/")
     |> Pointer.from_uri
 
-    opts = Keyword.merge(opts, context: Atom.to_string(name) <> "#")
+    opts = Keyword.merge(opts, authority: Atom.to_string(name) <> "#")
 
     schema_erl = schema_json
     |> Macro.expand(__CALLER__)
@@ -48,7 +48,7 @@ defmodule Exonerate do
       end
 
       unquote(impl)
-    end # |> Exonerate.Tools.inspect
+    end
   end
 
   @metadata_call %{"$id" => :id, "$schema" => :schema}

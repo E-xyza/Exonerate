@@ -5,12 +5,11 @@ defmodule Exonerate.Validator do
   alias Exonerate.Type
   alias Exonerate.Pointer
 
-  @enforce_keys [:pointer, :schema]
+  @enforce_keys [:pointer, :schema, :authority]
   @initial_typemap Type.all()
   @all_types Map.keys(@initial_typemap)
 
   defstruct @enforce_keys ++ [
-    context: nil,
     required_refs: [],
     # compile-time optimizations
     types: @initial_typemap,
@@ -18,6 +17,7 @@ defmodule Exonerate.Validator do
   ]
 
   @type t :: %__MODULE__{
+    authority: String.t,
     # global state
     pointer: Pointer.t,
     schema: Type.schema,
@@ -28,13 +28,12 @@ defmodule Exonerate.Validator do
 
   @spec new(Type.json, Pointer.t, keyword) :: t
   defp new(schema, pointer, opts) do
-    struct(%__MODULE__{schema: schema, pointer: pointer}, opts)
+    struct(%__MODULE__{schema: schema, pointer: pointer, authority: opts[:authority] || ""}, opts)
   end
 
   @spec parse(Type.json, Pointer.t, keyword) :: t
   def parse(schema, pointer, opts \\ []) do
-    pointer
-    |> Pointer.eval(schema)
+    schema
     |> new(pointer, opts)
     |> analyze()
   end
@@ -69,9 +68,12 @@ defmodule Exonerate.Validator do
   @doc """
   advances the pointer in the validator prior to evaluating.
   """
-  def jump_into(validator, nexthop) do
-    %{validator | pointer: [nexthop | validator.pointer]}
+  def jump_into(validator, nexthop, should_clear \\ false) do
+    clear(%{validator | pointer: [nexthop | validator.pointer]}, should_clear)
   end
+
+  defp clear(validator, false), do: validator
+  defp clear(validator, true), do: %{validator | types: @initial_typemap, guards: []}
 
   @spec merge_into(t, t) :: t
   @doc """
@@ -82,15 +84,15 @@ defmodule Exonerate.Validator do
   end
 
   @spec compile(t) :: Macro.t
-  def compile(validator = %__MODULE__{pointer: pointer, schema: schema, context: context}) do
+  def compile(validator = %__MODULE__{pointer: pointer, schema: schema, authority: authority}) do
     case Pointer.eval(pointer, schema) do
       true ->
         quote do
-          defp unquote(Pointer.to_fun(pointer, context: context))(_, _), do: :ok
+          defp unquote(Pointer.to_fun(pointer, authority: authority))(_, _), do: :ok
         end
       false ->
         quote do
-          defp unquote(Pointer.to_fun(pointer, context: context))(value, path) do
+          defp unquote(Pointer.to_fun(pointer, authority: authority))(value, path) do
             Exonerate.mismatch(value, path)
           end
         end
@@ -99,7 +101,7 @@ defmodule Exonerate.Validator do
     end
   end
 
-  def build_schema(validator = %{types: [], guards: guards}) do
+  def build_schema(validator = %{types: []}) do
     # no available types, go straight to mismatch.
     quote do
       defp unquote(to_fun(validator))(value, path) do
@@ -125,11 +127,11 @@ defmodule Exonerate.Validator do
         :ok
       end
       unquote_splicing(Enum.flat_map(children, &(&1)))
-    end |> Tools.inspect
+    end |> Tools.inspect#(validator.authority == "object#")
   end
 
-  def to_fun(%{pointer: pointer, context: context}) do
-    Pointer.to_fun(pointer, context: context)
+  def to_fun(%{pointer: pointer, authority: authority}) do
+    Pointer.to_fun(pointer, authority: authority)
   end
 
   @spec traverse(t) :: Type.json

@@ -1,41 +1,63 @@
 defmodule Exonerate.Filter.Properties do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  alias Exonerate.Type
-  require Type
+  alias Exonerate.Validator
+  defstruct [:context, :schema]
 
-  def append_filter(object, validation) when Type.is_schema(object) do
-    calls = validation.collection_calls
-    |> Map.get(:object, [])
-    |> List.insert_at(0, name(validation))
-
-    children = code(object, validation) ++ validation.children
-
-    validation
-    |> put_in([:collection_calls, :object], calls)
-    |> put_in([:children], children)
-  end
-
-  defp name(validation) do
-    Exonerate.path_to_call(["properties" | validation.path])
-  end
-
-  defp code(object, validation) do
-    {prop_filters, prop_validators} = object
-    |> Enum.map(fn {key, schema} ->
-      key_path = [key, "properties" | validation.path]
-      {quote do
-        defp unquote(name(validation))({unquote(key), value}, _acc, path) do
-          unquote(Exonerate.path_to_call(key_path))(value, Path.join(path, unquote(key)))
-          true
-        end
-      end,
-      Exonerate.Validation.from_schema(schema, key_path)}
+  def parse(artifact = %{context: context}, %{"properties" => properties})  do
+    schema = Map.new(properties, fn
+      {property, _} ->
+        {property, Validator.parse(context.schema, [property, "properties" | context.pointer], authority: context.authority)}
     end)
+
+    %{artifact |
+      pipeline: [{fun(artifact), []} | artifact.pipeline],
+      filters: [%__MODULE__{context: artifact.context, schema: schema} | artifact.filters]}
+  end
+
+  def compile(filter = %__MODULE__{schema: schema}) do
+    {arrows, impls} = schema
+    |> Enum.map(
+      fn {property, subcontext} ->
+        call = &quote do
+          unquote(fun(filter, property))(unquote(&1), Path.join(path, unquote(property)))
+        end
+        
+        {
+          arrow(property, variable(:value), call.(variable(:value))),
+          Validator.compile(subcontext)
+        }
+      end)
     |> Enum.unzip
 
-    prop_filters ++ [quote do
-      defp unquote(name(validation))(_, acc, path), do: acc
-    end] ++ prop_validators
+    fun = {:fn, [], arrows ++ [arrow(variable(:_), variable(:_), :ok)]}
+
+    {[], [
+      quote do
+        defp unquote(fun(filter))(object, path) do
+          Enum.each(object, unquote(fun))
+        end
+      end
+    ] ++ impls}
+  end
+
+  defp variable(v), do: {v, [], Elixir}
+  defp arrow(a1, a2, out) do
+    {:->, [], [[{a1, a2}], out]}
+  end
+
+  # TODO: generalize this.
+  defp fun(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("properties")
+    |> Validator.to_fun
+  end
+
+  defp fun(filter_or_artifact = %_{}, nexthop) do
+    filter_or_artifact.context
+    |> Validator.jump_into("properties")
+    |> Validator.jump_into(nexthop)
+    |> Validator.to_fun
   end
 end

@@ -86,7 +86,7 @@ defmodule Exonerate.Pointer do
     |> Enum.map(&URI.encode/1)
     |> Enum.join("/")
 
-    IO.iodata_to_binary([List.wrap(opts[:context]), "/", str])
+    IO.iodata_to_binary([List.wrap(opts[:authority]), "/", str])
   end
 
   @spec eval(pointer :: t, data :: Type.json) :: Type.json

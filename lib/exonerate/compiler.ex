@@ -20,7 +20,7 @@ defimpl Exonerate.Compiler, for: Any do
     |> Enum.map(&Exonerate.Compiler.compile/1)
     |> Enum.unzip
 
-    {Tools.flatten(guards) ++ [module.compile(artifact)], children}
+    {Tools.flatten(guards) ++ [module.compile(artifact)], Tools.flatten(children)}
   end
   def compile(artifact = %module{}) do
     module.compile(artifact)

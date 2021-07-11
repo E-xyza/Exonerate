@@ -12,15 +12,15 @@ defmodule Exonerate.Filter.Type do
   @behaviour Exonerate.Filter
 
   @spec parse(Validator.t, Type.json) :: Validator.t
-  def parse(validation = %Validator{}, %{"type" => schema}) do
+  def parse(validator = %Validator{}, %{"type" => schema}) do
     types = schema
     |> List.wrap
     |> Enum.map(&Type.from_string/1)
     |> Map.new(&{&1, nil})
 
-    %{validation |
-      types: Type.intersection(validation.types, types),
-      guards: [%__MODULE__{types: Map.keys(types)} | validation.guards]}
+    %{validator |
+      types: Type.intersection(validator.types, types),
+      guards: [%__MODULE__{context: validator, types: Map.keys(types)} | validator.guards]}
   end
 
   def compile(%__MODULE__{context: context, types: types}) do
