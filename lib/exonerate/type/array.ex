@@ -10,7 +10,7 @@ defmodule Exonerate.Type.Array do
   alias Exonerate.Tools
   alias Exonerate.Validator
 
-  @validator_filters ~w(minItems)
+  @validator_filters ~w(minItems maxItems)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true
@@ -33,7 +33,7 @@ defmodule Exonerate.Type.Array do
       |> Validator.to_fun()
 
       {
-        [{index_fun, []} | artifact.enum_pipeline],
+        artifact.enum_pipeline ++ [{index_fun, []}],
         quote do
           defp unquote(index_fun)(acc, _) do
             %{acc | index: acc.index + 1}

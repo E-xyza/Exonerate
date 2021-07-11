@@ -1,41 +1,36 @@
 defmodule Exonerate.Filter.MaxItems do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  @impl true
-  def append_filter(maximum, validation) when is_integer(maximum) do
-    calls = validation.collection_calls
-    |> Map.get(:array, [])
-    |> List.insert_at(0, name(validation))
+  alias Exonerate.Validator
+  defstruct [:context, :count]
 
-    children = code(maximum, validation) ++ validation.children
+  def parse(artifact, %{"maxItems" => count}) do
+    fun = fun0(artifact, "maxItems")
 
-    validation
-    |> put_in([:collection_calls, :array], calls)
-    |> put_in([:children], children)
+    %{artifact |
+      needs_enum: true,
+      enum_pipeline: [{fun, []} | artifact.enum_pipeline],
+      enum_init: Map.put(artifact.enum_init, :index, 0),
+      filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["maxItems" | validation.path])
-  end
-
-  defp code(maximum, validation) do
-    [quote do
-       defp unquote(name(validation))({_, index}, acc, path) do
-         if index >= unquote(maximum), do: throw {:max, "maxItems"}
-         acc
-       end
-     end]
-  end
-
-  defmacro wrap(nil, acc, _, _), do: acc
-  defmacro wrap(_, acc, value, path) do
-    quote do
-      try do
-        unquote(acc)
-      catch
-        {:max, what} ->
-          Exonerate.mismatch(unquote(value), unquote(path), guard: what)
+  def compile(filter = %__MODULE__{count: count}) do
+    {[], [
+      quote do
+        defp unquote(fun0(filter, "maxItems"))(acc, path) do
+          if acc.index >= unquote(count) do
+            Exonerate.mismatch(acc.array, path)
+          end
+          acc
+        end
       end
-    end
+    ]}
+  end
+
+  defp fun0(filter_or_artifact = %_{}, what) do
+    filter_or_artifact.context
+    |> Validator.jump_into(what)
+    |> Validator.to_fun
   end
 end

@@ -6,12 +6,10 @@ defmodule Exonerate.Filter.MinItems do
   defstruct [:context, :count]
 
   def parse(artifact, %{"minItems" => count}) do
-    index_key = fun0(artifact, ":index")
     check_key = fun0(artifact, "minItems")
 
     %{artifact |
       needs_enum: true,
-      enum_pipeline: Keyword.put_new(artifact.enum_pipeline, index_key, []),
       post_enum_pipeline: [{check_key, []} | artifact.post_enum_pipeline],
       enum_init: Map.put(artifact.enum_init, :index, 0),
       filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
