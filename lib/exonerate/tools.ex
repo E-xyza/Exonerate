@@ -1,7 +1,4 @@
 defmodule Exonerate.Tools do
-  defguard is_member(mapset, element) when
-    is_map_key(:erlang.map_get(:map, mapset), element)
-
   def inspect(macro, filter \\ true) do
     if filter do
       macro
@@ -11,6 +8,8 @@ defmodule Exonerate.Tools do
 
     macro
   end
+
+  ## ENUMERABLE TOOLS
 
   def collect(accumulator, enumerable, reducer) do
     Enum.reduce(enumerable, accumulator, &(reducer.(&2, &1)))
@@ -23,5 +22,12 @@ defmodule Exonerate.Tools do
     else
       list
     end
+  end
+
+  ## AST TOOLS
+
+  def variable(v), do: {v, [], Elixir}
+  def map_arrow(a1, a2, out) do
+    {:->, [], [[{a1, a2}], out]}
   end
 end

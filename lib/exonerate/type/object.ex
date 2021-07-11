@@ -7,7 +7,7 @@ defmodule Exonerate.Type.Object do
   alias Exonerate.Tools
   alias Exonerate.Validator
 
-  defstruct [:context, filters: [], pipeline: []]
+  defstruct [:context, filters: [], pipeline: [], arrows: []]
   @type t :: %__MODULE__{}
 
   @validator_filters ~w(properties)
@@ -24,11 +24,24 @@ defmodule Exonerate.Type.Object do
 
   @spec compile(t) :: Macro.t
   def compile(artifact) do
+    arrows = Enum.map(artifact.arrows, fn
+      {key, target} ->
+        Tools.map_arrow(key, Tools.variable(:value), call(target, Tools.variable(:value), key))
+    end)
+
+    properties_fun = {:fn, [], arrows ++ [Tools.map_arrow(Tools.variable(:_), Tools.variable(:_), :ok)]}
+
     quote do
       defp unquote(Validator.to_fun(artifact.context))(object, path) when is_map(object) do
         Exonerate.pipeline(object, path, unquote(artifact.pipeline))
-        :ok
+        Enum.each(object, unquote(properties_fun))
       end
+    end
+  end
+
+  defp call(fun, value_ast, nexthop) do
+    quote do
+      unquote(fun)(unquote(value_ast), Path.join(path, unquote(nexthop)))
     end
   end
 end
