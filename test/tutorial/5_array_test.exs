@@ -20,8 +20,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     """
     require Exonerate
 
-    defschema array: ~s({ "type": "array" })
-
+    Exonerate.function_from_string(:def, :array, ~s({ "type": "array" }))
   end
 
   describe "basic array type matching" do
@@ -55,23 +54,23 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     """
     require Exonerate
 
-    defschema items: """
+    Exonerate.function_from_string(:def, :items, """
     {
       "type": "array",
       "items": {
         "type": "number"
       }
     }
-    """
+    """)
 
-    defschema contains: """
+    Exonerate.function_from_string(:def, :contains, """
     {
       "type": "array",
       "contains": {
         "type": "number"
       }
     }
-    """
+    """)
 
   end
 
@@ -129,7 +128,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     """
     require Exonerate
 
-    defschema tuple: """
+    Exonerate.function_from_string(:def, :tuple, """
     {
       "type": "array",
       "items": [
@@ -149,9 +148,9 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
         }
       ]
     }
-    """
+    """)
 
-    defschema tuple_noadditional: """
+    Exonerate.function_from_string(:def, :tuple_noadditional, """
     {
       "type": "array",
       "items": [
@@ -172,10 +171,10 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       ],
       "additionalItems": false
     }
-    """
+    """)
 
 
-    defschema tuple_additional_with_property:
+    Exonerate.function_from_string(:def, :tuple_additional_with_property,
     """
     {
       "type": "array",
@@ -197,7 +196,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       ],
       "additionalItems": { "type": "string" }
     }
-    """
+    """)
   end
 
   describe "tuple validation" do
@@ -288,13 +287,13 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     """
     require Exonerate
 
-    defschema length: """
+    Exonerate.function_from_string(:def, :length, """
     {
       "type": "array",
       "minItems": 2,
       "maxItems": 3
     }
-    """
+    """)
   end
 
   describe "array length works" do
@@ -325,12 +324,12 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     """
     require Exonerate
 
-    defschema unique: """
+    Exonerate.function_from_string(:def, :unique, """
     {
       "type": "array",
       "uniqueItems": true
     }
-    """
+    """)
   end
 
   describe "array uniqueness works" do
