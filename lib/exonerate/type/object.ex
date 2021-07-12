@@ -7,7 +7,7 @@ defmodule Exonerate.Type.Object do
   alias Exonerate.Tools
   alias Exonerate.Validator
 
-  defstruct [:context, :fallback, needs_accumulator: false, filters: [], pipeline: [], arrows: [], patterns: []]
+  defstruct [:context, :fallback, needs_accumulator: false, filters: [], pipeline: [], arrows: [], pattern_pipeline: []]
   @type t :: %__MODULE__{}
 
   @validator_filters ~w(required maxProperties minProperties properties patternProperties additionalProperties propertyNames dependencies)
@@ -48,7 +48,7 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  defp last_arrow(%{fallback: fallback, patterns: []}) when not is_nil(fallback) do
+  defp last_arrow(%__MODULE__{fallback: fallback, pattern_pipeline: []}) when not is_nil(fallback) do
     Tools.arrow(
       [{Tools.variable(:key),
       Tools.variable(:value)}],
@@ -61,7 +61,7 @@ defmodule Exonerate.Type.Object do
           call(fallback, Tools.variable(:key), Tools.variable(:value))
       end)
   end
-  defp last_arrow(%{fallback: fallback, patterns: patterns = [_ | _]})do
+  defp last_arrow(%__MODULE__{fallback: fallback, pattern_pipeline: patterns = [_ | _]})do
     Tools.arrow(
       [{Tools.variable(:key),
       Tools.variable(:value)}],
@@ -91,19 +91,19 @@ defmodule Exonerate.Type.Object do
   end
 
   defp pattern_conditional(target, patterns, key_ast, val_ast) do
-    final = if target do
-      call(target, Tools.variable(:value), Tools.variable(:key))
-    else
-      kv_mismatch(Tools.variable(:key), Tools.variable(:value))
+    final = case target do
+      nil -> :ok
+      false ->
+        kv_mismatch(Tools.variable(:key), Tools.variable(:value))
+      _ -> call(target, Tools.variable(:value), Tools.variable(:key))
     end
 
-    arrows = Enum.flat_map(patterns, fn {path, pattern} ->
-      quote do
-        Regex.match?(sigil_r(<<unquote(pattern)>>, []), unquote(key_ast)) ->
-          unquote(path)(unquote(val_ast), Path.join(path, unquote(key_ast)))
+    quote do
+      false
+      |> Exonerate.pipeline({path, unquote(key_ast), unquote(val_ast)}, unquote(patterns))
+      |> unless do
+        unquote(final)
       end
-    end) ++ [{:->, [], [[true], final]}]
-
-    {:cond, [], [[do: arrows]]}
+    end
   end
 end
