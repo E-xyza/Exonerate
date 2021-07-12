@@ -1,31 +1,30 @@
 defmodule Exonerate.Filter.AdditionalItems do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  @impl true
-  def append_filter(schema, validation) do
-    calls = validation.collection_calls
-    |> Map.get(:array, [])
-    |> List.insert_at(0, name(validation))
+  alias Exonerate.Validator
+  defstruct [:context, :additional_items]
 
-    children = code(schema, validation) ++ validation.children
+  def parse(artifact = %{context: context}, %{"additionalItems" => schema}) do
 
-    validation
-    |> put_in([:collection_calls, :array], calls)
-    |> put_in([:children], children)
+    schema = Validator.parse(context.schema,
+    ["additionalItems" | context.pointer],
+    authority: context.authority)
+
+    %{artifact |
+      needs_enum: true,
+      post_enum_pipeline: [{fun(artifact), []} | artifact.post_enum_pipeline],
+      additional_items: true,
+      filters: [%__MODULE__{context: context, additional_items: schema} | artifact.filters]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["additionalItems" | validation.path])
+  def compile(%__MODULE__{additional_items: schema}) do
+    {[], [Validator.compile(schema)]}
   end
 
-  defp code(schema, validation) do
-    [quote do
-       defp unquote(name(validation))({item, index}, acc = %{tuple_size: size}, path) when index >= size do
-         unquote(name(validation))(item, Path.join(path, to_string(index)))
-         acc
-       end
-       defp unquote(name(validation))(_, acc, _), do: acc
-     end,
-     Exonerate.Validation.from_schema(schema, ["additionalItems" | validation.path])]
+  defp fun(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("additionalItems")
+    |> Validator.to_fun
   end
 end

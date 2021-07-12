@@ -3,7 +3,7 @@ defmodule Exonerate.Filter.Items do
   @derive Exonerate.Compiler
 
   alias Exonerate.Validator
-  defstruct [:context, :schema, :type]
+  defstruct [:context, :schema, :type, :additional_items]
 
   def parse(artifact = %{context: context}, %{"items" => s}) when is_map(s) do
     fun = fun(artifact)
@@ -16,7 +16,11 @@ defmodule Exonerate.Filter.Items do
       needs_enum: true,
       enum_pipeline: [{fun, []} | artifact.enum_pipeline],
       enum_init: Map.put(artifact.enum_init, :index, 0),
-      filters: [%__MODULE__{context: artifact.context, schema: schema, type: :map} | artifact.filters]}
+      filters: [
+        %__MODULE__{
+          context: context,
+          schema: schema,
+          type: :map} | artifact.filters]}
   end
 
   def parse(artifact = %{context: context}, %{"items" => s}) when is_list(s) do
@@ -31,7 +35,12 @@ defmodule Exonerate.Filter.Items do
       needs_enum: true,
       enum_pipeline: [{fun, []} | artifact.enum_pipeline],
       enum_init: Map.put(artifact.enum_init, :index, 0),
-      filters: [%__MODULE__{context: artifact.context, schema: schemas, type: :list} | artifact.filters]}
+      filters: [
+        %__MODULE__{
+          context: artifact.context,
+          schema: schemas,
+          type: :list,
+          additional_items: artifact.additional_items} | artifact.filters]}
   end
 
   def compile(filter = %__MODULE__{schema: schema, type: :map}) do
@@ -60,11 +69,20 @@ defmodule Exonerate.Filter.Items do
     end)
     |> Enum.unzip()
 
-    {[], trampolines ++ [
+    additional_item_filter = if filter.additional_items do
       quote do
-        defp unquote(fun(filter))(acc = %{index: _}, {_path, _item}), do: acc
+        defp unquote(fun(filter))(acc = %{index: index}, {path, item}) do
+          unquote(fun_a(filter))(item, Path.join(path, to_string(index)))
+          acc
+        end
       end
-    ]++ children}
+    else
+      quote do
+        defp unquote(fun(filter))(acc = %{index: _}, {_item, _path}), do: acc
+      end
+    end
+
+    {[], trampolines ++ [additional_item_filter] ++ children}
   end
 
   defp fun(filter_or_artifact = %_{}) do
@@ -77,6 +95,12 @@ defmodule Exonerate.Filter.Items do
     filter_or_artifact.context
     |> Validator.jump_into("items")
     |> Validator.jump_into("#{index}")
+    |> Validator.to_fun
+  end
+
+  defp fun_a(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("additionalItems")
     |> Validator.to_fun
   end
 end

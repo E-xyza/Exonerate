@@ -3,14 +3,23 @@ defmodule Exonerate.Type.Array do
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler
 
-  defstruct [:context, filters: [], pipeline: [], needs_enum: false, enum_init: %{}, enum_pipeline: [], post_enum_pipeline: []]
+  defstruct [
+    :context,
+    :additional_items,
+    filters: [],
+    pipeline: [],
+    needs_enum: false,
+    enum_init: %{},
+    enum_pipeline: [],
+    post_enum_pipeline: []]
+
   @type t :: %__MODULE__{}
 
   alias Exonerate.Filter
   alias Exonerate.Tools
   alias Exonerate.Validator
 
-  @validator_filters ~w(minItems maxItems items contains)
+  @validator_filters ~w(minItems maxItems additionalItems items contains uniqueItems)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true
