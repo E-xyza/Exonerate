@@ -28,7 +28,7 @@ defmodule ExonerateTest.AutomatedTests do
       cond do
         Path.extname(filename) == ".json" ->
           [Path.join(directory, filename)]
-        (new_dir = directory |> Path.join(filename)) |> File.dir? ->
+        (_new_dir = directory |> Path.join(filename)) |> File.dir? ->
           # don't test optional stuff, for now.
           #build_tests(new_dir)
           []
@@ -77,7 +77,7 @@ defmodule ExonerateTest.AutomatedTests do
     schema! = Jason.encode!(schema!)
     test_blocks = tests
     |> Enum.with_index
-    |> Enum.reject(fn {test, inner_index} -> {path, index, inner_index} in @test_omissions end)
+    |> Enum.reject(fn {_test, inner_index} -> {path, index, inner_index} in @test_omissions end)
     |> Enum.map(&(elem(&1, 0)))
     |> Enum.map(&to_test_block(&1, schema_name))
     quote do
@@ -132,5 +132,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("additionalProperties.json", 5)
+  ExonerateTest.AutomatedTests.make("prefixItems.json", 0)
 end

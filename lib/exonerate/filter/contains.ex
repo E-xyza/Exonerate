@@ -5,7 +5,9 @@ defmodule Exonerate.Filter.Contains do
   alias Exonerate.Validator
   defstruct [:context, :contains, :min_contains]
 
-  def parse(artifact = %{context: context}, schema = %{"contains" => _}) do
+  def parse(artifact, %{"contains" => _, "minContains" => 0}), do: artifact
+
+  def parse(artifact = %{context: context}, %{"contains" => _}) do
     schema =
       Validator.parse(context.schema, ["contains" | context.pointer], authority: context.authority)
 

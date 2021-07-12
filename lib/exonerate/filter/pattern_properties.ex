@@ -27,7 +27,7 @@ defmodule Exonerate.Filter.PatternProperties do
         quote do
           defp unquote(fun(filter, pattern))(seen, {path, key, value}) do
             if Regex.match?(sigil_r(<<unquote(pattern)>>, []), key) do
-              unquote(fun(filter,pattern))(value, seen)
+              unquote(fun(filter,pattern))(value, Path.join(path, key))
             else
               seen
             end

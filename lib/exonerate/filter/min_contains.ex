@@ -5,7 +5,7 @@ defmodule Exonerate.Filter.MinContains do
   alias Exonerate.Validator
   defstruct [:context, :minimum]
 
-  def parse(artifact = %{context: context}, %{"contains" => _, "minContains" => minimum}) do
+  def parse(artifact = %{context: context}, %{"contains" => _, "minContains" => minimum}) when minimum > 0 do
     %{artifact |
       needs_accumulator: true,
       post_reduce_pipeline: [{fun(artifact), []} | artifact.post_reduce_pipeline],
