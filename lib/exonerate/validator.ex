@@ -13,7 +13,9 @@ defmodule Exonerate.Validator do
     required_refs: [],
     # compile-time optimizations
     types: @initial_typemap,
-    guards: []
+    guards: [],
+    distribute: [],
+    children: []
   ]
 
   @type t :: %__MODULE__{
@@ -23,7 +25,9 @@ defmodule Exonerate.Validator do
     schema: Type.schema,
     required_refs: [[String.t]],
     types: %{optional(Type.t) => nil | Type.type_struct},
-    guards: [module]
+    guards: [module],
+    distribute: [module],
+    children: [module]
   }
 
   @spec new(Type.json, Pointer.t, keyword) :: t
@@ -38,7 +42,7 @@ defmodule Exonerate.Validator do
     |> analyze()
   end
 
-  @validator_filters ~w(type enum const)
+  @validator_filters ~w(type enum const not allOf)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @spec analyze(t) :: t
@@ -98,10 +102,10 @@ defmodule Exonerate.Validator do
         end
       object when is_map(object) ->
         build_schema(validator)
-    end
+    end |> Tools.inspect(validator.authority == "impossible#")
   end
 
-  def build_schema(validator = %{types: []}) do
+  def build_schema(validator = %{types: types}) when types == %{} do
     # no available types, go straight to mismatch.
     quote do
       defp unquote(to_fun(validator))(value, path) do
@@ -115,19 +119,34 @@ defmodule Exonerate.Validator do
     |> Enum.map(&%{&1 | context: validator})
     |> Enum.map(&Compiler.compile/1)
 
-    {funs, children} = validator.types
+    {funs, type_children} = validator.types
       |> Map.values
       |> Enum.map(&Compiler.compile/1)
       |> Enum.unzip
+
+    direct_children = Enum.map(validator.children, &Compiler.compile/1)
+
+    children = type_children ++ direct_children
+
+    distributed = distribute(validator, quote do value end, quote do path end)
 
     quote do
       unquote_splicing(Tools.flatten(guards))
       unquote_splicing(Tools.flatten(funs))
       defp unquote(to_fun(validator))(value, path) do
-        :ok
+        unquote_splicing(distributed)
       end
       unquote_splicing(Enum.flat_map(children, &(&1)))
-    end |> Tools.inspect(validator.authority == "const#")
+    end
+  end
+
+  def distribute(%{distribute: []}, _, _) do
+    [:ok]
+  end
+  def distribute(validator, value_ast, path_ast) do
+    Enum.map(validator.distribute, fn filter = %module{} ->
+      module.distribute(filter, value_ast, path_ast)
+    end)
   end
 
   def to_fun(%{pointer: pointer, authority: authority}) do

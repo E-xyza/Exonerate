@@ -2,40 +2,55 @@ defmodule Exonerate.Filter.AllOf do
   @moduledoc false
 
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
+  defstruct [:context, :schemas]
+
+  alias Exonerate.Validator
+  alias Exonerate.Type
 
   @impl true
-  def append_filter(schema, validation) do
-    calls = validation.calls
-    |> Map.get(:all, [])
-    |> List.insert_at(0, name(validation))
+  def parse(validator = %Validator{}, %{"allOf" => s}) do
 
-    children = code(schema, validation) ++ validation.children
+    schemas = Enum.map(0..(length(s) - 1),
+      &Validator.parse(
+        validator.schema,
+        ["#{&1}", "allOf" | validator.pointer],
+        authority: validator.authority))
 
-    validation
-    |> put_in([:calls, :all], calls)
-    |> put_in([:children], children)
+    types = schemas
+    |> Enum.map(&(&1.types))
+    |> Enum.map(&Map.new(&1, fn {k, v} -> {k, nil} end))
+    |> Enum.reduce(&Type.intersection/2)
+
+    module = %__MODULE__{context: validator, schemas: schemas}
+
+    %{validator |
+      types: types,
+      children: [module | validator.children],
+      distribute: [module | validator.distribute]}
   end
 
-  def name(validation) do
-    Exonerate.path_to_call(["allOf" | validation.path])
+  def distribute(filter, value_ast, path_ast) do
+    quote do
+      unquote(fun(filter))(unquote(value_ast), unquote(path_ast))
+    end
   end
 
-  def code(schema, validation) do
-    {calls, funs} = schema
-    |> Enum.with_index
-    |> Enum.map(fn {subschema, index} ->
-      subpath = [to_string(index) , "allOf" | validation.path]
-      {
-        quote do unquote(Exonerate.path_to_call(subpath))(value, path) end,
-        Exonerate.Validation.from_schema(subschema, subpath)
-      }
+  def compile(filter = %__MODULE__{}) do
+    calls = Enum.map(filter.schemas, &quote do
+      unquote(Validator.to_fun(&1))(value, path)
     end)
-    |> Enum.unzip
 
     [quote do
-      def unquote(name(validation))(value, path) do
+      defp unquote(fun(filter))(value, path) do
         unquote_splicing(calls)
       end
-    end] ++ funs
+    end | Enum.map(filter.schemas, &Validator.compile/1)]
+  end
+
+  defp fun(filter) do
+    filter.context
+    |> Validator.jump_into("allOf")
+    |> Validator.to_fun
   end
 end

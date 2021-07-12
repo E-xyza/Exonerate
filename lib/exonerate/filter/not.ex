@@ -2,39 +2,50 @@ defmodule Exonerate.Filter.Not do
   @moduledoc false
 
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
+  defstruct [:context, :schema]
+
+  alias Exonerate.Validator
 
   @impl true
-  def append_filter(inversion, validation) do
-    calls = validation.calls
-    |> Map.get(:all, [])
-    |> List.insert_at(0, name(validation))
+  def parse(validator = %Validator{}, %{"not" => _}) do
 
-    children = code(inversion, validation) ++ validation.children
+    schema = Validator.parse(
+      validator.schema,
+      ["not" | validator.pointer],
+      authority: validator.authority)
 
-    validation
-    |> put_in([:calls, :all], calls)
-    |> put_in([:children], children)
+    module = %__MODULE__{context: validator, schema: schema}
+
+    %{validator |
+      children: [module | validator.children],
+      distribute: [module | validator.distribute]}
   end
 
-  def name(validation) do
-    Exonerate.path_to_call(["not" | validation.path])
-  end
-
-  def code(inversion, validation) do
-    inner_path = Exonerate.path_to_call(["not_" | validation.path])
-    [quote do
-      def unquote(name(validation))(inversion, path) do
-        result = try do
-          unquote(inner_path)(inversion, path)
-        catch
-          {:error, _} -> :error
-        end
-        case result do
-          :ok -> Exonerate.mismatch(inversion, path)
-          :error -> :ok
-        end
+  def distribute(filter, value_ast, path_ast) do
+    quote do
+      negated = try do
+        unquote(fun(filter, "not"))(unquote(value_ast), unquote(path_ast))
+      catch
+        error = {:error, list} when is_list(list) -> error
       end
-    end,
-    Exonerate.Validation.from_schema(inversion, ["not_" | validation.path])]
+      case negated do
+        :ok ->
+          Exonerate.mismatch(unquote(value_ast), unquote(path_ast), guard: "not")
+        {:error, list} ->
+          :ok
+      end
+    end
+  end
+
+  @impl true
+  def compile(filter = %__MODULE__{}) do
+    [Validator.compile(filter.schema)]
+  end
+
+  defp fun(filter, what) do
+    filter.context
+    |> Validator.jump_into(what)
+    |> Validator.to_fun
   end
 end

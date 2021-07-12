@@ -19,14 +19,14 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     """
     require Exonerate
 
-    defschema combining: """
+    Exonerate.function_from_string(:def, :combining, """
     {
       "anyOf": [
         { "type": "string", "maxLength": 5 },
         { "type": "number", "minimum": 0 }
       ]
     }
-    """
+    """)
   end
 
   describe "combining schemas is possible" do
@@ -38,15 +38,15 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "things that match none don't match" do
       assert  {:error, list} = Combining.combining("too long")
 
-      assert list[:schema_path] == "combining#!/anyOf"
+      assert list[:schema_pointer] == "combining#/anyOf"
       assert list[:error_value] == "too long"
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
 
       assert  {:error, list} = Combining.combining(-5)
 
-      assert list[:schema_path] == "combining#!/anyOf"
+      assert list[:schema_pointer] == "combining#/anyOf"
       assert list[:error_value] == -5
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -58,23 +58,23 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     """
     require Exonerate
 
-    defschema allof: """
+    Exonerate.function_from_string(:def, :allof, """
     {
       "allOf": [
         { "type": "string" },
         { "maxLength": 5 }
       ]
     }
-    """
+    """)
 
-    defschema impossible: """
+    Exonerate.function_from_string(:def, :impossible, """
     {
       "allOf": [
         { "type": "string" },
         { "type": "number" }
       ]
     }
-    """
+    """)
   end
 
   describe "allOf combines schemas" do
@@ -85,9 +85,9 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "things that mismatch one don't match" do
       assert  {:error, list} = AllOf.allof("too long")
 
-      assert list[:schema_path] == "allof#!/allOf/1/maxLength"
+      assert list[:schema_pointer] == "allof#/allOf/1/maxLength"
       assert list[:error_value] == "too long"
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -95,15 +95,15 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "are possible of allof" do
       assert  {:error, list} = AllOf.impossible("No way")
 
-      assert list[:schema_path] == "impossible#!/allOf/1/type"
+      assert list[:schema_pointer] == "impossible#/allOf/1/type"
       assert list[:error_value] == "No way"
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
 
       assert  {:error, list} = AllOf.impossible(-1)
 
-      assert list[:schema_path] == "impossible#!/allOf/0/type"
+      assert list[:schema_pointer] == "impossible#/allOf/0/type"
       assert list[:error_value] == -1
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -115,14 +115,14 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     """
     require Exonerate
 
-    defschema anyof: """
+    Exonerate.function_from_string(:def, :anyof, """
     {
       "anyOf": [
         { "type": "string" },
         { "type": "number" }
       ]
     }
-    """
+    """)
   end
 
   describe "anyOf combines schemas" do
@@ -135,9 +135,9 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
       assert  {:error, list} =
         AnyOf.anyof(%{"Not a" => "string or number"})
 
-      assert list[:schema_path] == "anyof#!/anyOf"
+      assert list[:schema_pointer] == "anyof#/anyOf"
       assert list[:error_value] == %{"Not a" => "string or number"}
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -149,16 +149,16 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     """
     require Exonerate
 
-    defschema oneof: """
+    Exonerate.function_from_string(:def, :oneof, """
     {
       "oneOf": [
         { "type": "number", "multipleOf": 5 },
         { "type": "number", "multipleOf": 3 }
       ]
     }
-    """
+    """)
 
-    defschema factorout: """
+    Exonerate.function_from_string(:def, :factorout, """
     {
       "type": "number",
       "oneOf": [
@@ -166,7 +166,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
         { "multipleOf": 3 }
       ]
     }
-    """
+    """)
   end
 
   describe "oneOf combines schemas" do
@@ -178,17 +178,17 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "multiples of neither don't" do
       assert {:error, list} = OneOf.oneof(2)
 
-      assert list[:schema_path] == "oneof#!/oneOf"
+      assert list[:schema_pointer] == "oneof#/oneOf"
       assert list[:error_value] == 2
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
 
     test "multiples of both don't" do
       assert  {:error, list} = OneOf.oneof(15)
 
-      assert list[:schema_path] == "oneof#!/oneOf"
+      assert list[:schema_pointer] == "oneof#/oneOf"
       assert list[:error_value] == 15
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -201,17 +201,17 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "multiples of neither don't" do
       assert  {:error, list} = OneOf.factorout(2)
 
-      assert list[:schema_path] == "factorout#!/oneOf"
+      assert list[:schema_pointer] == "factorout#/oneOf"
       assert list[:error_value] == 2
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
 
     test "multiples of both don't" do
       assert  {:error, list} = OneOf.factorout(15)
 
-      assert list[:schema_path] == "factorout#!/oneOf"
+      assert list[:schema_pointer] == "factorout#/oneOf"
       assert list[:error_value] == 15
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -224,9 +224,9 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     """
     require Exonerate
 
-    defschema no: """
+    Exonerate.function_from_string(:def, :no, """
     { "not": { "type": "string" } }
-    """
+    """)
   end
 
   describe "not inverts schemas" do
@@ -238,9 +238,9 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "things that mismatch one don't match" do
       assert  {:error, list} = Not.no("I am a string")
 
-      assert list[:schema_path] == "no#!/not"
+      assert list[:schema_pointer] == "no#/not"
       assert list[:error_value] == "I am a string"
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 end
