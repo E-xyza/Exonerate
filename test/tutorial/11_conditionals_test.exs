@@ -14,7 +14,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
     """
     require Exonerate
 
-    defschema dependency1:
+    Exonerate.function_from_string(:def, :dependency1,
     """
     {
       "type": "object",
@@ -31,9 +31,9 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
         "credit_card": ["billing_address"]
       }
     }
-    """
+    """)
 
-    defschema dependency2:
+    Exonerate.function_from_string(:def, :dependency2,
     """
     {
       "type": "object",
@@ -51,7 +51,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
         "billing_address": ["credit_card"]
       }
     }
-    """
+    """)
   end
 
   @propdependency1 """
@@ -86,9 +86,9 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       assert {:error, list} =
         PropertyDependencies.dependency1(propdependency2)
 
-      assert list[:schema_path] == "dependency1#!/dependencies/credit_card/0"
+      assert list[:schema_pointer] == "dependency1#/dependencies/credit_card/0"
       assert list[:error_value] == propdependency2
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
     test "no dependency doesn't need to be met" do
       assert :ok = @propdependency3
@@ -108,9 +108,9 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       assert {:error, list} =
         PropertyDependencies.dependency2(propdependency2)
 
-      assert list[:schema_path] == "dependency2#!/dependencies/credit_card/0"
+      assert list[:schema_pointer] == "dependency2#/dependencies/credit_card/0"
       assert list[:error_value] == propdependency2
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
 
     test "dependency is now two-way" do
@@ -118,9 +118,9 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       assert {:error, list} =
         PropertyDependencies.dependency2(propdependency4)
 
-      assert list[:schema_path] == "dependency2#!/dependencies/billing_address/0"
+      assert list[:schema_pointer] == "dependency2#/dependencies/billing_address/0"
       assert list[:error_value] == propdependency4
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -134,7 +134,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
     """
     require Exonerate
 
-    defschema schemadependency:
+    Exonerate.function_from_string(:def, :schemadependency,
     """
     {
       "type": "object",
@@ -155,7 +155,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
         }
       }
     }
-    """
+    """)
 
   end
 
@@ -190,9 +190,9 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       assert {:error, list} =
         SchemaDependencies.schemadependency(schemadependency2)
 
-      assert list[:schema_path] == "schemadependency#!/dependencies/credit_card/required/0"
+      assert list[:schema_pointer] == "schemadependency#/dependencies/credit_card/required/0"
       assert list[:error_value] == %{"credit_card" => 5555555555555555, "name" => "John Doe"}
-      assert list[:json_path] == "/"
+      assert list[:json_pointer] == "/"
     end
     test "omitting a trigger works" do
       assert :ok = @schemadependency3

@@ -26,12 +26,6 @@ defmodule Exonerate.Filter.Properties do
   end
 
   # TODO: generalize this.
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("properties")
-    |> Validator.to_fun
-  end
-
   defp fun(filter_or_artifact = %_{}, nexthop) do
     filter_or_artifact.context
     |> Validator.jump_into("properties")

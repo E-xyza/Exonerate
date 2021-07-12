@@ -10,7 +10,7 @@ defmodule Exonerate.Type.Object do
   defstruct [:context, :fallback, needs_accumulator: false, filters: [], pipeline: [], arrows: [], patterns: []]
   @type t :: %__MODULE__{}
 
-  @validator_filters ~w(required maxProperties minProperties properties patternProperties additionalProperties propertyNames)
+  @validator_filters ~w(required maxProperties minProperties properties patternProperties additionalProperties propertyNames dependencies)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   def parse(validator = %Validator{}, schema) do
