@@ -23,11 +23,11 @@ defmodule Exonerate.Filter.Enum do
 
   def compile(%__MODULE__{context: context, enums: enums}) do
     context_types = Map.keys(context.types)
-    literals = Enum.filter(
-      enums,
-      fn enum ->
-          Enum.any?(context_types, &(to_guard(&1).(enum)))
-      end)
+    literals = enums
+    |> Enum.filter(fn enum ->
+      Enum.any?(context_types, &(to_guard(&1).(enum)))
+    end)
+    |> Enum.map(&Macro.escape/1)
 
     quote do
       defp unquote(Validator.to_fun(context))(value, path)
