@@ -4,7 +4,7 @@ defmodule ExonerateTest.Parse.StringTest do
   alias Exonerate.Filter.{MaxLength, MinLength, Pattern}
   alias Exonerate.Type.String
 
-  @validator %Exonerate.Validator{pointer: [], schema: %{}}
+  @validator %Exonerate.Validator{pointer: [], schema: %{}, authority: ""}
 
   describe "length parameters are set" do
     test "minLength" do

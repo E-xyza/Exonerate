@@ -4,7 +4,7 @@ defmodule ExonerateTest.Parse.NumberTest do
   alias Exonerate.Filter.{ExclusiveMaximum, ExclusiveMinimum, Maximum, Minimum, MultipleOf}
   alias Exonerate.Type.Number
 
-  @validator %Exonerate.Validator{pointer: [], schema: %{}}
+  @validator %Exonerate.Validator{pointer: [], schema: %{}, authority: ""}
 
   describe "range parameters are set" do
     test "maximum" do
