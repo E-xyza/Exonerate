@@ -11,7 +11,7 @@ defmodule Exonerate.Type.Number do
   alias Exonerate.Tools
   alias Exonerate.Validator
 
-  @validator_filters ~w(minimum maximum exclusiveMinimum exclusiveMaximum)
+  @validator_filters ~w(minimum maximum exclusiveMinimum exclusiveMaximum multipleOf)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true

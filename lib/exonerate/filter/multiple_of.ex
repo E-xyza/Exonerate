@@ -3,9 +3,11 @@ defmodule Exonerate.Filter.MultipleOf do
   @derive Exonerate.Compiler
 
   alias Exonerate.Validator
+  alias Exonerate.Type.Integer
+  alias Exonerate.Type.Number
   defstruct [:context, :factor]
 
-  def parse(artifact = %Exonerate.Type.Integer{}, %{"multipleOf" => factor}) do
+  def parse(artifact = %type{}, %{"multipleOf" => factor}) when is_integer(factor) and type in [Number, Integer]do
     %{artifact | filters: [%__MODULE__{context: artifact.context, factor: factor} | artifact.filters]}
   end
 

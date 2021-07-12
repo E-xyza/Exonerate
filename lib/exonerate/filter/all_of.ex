@@ -17,15 +17,16 @@ defmodule Exonerate.Filter.AllOf do
         ["#{&1}", "allOf" | validator.pointer],
         authority: validator.authority))
 
-    types = schemas
-    |> Enum.map(&(&1.types))
-    |> Enum.map(&Map.new(&1, fn {k, v} -> {k, nil} end))
-    |> Enum.reduce(&Type.intersection/2)
+    # CONSIDER OPTING-IN TO THIS OPTIMIZATION.  NOTE IT BREAKS ERROR PATH REPORTING.
+    #types = schemas
+    #|> Enum.map(&(&1.types))
+    #|> Enum.map(&Map.new(&1, fn {k, _} -> {k, nil} end))
+    #|> Enum.reduce(&Type.intersection/2)
 
     module = %__MODULE__{context: validator, schemas: schemas}
 
     %{validator |
-      types: types,
+    #  types: types,
       children: [module | validator.children],
       distribute: [module | validator.distribute]}
   end

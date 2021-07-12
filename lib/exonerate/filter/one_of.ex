@@ -2,47 +2,64 @@ defmodule Exonerate.Filter.OneOf do
   @moduledoc false
 
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
+  defstruct [:context, :schemas]
+
+  alias Exonerate.Validator
+  alias Exonerate.Type
 
   @impl true
-  def append_filter(schema, validation) do
-    calls = validation.calls
-    |> Map.get(:all, [])
-    |> List.insert_at(0, name(validation))
+  def parse(validator = %Validator{}, %{"oneOf" => s}) do
 
-    children = code(schema, validation) ++ validation.children
+    schemas = Enum.map(0..(length(s) - 1),
+      &Validator.parse(
+        validator.schema,
+        ["#{&1}", "oneOf" | validator.pointer],
+        authority: validator.authority))
 
-    validation
-    |> put_in([:calls, :all], calls)
-    |> put_in([:children], children)
+    # CONSIDER OPTING-IN TO TYPE OPTIMIZATION.  NOTE IT BREAKS ERROR PATH REPORTING.
+
+    module = %__MODULE__{context: validator, schemas: schemas}
+
+    %{validator |
+    #  types: types,
+      children: [module | validator.children],
+      distribute: [module | validator.distribute]}
   end
 
-  def name(validation) do
-    Exonerate.path_to_call(["oneOf" | validation.path])
-  end
-
-  def code(schema, validation) do
-    {calls, funs} = schema
-    |> Enum.with_index
-    |> Enum.map(fn {subschema, index} ->
-      subpath = [to_string(index) , "oneOf" | validation.path]
-      {
-        {:&, [], [{:/, [], [{Exonerate.path_to_call(subpath), [], Elixir}, 2]}]},
-        Exonerate.Validation.from_schema(subschema, subpath)
-      }
-    end)
-    |> Enum.unzip
-
-    [quote do
-      def unquote(name(validation))(value, path) do
-        count = Enum.count(unquote(calls), fn fun ->
-          try do
-            fun.(value, path)
-          catch
-            {:error, _} -> false
-          end
-        end)
-        if (count == 1), do: :ok, else: Exonerate.mismatch(value, path)
+  def distribute(filter, value_ast, path_ast) do
+    funs = Enum.map(filter.schemas, &{Validator.to_fun(&1), []})
+    quote do
+      case Exonerate.pipeline(0, {unquote(value_ast), unquote(path_ast)}, unquote(funs)) do
+        1 -> :ok
+        _ -> Exonerate.mismatch(unquote(value_ast), unquote(path_ast), guard: "oneOf")
       end
-    end] ++ funs
+    end
+  end
+
+  def compile(filter = %__MODULE__{}) do
+    #calls = Enum.map(filter.schemas, &quote do
+    #  unquote(Validator.to_fun(&1))(value, path)
+    #end)
+
+    Enum.flat_map(filter.schemas, fn schema -> [
+      quote do
+        defp unquote(Validator.to_fun(schema))(acc, {value, path}) do
+          try do
+            unquote(Validator.to_fun(schema))(value, path)
+            acc + 1
+          catch
+            error = {:error, list} when is_list(list) -> acc
+          end
+        end
+      end,
+      Validator.compile(schema)]
+    end)
+  end
+
+  defp fun(filter) do
+    filter.context
+    |> Validator.jump_into("oneOf")
+    |> Validator.to_fun
   end
 end

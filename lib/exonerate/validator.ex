@@ -42,7 +42,7 @@ defmodule Exonerate.Validator do
     |> analyze()
   end
 
-  @validator_filters ~w(type enum const not allOf)
+  @validator_filters ~w(type enum const allOf not anyOf oneOf)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @spec analyze(t) :: t
@@ -102,7 +102,7 @@ defmodule Exonerate.Validator do
         end
       object when is_map(object) ->
         build_schema(validator)
-    end |> Tools.inspect(validator.authority == "impossible#")
+    end |> Tools.inspect(validator.authority == "oneof#")
   end
 
   def build_schema(validator = %{types: types}) when types == %{} do
