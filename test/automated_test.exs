@@ -72,7 +72,8 @@ defmodule ExonerateTest.AutomatedTests do
 
   defp to_describe_block({%{"description" => description!, "schema" => schema!, "tests" => tests}, index}, path) do
     description! = "#{path}(#{index}) #{description!}"
-    schema_name = :"test#{index}"
+    basename = Path.basename(path, ".json")
+    schema_name = :"#{basename}_#{index}"
     schema! = Jason.encode!(schema!)
     test_blocks = tests
     |> Enum.with_index
@@ -81,7 +82,7 @@ defmodule ExonerateTest.AutomatedTests do
     |> Enum.map(&to_test_block(&1, schema_name))
     quote do
       describe unquote(description!) do
-        defschema([{unquote(schema_name), unquote(schema!)}])
+        Exonerate.function_from_string(:def, unquote(schema_name), unquote(schema!))
         unquote_splicing(test_blocks)
       end
     end
