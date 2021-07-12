@@ -3,6 +3,7 @@ defmodule Exonerate.Filter.Const do
 
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
   defstruct [:context, :const]
 
   alias Exonerate.Type

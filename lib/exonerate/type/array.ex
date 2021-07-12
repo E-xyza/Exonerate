@@ -2,6 +2,7 @@ defmodule Exonerate.Type.Array do
   # boilerplate!!
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
   defstruct [
     :context,
@@ -22,7 +23,9 @@ defmodule Exonerate.Type.Array do
 
   # maxContains MUST precede contains so it is put onto the pipeline AFTER the contains
   # reduction element.
-  @validator_filters ~w(minItems maxItems additionalItems prefixItems items maxContains minContains contains uniqueItems)
+  # items MUST be last to detect the presence of prefixItems and also clear all filters
+  # in the items = false optimization.
+  @validator_filters ~w(minItems maxItems additionalItems prefixItems maxContains minContains contains uniqueItems items)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true

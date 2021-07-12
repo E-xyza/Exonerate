@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.MultipleOf do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
   alias Exonerate.Type.Integer

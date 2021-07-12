@@ -2,6 +2,7 @@ defmodule Exonerate.Filter.Enum do
   @moduledoc false
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
   defstruct [:context, :enums]
 
   alias Exonerate.Type

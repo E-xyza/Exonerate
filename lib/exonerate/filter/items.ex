@@ -1,20 +1,31 @@
 defmodule Exonerate.Filter.Items do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
-  defstruct [:context, :schema, :additional_items]
+  defstruct [:context, :schema, :additional_items, :prefix_size]
 
   def parse(artifact = %{context: context}, %{"items" => true}) do
     # true means any array is valid
     # this header clause is provided as an optimization.
-    %{artifact | filters: [%__MODULE__{context: context, schema: true}]}
+    %{artifact | filters: [%__MODULE__{context: context, schema: true} | artifact.filters]}
   end
 
-  def parse(artifact = %{context: context}, %{"items" => false}) do
-    # false means only nonempty array is valid
-    # this header clause is provided as an optimization.
-    %{artifact | filters: [%__MODULE__{context: context, schema: true}]}
+  def parse(artifact = %{context: context}, schema = %{"items" => false}) do
+    # false means everything after prefixItems gets checked.
+    if prefix_items = schema["prefixItems"] do
+      filter = %__MODULE__{context: context, schema: false, prefix_size: length(prefix_items)}
+      %{artifact |
+        needs_accumulator: true,
+        accumulator_pipeline: [{fun(artifact), []} | artifact.accumulator_pipeline],
+        accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
+        filters: [filter  | artifact.filters]}
+    else
+      # this is provided as an optimization.
+      filter = %__MODULE__{context: context, schema: false, prefix_size: 0}
+      %{artifact | filters: [filter]}
+    end
   end
 
   def parse(artifact = %{context: context}, %{"items" => s}) when is_map(s) do
@@ -55,12 +66,26 @@ defmodule Exonerate.Filter.Items do
 
   def compile(%__MODULE__{schema: true}), do: {[], []}
 
-  def compile(filter = %__MODULE__{schema: false}) do
+  def compile(filter = %__MODULE__{schema: false, prefix_size: 0}) do
     {[quote do
-      def unquote(Validator.to_fun(filter.context))(array, path) when is_list(array) and array != [] do
+      defp unquote(Validator.to_fun(filter.context))(array, path) when is_list(array) and array != [] do
         Exonerate.mismatch(array, path, guard: "items")
       end
     end], []}
+  end
+
+  def compile(filter = %__MODULE__{schema: false}) do
+    {[], [
+      quote do
+        defp unquote(fun(filter))(acc = %{index: index}, {path, array})
+          when index < unquote(filter.prefix_size) do
+          acc
+        end
+        defp unquote(fun(filter))(%{index: index}, {path, array}) do
+          Exonerate.mismatch(array, path, guard: to_string(index))
+        end
+      end
+    ]}
   end
 
   def compile(filter = %__MODULE__{schema: schema}) when is_map(schema) do

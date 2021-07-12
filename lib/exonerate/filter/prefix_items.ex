@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.PrefixItems do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
   defstruct [:context, :schema, :additional_items]

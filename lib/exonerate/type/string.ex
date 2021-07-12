@@ -2,6 +2,7 @@ defmodule Exonerate.Type.String do
   # boilerplate!!
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
   defstruct [:context, pipeline: [], filters: []]
   @type t :: %__MODULE__{}

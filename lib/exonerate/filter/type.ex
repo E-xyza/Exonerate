@@ -2,6 +2,8 @@ defmodule Exonerate.Filter.Type do
   @moduledoc false
 
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
+  
   defstruct [:context, :types]
 
   alias Exonerate.Type

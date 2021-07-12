@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.Contains do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
   defstruct [:context, :contains, :min_contains]

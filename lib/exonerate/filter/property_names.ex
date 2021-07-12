@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.PropertyNames do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
   alias Exonerate.Type.Object
   alias Exonerate.Validator

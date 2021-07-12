@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.Minimum do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
   alias Exonerate.Type.Integer
   alias Exonerate.Type.Number

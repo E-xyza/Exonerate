@@ -2,6 +2,7 @@ defmodule Exonerate.Type.Object do
   # boilerplate!!
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
   alias Exonerate.Filter
   alias Exonerate.Tools

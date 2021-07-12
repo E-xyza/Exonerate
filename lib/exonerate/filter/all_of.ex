@@ -3,6 +3,7 @@ defmodule Exonerate.Filter.AllOf do
 
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
   defstruct [:context, :schemas]
 
   alias Exonerate.Validator
