@@ -1,48 +1,75 @@
 defmodule Exonerate.Filter.PrefixItems do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  alias Exonerate.Type
-  require Type
+  alias Exonerate.Validator
+  defstruct [:context, :schema, :additional_items]
 
-  # enumerated, tuple validation
-  def append_filter(schema, validation) when is_list(schema) do
-    calls = validation.collection_calls
-    |> Map.get(:array, [])
-    |> List.insert_at(0, name(validation))
+  def parse(artifact = %{context: context}, %{"prefixItems" => s}) when is_list(s) do
+    fun = fun(artifact)
 
-    children = code(schema, validation) ++ validation.children
+    schemas = Enum.map(0..(length(s) - 1),
+      &Validator.parse(context.schema,
+        ["#{&1}", "prefixItems" | context.pointer],
+        authority: context.authority))
 
-    validation
-    |> put_in([:collection_calls, :array], calls)
-    |> put_in([:children], children)
-    |> put_in([:accumulator, :prefix_size], length(schema))
+    %{artifact |
+      needs_accumulator: true,
+      accumulator_pipeline: [{fun, []} | artifact.accumulator_pipeline],
+      accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
+      filters: [
+        %__MODULE__{
+          context: artifact.context,
+          schema: schemas,
+          additional_items: artifact.additional_items} | artifact.filters]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["prefixItems" | validation.path])
-  end
-  defp name(validation, index) do
-    Exonerate.path_to_call([to_string(index), "prefixItems" | validation.path])
-  end
-
-  defp code(schema, validation) do
-    {calls, funs} = schema
-    |> Enum.with_index
-    |> Enum.map(fn {item_schema, index} ->
-      {
-        quote do
-          defp unquote(name(validation))({item, unquote(index)}, acc, path) do
-            unquote(name(validation, index))(item, Path.join(path, to_string(unquote(index))))
-            acc
-          end
-        end,
-        Exonerate.Validation.from_schema(item_schema, [to_string(index), "prefixItems" | validation.path])
-      }
+  def compile(filter = %__MODULE__{schema: schemas}) when is_list(schemas) do
+    {trampolines, children} = schemas
+    |> Enum.with_index()
+    |> Enum.map(fn {schema, index} ->
+      {quote do
+        defp unquote(fun(filter))(acc = %{index: unquote(index)}, {path, item}) do
+          unquote(fun(filter, index))(item, Path.join(path, unquote("#{index}")))
+          acc
+        end
+      end,
+      Validator.compile(schema)}
     end)
-    |> Enum.unzip
+    |> Enum.unzip()
 
-    calls ++ [quote do
-      defp unquote(name(validation))({item, _}, acc, path), do: acc
-    end] ++ funs
+    additional_item_filter = if filter.additional_items do
+      quote do
+        defp unquote(fun(filter))(acc = %{index: index}, {path, item}) do
+          unquote(fun_a(filter))(item, Path.join(path, to_string(index)))
+          acc
+        end
+      end
+    else
+      quote do
+        defp unquote(fun(filter))(acc = %{index: _}, {_item, _path}), do: acc
+      end
+    end
+
+    {[], trampolines ++ [additional_item_filter] ++ children}
+  end
+
+  defp fun(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("prefixItems")
+    |> Validator.to_fun
+  end
+
+  defp fun(filter_or_artifact = %_{}, index) do
+    filter_or_artifact.context
+    |> Validator.jump_into("prefixItems")
+    |> Validator.jump_into("#{index}")
+    |> Validator.to_fun
+  end
+
+  defp fun_a(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("additionalItems")
+    |> Validator.to_fun
   end
 end

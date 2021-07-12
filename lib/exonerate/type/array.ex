@@ -22,7 +22,7 @@ defmodule Exonerate.Type.Array do
 
   # maxContains MUST precede contains so it is put onto the pipeline AFTER the contains
   # reduction element.
-  @validator_filters ~w(minItems maxItems additionalItems items maxContains minContains contains uniqueItems)
+  @validator_filters ~w(minItems maxItems additionalItems prefixItems items maxContains minContains contains uniqueItems)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true

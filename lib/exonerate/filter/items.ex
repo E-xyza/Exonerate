@@ -3,7 +3,7 @@ defmodule Exonerate.Filter.Items do
   @derive Exonerate.Compiler
 
   alias Exonerate.Validator
-  defstruct [:context, :schema, :type, :additional_items]
+  defstruct [:context, :schema, :additional_items]
 
   def parse(artifact = %{context: context}, %{"items" => true}) do
     # true means any array is valid
