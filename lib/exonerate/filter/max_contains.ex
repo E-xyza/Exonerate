@@ -1,30 +1,33 @@
 defmodule Exonerate.Filter.MaxContains do
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
 
-  @impl true
-  def append_filter(maximum, validation) when is_integer(maximum) do
-    calls = validation.collection_calls
-    |> Map.get(:array, [])
-    |> List.insert_at(0, name(validation))
+  alias Exonerate.Validator
+  defstruct [:context, :maximum]
 
-    children = code(maximum, validation) ++ validation.children
+  def parse(artifact = %{context: context}, %{"contains" => _, "maxContains" => maximum}) do
+    %{artifact |
+      needs_accumulator: true,
+      accumulator_pipeline: [{fun(artifact), []} | artifact.accumulator_pipeline],
+      accumulator_init: Map.put_new(artifact.accumulator_init, :contains, 0),
+      filters: [%__MODULE__{context: context, maximum: maximum} | artifact.filters]}
+  end
+  def parse(artifact, %{"maxContains" => _}), do: artifact # ignore when there is no "contains"
 
-    validation
-    |> put_in([:collection_calls, :array], calls)
-    |> put_in([:children], children)
+  def compile(filter = %__MODULE__{maximum: maximum}) do
+    {[], [
+      quote do
+        defp unquote(fun(filter))(%{contains: contains}, {path, array}) when contains > unquote(maximum) do
+          Exonerate.mismatch(array, path)
+        end
+        defp unquote(fun(filter))(acc, {_path, _array}), do: acc
+      end
+    ]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["maxContains" | validation.path])
-  end
-
-  defp code(maximum, validation) do
-    [quote do
-       defp unquote(name(validation))({_, index}, acc = %{contains: contains}, path) do
-         if contains > unquote(maximum), do: throw {:max, "maxContains"}
-         acc
-       end
-       defp unquote(name(validation))(_, _, _), do: :ok
-     end]
+  defp fun(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("maxContains")
+    |> Validator.to_fun
   end
 end

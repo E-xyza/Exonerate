@@ -20,7 +20,9 @@ defmodule Exonerate.Type.Array do
   alias Exonerate.Tools
   alias Exonerate.Validator
 
-  @validator_filters ~w(minItems maxItems additionalItems items contains uniqueItems)
+  # maxContains MUST precede contains so it is put onto the pipeline AFTER the contains
+  # reduction element.
+  @validator_filters ~w(minItems maxItems additionalItems items maxContains minContains contains uniqueItems)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true
