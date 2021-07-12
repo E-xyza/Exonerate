@@ -51,7 +51,15 @@ defmodule Exonerate do
     end
   end
 
-  @metadata_call %{"$id" => :id, "$schema" => :schema}
+  @metadata_call %{
+    "$id" => :id,
+    "$schema" => :schema,
+    "default" => :default,
+    "examples" => :examples,
+    "description" => :description,
+    "title" => :title
+  }
+
   @metadata_keys Map.keys(@metadata_call)
   defp metadata_functions(name, schema, entrypoint) do
     case Pointer.eval(entrypoint, schema) do
