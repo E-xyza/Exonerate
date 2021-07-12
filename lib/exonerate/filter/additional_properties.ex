@@ -16,6 +16,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
 
     %{artifact |
       filters: [%__MODULE__{context: context, child: child} | artifact.filters],
+      needs_accumulator: true,
       fallback: fun(artifact)}
   end
 
