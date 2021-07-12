@@ -30,10 +30,20 @@ defmodule Exonerate.Filter.Enum do
     end)
     |> Enum.map(&Macro.escape/1)
 
-    quote do
-      defp unquote(Validator.to_fun(context))(value, path)
-        when value not in unquote(literals) do
-          Exonerate.mismatch(value, path, guard: "enum")
+    # erlang OTP < 24 compiler flaw.
+    if true in literals do
+      quote do
+        defp unquote(Validator.to_fun(context))(value, path)
+          when (value not in unquote(Enum.reject(literals, &(&1 === true)))) and (value != true) do
+            Exonerate.mismatch(value, path, guard: "enum")
+        end
+      end
+    else
+      quote do
+        defp unquote(Validator.to_fun(context))(value, path)
+          when value not in unquote(literals) do
+            Exonerate.mismatch(value, path, guard: "enum")
+        end
       end
     end
   end
