@@ -5,6 +5,18 @@ defmodule Exonerate.Filter.Items do
   alias Exonerate.Validator
   defstruct [:context, :schema, :type, :additional_items]
 
+  def parse(artifact = %{context: context}, %{"items" => true}) do
+    # true means any array is valid
+    # this header clause is provided as an optimization.
+    %{artifact | filters: [%__MODULE__{context: context, schema: true}]}
+  end
+
+  def parse(artifact = %{context: context}, %{"items" => false}) do
+    # false means only nonempty array is valid
+    # this header clause is provided as an optimization.
+    %{artifact | filters: [%__MODULE__{context: context, schema: true}]}
+  end
+
   def parse(artifact = %{context: context}, %{"items" => s}) when is_map(s) do
     fun = fun(artifact)
 
@@ -19,8 +31,7 @@ defmodule Exonerate.Filter.Items do
       filters: [
         %__MODULE__{
           context: context,
-          schema: schema,
-          type: :map} | artifact.filters]}
+          schema: schema} | artifact.filters]}
   end
 
   def parse(artifact = %{context: context}, %{"items" => s}) when is_list(s) do
@@ -39,11 +50,20 @@ defmodule Exonerate.Filter.Items do
         %__MODULE__{
           context: artifact.context,
           schema: schemas,
-          type: :list,
           additional_items: artifact.additional_items} | artifact.filters]}
   end
 
-  def compile(filter = %__MODULE__{schema: schema, type: :map}) do
+  def compile(%__MODULE__{schema: true}), do: {[], []}
+
+  def compile(filter = %__MODULE__{schema: false}) do
+    {[quote do
+      def unquote(Validator.to_fun(filter.context))(array, path) when is_list(array) and array != [] do
+        Exonerate.mismatch(array, path, guard: "items")
+      end
+    end], []}
+  end
+
+  def compile(filter = %__MODULE__{schema: schema}) when is_map(schema) do
     {[], [
       quote do
         defp unquote(fun(filter))(acc, {path, item}) do
@@ -55,7 +75,7 @@ defmodule Exonerate.Filter.Items do
     ]}
   end
 
-  def compile(filter = %__MODULE__{schema: schemas, type: :list}) do
+  def compile(filter = %__MODULE__{schema: schemas}) when is_list(schemas) do
     {trampolines, children} = schemas
     |> Enum.with_index()
     |> Enum.map(fn {schema, index} ->
