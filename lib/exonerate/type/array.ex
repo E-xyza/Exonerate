@@ -10,7 +10,7 @@ defmodule Exonerate.Type.Array do
   alias Exonerate.Tools
   alias Exonerate.Validator
 
-  @validator_filters ~w(minItems maxItems)
+  @validator_filters ~w(minItems maxItems items contains)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true
@@ -47,10 +47,10 @@ defmodule Exonerate.Type.Array do
     quote do
       defp unquote(Validator.to_fun(artifact.context))(array, path) when is_list(array) do
         array
-        |> Enum.reduce(Map.put(unquote(Macro.escape(artifact.enum_init)), :array, array), fn item, acc ->
-          Exonerate.pipeline(acc, path, unquote(enum_pipeline))
+        |> Enum.reduce(unquote(Macro.escape(artifact.enum_init)), fn item, acc ->
+          Exonerate.pipeline(acc, {path, item}, unquote(enum_pipeline))
         end)
-        |> Exonerate.pipeline(path, unquote(artifact.post_enum_pipeline))
+        |> Exonerate.pipeline({path, array}, unquote(artifact.post_enum_pipeline))
         :ok
       end
       unquote(index_accumulator)

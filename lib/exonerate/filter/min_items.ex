@@ -18,9 +18,9 @@ defmodule Exonerate.Filter.MinItems do
   def compile(filter = %__MODULE__{count: count}) do
     {[], [
       quote do
-        defp unquote(fun0(filter, "minItems"))(acc, path) do
+        defp unquote(fun0(filter, "minItems"))(acc, {path, array}) do
           if acc.index < unquote(count) do
-            Exonerate.mismatch(acc.array, path)
+            Exonerate.mismatch(array, path)
           end
           acc
         end

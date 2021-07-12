@@ -3,20 +3,20 @@ defmodule Exonerate.Filter.PropertyNames do
   @derive Exonerate.Compiler
 
   alias Exonerate.Validator
-  defstruct [:context, :spec]
+  defstruct [:context, :schema]
 
-  def parse(artifact = %{context: context}, %{"propertyNames" => spec})  do
-    spec = Exonerate.Type.String.parse(Validator.jump_into(artifact.context, "propertyNames", true), spec)
+  def parse(artifact = %{context: context}, %{"propertyNames" => schema})  do
+    schema = Exonerate.Type.String.parse(Validator.jump_into(artifact.context, "propertyNames", true), schema)
 
     %{artifact |
       needs_enum: true,
       fallback: {:name, fun(artifact)},
-      filters: [%__MODULE__{context: context, spec: spec} | artifact.filters]}
+      filters: [%__MODULE__{context: context, schema: schema} | artifact.filters]}
   end
 
-  def compile(%__MODULE__{spec: spec}) do
+  def compile(%__MODULE__{schema: schema}) do
     {[], [
-      Exonerate.Compiler.compile(spec)
+      Exonerate.Compiler.compile(schema)
     ]}
   end
 
