@@ -9,9 +9,9 @@ defmodule Exonerate.Filter.MinItems do
     check_key = fun0(artifact, "minItems")
 
     %{artifact |
-      needs_enum: true,
-      post_enum_pipeline: [{check_key, []} | artifact.post_enum_pipeline],
-      enum_init: Map.put(artifact.enum_init, :index, 0),
+      needs_accumulator: true,
+      post_reduce_pipeline: [{check_key, []} | artifact.post_reduce_pipeline],
+      accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
       filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
   end
 

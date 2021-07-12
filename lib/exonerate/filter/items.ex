@@ -13,9 +13,9 @@ defmodule Exonerate.Filter.Items do
       authority: context.authority)
 
     %{artifact |
-      needs_enum: true,
-      enum_pipeline: [{fun, []} | artifact.enum_pipeline],
-      enum_init: Map.put(artifact.enum_init, :index, 0),
+      needs_accumulator: true,
+      accumulator_pipeline: [{fun, []} | artifact.accumulator_pipeline],
+      accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
       filters: [
         %__MODULE__{
           context: context,
@@ -32,9 +32,9 @@ defmodule Exonerate.Filter.Items do
         authority: context.authority))
 
     %{artifact |
-      needs_enum: true,
-      enum_pipeline: [{fun, []} | artifact.enum_pipeline],
-      enum_init: Map.put(artifact.enum_init, :index, 0),
+      needs_accumulator: true,
+      accumulator_pipeline: [{fun, []} | artifact.accumulator_pipeline],
+      accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
       filters: [
         %__MODULE__{
           context: artifact.context,

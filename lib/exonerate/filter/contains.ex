@@ -9,10 +9,10 @@ defmodule Exonerate.Filter.Contains do
     schema = Validator.parse(context.schema, ["contains" | context.pointer], authority: context.authority)
 
     %{artifact |
-      needs_enum: true,
-      enum_pipeline: [{fun(artifact, ":reduce"), []} | artifact.enum_pipeline],
-      post_enum_pipeline: [{fun(artifact), []} | artifact.post_enum_pipeline],
-      enum_init: Map.put(artifact.enum_init, :contains, false),
+      needs_accumulator: true,
+      accumulator_pipeline: [{fun(artifact, ":reduce"), []} | artifact.accumulator_pipeline],
+      post_reduce_pipeline: [{fun(artifact), []} | artifact.post_reduce_pipeline],
+      accumulator_init: Map.put(artifact.accumulator_init, :contains, false),
       filters: [%__MODULE__{context: artifact.context, contains: schema} | artifact.filters]}
   end
 

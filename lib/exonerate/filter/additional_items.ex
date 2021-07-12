@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.AdditionalItems do
     authority: context.authority)
 
     %{artifact |
-      needs_enum: true,
+      needs_accumulator: true,
       additional_items: true,
       filters: [%__MODULE__{context: context, additional_items: schema} | artifact.filters]}
   end

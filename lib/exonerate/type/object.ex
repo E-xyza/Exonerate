@@ -7,7 +7,7 @@ defmodule Exonerate.Type.Object do
   alias Exonerate.Tools
   alias Exonerate.Validator
 
-  defstruct [:context, :fallback, needs_enum: false, filters: [], pipeline: [], arrows: [], patterns: []]
+  defstruct [:context, :fallback, needs_accumulator: false, filters: [], pipeline: [], arrows: [], patterns: []]
   @type t :: %__MODULE__{}
 
   @validator_filters ~w(required maxProperties minProperties properties patternProperties additionalProperties propertyNames)
@@ -34,7 +34,7 @@ defmodule Exonerate.Type.Object do
 
     properties_fun = {:fn, [], arrows ++ [last_arrow(artifact)]}
 
-    enum = if artifact.needs_enum do
+    enum = if artifact.needs_accumulator do
       quote do Enum.each(object, unquote(properties_fun)) end
     else
       :ok

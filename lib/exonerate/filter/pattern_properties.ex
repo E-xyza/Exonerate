@@ -19,7 +19,7 @@ defmodule Exonerate.Filter.PatternProperties do
 
     %{artifact |
       patterns: patterns,
-      needs_enum: true,
+      needs_accumulator: true,
       filters: [%__MODULE__{context: context, children: children} | artifact.filters]}
   end
 

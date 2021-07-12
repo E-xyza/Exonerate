@@ -127,7 +127,7 @@ defmodule Exonerate.Validator do
         :ok
       end
       unquote_splicing(Enum.flat_map(children, &(&1)))
-    end |> Tools.inspect(validator.authority == "tuple_noadditional#")
+    end |> Tools.inspect(validator.authority == "length#")
   end
 
   def to_fun(%{pointer: pointer, authority: authority}) do

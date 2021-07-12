@@ -9,18 +9,19 @@ defmodule Exonerate.Filter.MaxItems do
     fun = fun0(artifact, "maxItems")
 
     %{artifact |
-      needs_enum: true,
-      enum_pipeline: [{fun, []} | artifact.enum_pipeline],
-      enum_init: Map.put(artifact.enum_init, :index, 0),
+      needs_accumulator: true,
+      needs_array_in_accumulator: true,
+      accumulator_pipeline: [{fun, []} | artifact.accumulator_pipeline],
+      accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
       filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
   end
 
   def compile(filter = %__MODULE__{count: count}) do
     {[], [
       quote do
-        defp unquote(fun0(filter, "maxItems"))(acc, {path, array}) do
+        defp unquote(fun0(filter, "maxItems"))(acc, {path, _}) do
           if acc.index >= unquote(count) do
-            Exonerate.mismatch(array, path)
+            Exonerate.mismatch(acc.array, path)
           end
           acc
         end

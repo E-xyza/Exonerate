@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.PropertyNames do
     schema = Exonerate.Type.String.parse(Validator.jump_into(artifact.context, "propertyNames", true), schema)
 
     %{artifact |
-      needs_enum: true,
+      needs_accumulator: true,
       fallback: {:name, fun(artifact)},
       filters: [%__MODULE__{context: context, schema: schema} | artifact.filters]}
   end

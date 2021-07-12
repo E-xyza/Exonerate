@@ -8,10 +8,11 @@ defmodule Exonerate.Type.Array do
     :additional_items,
     filters: [],
     pipeline: [],
-    needs_enum: false,
-    enum_init: %{},
-    enum_pipeline: [],
-    post_enum_pipeline: []]
+    needs_array_in_accumulator: false,
+    needs_accumulator: false,
+    accumulator_init: %{},
+    accumulator_pipeline: [],
+    post_reduce_pipeline: []]
 
   @type t :: %__MODULE__{}
 
@@ -36,13 +37,13 @@ defmodule Exonerate.Type.Array do
   @impl true
   @spec compile(t) :: Macro.t
   def compile(artifact) do
-    {enum_pipeline, index_accumulator} = if :index in Map.keys(artifact.enum_init) do
+    {accumulator_pipeline, index_accumulator} = if :index in Map.keys(artifact.accumulator_init) do
       index_fun = artifact.context
       |> Validator.jump_into(":index")
       |> Validator.to_fun()
 
       {
-        artifact.enum_pipeline ++ [{index_fun, []}],
+        artifact.accumulator_pipeline ++ [{index_fun, []}],
         quote do
           defp unquote(index_fun)(acc, _) do
             %{acc | index: acc.index + 1}
@@ -50,16 +51,24 @@ defmodule Exonerate.Type.Array do
         end
       }
     else
-      {artifact.enum_pipeline, :ok}
+      {artifact.accumulator_pipeline, :ok}
+    end
+
+    accumulator = if artifact.needs_array_in_accumulator do
+      quote do
+        Map.put(unquote(Macro.escape(artifact.accumulator_init)), :array, array)
+      end
+    else
+      Macro.escape(artifact.accumulator_init)
     end
 
     quote do
       defp unquote(Validator.to_fun(artifact.context))(array, path) when is_list(array) do
         array
-        |> Enum.reduce(unquote(Macro.escape(artifact.enum_init)), fn item, acc ->
-          Exonerate.pipeline(acc, {path, item}, unquote(enum_pipeline))
+        |> Enum.reduce(unquote(accumulator), fn item, acc ->
+          Exonerate.pipeline(acc, {path, item}, unquote(accumulator_pipeline))
         end)
-        |> Exonerate.pipeline({path, array}, unquote(artifact.post_enum_pipeline))
+        |> Exonerate.pipeline({path, array}, unquote(artifact.post_reduce_pipeline))
         :ok
       end
       unquote(index_accumulator)
