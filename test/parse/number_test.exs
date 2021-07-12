@@ -35,7 +35,7 @@ defmodule ExonerateTest.Parse.NumberTest do
   describe "multipleOf parameters is not set" do
     test "correctly" do
       assert %{
-        filters: [],
+        filters: [%MultipleOf{}],
       } = Number.parse(@validator, %{"multipleOf" => 3})
     end
   end

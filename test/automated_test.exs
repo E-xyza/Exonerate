@@ -4,7 +4,7 @@ defmodule ExonerateTest.AutomatedTests do
   |> Path.expand()
 
   @omit ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json items.json
-    refRemote.json unevaluatedItems.json unevaluatedProperties.json)
+    refRemote.json unevaluatedItems.json unevaluatedProperties.json ref.json)
 
   @test_omissions [
     # integer filters do not match float values:
@@ -132,5 +132,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("propertyNames.json", 2)
+  ExonerateTest.AutomatedTests.make("minContains.json", 1)
 end

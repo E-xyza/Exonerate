@@ -9,8 +9,6 @@ defmodule Exonerate.Filter.PropertyNames do
   def parse(artifact = %Object{context: context}, %{"propertyNames" => schema})  do
     schema = Exonerate.Type.String.parse(Validator.jump_into(artifact.context, "propertyNames", true), schema)
 
-    schema |> IO.inspect(label: "12")
-
     %{artifact |
       needs_accumulator: true,
       fallback: {:name, fun(artifact)},
@@ -18,7 +16,7 @@ defmodule Exonerate.Filter.PropertyNames do
   end
 
   def compile(%__MODULE__{schema: schema}) do
-    Exonerate.Compiler.compile(schema, force: true) |> IO.inspect(label: "19")
+    Exonerate.Compiler.compile(schema, force: true)
   end
 
   # TODO: generalize this.

@@ -22,8 +22,8 @@ defmodule Exonerate.Pointer do
   :"/baz/foo~0bar"
   iex> Pointer.to_fun(["€", "currency"])
   :"/currency/%E2%82%AC"
-  iex> Pointer.to_uri([], context: "foo")
-  :"foo/"
+  iex> Pointer.to_fun([], authority: "foo")
+  :"foo#/"
   ```
   """
   def to_fun(path, opts \\ []) do
@@ -75,7 +75,7 @@ defmodule Exonerate.Pointer do
   "/baz/foo~0bar"
   iex> Pointer.to_uri(["€", "currency"])
   "/currency/%E2%82%AC"
-  iex> Pointer.to_uri([], context: "foo")
+  iex> Pointer.to_uri([], authority: "foo")
   "foo#/"
   ```
   """
@@ -86,7 +86,11 @@ defmodule Exonerate.Pointer do
     |> Enum.map(&URI.encode/1)
     |> Enum.join("/")
 
-    IO.iodata_to_binary([List.wrap(opts[:authority]), "/", str])
+    lead = List.wrap(if opts[:authority] do
+      [opts[:authority], "#"]
+    end)
+
+    IO.iodata_to_binary([lead, "/", str])
   end
 
   @spec eval(pointer :: t, data :: Type.json) :: Type.json
