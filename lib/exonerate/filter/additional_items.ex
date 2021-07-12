@@ -13,7 +13,6 @@ defmodule Exonerate.Filter.AdditionalItems do
 
     %{artifact |
       needs_enum: true,
-      post_enum_pipeline: [{fun(artifact), []} | artifact.post_enum_pipeline],
       additional_items: true,
       filters: [%__MODULE__{context: context, additional_items: schema} | artifact.filters]}
   end
