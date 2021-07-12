@@ -108,7 +108,7 @@ defmodule ExonerateTest.AutomatedTests do
 
   defmacro make(file, index) do
     path = __DIR__
-    |> Path.join("draft2020-12/")
+    |> Path.join("_draft2020-12/")
     |> Path.join(file)
 
     path
@@ -132,5 +132,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("uniqueItems.json", 2)
+  ExonerateTest.AutomatedTests.make("propertyNames.json", 2)
 end
