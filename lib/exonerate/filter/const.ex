@@ -2,6 +2,8 @@ defmodule Exonerate.Filter.Const do
   @moduledoc false
 
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
+  defstruct [:context, :const]
 
   alias Exonerate.Type
   alias Exonerate.Validator
@@ -9,7 +11,16 @@ defmodule Exonerate.Filter.Const do
   @impl true
   def parse(validation = %Validator{}, %{"const" => const}) do
     type = %{Type.of(const) => nil}
-    %{validation | types: Type.intersection(validation.types, type)}
+    %{validation | types: Type.intersection(validation.types, type),
+       guards: [%__MODULE__{context: validation, const: const}]}
   end
 
+  @impl true
+  def compile(filter = %__MODULE__{}) do
+    quote do
+      defp unquote(Validator.to_fun(filter.context))(value, path) when value != unquote(Macro.escape(filter.const)) do
+        Exonerate.mismatch(value, path, guard: "const")
+      end
+    end
+  end
 end
