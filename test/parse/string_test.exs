@@ -21,7 +21,19 @@ defmodule ExonerateTest.Parse.StringTest do
       } = String.parse(@validator, %{"maxLength" => 3})
     end
 
-    test "when format is binary they are guards"
+    test "when format is binary minLength is a guard" do
+      assert %{
+        filters: [%MinLength{length: 3}],
+        pipeline: []
+      } = String.parse(@validator, %{"minLength" => 3, "format" => "binary"})
+    end
+
+    test "when format is binary maxLength is a guard" do
+      assert %{
+        filters: [%MaxLength{length: 3}],
+        pipeline: []
+      } = String.parse(@validator, %{"maxLength" => 3, "format" => "binary"})
+    end
   end
 
   describe "pattern parameters are set" do

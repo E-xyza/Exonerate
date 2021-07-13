@@ -40,6 +40,7 @@ defmodule Exonerate.Type.String do
       end
     end
   end
+
   def compile(artifact) do
 
     combining = Validator.combining(artifact.context, quote do string end, quote do path end)

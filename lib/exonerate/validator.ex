@@ -145,7 +145,7 @@ defmodule Exonerate.Validator do
   end
 
   alias Exonerate.Filter.Format
-  def build_schema(validator = %{types: types}) when types == %{String => %{filters: [%Format{format: "binary"}]}} do
+  def build_schema(validator = %{types: types}) when types == %{String => %{format_binary: true}} do
     # no available types, go straight to mismatch.
     quote do
       defp unquote(to_fun(validator))(value, path) do

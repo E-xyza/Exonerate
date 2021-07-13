@@ -21,7 +21,7 @@ defimpl Exonerate.Compiler, for: Any do
 
   @spec compile(struct()) :: {[Macro.t], [Macro.t]}
   # empty filter exception for String.
-  def compile(%s{filters: [%Format{format: "binary"}]}, _) when s == String, do: {[], []}
+  def compile(%s{filters: [], format_binary: true}, _) when s == String, do: {[], []}
   def compile(%s{filters: []}, []) when s != String, do: {[], []}
   def compile(artifact = %module{filters: filters}, _) do
     {guards, children} = filters
