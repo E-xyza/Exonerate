@@ -32,7 +32,8 @@ defmodule ExonerateTest.RegistryTest do
 
   test "if you make a request that doesn't exist and you don't register it, you can pull it with the needed function" do
     registry_ref = Registry.request(%{}, [])
-    assert [%{fun: ^registry_ref, pointer: []}] = Registry.needed(%{})
+    assert [%{authority: authority, pointer: []}] = Registry.needed(%{})
+    assert String.starts_with?("#{registry_ref}", authority)
     assert [] = Registry.needed(%{"nonexistent" => 1})
   end
 

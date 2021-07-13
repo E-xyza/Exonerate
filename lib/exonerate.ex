@@ -1,6 +1,8 @@
 defmodule Exonerate do
   alias Exonerate.Pointer
+  alias Exonerate.Tools
   alias Exonerate.Type
+  alias Exonerate.Registry
   alias Exonerate.Validator
 
   defmacro function_from_string(type, name, schema, opts \\ [])
@@ -11,15 +13,18 @@ defmodule Exonerate do
 
     opts = Keyword.merge(opts, authority: Atom.to_string(name))
 
-    schema_erl = schema_json
+    schema = schema_json
     |> Macro.expand(__CALLER__)
     |> Jason.decode!
 
-    impl = schema_erl
+    impl = schema
     |> Validator.parse(entrypoint, opts)
     |> Validator.compile
 
     json_type = {:"#{name}_json", [], []}
+
+    # let's see if there's anything leftover.
+    dangling_refs = unroll_refs(schema)
 
     quote do
       @typep unquote(json_type) ::
@@ -37,7 +42,7 @@ defmodule Exonerate do
           json_pointer: Path.t
         ]}
 
-      unquote_splicing(metadata_functions(name, schema_erl, entrypoint))
+      unquote_splicing(metadata_functions(name, schema, entrypoint))
 
       def unquote(name)(value) do
         try do
@@ -48,7 +53,8 @@ defmodule Exonerate do
       end
 
       unquote(impl)
-    end
+      unquote(dangling_refs)
+    end |> Tools.inspect(name == :ref_1)
   end
 
   @metadata_call %{
@@ -74,6 +80,20 @@ defmodule Exonerate do
             end
           end
         end
+    end
+  end
+
+  defp unroll_refs(schema) do
+    case Registry.needed(schema) do
+      [] -> []
+      list when is_list(list) ->
+        ref_impls = Enum.map(list, fn ref ->
+          schema
+          |> Validator.parse(ref.pointer, authority: ref.authority)
+          |> Validator.compile
+        end)
+        # keep going!  This schema might have created new refs.
+        ref_impls ++ unroll_refs(schema)
     end
   end
 

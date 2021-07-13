@@ -17,7 +17,12 @@ defmodule ExonerateTest.AutomatedTests do
     # integer filters do not match float values:
     {"multipleOf.json", 1},
     {"multipleOf.json", 2},
-    {"multipleOf.json", 3}
+    {"multipleOf.json", 3},
+    # no support for external uri's
+    {"ref.json", 6},
+    # no support for relative uri (for now)
+    {"ref.json", 11},
+    #{"ref.json", 1}
   ]
 
   def build_tests(directory \\ @test_base_dir) do
@@ -45,6 +50,7 @@ defmodule ExonerateTest.AutomatedTests do
   end
 
   defp to_test_module(test_list, modulename, path) do
+    Exonerate.Registry.sweep()
 
     module = Module.concat([ExonerateTest, String.capitalize(modulename), Test])
     describe_blocks = test_list
@@ -132,5 +138,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("ref.json", 2)
+  ExonerateTest.AutomatedTests.make("ref.json", 1)
 end
