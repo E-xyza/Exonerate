@@ -125,7 +125,7 @@ defmodule Exonerate.Validator do
         end
       object when is_map(object) ->
         build_schema(validator)
-    end |> Tools.inspect(validator.authority == "ref_0")
+    end |> Tools.inspect(validator.authority == "ref_2")
   end
   def compile(ref = %Ref{}) do
     # TODO: break this out into its own compiler protocol impl.
