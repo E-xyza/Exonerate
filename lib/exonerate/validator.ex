@@ -20,6 +20,22 @@ defmodule Exonerate.Validator do
     else: false
   ]
 
+  defmodule Ref do
+    defstruct [:pointer, :resolve, :authority]
+    @type t :: %__MODULE__{
+      pointer: Pointer.t,
+      resolve: Pointer.t,
+      authority: String.t
+    }
+
+    def from_uri("#", %{pointer: pointer, authority: authority}) do
+      %__MODULE__{pointer: pointer, resolve: [], authority: authority}
+    end
+    def from_uri("#" <> uri, %{pointer: pointer, authority: authority}) do
+      %__MODULE__{pointer: pointer, resolve: Pointer.from_uri(uri), authority: authority}
+    end
+  end
+
   @type t :: %__MODULE__{
     authority: String.t,
     # global state
@@ -32,7 +48,7 @@ defmodule Exonerate.Validator do
     children: [module],
     then: boolean,
     else: boolean
-  }
+  } | Ref.t
 
   @spec new(Type.json, Pointer.t, keyword) :: t
   defp new(schema, pointer, opts) do
@@ -51,9 +67,10 @@ defmodule Exonerate.Validator do
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @spec analyze(t) :: t
-  defp analyze(validator) do
+  defp analyze(validator = %__MODULE__{}) do
     case traverse(validator) do
       bool when is_boolean(bool) -> validator
+      %{"$ref" => ref} -> Ref.from_uri(ref, validator)
       schema when is_map(schema) ->
         # TODO: put this into its own pipeline
         validator
@@ -72,6 +89,7 @@ defmodule Exonerate.Validator do
         raise ArgumentError, "#{inspect invalid} is not a valid JSONSchema"
     end
   end
+  defp analyze(ref = %Ref{}), do: ref
 
   @spec jump_into(t, String.t) :: t
   @doc """
@@ -107,7 +125,15 @@ defmodule Exonerate.Validator do
         end
       object when is_map(object) ->
         build_schema(validator)
-    end |> Tools.inspect(validator.authority == "items_3")
+    end |> Tools.inspect(validator.authority == "ref_0")
+  end
+  def compile(ref = %Ref{}) do
+    # TODO: break this out into its own compiler protocol impl.
+    quote do
+      defp unquote(Pointer.to_fun(ref.pointer, authority: ref.authority))(value, path) do
+        unquote(Pointer.to_fun(ref.resolve, authority: ref.authority))(value, path)
+      end
+    end
   end
 
   def build_schema(validator = %{types: types}) when types == %{} do
