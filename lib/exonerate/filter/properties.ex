@@ -38,8 +38,8 @@ defmodule Exonerate.Filter.Properties do
 
 
     {[], guarded_clauses ++ [quote do
-      defp unquote(fun(filter))(_, {_path, _key, _value}) do
-        false
+      defp unquote(fun(filter))(seen, {_path, _key, _value}) do
+        seen
       end
     end] ++ tests}
   end

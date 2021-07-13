@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.PropertyNames do
     # false means only the empty object is valid
     # this is provided as an optimization.
     %{artifact |
-      iterate: true,
+      iterate: false,
       filters: [%__MODULE__{context: context, schema: false}]}
   end
 
@@ -32,11 +32,11 @@ defmodule Exonerate.Filter.PropertyNames do
   end
 
   def compile(filter = %__MODULE__{schema: false}) do
-    {[], [quote do
+    {[quote do
       defp unquote(Validator.to_fun(filter.context))(object, path) when object != %{} do
-        Exonerate.mismatch(object, path, guard: "items")
+        Exonerate.mismatch(object, path, guard: "propertyNames")
       end
-    end]}
+    end], []}
   end
 
   def compile(filter = %__MODULE__{schema: schema}) do
