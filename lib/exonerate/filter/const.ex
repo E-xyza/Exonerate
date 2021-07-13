@@ -16,7 +16,6 @@ defmodule Exonerate.Filter.Const do
        guards: [%__MODULE__{context: validation, const: const}]}
   end
 
-  @impl true
   def compile(filter = %__MODULE__{}) do
     quote do
       defp unquote(Validator.to_fun(filter.context))(value, path) when value != unquote(Macro.escape(filter.const)) do

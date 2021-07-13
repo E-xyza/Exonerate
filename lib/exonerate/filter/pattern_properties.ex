@@ -41,12 +41,6 @@ defmodule Exonerate.Filter.PatternProperties do
     end)}
   end
 
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("patternProperties")
-    |> Validator.to_fun
-  end
-
   defp fun(filter_or_artifact = %_{}, nexthop) do
     filter_or_artifact.context
     |> Validator.jump_into("patternProperties")

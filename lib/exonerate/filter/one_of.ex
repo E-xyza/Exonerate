@@ -8,7 +8,6 @@ defmodule Exonerate.Filter.OneOf do
   defstruct [:context, :schemas]
 
   alias Exonerate.Validator
-  alias Exonerate.Type
 
   @impl true
   def parse(validator = %Validator{}, %{"oneOf" => s}) do

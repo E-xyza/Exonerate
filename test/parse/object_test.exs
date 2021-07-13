@@ -4,7 +4,7 @@ defmodule ExonerateTest.Parse.ObjectTest do
   #alias Exonerate.Filter.{Properties}
   #alias Exonerate.Type.Object
 
-  @validator %Exonerate.Validator{pointer: [], schema: %{}, authority: ""}
+  # @validator %Exonerate.Validator{pointer: [], schema: %{}, authority: ""}
 
   # TODO: THIS TEST SUITE
 end

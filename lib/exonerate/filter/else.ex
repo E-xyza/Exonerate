@@ -7,7 +7,6 @@ defmodule Exonerate.Filter.Else do
   defstruct [:context, :schema]
 
   alias Exonerate.Validator
-  alias Exonerate.Type
 
   @impl true
   def parse(validator = %Validator{}, %{"else" => _}) do

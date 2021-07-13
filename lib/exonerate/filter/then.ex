@@ -7,7 +7,6 @@ defmodule Exonerate.Filter.Then do
   defstruct [:context, :schema]
 
   alias Exonerate.Validator
-  alias Exonerate.Type
 
   @impl true
   def parse(validator = %Validator{}, %{"then" => _}) do

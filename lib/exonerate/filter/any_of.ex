@@ -7,7 +7,6 @@ defmodule Exonerate.Filter.AnyOf do
   defstruct [:context, :schemas]
 
   alias Exonerate.Validator
-  alias Exonerate.Type
 
   @impl true
   def parse(validator = %Validator{}, %{"anyOf" => s}) do

@@ -5,7 +5,7 @@ defmodule Exonerate.Filter.AdditionalItems do
   alias Exonerate.Validator
   defstruct [:context, :additional_items]
 
-  def parse(artifact = %{context: context}, %{"additionalItems" => schema}) do
+  def parse(artifact = %{context: context}, %{"additionalItems" => _}) do
 
     schema = Validator.parse(context.schema,
     ["additionalItems" | context.pointer],

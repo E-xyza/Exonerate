@@ -7,7 +7,6 @@ defmodule Exonerate.Type.Number do
   defstruct [:context, filters: []]
   @type t :: %__MODULE__{}
 
-  alias Exonerate.Compiler
   alias Exonerate.Filter
   alias Exonerate.Tools
   alias Exonerate.Validator

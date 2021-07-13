@@ -17,7 +17,6 @@ defimpl Exonerate.Compiler, for: Any do
   def compile(struct, opts \\ [])
 
   alias Exonerate.Type.String
-  alias Exonerate.Filter.Format
 
   @spec compile(struct()) :: {[Macro.t], [Macro.t]}
   # empty filter exception for String.

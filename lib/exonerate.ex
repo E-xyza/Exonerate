@@ -1,6 +1,5 @@
 defmodule Exonerate do
   alias Exonerate.Pointer
-  alias Exonerate.Tools
   alias Exonerate.Type
   alias Exonerate.Registry
   alias Exonerate.Validator
