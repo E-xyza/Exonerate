@@ -4,9 +4,13 @@ defmodule Exonerate.Filter.If do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
-  defstruct [:context, :schema, :then, :else]
 
   alias Exonerate.Validator
+  
+  import Validator, only: [fun: 2]
+
+  defstruct [:context, :schema, :then, :else]
+
 
   @impl true
   def parse(validator = %Validator{}, %{"if" => _}) do
@@ -25,14 +29,14 @@ defmodule Exonerate.Filter.If do
 
   def combining(filter, value_ast, path_ast) do
     quote do
-      unquote(fun(filter, ":test"))(unquote(value_ast), unquote(path_ast))
+      unquote(fun(filter, ["if", ":test"]))(unquote(value_ast), unquote(path_ast))
     end
   end
 
   def compile(filter = %__MODULE__{}) do
     then_clause = if filter.then do
       quote do
-        unquote(fun0(filter, "then"))(value, path)
+        unquote(fun(filter, "then"))(value, path)
       end
     else
       :ok
@@ -40,16 +44,16 @@ defmodule Exonerate.Filter.If do
 
     else_clause = if filter.else do
       quote do
-        unquote(fun0(filter, "else"))(value, path)
+        unquote(fun(filter, "else"))(value, path)
       end
     else
       :ok
     end
 
     [quote do
-      defp unquote(fun(filter, ":test"))(value, path) do
+      defp unquote(fun(filter, ["if", ":test"]))(value, path) do
         conditional = try do
-          unquote(fun(filter))(value, path)
+          unquote(fun(filter, "if"))(value, path)
         catch
           error = {:error, list} when is_list(list) -> error
         end
@@ -61,24 +65,5 @@ defmodule Exonerate.Filter.If do
       end
       unquote(Validator.compile(filter.schema))
     end]
-  end
-
-  defp fun0(filter, nexthop) do
-    filter.context
-    |> Validator.jump_into(nexthop)
-    |> Validator.to_fun
-  end
-
-  defp fun(filter) do
-    filter.context
-    |> Validator.jump_into("if")
-    |> Validator.to_fun
-  end
-
-  defp fun(filter, nexthop) do
-    filter.context
-    |> Validator.jump_into("if")
-    |> Validator.jump_into(nexthop)
-    |> Validator.to_fun
   end
 end

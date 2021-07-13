@@ -6,13 +6,14 @@ defmodule Exonerate.Filter.MaxItems do
   alias Exonerate.Validator
   defstruct [:context, :count]
 
+  import Validator, only: [fun: 2]
+
   def parse(artifact, %{"maxItems" => count}) do
-    fun = fun0(artifact, "maxItems")
 
     %{artifact |
       needs_accumulator: true,
       needs_array_in_accumulator: true,
-      accumulator_pipeline: [fun | artifact.accumulator_pipeline],
+      accumulator_pipeline: [fun(artifact, "maxItems") | artifact.accumulator_pipeline],
       accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
       filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
   end
@@ -20,7 +21,7 @@ defmodule Exonerate.Filter.MaxItems do
   def compile(filter = %__MODULE__{count: count}) do
     {[], [
       quote do
-        defp unquote(fun0(filter, "maxItems"))(acc, {path, _}) do
+        defp unquote(fun(filter, "maxItems"))(acc, {path, _}) do
           if acc.index >= unquote(count) do
             Exonerate.mismatch(acc.array, path)
           end
@@ -28,11 +29,5 @@ defmodule Exonerate.Filter.MaxItems do
         end
       end
     ]}
-  end
-
-  defp fun0(filter_or_artifact = %_{}, what) do
-    filter_or_artifact.context
-    |> Validator.jump_into(what)
-    |> Validator.to_fun
   end
 end

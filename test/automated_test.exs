@@ -141,5 +141,5 @@ defmodule TestOneTest do
 
   # uncomment the next line to test only one candidate.
   @tag :skip
-  ExonerateTest.AutomatedTests.make("ref.json", 3)
+  ExonerateTest.AutomatedTests.make("dependentSchemas.json", 0)
 end

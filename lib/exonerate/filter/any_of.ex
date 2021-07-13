@@ -8,6 +8,8 @@ defmodule Exonerate.Filter.AnyOf do
 
   alias Exonerate.Validator
 
+  import Validator, only: [fun: 2]
+
   @impl true
   def parse(validator = %Validator{}, %{"anyOf" => s}) do
 
@@ -32,7 +34,7 @@ defmodule Exonerate.Filter.AnyOf do
   end
 
   def combining(filter, value_ast, path_ast) do
-    funs = Enum.map(filter.schemas, &Validator.to_fun(&1))
+    funs = Enum.map(filter.schemas, &fun(&1, []))
     quote do
       case Exonerate.pipeline(0, {unquote(value_ast), unquote(path_ast)}, unquote(funs)) do
         0 -> Exonerate.mismatch(unquote(value_ast), unquote(path_ast), guard: "anyOf")
@@ -48,9 +50,9 @@ defmodule Exonerate.Filter.AnyOf do
 
     Enum.flat_map(filter.schemas, fn schema -> [
       quote do
-        defp unquote(Validator.to_fun(schema))(acc, {value, path}) do
+        defp unquote(fun(schema, []))(acc, {value, path}) do
           try do
-            unquote(Validator.to_fun(schema))(value, path)
+            unquote(fun(schema, []))(value, path)
             acc + 1
           catch
             error = {:error, list} when is_list(list) -> acc
@@ -59,11 +61,5 @@ defmodule Exonerate.Filter.AnyOf do
       end,
       Validator.compile(schema)]
     end)
-  end
-
-  defp fun(filter) do
-    filter.context
-    |> Validator.jump_into("anyOf")
-    |> Validator.to_fun
   end
 end

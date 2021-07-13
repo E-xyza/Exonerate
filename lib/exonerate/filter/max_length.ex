@@ -3,12 +3,15 @@ defmodule Exonerate.Filter.MaxLength do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
+
   alias Exonerate.Validator
+
+  import Validator, only: [fun: 2]
 
   defstruct [:context, :length, :format_binary]
 
   def parse(artifact = %Exonerate.Type.String{}, %{"maxLength" => length}) do
-    pipeline = List.wrap(unless artifact.format_binary, do: fun(artifact))
+    pipeline = List.wrap(unless artifact.format_binary, do: fun(artifact, "maxLength"))
 
     %{artifact |
       pipeline: pipeline ++ artifact.pipeline,
@@ -17,30 +20,19 @@ defmodule Exonerate.Filter.MaxLength do
 
   def compile(filter = %__MODULE__{format_binary: true}) do
     {[quote do
-      defp unquote(fun0(filter))(string, path) when is_binary(string) and byte_size(string) > unquote(filter.length) do
+      defp unquote(fun(filter, []))(string, path) when is_binary(string) and byte_size(string) > unquote(filter.length) do
         Exonerate.mismatch(string, path, guard: "maxLength")
       end
     end],[]}
   end
   def compile(filter = %__MODULE__{}) do
     {[], [quote do
-      defp unquote(fun(filter))(string, path) do
+      defp unquote(fun(filter, "maxLength"))(string, path) do
         if String.length(string) > unquote(filter.length) do
           Exonerate.mismatch(string, path)
         end
         string
       end
     end]}
-  end
-
-  defp fun0(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.to_fun
-  end
-
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("maxLength")
-    |> Validator.to_fun
   end
 end

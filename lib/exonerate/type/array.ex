@@ -4,6 +4,12 @@ defmodule Exonerate.Type.Array do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
+  alias Exonerate.Filter
+  alias Exonerate.Tools
+  alias Exonerate.Validator
+
+  import Validator, only: [fun: 2]
+
   defstruct [
     :context,
     :additional_items,
@@ -16,10 +22,6 @@ defmodule Exonerate.Type.Array do
     post_reduce_pipeline: []]
 
   @type t :: %__MODULE__{}
-
-  alias Exonerate.Filter
-  alias Exonerate.Tools
-  alias Exonerate.Validator
 
   # maxContains MUST precede contains so it is put onto the pipeline AFTER the contains
   # reduction element.
@@ -43,14 +45,10 @@ defmodule Exonerate.Type.Array do
   @spec compile(t) :: Macro.t
   def compile(artifact) do
     {accumulator_pipeline, index_accumulator} = if :index in Map.keys(artifact.accumulator_init) do
-      index_fun = artifact.context
-      |> Validator.jump_into(":index")
-      |> Validator.to_fun()
-
       {
-        artifact.accumulator_pipeline ++ [index_fun],
+        artifact.accumulator_pipeline ++ [fun(artifact, ":index")],
         quote do
-          defp unquote(index_fun)(acc, _) do
+          defp unquote(fun(artifact, ":index"))(acc, _) do
             %{acc | index: acc.index + 1}
           end
         end
@@ -70,7 +68,7 @@ defmodule Exonerate.Type.Array do
     combining = Validator.combining(artifact.context, quote do array end, quote do path end)
 
     quote do
-      defp unquote(Validator.to_fun(artifact.context))(array, path) when is_list(array) do
+      defp unquote(fun(artifact, []))(array, path) when is_list(array) do
         array
         |> Enum.reduce(unquote(accumulator), fn item, acc ->
           Exonerate.pipeline(acc, {path, item}, unquote(accumulator_pipeline))

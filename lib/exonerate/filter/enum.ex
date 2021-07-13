@@ -3,11 +3,14 @@ defmodule Exonerate.Filter.Enum do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
-  defstruct [:context, :enums]
 
   alias Exonerate.Type
   alias Exonerate.Type.{Array, Boolean, Integer, Null, Number, Object, String}
   alias Exonerate.Validator
+
+  import Validator, only: [fun: 2]
+
+  defstruct [:context, :enums]
 
   @impl true
   def parse(validation = %Validator{}, %{"enum" => enums}) do
@@ -33,14 +36,14 @@ defmodule Exonerate.Filter.Enum do
     # erlang OTP < 24 compiler flaw.
     if true in literals do
       quote do
-        defp unquote(Validator.to_fun(context))(value, path)
+        defp unquote(fun(context, []))(value, path)
           when (value not in unquote(Enum.reject(literals, &(&1 === true)))) and (value != true) do
             Exonerate.mismatch(value, path, guard: "enum")
         end
       end
     else
       quote do
-        defp unquote(Validator.to_fun(context))(value, path)
+        defp unquote(fun(context, []))(value, path)
           when value not in unquote(literals) do
             Exonerate.mismatch(value, path, guard: "enum")
         end

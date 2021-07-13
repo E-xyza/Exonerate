@@ -10,6 +10,8 @@ defmodule Exonerate.Filter.DependentSchemas do
   alias Exonerate.Validator
   defstruct [:context, :dependencies]
 
+  import Validator, only: [fun: 2]
+
   def parse(artifact = %Object{context: context}, %{"dependentSchemas" => deps}) do
     deps = deps
     |> Enum.reject(&(elem(&1, 1) == true)) # as an optimization, just ignore {key, true}
@@ -25,7 +27,7 @@ defmodule Exonerate.Filter.DependentSchemas do
 
     %{
       artifact |
-      pipeline: [fun(artifact) | artifact.pipeline],
+      pipeline: [fun(artifact, "dependentSchemas") | artifact.pipeline],
       filters: [%__MODULE__{context: context, dependencies: deps} | artifact.filters]
     }
   end
@@ -34,20 +36,20 @@ defmodule Exonerate.Filter.DependentSchemas do
     {pipeline, children} = deps
     |> Enum.map(fn
       {key, false} ->
-        {fun(filter, key),
+        {fun(filter, ["dependentSchemas", key]),
         quote do
-          defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
+          defp unquote(fun(filter, ["dependentSchemas", key]))(value, path) when is_map_key(value, unquote(key)) do
             Exonerate.mismatch(value, Path.join(path, unquote(key)))
           end
-          defp unquote(fun(filter, key))(value, _), do: value
+          defp unquote(fun(filter, ["dependentSchemas", key]))(value, _), do: value
         end}
       {key, schema} ->
-        {fun(filter, ":" <> key),
+        {fun(filter, ["dependentSchemas", ":" <> key]),
         quote do
-          defp unquote(fun(filter, ":" <> key))(value, path) when is_map_key(value, unquote(key)) do
-            unquote(fun(filter,key))(value, path)
+          defp unquote(fun(filter, ["dependentSchemas", ":" <> key]))(value, path) when is_map_key(value, unquote(key)) do
+            unquote(fun(filter, ["dependentSchemas", key]))(value, path)
           end
-          defp unquote(fun(filter, ":" <> key))(value, _), do: value
+          defp unquote(fun(filter, ["dependentSchemas", ":" <> key]))(value, _), do: value
           unquote(Validator.compile(schema))
         end}
     end)
@@ -55,25 +57,11 @@ defmodule Exonerate.Filter.DependentSchemas do
 
     {[], [
       quote do
-        defp unquote(fun(filter))(value, path) do
+        defp unquote(fun(filter, "dependentSchemas"))(value, path) do
           Exonerate.pipeline(value, path, unquote(pipeline))
           :ok
         end
       end
     ] ++ children}
-  end
-
-  # TODO: generalize this.
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("dependentSchemas")
-    |> Validator.to_fun
-  end
-
-  defp fun(filter_or_artifact = %_{}, nexthop) do
-    filter_or_artifact.context
-    |> Validator.jump_into("dependentSchemas")
-    |> Validator.jump_into(nexthop)
-    |> Validator.to_fun
   end
 end

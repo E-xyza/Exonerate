@@ -4,6 +4,9 @@ defmodule Exonerate.Filter.Properties do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
+
+  import Validator, only: [fun: 2]
+
   defstruct [:context, :children]
 
   def parse(artifact = %{context: context}, %{"properties" => properties})  do
@@ -19,7 +22,7 @@ defmodule Exonerate.Filter.Properties do
     %{artifact |
       iterate: true,
       filters: [%__MODULE__{context: context, children: children} | artifact.filters],
-      kv_pipeline: [fun(artifact) | artifact.kv_pipeline]
+      kv_pipeline: [fun(artifact, "properties") | artifact.kv_pipeline]
     }
   end
 
@@ -27,8 +30,8 @@ defmodule Exonerate.Filter.Properties do
     {guarded_clauses, tests} = children
     |> Enum.map(fn {k, v} ->
       {quote do
-        defp unquote(fun(filter))(_, {path, unquote(k), v}) do
-          unquote(fun(filter, k))(v, Path.join(path, unquote(k)))
+        defp unquote(fun(filter, "properties"))(_, {path, unquote(k), v}) do
+          unquote(fun(filter, ["properties", k]))(v, Path.join(path, unquote(k)))
           true
         end
       end,
@@ -38,23 +41,9 @@ defmodule Exonerate.Filter.Properties do
 
 
     {[], guarded_clauses ++ [quote do
-      defp unquote(fun(filter))(seen, {_path, _key, _value}) do
+      defp unquote(fun(filter, "properties"))(seen, {_path, _key, _value}) do
         seen
       end
     end] ++ tests}
-  end
-
-  # TODO: generalize this.
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("properties")
-    |> Validator.to_fun
-  end
-
-  defp fun(filter_or_artifact = %_{}, nexthop) do
-    filter_or_artifact.context
-    |> Validator.jump_into("properties")
-    |> Validator.jump_into(nexthop)
-    |> Validator.to_fun
   end
 end

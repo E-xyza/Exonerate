@@ -4,12 +4,15 @@ defmodule Exonerate.Filter.UniqueItems do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
+
+  import Validator, only: [fun: 2]
+
   defstruct [:context]
 
   def parse(artifact = %{context: context}, %{"uniqueItems" => true}) do
     %{artifact |
       needs_accumulator: true,
-      accumulator_pipeline: [fun(artifact) | artifact.accumulator_pipeline],
+      accumulator_pipeline: [fun(artifact, "uniqueItems") | artifact.accumulator_pipeline],
       accumulator_init: Map.merge(artifact.accumulator_init, %{unique_set: MapSet.new(), index: 0}),
       filters: [%__MODULE__{context: context} | artifact.filters]}
   end
@@ -18,7 +21,7 @@ defmodule Exonerate.Filter.UniqueItems do
   def compile(filter = %__MODULE__{}) do
     {[], [
       quote do
-        defp unquote(fun(filter))(acc, {path, item}) do
+        defp unquote(fun(filter, "uniqueItems"))(acc, {path, item}) do
           if item in acc.unique_set do
             Exonerate.mismatch(item, Path.join(path, to_string(acc.index)))
           end
@@ -26,11 +29,5 @@ defmodule Exonerate.Filter.UniqueItems do
         end
       end
     ]}
-  end
-
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("uniqueItems")
-    |> Validator.to_fun
   end
 end

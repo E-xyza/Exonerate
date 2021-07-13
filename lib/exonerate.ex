@@ -53,7 +53,7 @@ defmodule Exonerate do
 
       unquote(impl)
       unquote(dangling_refs)
-    end #|> Tools.inspect(name == :non_utf8_length)
+    end |> Exonerate.Tools.inspect(name == :dependentSchemas_0)
   end
 
   @metadata_call %{

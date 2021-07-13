@@ -4,10 +4,13 @@ defmodule Exonerate.Filter.MinItems do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
+  
+  import Validator, only: [fun: 2]
+
   defstruct [:context, :count]
 
   def parse(artifact, %{"minItems" => count}) do
-    check_key = fun0(artifact, "minItems")
+    check_key = fun(artifact, "minItems")
 
     %{artifact |
       needs_accumulator: true,
@@ -19,7 +22,7 @@ defmodule Exonerate.Filter.MinItems do
   def compile(filter = %__MODULE__{count: count}) do
     {[], [
       quote do
-        defp unquote(fun0(filter, "minItems"))(acc, {path, array}) do
+        defp unquote(fun(filter, "minItems"))(acc, {path, array}) do
           if acc.index < unquote(count) do
             Exonerate.mismatch(array, path)
           end
@@ -27,11 +30,5 @@ defmodule Exonerate.Filter.MinItems do
         end
       end
     ]}
-  end
-
-  defp fun0(filter_or_artifact = %_{}, what) do
-    filter_or_artifact.context
-    |> Validator.jump_into(what)
-    |> Validator.to_fun
   end
 end

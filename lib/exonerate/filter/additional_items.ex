@@ -20,10 +20,4 @@ defmodule Exonerate.Filter.AdditionalItems do
   def compile(%__MODULE__{additional_items: schema}) do
     {[], [Validator.compile(schema)]}
   end
-
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("additionalItems")
-    |> Validator.to_fun
-  end
 end

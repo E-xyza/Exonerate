@@ -12,6 +12,8 @@ defmodule Exonerate.Type.String do
   alias Exonerate.Type
   alias Exonerate.Validator
 
+  import Validator, only: [fun: 2]
+
   @validator_filters ~w(minLength maxLength pattern)# format)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
@@ -34,7 +36,7 @@ defmodule Exonerate.Type.String do
   def compile(artifact = %{format_binary: true}) do
     combining = Validator.combining(artifact.context, quote do string end, quote do path end)
     quote do
-      defp unquote(Validator.to_fun(artifact.context))(string, path) when is_binary(string) do
+      defp unquote(fun(artifact, []))(string, path) when is_binary(string) do
         Exonerate.pipeline(string, path, unquote(artifact.pipeline))
         unquote_splicing(combining)
       end
@@ -46,7 +48,7 @@ defmodule Exonerate.Type.String do
     combining = Validator.combining(artifact.context, quote do string end, quote do path end)
 
     quote do
-      defp unquote(Validator.to_fun(artifact.context))(string, path) when is_binary(string) do
+      defp unquote(fun(artifact, []))(string, path) when is_binary(string) do
         if String.valid?(string) do
           Exonerate.pipeline(string, path, unquote(artifact.pipeline))
           unquote_splicing(combining)

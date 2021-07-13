@@ -4,6 +4,9 @@ defmodule Exonerate.Filter.PatternProperties do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
+
+  import Validator, only: [fun: 2]
+
   defstruct [:context, :patterns]
 
   def parse(artifact = %{context: context}, %{"patternProperties" => patterns})  do
@@ -20,7 +23,7 @@ defmodule Exonerate.Filter.PatternProperties do
 
     %{artifact |
       iterate: true,
-      kv_pipeline: Enum.map(patterns, fn {k, _} -> fun(artifact, k) end) ++ artifact.kv_pipeline,
+      kv_pipeline: Enum.map(patterns, fn {k, _} -> fun(artifact, ["patternProperties", k]) end) ++ artifact.kv_pipeline,
       filters: [filter | artifact.filters]}
   end
 
@@ -28,9 +31,9 @@ defmodule Exonerate.Filter.PatternProperties do
     {[], Enum.map(patterns, fn
       {pattern, compiled} ->
         quote do
-          defp unquote(fun(filter, pattern))(seen, {path, key, value}) do
+          defp unquote(fun(filter, ["patternProperties", pattern]))(seen, {path, key, value}) do
             if Regex.match?(sigil_r(<<unquote(pattern)>>, []), key) do
-              unquote(fun(filter,pattern))(value, Path.join(path, key))
+              unquote(fun(filter, ["patternProperties", pattern]))(value, Path.join(path, key))
               true
             else
               seen
@@ -39,12 +42,5 @@ defmodule Exonerate.Filter.PatternProperties do
           unquote(Validator.compile(compiled))
         end
     end)}
-  end
-
-  defp fun(filter_or_artifact = %_{}, nexthop) do
-    filter_or_artifact.context
-    |> Validator.jump_into("patternProperties")
-    |> Validator.jump_into(nexthop)
-    |> Validator.to_fun
   end
 end

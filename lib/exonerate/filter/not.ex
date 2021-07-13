@@ -9,6 +9,8 @@ defmodule Exonerate.Filter.Not do
 
   alias Exonerate.Validator
 
+  import Validator, only: [fun: 2]
+
   @impl true
   def parse(validator = %Validator{}, %{"not" => _}) do
 
@@ -40,14 +42,7 @@ defmodule Exonerate.Filter.Not do
     end
   end
 
-  @impl true
   def compile(filter = %__MODULE__{}) do
     [Validator.compile(filter.schema)]
-  end
-
-  defp fun(filter, what) do
-    filter.context
-    |> Validator.jump_into(what)
-    |> Validator.to_fun
   end
 end

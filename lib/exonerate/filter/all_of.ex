@@ -8,6 +8,8 @@ defmodule Exonerate.Filter.AllOf do
 
   alias Exonerate.Validator
 
+  import Validator, only: [fun: 2]
+
   @impl true
   def parse(validator = %Validator{}, %{"allOf" => s}) do
 
@@ -26,32 +28,25 @@ defmodule Exonerate.Filter.AllOf do
     module = %__MODULE__{context: validator, schemas: schemas}
 
     %{validator |
-    #  types: types,
       children: [module | validator.children],
       combining: [module | validator.combining]}
   end
 
   def combining(filter, value_ast, path_ast) do
     quote do
-      unquote(fun(filter))(unquote(value_ast), unquote(path_ast))
+      unquote(fun(filter, "allOf"))(unquote(value_ast), unquote(path_ast))
     end
   end
 
   def compile(filter = %__MODULE__{}) do
     calls = Enum.map(filter.schemas, &quote do
-      unquote(Validator.to_fun(&1))(value, path)
+      unquote(fun(&1, []))(value, path)
     end)
 
     [quote do
-      defp unquote(fun(filter))(value, path) do
+      defp unquote(fun(filter, "allOf"))(value, path) do
         unquote_splicing(calls)
       end
     end | Enum.map(filter.schemas, &Validator.compile/1)]
-  end
-
-  defp fun(filter) do
-    filter.context
-    |> Validator.jump_into("allOf")
-    |> Validator.to_fun
   end
 end

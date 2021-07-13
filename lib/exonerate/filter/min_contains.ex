@@ -4,12 +4,15 @@ defmodule Exonerate.Filter.MinContains do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
+  
+  import Validator, only: [fun: 2]
+
   defstruct [:context, :minimum]
 
   def parse(artifact = %{context: context}, %{"contains" => _, "minContains" => minimum}) when minimum > 0 do
     %{artifact |
       needs_accumulator: true,
-      post_reduce_pipeline: [fun(artifact) | artifact.post_reduce_pipeline],
+      post_reduce_pipeline: [fun(artifact, "minContains") | artifact.post_reduce_pipeline],
       accumulator_init: Map.put_new(artifact.accumulator_init, :contains, 0),
       filters: [%__MODULE__{context: context, minimum: minimum} | artifact.filters]}
   end
@@ -18,17 +21,11 @@ defmodule Exonerate.Filter.MinContains do
   def compile(filter = %__MODULE__{minimum: minimum}) do
     {[], [
       quote do
-        defp unquote(fun(filter))(%{contains: contains}, {path, array}) when contains < unquote(minimum) do
+        defp unquote(fun(filter, "minContains"))(%{contains: contains}, {path, array}) when contains < unquote(minimum) do
           Exonerate.mismatch(array, path)
         end
-        defp unquote(fun(filter))(acc, {_path, _array}), do: acc
+        defp unquote(fun(filter, "minContains"))(acc, {_path, _array}), do: acc
       end
     ]}
-  end
-
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("minContains")
-    |> Validator.to_fun
   end
 end

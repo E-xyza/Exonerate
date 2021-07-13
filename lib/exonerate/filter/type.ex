@@ -3,7 +3,7 @@ defmodule Exonerate.Filter.Type do
 
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
-  
+
   defstruct [:context, :types]
 
   alias Exonerate.Type
@@ -27,7 +27,7 @@ defmodule Exonerate.Filter.Type do
 
   def compile(%__MODULE__{context: context, types: types}) do
     quote do
-      defp unquote(Validator.to_fun(context))(value, path)
+      defp unquote(Validator.fun(context))(value, path)
         when not (Exonerate.chain_guards(value, unquote(types))) do
           Exonerate.mismatch(value, path, guard: "type")
       end

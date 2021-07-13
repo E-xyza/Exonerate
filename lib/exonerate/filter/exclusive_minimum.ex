@@ -6,6 +6,9 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
   alias Exonerate.Type.Integer
   alias Exonerate.Type.Number
   alias Exonerate.Validator
+  
+  import Validator, only: [fun: 2]
+
   defstruct [:context, :minimum, :parent]
 
   def parse(artifact = %type{}, %{"exclusiveMinimum" => minimum}) when type in [Integer, Number] do
@@ -15,7 +18,7 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
 
   def compile(filter = %__MODULE__{parent: Integer}) do
     {[quote do
-      defp unquote(Validator.to_fun(filter.context))(integer, path)
+      defp unquote(fun(filter, []))(integer, path)
         when is_integer(integer) and integer <= unquote(filter.minimum) do
           Exonerate.mismatch(integer, path, guard: "exclusiveMinimum")
       end
@@ -24,7 +27,7 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
 
   def compile(filter = %__MODULE__{parent: Number}) do
     {[quote do
-      defp unquote(Validator.to_fun(filter.context))(number, path)
+      defp unquote(fun(filter, []))(number, path)
         when is_number(number) and number <= unquote(filter.minimum) do
           Exonerate.mismatch(number, path, guard: "exclusiveMinimum")
       end

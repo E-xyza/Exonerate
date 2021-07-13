@@ -2,8 +2,11 @@ defmodule Exonerate.Filter.Contains do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
-
+  
   alias Exonerate.Validator
+
+  import Validator, only: [fun: 2]
+
   defstruct [:context, :contains, :min_contains]
 
   def parse(artifact, %{"contains" => _, "minContains" => 0}), do: artifact
@@ -19,8 +22,8 @@ defmodule Exonerate.Filter.Contains do
 
     %{artifact |
       needs_accumulator: true,
-      accumulator_pipeline: [fun(artifact, ":reduce") | artifact.accumulator_pipeline],
-      post_reduce_pipeline: [fun(artifact) | artifact.post_reduce_pipeline],
+      accumulator_pipeline: [fun(artifact, ["contains", ":reduce"]) | artifact.accumulator_pipeline],
+      post_reduce_pipeline: [fun(artifact, "contains") | artifact.post_reduce_pipeline],
       accumulator_init: Map.put_new(artifact.accumulator_init, :contains, 0),
       filters: [filter | artifact.filters]}
   end
@@ -31,18 +34,18 @@ defmodule Exonerate.Filter.Contains do
       quote do end
     else
       quote do
-        defp unquote(fun(filter))(%{contains: 0}, {path, array}) do
+        defp unquote(fun(filter, "contains"))(%{contains: 0}, {path, array}) do
           Exonerate.mismatch(array, path)
         end
-        defp unquote(fun(filter))(acc, {_path, _array}), do: acc
+        defp unquote(fun(filter, "contains"))(acc, {_path, _array}), do: acc
       end
     end
 
     {[], [
       quote do
-        defp unquote(fun(filter, ":reduce"))(acc, {path, item}) do
+        defp unquote(fun(filter, ["contains", ":reduce"]))(acc, {path, item}) do
           try do
-            unquote(fun(filter))(item, path)
+            unquote(fun(filter, "contains"))(item, path)
             # yes, it has been seen
             %{acc | contains: acc.contains + 1}
           catch
@@ -55,18 +58,5 @@ defmodule Exonerate.Filter.Contains do
         unquote(Validator.compile(contains))
       end
     ]}
-  end
-
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("contains")
-    |> Validator.to_fun
-  end
-
-  defp fun(filter_or_artifact = %_{}, nexthop) do
-    filter_or_artifact.context
-    |> Validator.jump_into("contains")
-    |> Validator.jump_into(nexthop)
-    |> Validator.to_fun
   end
 end

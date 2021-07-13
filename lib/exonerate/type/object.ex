@@ -8,6 +8,8 @@ defmodule Exonerate.Type.Object do
   alias Exonerate.Tools
   alias Exonerate.Validator
 
+  import Validator, only: [fun: 2]
+
   defstruct [
     :context,
     iterate: false,
@@ -48,7 +50,7 @@ defmodule Exonerate.Type.Object do
     combining = Validator.combining(artifact.context, quote do object end, quote do path end)
 
     quote do
-      defp unquote(Validator.to_fun(artifact.context))(object, path) when is_map(object) do
+      defp unquote(fun(artifact, []))(object, path) when is_map(object) do
         Exonerate.pipeline(object, path, unquote(artifact.pipeline))
         unquote_splicing(iteration ++ combining)
       end

@@ -4,12 +4,14 @@ defmodule Exonerate.Type.Number do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  defstruct [:context, filters: []]
-  @type t :: %__MODULE__{}
-
   alias Exonerate.Filter
   alias Exonerate.Tools
   alias Exonerate.Validator
+
+  import Validator, only: [fun: 2]
+
+  defstruct [:context, filters: []]
+  @type t :: %__MODULE__{}
 
   @validator_filters ~w(minimum maximum exclusiveMinimum exclusiveMaximum multipleOf)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
@@ -31,7 +33,7 @@ defmodule Exonerate.Type.Number do
     combining = Validator.combining(artifact.context, quote do number end, quote do path end)
 
     quote do
-      defp unquote(Validator.to_fun(artifact.context))(number, path) when is_number(number) do
+      defp unquote(fun(artifact, []))(number, path) when is_number(number) do
         unquote_splicing(combining)
       end
     end

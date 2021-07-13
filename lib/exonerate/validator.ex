@@ -83,13 +83,13 @@ defmodule Exonerate.Validator do
   defp analyze(ref = %Ref{}), do: ref
 
   defp register(validator) do
-    case Registry.register(validator.schema, validator.pointer, to_fun(validator))  do
+    case Registry.register(validator.schema, validator.pointer, fun(validator))  do
       :ok -> validator
       {:exists, target} ->
         %Ref{pointer: validator.pointer, authority: validator.authority, target: target}
       {:needed, needed_by} ->
         # on re-entrant registry requests we don't want to make another function.
-        if needed_by == to_fun(validator) do
+        if needed_by == fun(validator) do
           validator
         else
           %{validator | needed_by: needed_by}
@@ -147,7 +147,7 @@ defmodule Exonerate.Validator do
   def build_schema(validator = %{types: types}) when types == %{String => %{format_binary: true}} do
     # no available types, go straight to mismatch.
     quote do
-      defp unquote(to_fun(validator))(value, path) do
+      defp unquote(fun(validator))(value, path) do
         Exonerate.mismatch(value, path)
       end
       unquote_splicing(build_needed(validator))
@@ -173,7 +173,7 @@ defmodule Exonerate.Validator do
     quote do
       unquote_splicing(Tools.flatten(guards))
       unquote_splicing(Tools.flatten(funs))
-      defp unquote(to_fun(validator))(value, path) do
+      defp unquote(fun(validator))(value, path) do
         unquote_splicing(combining)
       end
       unquote_splicing(Enum.flat_map(children, &(&1)))
@@ -185,7 +185,7 @@ defmodule Exonerate.Validator do
   defp build_needed(validator = %__MODULE__{needed_by: what}) do
     [quote do
       defp unquote(what)(value, path) do
-        unquote(to_fun(validator))(value, path)
+        unquote(fun(validator))(value, path)
       end
     end]
   end
@@ -199,13 +199,24 @@ defmodule Exonerate.Validator do
     end)
   end
 
-  def to_fun(%{pointer: pointer, authority: authority}) do
-    Pointer.to_fun(pointer, authority: authority)
-  end
-
   @spec traverse(t) :: Type.json
   def traverse(validator = %__MODULE__{}) do
     Pointer.eval(validator.pointer, validator.schema)
   end
   def traverse(ref = %Ref{}), do: ref
+
+  @spec fun(t | Filter.t | Type.t, String | [String.t]) :: atom
+  def fun(validator_filter_or_type, nexthops \\ [])
+
+  def fun(validator = %__MODULE__{}, [nexthop | rest]) do
+    validator
+    |> jump_into(nexthop)
+    |> fun(rest)
+  end
+  def fun(%__MODULE__{pointer: pointer, authority: authority}, []) do
+    Pointer.to_fun(pointer, authority: authority)
+  end
+  def fun(validator = %__MODULE__{}, one_hop), do: fun(validator, List.wrap(one_hop))
+  def fun(%{context: context}, nexthops), do: fun(context, nexthops)
+
 end

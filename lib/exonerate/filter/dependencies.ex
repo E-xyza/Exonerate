@@ -5,6 +5,9 @@ defmodule Exonerate.Filter.Dependencies do
 
   alias Exonerate.Type.Object
   alias Exonerate.Validator
+
+  import Validator, only: [fun: 2]
+
   defstruct [:context, :dependencies]
 
   def parse(artifact = %Object{context: context}, %{"dependencies" => deps}) do
@@ -24,7 +27,7 @@ defmodule Exonerate.Filter.Dependencies do
 
     %{
       artifact |
-      pipeline: [fun(artifact) | artifact.pipeline],
+      pipeline: [fun(artifact, "dependencies") | artifact.pipeline],
       filters: [%__MODULE__{context: context, dependencies: deps} | artifact.filters]
     }
   end
@@ -33,29 +36,29 @@ defmodule Exonerate.Filter.Dependencies do
     {pipeline, children} = deps
     |> Enum.map(fn
       {key, false} ->
-        {fun(filter, key),
+        {fun(filter, ["dependencies", key]),
         quote do
-          defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
+          defp unquote(fun(filter, ["dependencies", key]))(value, path) when is_map_key(value, unquote(key)) do
             Exonerate.mismatch(value, Path.join(path, unquote(key)))
           end
-          defp unquote(fun(filter, key))(value, _), do: value
+          defp unquote(fun(filter, ["dependencies", key]))(value, _), do: value
         end}
       # one item optimization
       {key, [dependent_key]} ->
-        {fun(filter, key),
+        {fun(filter, ["dependencies", key]),
         quote do
-          defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
+          defp unquote(fun(filter, ["dependencies", key]))(value, path) when is_map_key(value, unquote(key)) do
             unless is_map_key(value, unquote(dependent_key)) do
               Exonerate.mismatch(value, path, guard: "0")
             end
             value
           end
-          defp unquote(fun(filter, key))(value, _), do: value
+          defp unquote(fun(filter, ["dependencies", key]))(value, _), do: value
         end}
       {key, dependent_keys} when is_list(dependent_keys) ->
-        {fun(filter, key),
+        {fun(filter, ["dependencies", key]),
         quote do
-          defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
+          defp unquote(fun(filter, ["dependencies", key]))(value, path) when is_map_key(value, unquote(key)) do
             unquote(dependent_keys)
             |> Enum.with_index
             |> Enum.each(fn {key, index} ->
@@ -63,15 +66,15 @@ defmodule Exonerate.Filter.Dependencies do
             end)
             value
           end
-          defp unquote(fun(filter, key))(value, _), do: value
+          defp unquote(fun(filter, ["dependencies", key]))(value, _), do: value
         end}
       {key, schema} ->
-        {fun(filter, ":" <> key),
+        {fun(filter, ["dependencies", ":" <> key]),
         quote do
-          defp unquote(fun(filter, ":" <> key))(value, path) when is_map_key(value, unquote(key)) do
-            unquote(fun(filter,key))(value, path)
+          defp unquote(fun(filter, ["dependencies", ":" <> key]))(value, path) when is_map_key(value, unquote(key)) do
+            unquote(fun(filter, ["dependencies", key]))(value, path)
           end
-          defp unquote(fun(filter, ":" <> key))(value, _), do: value
+          defp unquote(fun(filter, ["dependencies", ":" <> key]))(value, _), do: value
           unquote(Validator.compile(schema))
         end
         }
@@ -80,25 +83,11 @@ defmodule Exonerate.Filter.Dependencies do
 
     {[], [
       quote do
-        defp unquote(fun(filter))(value, path) do
+        defp unquote(fun(filter, "dependencies"))(value, path) do
           Exonerate.pipeline(value, path, unquote(pipeline))
           :ok
         end
       end
     ] ++ children}
-  end
-
-  # TODO: generalize this.
-  defp fun(filter_or_artifact = %_{}) do
-    filter_or_artifact.context
-    |> Validator.jump_into("dependencies")
-    |> Validator.to_fun
-  end
-
-  defp fun(filter_or_artifact = %_{}, nexthop) do
-    filter_or_artifact.context
-    |> Validator.jump_into("dependencies")
-    |> Validator.jump_into(nexthop)
-    |> Validator.to_fun
   end
 end
