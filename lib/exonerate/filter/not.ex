@@ -4,7 +4,7 @@ defmodule Exonerate.Filter.Not do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
-  
+
   defstruct [:context, :schema]
 
   alias Exonerate.Validator
@@ -21,10 +21,10 @@ defmodule Exonerate.Filter.Not do
 
     %{validator |
       children: [module | validator.children],
-      distribute: [module | validator.distribute]}
+      combining: [module | validator.combining]}
   end
 
-  def distribute(filter, value_ast, path_ast) do
+  def combining(filter, value_ast, path_ast) do
     quote do
       negated = try do
         unquote(fun(filter, "not"))(unquote(value_ast), unquote(path_ast))

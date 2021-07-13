@@ -26,10 +26,10 @@ defmodule Exonerate.Filter.OneOf do
     %{validator |
     #  types: types,
       children: [module | validator.children],
-      distribute: [module | validator.distribute]}
+      combining: [module | validator.combining]}
   end
 
-  def distribute(filter, value_ast, path_ast) do
+  def combining(filter, value_ast, path_ast) do
     funs = Enum.map(filter.schemas, &{Validator.to_fun(&1), []})
     quote do
       case Exonerate.pipeline(0, {unquote(value_ast), unquote(path_ast)}, unquote(funs)) do

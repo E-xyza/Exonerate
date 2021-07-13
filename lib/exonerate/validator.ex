@@ -14,7 +14,7 @@ defmodule Exonerate.Validator do
     # compile-time optimizations
     types: @initial_typemap,
     guards: [],
-    distribute: [],
+    combining: [],
     children: []
   ]
 
@@ -26,7 +26,7 @@ defmodule Exonerate.Validator do
     required_refs: [[String.t]],
     types: %{optional(Type.t) => nil | Type.type_struct},
     guards: [module],
-    distribute: [module],
+    combining: [module],
     children: [module]
   }
 
@@ -102,7 +102,7 @@ defmodule Exonerate.Validator do
         end
       object when is_map(object) ->
         build_schema(validator)
-    end |> Tools.inspect(validator.authority == "propertyNames_2")
+    end |> Tools.inspect(validator.authority == "allOf_1")
   end
 
   def build_schema(validator = %{types: types}) when types == %{} do
@@ -128,24 +128,24 @@ defmodule Exonerate.Validator do
 
     children = type_children ++ direct_children
 
-    distributed = distribute(validator, quote do value end, quote do path end)
+    combining = combining(validator, quote do value end, quote do path end)
 
     quote do
       unquote_splicing(Tools.flatten(guards))
       unquote_splicing(Tools.flatten(funs))
       defp unquote(to_fun(validator))(value, path) do
-        unquote_splicing(distributed)
+        unquote_splicing(combining)
       end
       unquote_splicing(Enum.flat_map(children, &(&1)))
     end
   end
 
-  def distribute(%{distribute: []}, _, _) do
+  def combining(%{combining: []}, _, _) do
     [:ok]
   end
-  def distribute(validator, value_ast, path_ast) do
-    Enum.map(validator.distribute, fn filter = %module{} ->
-      module.distribute(filter, value_ast, path_ast)
+  def combining(validator, value_ast, path_ast) do
+    Enum.map(validator.combining, fn filter = %module{} ->
+      module.combining(filter, value_ast, path_ast)
     end)
   end
 

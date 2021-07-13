@@ -29,11 +29,14 @@ defmodule Exonerate.Type.String do
   @impl true
   @spec compile(t) :: Macro.t
   def compile(artifact) do
+
+    combining = Validator.combining(artifact.context, quote do object end, quote do path end)
+
     quote do
       defp unquote(Validator.to_fun(artifact.context))(string, path) when is_binary(string) do
         if String.valid?(string) do
           Exonerate.pipeline(string, path, unquote(artifact.pipeline))
-          :ok
+          unquote_splicing(combining)
         else
           Exonerate.mismatch(string, path)
         end

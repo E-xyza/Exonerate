@@ -132,5 +132,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("propertyNames.json", 2)
+  ExonerateTest.AutomatedTests.make("allOf.json", 1)
 end

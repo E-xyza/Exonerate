@@ -67,6 +67,8 @@ defmodule Exonerate.Type.Array do
       Macro.escape(artifact.accumulator_init)
     end
 
+    combining = Validator.combining(artifact.context, quote do object end, quote do path end)
+
     quote do
       defp unquote(Validator.to_fun(artifact.context))(array, path) when is_list(array) do
         array
@@ -74,7 +76,7 @@ defmodule Exonerate.Type.Array do
           Exonerate.pipeline(acc, {path, item}, unquote(accumulator_pipeline))
         end)
         |> Exonerate.pipeline({path, array}, unquote(artifact.post_reduce_pipeline))
-        :ok
+        unquote_splicing(combining)
       end
       unquote(index_accumulator)
     end

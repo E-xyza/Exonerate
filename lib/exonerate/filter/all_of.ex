@@ -29,10 +29,10 @@ defmodule Exonerate.Filter.AllOf do
     %{validator |
     #  types: types,
       children: [module | validator.children],
-      distribute: [module | validator.distribute]}
+      combining: [module | validator.combining]}
   end
 
-  def distribute(filter, value_ast, path_ast) do
+  def combining(filter, value_ast, path_ast) do
     quote do
       unquote(fun(filter))(unquote(value_ast), unquote(path_ast))
     end
