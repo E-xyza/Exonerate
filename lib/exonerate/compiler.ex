@@ -16,8 +16,13 @@ defimpl Exonerate.Compiler, for: Any do
 
   def compile(struct, opts \\ [])
 
+  alias Exonerate.Type.String
+  alias Exonerate.Filter.Format
+
   @spec compile(struct()) :: {[Macro.t], [Macro.t]}
-  def compile(%{filters: []}, []), do: {[], []}
+  # empty filter exception for String.
+  def compile(%s{filters: [%Format{format: "binary"}]}, _) when s == String, do: {[], []}
+  def compile(%s{filters: []}, []) when s != String, do: {[], []}
   def compile(artifact = %module{filters: filters}, _) do
     {guards, children} = filters
     |> Enum.map(&Exonerate.Compiler.compile/1)
