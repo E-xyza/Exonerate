@@ -53,7 +53,7 @@ defmodule Exonerate do
 
       unquote(impl)
       unquote(dangling_refs)
-    end |> Exonerate.Tools.inspect(name == :dependentSchemas_0)
+    end # |> Exonerate.Tools.inspect(name == :maxProperties_1)
   end
 
   @metadata_call %{
