@@ -24,7 +24,7 @@ defmodule Exonerate.Filter.Dependencies do
 
     %{
       artifact |
-      pipeline: [{fun(artifact), []} | artifact.pipeline],
+      pipeline: [fun(artifact) | artifact.pipeline],
       filters: [%__MODULE__{context: context, dependencies: deps} | artifact.filters]
     }
   end
@@ -33,7 +33,7 @@ defmodule Exonerate.Filter.Dependencies do
     {pipeline, children} = deps
     |> Enum.map(fn
       {key, false} ->
-        {{fun(filter, key), []},
+        {fun(filter, key),
         quote do
           defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
             Exonerate.mismatch(value, Path.join(path, unquote(key)))
@@ -42,7 +42,7 @@ defmodule Exonerate.Filter.Dependencies do
         end}
       # one item optimization
       {key, [dependent_key]} ->
-        {{fun(filter, key), []},
+        {fun(filter, key),
         quote do
           defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
             unless is_map_key(value, unquote(dependent_key)) do
@@ -53,7 +53,7 @@ defmodule Exonerate.Filter.Dependencies do
           defp unquote(fun(filter, key))(value, _), do: value
         end}
       {key, dependent_keys} when is_list(dependent_keys) ->
-        {{fun(filter, key), []},
+        {fun(filter, key),
         quote do
           defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
             unquote(dependent_keys)
@@ -66,7 +66,7 @@ defmodule Exonerate.Filter.Dependencies do
           defp unquote(fun(filter, key))(value, _), do: value
         end}
       {key, schema} ->
-        {{fun(filter, ":" <> key), []},
+        {fun(filter, ":" <> key),
         quote do
           defp unquote(fun(filter, ":" <> key))(value, path) when is_map_key(value, unquote(key)) do
             unquote(fun(filter,key))(value, path)

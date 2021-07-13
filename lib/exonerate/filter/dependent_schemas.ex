@@ -25,7 +25,7 @@ defmodule Exonerate.Filter.DependentSchemas do
 
     %{
       artifact |
-      pipeline: [{fun(artifact), []} | artifact.pipeline],
+      pipeline: [fun(artifact) | artifact.pipeline],
       filters: [%__MODULE__{context: context, dependencies: deps} | artifact.filters]
     }
   end
@@ -34,7 +34,7 @@ defmodule Exonerate.Filter.DependentSchemas do
     {pipeline, children} = deps
     |> Enum.map(fn
       {key, false} ->
-        {{fun(filter, key), []},
+        {fun(filter, key),
         quote do
           defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
             Exonerate.mismatch(value, Path.join(path, unquote(key)))
@@ -42,7 +42,7 @@ defmodule Exonerate.Filter.DependentSchemas do
           defp unquote(fun(filter, key))(value, _), do: value
         end}
       {key, schema} ->
-        {{fun(filter, ":" <> key), []},
+        {fun(filter, ":" <> key),
         quote do
           defp unquote(fun(filter, ":" <> key))(value, path) when is_map_key(value, unquote(key)) do
             unquote(fun(filter,key))(value, path)

@@ -8,7 +8,7 @@ defmodule Exonerate.Filter.MaxLength do
   defstruct [:context, :length, :format_binary]
 
   def parse(artifact = %Exonerate.Type.String{}, %{"maxLength" => length}) do
-    pipeline = List.wrap(unless artifact.format_binary, do: {fun(artifact), []})
+    pipeline = List.wrap(unless artifact.format_binary, do: fun(artifact))
 
     %{artifact |
       pipeline: pipeline ++ artifact.pipeline,

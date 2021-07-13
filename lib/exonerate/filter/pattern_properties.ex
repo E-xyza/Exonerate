@@ -20,7 +20,7 @@ defmodule Exonerate.Filter.PatternProperties do
 
     %{artifact |
       iterate: true,
-      kv_pipeline: Enum.map(patterns, fn {k, _} -> {fun(artifact, k), []} end) ++ artifact.kv_pipeline,
+      kv_pipeline: Enum.map(patterns, fn {k, _} -> fun(artifact, k) end) ++ artifact.kv_pipeline,
       filters: [filter | artifact.filters]}
   end
 

@@ -19,8 +19,8 @@ defmodule Exonerate.Filter.Contains do
 
     %{artifact |
       needs_accumulator: true,
-      accumulator_pipeline: [{fun(artifact, ":reduce"), []} | artifact.accumulator_pipeline],
-      post_reduce_pipeline: [{fun(artifact), []} | artifact.post_reduce_pipeline],
+      accumulator_pipeline: [fun(artifact, ":reduce") | artifact.accumulator_pipeline],
+      post_reduce_pipeline: [fun(artifact) | artifact.post_reduce_pipeline],
       accumulator_init: Map.put_new(artifact.accumulator_init, :contains, 0),
       filters: [filter | artifact.filters]}
   end

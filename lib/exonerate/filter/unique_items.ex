@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.UniqueItems do
   def parse(artifact = %{context: context}, %{"uniqueItems" => true}) do
     %{artifact |
       needs_accumulator: true,
-      accumulator_pipeline: [{fun(artifact), []} | artifact.accumulator_pipeline],
+      accumulator_pipeline: [fun(artifact) | artifact.accumulator_pipeline],
       accumulator_init: Map.merge(artifact.accumulator_init, %{unique_set: MapSet.new(), index: 0}),
       filters: [%__MODULE__{context: context} | artifact.filters]}
   end

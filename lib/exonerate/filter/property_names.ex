@@ -27,7 +27,7 @@ defmodule Exonerate.Filter.PropertyNames do
     %{artifact |
       iterate: true,
       filters: [%__MODULE__{context: context, schema: schema} | artifact.filters],
-      kv_pipeline: [{fun(artifact), []} | artifact.kv_pipeline]
+      kv_pipeline: [fun(artifact) | artifact.kv_pipeline]
     }
   end
 

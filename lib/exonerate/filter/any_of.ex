@@ -32,7 +32,7 @@ defmodule Exonerate.Filter.AnyOf do
   end
 
   def combining(filter, value_ast, path_ast) do
-    funs = Enum.map(filter.schemas, &{Validator.to_fun(&1), []})
+    funs = Enum.map(filter.schemas, &Validator.to_fun(&1))
     quote do
       case Exonerate.pipeline(0, {unquote(value_ast), unquote(path_ast)}, unquote(funs)) do
         0 -> Exonerate.mismatch(unquote(value_ast), unquote(path_ast), guard: "anyOf")

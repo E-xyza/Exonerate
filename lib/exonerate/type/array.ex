@@ -48,7 +48,7 @@ defmodule Exonerate.Type.Array do
       |> Validator.to_fun()
 
       {
-        artifact.accumulator_pipeline ++ [{index_fun, []}],
+        artifact.accumulator_pipeline ++ [index_fun],
         quote do
           defp unquote(index_fun)(acc, _) do
             %{acc | index: acc.index + 1}

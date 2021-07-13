@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
   def parse(artifact = %{context: context}, %{"additionalProperties" => false}) do
     %{artifact |
       filters: [%__MODULE__{context: context, child: false} | artifact.filters],
-      kv_pipeline: [{fun(artifact), []} | artifact.kv_pipeline],
+      kv_pipeline: [fun(artifact) | artifact.kv_pipeline],
       iterate: true}
   end
   def parse(artifact = %{context: context}, %{"additionalProperties" => _}) do
@@ -20,7 +20,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
 
     %{artifact |
       filters: [%__MODULE__{context: context, child: child} | artifact.filters],
-      kv_pipeline: [{fun(artifact), []} | artifact.kv_pipeline],
+      kv_pipeline: [fun(artifact) | artifact.kv_pipeline],
       iterate: true}
   end
 

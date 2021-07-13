@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.MaxContains do
   def parse(artifact = %{context: context}, %{"contains" => _, "maxContains" => maximum}) do
     %{artifact |
       needs_accumulator: true,
-      accumulator_pipeline: [{fun(artifact), []} | artifact.accumulator_pipeline],
+      accumulator_pipeline: [fun(artifact) | artifact.accumulator_pipeline],
       accumulator_init: Map.put_new(artifact.accumulator_init, :contains, 0),
       filters: [%__MODULE__{context: context, maximum: maximum} | artifact.filters]}
   end

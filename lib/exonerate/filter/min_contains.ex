@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.MinContains do
   def parse(artifact = %{context: context}, %{"contains" => _, "minContains" => minimum}) when minimum > 0 do
     %{artifact |
       needs_accumulator: true,
-      post_reduce_pipeline: [{fun(artifact), []} | artifact.post_reduce_pipeline],
+      post_reduce_pipeline: [fun(artifact) | artifact.post_reduce_pipeline],
       accumulator_init: Map.put_new(artifact.accumulator_init, :contains, 0),
       filters: [%__MODULE__{context: context, minimum: minimum} | artifact.filters]}
   end

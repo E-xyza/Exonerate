@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.MaxItems do
     %{artifact |
       needs_accumulator: true,
       needs_array_in_accumulator: true,
-      accumulator_pipeline: [{fun, []} | artifact.accumulator_pipeline],
+      accumulator_pipeline: [fun | artifact.accumulator_pipeline],
       accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
       filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
   end

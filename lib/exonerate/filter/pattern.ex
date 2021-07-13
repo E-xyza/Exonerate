@@ -8,7 +8,7 @@ defmodule Exonerate.Filter.Pattern do
 
   def parse(artifact = %Exonerate.Type.String{}, %{"pattern" => pattern}) do
     %{artifact |
-      pipeline: [{fun(artifact), []} | artifact.pipeline],
+      pipeline: [fun(artifact) | artifact.pipeline],
       filters: [%__MODULE__{context: artifact.context, pattern: pattern} | artifact.filters]}
   end
 

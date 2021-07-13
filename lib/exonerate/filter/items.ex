@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.Items do
       filter = %__MODULE__{context: context, schema: false, prefix_size: length(prefix_items)}
       %{artifact |
         needs_accumulator: true,
-        accumulator_pipeline: [{fun(artifact), []} | artifact.accumulator_pipeline],
+        accumulator_pipeline: [fun(artifact) | artifact.accumulator_pipeline],
         accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
         filters: [filter  | artifact.filters]}
     else
@@ -37,7 +37,7 @@ defmodule Exonerate.Filter.Items do
 
     %{artifact |
       needs_accumulator: true,
-      accumulator_pipeline: [{fun, []} | artifact.accumulator_pipeline],
+      accumulator_pipeline: [fun | artifact.accumulator_pipeline],
       accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
       filters: [
         %__MODULE__{
@@ -55,7 +55,7 @@ defmodule Exonerate.Filter.Items do
 
     %{artifact |
       needs_accumulator: true,
-      accumulator_pipeline: [{fun, []} | artifact.accumulator_pipeline],
+      accumulator_pipeline: [fun | artifact.accumulator_pipeline],
       accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
       filters: [
         %__MODULE__{

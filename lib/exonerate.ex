@@ -126,10 +126,10 @@ defmodule Exonerate do
     build_pipe(variable_ast, path_ast, pipeline)
   end
 
-  defp build_pipe(input_ast, path_ast, [{fun, args} | rest]) do
-    build_pipe({:|>, [], [input_ast, {fun, [], [path_ast | args]}]}, path_ast, rest)
+  defp build_pipe(input_ast, params_ast, [fun | rest]) do
+    build_pipe({:|>, [], [input_ast, {fun, [], [params_ast]}]}, params_ast, rest)
   end
-  defp build_pipe(input_ast, _path_ast, []), do: input_ast
+  defp build_pipe(input_ast, _params_ast, []), do: input_ast
 
   # TODO: generalize these.
 

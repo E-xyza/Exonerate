@@ -10,14 +10,14 @@ defmodule ExonerateTest.Parse.StringTest do
     test "minLength" do
       assert %{
         filters: [%MinLength{length: 3}],
-        pipeline: ["#/minLength": []]
+        pipeline: [:"#/minLength"]
       } = String.parse(@validator, %{"minLength" => 3})
     end
 
     test "maxLength" do
       assert %{
         filters: [%MaxLength{length: 3}],
-        pipeline: ["#/maxLength": []]
+        pipeline: [:"#/maxLength"]
       } = String.parse(@validator, %{"maxLength" => 3})
     end
 
@@ -40,7 +40,7 @@ defmodule ExonerateTest.Parse.StringTest do
     test "as string" do
       assert %{
         filters: [%Pattern{pattern: "foo"}],
-        pipeline: ["#/pattern": []]
+        pipeline: [:"#/pattern"]
       } = String.parse(@validator, %{"pattern" => "foo"})
     end
   end
