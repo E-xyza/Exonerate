@@ -19,6 +19,7 @@ defmodule Exonerate.Filter do
   @spec parse(Type.artifact, Filter.t, Type.json) :: Type.artifact
   def parse(validator_or_artifact, module, json), do: module.parse(validator_or_artifact, json)
 
+  defp capitalize(<<?$, rest::binary>>), do: capitalize(rest)
   defp capitalize(<<first::binary-size(1), rest::binary>>) do
     String.capitalize(first) <> rest
   end

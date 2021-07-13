@@ -51,7 +51,7 @@ defmodule Exonerate.Validator do
   end
 
   # if must come after "then" and "else" in processing order.
-  @validator_filters ~w(type enum const allOf not anyOf oneOf then else if)
+  @validator_filters ~w(type enum const $ref allOf not anyOf oneOf then else if)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @spec analyze(t) :: t
@@ -62,7 +62,6 @@ defmodule Exonerate.Validator do
       # TODO: break this out into its own function.
       ref = %Ref{} -> ref
       bool when is_boolean(bool) -> validator!
-      %{"$ref" => ref} -> Ref.from_uri(ref, validator!)
       schema when is_map(schema) ->
         # TODO: put this into its own function
         validator!
@@ -84,20 +83,17 @@ defmodule Exonerate.Validator do
   defp analyze(ref = %Ref{}), do: ref
 
   defp register(validator) do
-    case Registry.register(validator.schema, validator.pointer, to_fun(validator)) |> i(validator) do
+    case Registry.register(validator.schema, validator.pointer, to_fun(validator))  do
       :ok -> validator
       {:exists, target} ->
         %Ref{pointer: validator.pointer, authority: validator.authority, target: target}
       {:needed, needed_by} ->
-        %{validator | needed_by: needed_by}
-    end
-  end
-  defp i(x, v) do
-    if v.authority == "ref_1#" do
-      v |> IO.inspect(label: "96")
-      x |> IO.inspect(label: "97")
-    else
-      x
+        # on re-entrant registry requests we don't want to make another function.
+        if needed_by == to_fun(validator) do
+          validator
+        else
+          %{validator | needed_by: needed_by}
+        end
     end
   end
 

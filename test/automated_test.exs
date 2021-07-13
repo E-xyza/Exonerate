@@ -22,7 +22,8 @@ defmodule ExonerateTest.AutomatedTests do
     {"ref.json", 6},
     # no support for relative uri (for now)
     {"ref.json", 11},
-    #{"ref.json", 1}
+    # currently no support for unevaluated
+    {"ref.json", 13}
   ]
 
   def build_tests(directory \\ @test_base_dir) do
@@ -138,5 +139,7 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("ref.json", 1)
+  # uncomment the next line to test only one candidate.
+  @tag :skip
+  ExonerateTest.AutomatedTests.make("ref.json", 3)
 end

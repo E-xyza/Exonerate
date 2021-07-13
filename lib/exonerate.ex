@@ -54,7 +54,7 @@ defmodule Exonerate do
 
       unquote(impl)
       unquote(dangling_refs)
-    end |> Tools.inspect(name == :ref_1)
+    end #|> Tools.inspect(name == :ref_3)
   end
 
   @metadata_call %{
