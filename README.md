@@ -25,6 +25,13 @@ Note:
   if you are ingesting raw data in `multipart/form-encoded`, use the
   `{"format": "binary"}` filter on your string.
 
+String formatting included:
+- datetime
+- date
+- time
+- ipv4
+- ipv6
+
 ## Installation
 
 Add the following lines to your mix.exs

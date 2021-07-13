@@ -121,7 +121,91 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
   end
 
-  # TODO
-  test "formats"
+  defmodule Format do
+    require Exonerate
 
+    defmodule Custom do
+      def format("ok"), do: true
+      def format(_), do: false
+
+      def format(a, a), do: true
+      def format(_, _), do: false
+    end
+
+    Exonerate.function_from_string(:def, :datetime, ~s({"type": "string", "format": "date-time"}))
+    Exonerate.function_from_string(:def, :datetime_utc, ~s({"type": "string", "format": "date-time"}),
+      format_options: %{"#" => :utc})
+    Exonerate.function_from_string(:def, :datetime_naive, ~s({"type": "string", "format": "date-time"}),
+      format_options: %{"#" => :naive})
+    Exonerate.function_from_string(:def, :datetime_custom, ~s({"type": "string", "format": "date-time"}),
+      format_options: %{"#" => {Custom, :format, []}})
+    Exonerate.function_from_string(:def, :datetime_custom_params, ~s({"type": "string", "format": "date-time"}),
+      format_options: %{"#" => {Custom, :format, ["ok"]}})
+
+    Exonerate.function_from_string(:def, :date, ~s({"type": "string", "format": "date"}))
+
+    Exonerate.function_from_string(:def, :time, ~s({"type": "string", "format": "time"}))
+
+    Exonerate.function_from_string(:def, :ipv4, ~s({"type": "string", "format": "ipv4"}))
+
+    Exonerate.function_from_string(:def, :ipv6, ~s({"type": "string", "format": "ipv6"}))
+
+    Exonerate.function_from_string(:def, :custom, ~s({"type": "string", "format": "custom"}),
+        format_options: %{"#" => {Custom, :format, ["ok"]}})
+  end
+
+  describe "formats" do
+    test "date-time" do
+      assert :ok == Format.datetime(to_string(DateTime.utc_now()))
+      assert :ok == Format.datetime(to_string(NaiveDateTime.utc_now()))
+      assert {:error, _} = Format.datetime(to_string(Date.utc_today()))
+      assert {:error, _} = Format.datetime(to_string(Time.utc_now()))
+      assert {:error, _} = Format.datetime("foobar")
+    end
+
+    test "date-time-utc" do
+      assert :ok == Format.datetime(to_string(DateTime.utc_now()))
+      assert {:error, _} = Format.datetime(to_string(NaiveDateTime.utc_now()))
+    end
+
+    test "date-time-naive" do
+      assert {:error, _} = Format.datetime(to_string(DateTime.utc_now()))
+      assert :ok == Format.datetime(to_string(NaiveDateTime.utc_now()))
+    end
+
+    test "date-time-custom" do
+      assert :ok == Format.datetime_custom("ok")
+      assert {:error, _} = Format.datetime_custom("bar")
+    end
+
+    test "date-time-custom-params" do
+      assert :ok == Format.datetime_custom_params("ok")
+      assert {:error, _} = Format.datetime_custom_params("bar")
+    end
+
+    test "date" do
+      assert :ok == Format.date(to_string(Date.utc_today()))
+      assert {:error, _} = Format.date("foo")
+    end
+
+    test "time" do
+      assert :ok == Format.time(to_string(Time.utc_now()))
+      assert {:error, _} = Format.time("foo")
+    end
+
+    test "ipv4" do
+      assert :ok == Format.ipv4("10.10.10.10")
+      assert {:error, _} = Format.ipv4("256.10.10.10")
+    end
+
+    test "ipv6" do
+      assert :ok == Format.ipv6("::1")
+      assert {:error, _} = Format.ipv6("foo")
+    end
+
+    test "custom" do
+      assert :ok == Format.custom("ok")
+      assert {:error, _} = Format.custom("foo")
+    end
+  end
 end
