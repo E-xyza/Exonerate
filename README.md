@@ -15,6 +15,15 @@ Works in progress:
 
 - support for remoteref
 - support for unevaluatedItems, unevaluatedProperties
+- support for contentMediaType
+- support for contentEncoding
+- support for named anchors
+
+Note:
+- by default, ALL strings are considered to be invalid unless they are valid
+  UTF-8 encodings and will be validated.  If you require a raw binary, (for example
+  if you are ingesting raw data in `multipart/form-encoded`, use the
+  `{"format": "binary"}` filter on your string.
 
 ## Installation
 
@@ -23,7 +32,7 @@ Add the following lines to your mix.exs
 ```elixir
   defp deps do
     [
-      {:exonerate, git: "https://github.com/ityonemo/exonerate.git", tag: "master"},
+      {:exonerate, "~> 0.1", runtime: false},
     ]
   end
 ```
