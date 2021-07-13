@@ -9,6 +9,7 @@ defmodule Exonerate.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       preferred_cli_env: ["exonerate.build_tests": :test],
+      elixirc_paths: elixirc_paths(Mix.env()),
       #for dialyxir
       dialyzer: [
         plt_add_deps: :transitive,
@@ -23,6 +24,9 @@ defmodule Exonerate.MixProject do
       extra_applications: [:logger]
     ]
   end
+
+  def elixirc_paths(:test), do: ["lib", "test/support"]
+  def elixirc_paths(_), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
