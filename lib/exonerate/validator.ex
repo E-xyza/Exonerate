@@ -107,7 +107,7 @@ defmodule Exonerate.Validator do
         end
       object when is_map(object) ->
         build_schema(validator)
-    end |> Tools.inspect(validator.authority == "if-then-else_0")
+    end |> Tools.inspect(validator.authority == "items_3")
   end
 
   def build_schema(validator = %{types: types}) when types == %{} do

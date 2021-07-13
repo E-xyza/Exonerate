@@ -67,7 +67,7 @@ defmodule Exonerate.Type.Array do
       Macro.escape(artifact.accumulator_init)
     end
 
-    combining = Validator.combining(artifact.context, quote do object end, quote do path end)
+    combining = Validator.combining(artifact.context, quote do array end, quote do path end)
 
     quote do
       defp unquote(Validator.to_fun(artifact.context))(array, path) when is_list(array) do

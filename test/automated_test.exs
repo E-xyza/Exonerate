@@ -3,7 +3,7 @@ defmodule ExonerateTest.AutomatedTests do
   |> Path.join("_draft2020-12")
   |> Path.expand()
 
-  @omit ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json items.json
+  @omit ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json
     refRemote.json unevaluatedItems.json unevaluatedProperties.json ref.json)
 
   @test_omissions [
@@ -132,5 +132,5 @@ defmodule TestOneTest do
 
   @moduletag :isolate
 
-  ExonerateTest.AutomatedTests.make("propertyNames.json", 2)
+  ExonerateTest.AutomatedTests.make("items.json", 3)
 end

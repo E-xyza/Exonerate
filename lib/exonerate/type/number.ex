@@ -29,7 +29,7 @@ defmodule Exonerate.Type.Number do
   @impl true
   @spec compile(t) :: Macro.t
   def compile(artifact) do
-    combining = Validator.combining(artifact.context, quote do object end, quote do path end)
+    combining = Validator.combining(artifact.context, quote do number end, quote do path end)
 
     quote do
       defp unquote(Validator.to_fun(artifact.context))(number, path) when is_number(number) do

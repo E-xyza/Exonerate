@@ -18,7 +18,7 @@ defmodule Exonerate.Type.Null do
   @impl true
   @spec compile(t) :: Macro.t
   def compile(artifact) do
-    combining = Validator.combining(artifact.context, quote do object end, quote do path end)
+    combining = Validator.combining(artifact.context, quote do null end, quote do path end)
     quote do
       defp unquote(Validator.to_fun(artifact.context))(null, path) when is_nil(null) do
         unquote_splicing(combining)
