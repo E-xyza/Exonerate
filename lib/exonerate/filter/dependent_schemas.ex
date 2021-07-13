@@ -1,45 +1,79 @@
 defmodule Exonerate.Filter.DependentSchemas do
+  # NB "dependentSchemas" is just a repackaging of "dependencies" except only permitting the
+  # maps (specification of full schema to be applied to the object)
+
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Type
-  require Type
+  alias Exonerate.Type.Object
+  alias Exonerate.Validator
+  defstruct [:context, :dependencies]
 
-  @impl true
-  def append_filter(dependency, validation) when Type.is_schema(dependency) do
-    calls = validation.calls
-    |> Map.get(:object, [])
-    |> List.insert_at(0, name(validation))
+  def parse(artifact = %Object{context: context}, %{"dependentSchemas" => deps}) do
+    deps = deps
+    |> Enum.reject(&(elem(&1, 1) == true)) # as an optimization, just ignore {key, true}
+    |> Map.new(fn
+      {k, false} -> {k, false}  # might be optimizable as a filter.  Not done here.
+      {k, schema} when is_map(schema) ->
+        {k, Validator.parse(
+          context.schema,
+          [k, "dependentSchemas" | context.pointer],
+          authority: context.authority
+        )}
+    end)
 
-    children = List.insert_at(validation.children, 0, code(dependency, validation))
-
-    validation
-    |> put_in([:calls, :object], calls)
-    |> put_in([:children], children)
+    %{
+      artifact |
+      pipeline: [{fun(artifact), []} | artifact.pipeline],
+      filters: [%__MODULE__{context: context, dependencies: deps} | artifact.filters]
+    }
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["dependentSchemas" | validation.path])
-  end
-
-  # TODO: guard when object is the only type
-  # if object is the only type, avoid the guard.
-  defp code(dependencies, validation) do
-    {calls, funs} = dependencies
+  def compile(filter = %__MODULE__{dependencies: deps}) do
+    {pipeline, children} = deps
     |> Enum.map(fn
-      {key, schema} when Type.is_schema(schema) ->
-        next_path = [key, "dependentSchemas" | validation.path]
-        {quote do
-          defp unquote(name(validation))(object = %{unquote(key) => _}, path) do
-            unquote(Exonerate.path_to_call(next_path))(object, path)
+      {key, false} ->
+        {{fun(filter, key), []},
+        quote do
+          defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
+            Exonerate.mismatch(value, Path.join(path, unquote(key)))
           end
-        end,
-        Exonerate.Validation.from_schema(schema, next_path)
-        }
-      end)
+          defp unquote(fun(filter, key))(value, _), do: value
+        end}
+      {key, schema} ->
+        {{fun(filter, ":" <> key), []},
+        quote do
+          defp unquote(fun(filter, ":" <> key))(value, path) when is_map_key(value, unquote(key)) do
+            unquote(fun(filter,key))(value, path)
+          end
+          defp unquote(fun(filter, ":" <> key))(value, _), do: value
+          unquote(Validator.compile(schema))
+        end}
+    end)
     |> Enum.unzip
 
-    calls ++ [quote do
-      defp unquote(name(validation))(_, _), do: :ok
-    end] ++ funs
+    {[], [
+      quote do
+        defp unquote(fun(filter))(value, path) do
+          Exonerate.pipeline(value, path, unquote(pipeline))
+          :ok
+        end
+      end
+    ] ++ children}
+  end
+
+  # TODO: generalize this.
+  defp fun(filter_or_artifact = %_{}) do
+    filter_or_artifact.context
+    |> Validator.jump_into("dependentSchemas")
+    |> Validator.to_fun
+  end
+
+  defp fun(filter_or_artifact = %_{}, nexthop) do
+    filter_or_artifact.context
+    |> Validator.jump_into("dependentSchemas")
+    |> Validator.jump_into(nexthop)
+    |> Validator.to_fun
   end
 end

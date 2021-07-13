@@ -102,7 +102,7 @@ defmodule Exonerate.Validator do
         end
       object when is_map(object) ->
         build_schema(validator)
-    end |> Tools.inspect(validator.authority == "allOf_1")
+    end |> Tools.inspect(validator.authority == "dependentSchemas_1")
   end
 
   def build_schema(validator = %{types: types}) when types == %{} do

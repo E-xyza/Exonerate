@@ -12,7 +12,7 @@ defmodule Exonerate.Type.Object do
   @type t :: %__MODULE__{}
 
   @validator_filters ~w(required maxProperties minProperties properties
-    patternProperties additionalProperties dependencies propertyNames)
+    patternProperties additionalProperties dependentRequired dependentSchemas dependencies propertyNames)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   def parse(validator = %Validator{}, schema) do

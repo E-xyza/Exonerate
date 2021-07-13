@@ -8,7 +8,10 @@ defmodule Exonerate.Filter.Dependencies do
   defstruct [:context, :dependencies]
 
   def parse(artifact = %Object{context: context}, %{"dependencies" => deps}) do
-    deps = Map.new(deps, fn
+    deps = deps
+    |> Enum.reject(&(elem(&1, 1) == true)) # as an optimization, just ignore {key, true}
+    |> Map.new(fn
+      {k, false} -> {k, false}  # might be optimizable as a filter.  Not done here.
       {k, list} when is_list(list) ->
         {k, list}
       {k, schema} when is_map(schema) ->
@@ -29,6 +32,14 @@ defmodule Exonerate.Filter.Dependencies do
   def compile(filter = %__MODULE__{dependencies: deps}) do
     {pipeline, children} = deps
     |> Enum.map(fn
+      {key, false} ->
+        {{fun(filter, key), []},
+        quote do
+          defp unquote(fun(filter, key))(value, path) when is_map_key(value, unquote(key)) do
+            Exonerate.mismatch(value, Path.join(path, unquote(key)))
+          end
+          defp unquote(fun(filter, key))(value, _), do: value
+        end}
       # one item optimization
       {key, [dependent_key]} ->
         {{fun(filter, key), []},
