@@ -1,59 +1,85 @@
 defmodule Exonerate.Filter.If do
+  @moduledoc false
+
   @behaviour Exonerate.Filter
+  @derive Exonerate.Compiler
+  @derive {Inspect, except: [:context]}
+  defstruct [:context, :schema, :then, :else]
+
+  alias Exonerate.Validator
+  alias Exonerate.Type
 
   @impl true
-  def append_filter(schema, validation) do
-    calls = [name(validation) | Map.get(validation.calls, :all, [])]
+  def parse(validator = %Validator{}, %{"if" => _}) do
 
+    schema = Validator.parse(
+      validator.schema,
+      ["if" | validator.pointer],
+      authority: validator.authority)
 
-    validation
-    |> put_in([:calls, :all], calls)
-    |> put_in([:children], code(schema, validation) ++ validation.children)
+    module = %__MODULE__{context: validator, schema: schema, then: validator.then, else: validator.else}
+
+    %{validator |
+      children: [module | validator.children],
+      combining: [module | validator.combining]}
   end
 
-  defp name(validation) do
-    Exonerate.path_to_call(["if" | validation.path])
+  def combining(filter, value_ast, path_ast) do
+    quote do
+      unquote(fun(filter, ":test"))(unquote(value_ast), unquote(path_ast))
+    end
   end
 
-  defp then_clause(validation) do
-    if then = validation.calls[:then] do
+  def compile(filter = %__MODULE__{}) do
+    then_clause = if filter.then do
       quote do
-        unquote(Enum.at(then, 0))(value, path)
+        unquote(fun0(filter, "then"))(value, path)
       end
     else
       :ok
     end
-  end
 
-  defp else_clause(validation) do
-    if else_ = validation.calls[:else] do
+    else_clause = if filter.else do
       quote do
-        unquote(Enum.at(else_, 0))(value, path)
+        unquote(fun0(filter, "else"))(value, path)
       end
     else
       :ok
     end
-  end
-
-  defp code(schema, validation) do
-    shim = ["if_" | validation.path]
 
     [quote do
-       defp unquote(name(validation))(value, path) do
-         result = try do
-           unquote(Exonerate.path_to_call(shim))(value, path)
-           true
-         catch
-           {:error, _} -> false
-         end
+      defp unquote(fun(filter, ":test"))(value, path) do
+        conditional = try do
+          unquote(fun(filter))(value, path)
+        catch
+          error = {:error, list} when is_list(list) -> error
+        end
 
-         if result do
-           unquote(then_clause(validation))
-         else
-           unquote(else_clause(validation))
-         end
-       end
-       unquote(Exonerate.Validation.from_schema(schema, shim))
-     end]
+        case conditional do
+          :ok -> unquote(then_clause)
+          {:error, _} -> unquote(else_clause)
+        end
+      end
+      unquote(Validator.compile(filter.schema))
+    end]
+  end
+
+  defp fun0(filter, nexthop) do
+    filter.context
+    |> Validator.jump_into(nexthop)
+    |> Validator.to_fun
+  end
+
+  defp fun(filter) do
+    filter.context
+    |> Validator.jump_into("if")
+    |> Validator.to_fun
+  end
+
+  defp fun(filter, nexthop) do
+    filter.context
+    |> Validator.jump_into("if")
+    |> Validator.jump_into(nexthop)
+    |> Validator.to_fun
   end
 end

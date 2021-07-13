@@ -15,7 +15,9 @@ defmodule Exonerate.Validator do
     types: @initial_typemap,
     guards: [],
     combining: [],
-    children: []
+    children: [],
+    then: false,
+    else: false
   ]
 
   @type t :: %__MODULE__{
@@ -27,7 +29,9 @@ defmodule Exonerate.Validator do
     types: %{optional(Type.t) => nil | Type.type_struct},
     guards: [module],
     combining: [module],
-    children: [module]
+    children: [module],
+    then: boolean,
+    else: boolean
   }
 
   @spec new(Type.json, Pointer.t, keyword) :: t
@@ -42,7 +46,8 @@ defmodule Exonerate.Validator do
     |> analyze()
   end
 
-  @validator_filters ~w(type enum const allOf not anyOf oneOf)
+  # if must come after "then" and "else" in processing order.
+  @validator_filters ~w(type enum const allOf not anyOf oneOf then else if)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @spec analyze(t) :: t
@@ -102,7 +107,7 @@ defmodule Exonerate.Validator do
         end
       object when is_map(object) ->
         build_schema(validator)
-    end |> Tools.inspect(validator.authority == "propertyNames_2")
+    end |> Tools.inspect(validator.authority == "if-then-else_0")
   end
 
   def build_schema(validator = %{types: types}) when types == %{} do
