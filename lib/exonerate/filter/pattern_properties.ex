@@ -16,10 +16,12 @@ defmodule Exonerate.Filter.PatternProperties do
             authority: context.authority)}
     end)
 
+    filter = %__MODULE__{context: context, patterns: patterns}
+
     %{artifact |
-      needs_accumulator: true,
-      pattern_pipeline: Enum.map(patterns, fn {k, _} -> {fun(artifact, k), []} end),
-      filters: [%__MODULE__{context: context, patterns: patterns} | artifact.filters]}
+      iterate: true,
+      kv_pipeline: Enum.map(patterns, fn {k, _} -> {fun(artifact, k), []} end) ++ artifact.kv_pipeline,
+      filters: [filter | artifact.filters]}
   end
 
   def compile(filter = %__MODULE__{patterns: patterns}) do
