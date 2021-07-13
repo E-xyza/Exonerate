@@ -13,11 +13,8 @@ because it is impossible for a floating point to guarantee sane results
 
 Works in progress:
 
-- more user-friendly usage surface
 - support for remoteref
-- code sanitization for degenerate forms, e.g. `{"properties":{}}`
-- code cleanup for simpler dependency checking when the structure has only one dependency.
-- code cleanup for degenerate arrays e.g. `[<contents>] |> Exonerate.error_reduction`
+- support for unevaluatedItems, unevaluatedProperties
 
 ## Installation
 
@@ -26,7 +23,6 @@ Add the following lines to your mix.exs
 ```elixir
   defp deps do
     [
-      # -- your favorite dependencies here
       {:exonerate, git: "https://github.com/ityonemo/exonerate.git", tag: "master"},
     ]
   end
@@ -39,7 +35,7 @@ Add the following lines to your mix.exs
 defmodule SchemaModule do
   require Exonerate
 
-  @schemadoc """
+  @doc """
   validates our input
   """
   Exonerate.function_from_string(:def, :validate_input, """
@@ -62,41 +58,4 @@ iex> SchemaModule.validate_input(%{"parameter" => "2"})
 iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok
 
-iex> h SchemaModule.validate_input
-
-                            def validate_input(val)
-
-  @spec validate_input(Exonerate.json()) :: :ok | Exonerate.mismatch()
-
-validates our input
-
-Matches JSONSchema:
-
-    {
-      "type":"object",
-      "properties":{
-        "parameter":{"type":"integer"}
-      }
-    }
-
 ```
-
-
-## Running unit tests
-
-- basic mix-based unit and integration tests
-
-```bash
-  mix test
-```
-
-- comprehensive automated unit tests.  This will build a JSONSchema directory in
-test/automated that features automatically generated code and code testing.
-
-```bash
-  mix test
-```
-
-## response encoding.
-
-the default response encoding for JSON is Jason.
