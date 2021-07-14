@@ -13,10 +13,12 @@ defmodule Exonerate do
 
   For details, see:  http://json-schema.org
 
+  Exonerate is automatically tested against the JSONSchema test suite.
+
   ## Usage
 
   Exonerate is 100% compile-time generated.  You should include Exonerate with
-  the `runtime: false` option in `Mix.exs`.
+  the `runtime: false` option in `mix.exs`.
 
   ### In your module:
 
