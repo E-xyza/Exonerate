@@ -1,0 +1,6 @@
+# Versions Document
+
+## 0.1.0
+
+- initial release
+- support for JSONSchema-draft 6 and almost all of JSONSchema-draft 7
