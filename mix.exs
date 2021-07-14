@@ -14,7 +14,7 @@ defmodule Exonerate.MixProject do
         licenses: ["MIT"],
         # we need to package the zig BEAM adapters and the c include files as a part
         # of the hex packaging system.
-        files: ~w(lib mix.exs README* LICENSE* VERSIONS* priv),
+        files: ~w(lib mix.exs README* LICENSE* VERSIONS*),
         links: %{"GitHub" => "https://github.com/ityonemo/exonerate"}
       ],
       source_url: "https://github.com/ityonemo/exonerate/",
