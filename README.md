@@ -22,6 +22,7 @@ Works in progress:
 - support for defp
 - support for function_from_file
 - support for function_from_map
+- support for more formatted strings
 
 Note:
 - by default, ALL strings are considered to be invalid unless they are valid
@@ -35,7 +36,6 @@ String formatting included:
 - date-time
 - date
 - time
-- uuid
 - ipv4
 - ipv6
 

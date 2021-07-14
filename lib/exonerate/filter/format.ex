@@ -19,7 +19,7 @@ defmodule Exonerate.Filter.Format do
     "time" => {:__time_validate, :time, []},
     "ipv4" => {:__ipv4_validate, :ipv4, []},
     "ipv6" => {:__ipv6_validate, :ipv6, []},
-    "uuid" => {:__uuid_validate, :uuid, [:any]},
+    "uuid" => {:__annotate, nil, []},
     "uri-template" => {:__annotate, nil, []},
     "json-pointer" => {:__annotate, nil, []},
     "relative-json-pointer" => {:__annotate, nil, []},
@@ -96,9 +96,8 @@ defmodule Exonerate.Filter.Format do
 
   defp builtins(:datetime) do
     quote do
-      defp __datetime_validate(string, :any), do: __datetime_validate(string, :utc) or __datetime_validate(string, :naive)
+      defp __datetime_validate(string, :any), do: match?({:ok, _}, NaiveDateTime.from_iso8601(string))
       defp __datetime_validate(string, :utc), do: match?({:ok, _, _}, Elixir.DateTime.from_iso8601(string))
-      defp __datetime_validate(string, :naive), do: match?({:ok, _}, NaiveDateTime.from_iso8601(string))
     end
   end
 
