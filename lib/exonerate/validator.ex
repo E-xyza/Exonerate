@@ -20,7 +20,8 @@ defmodule Exonerate.Validator do
     children: [],
     then: false,
     else: false,
-    needed_by: nil
+    needed_by: nil,
+    format_options: %{}
   ]
 
   @type t :: %__MODULE__{
@@ -35,7 +36,8 @@ defmodule Exonerate.Validator do
     children: [module],
     then: boolean,
     else: boolean,
-    needed_by: [%{pointer: Pointer.t, fun: atom}]
+    needed_by: [%{pointer: Pointer.t, fun: atom}],
+    format_options: %{String.t => {atom, [term]} | {module, atom, [term]}}
   } | Ref.t
 
   @spec new(Type.json, Pointer.t, keyword) :: t

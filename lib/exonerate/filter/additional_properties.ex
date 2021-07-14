@@ -18,7 +18,8 @@ defmodule Exonerate.Filter.AdditionalProperties do
     child = Validator.parse(
       context.schema,
       ["additionalProperties" | context.pointer],
-      authority: context.authority)
+      authority: context.authority,
+      format_options: context.format_options)
 
     %{artifact |
       filters: [%__MODULE__{context: context, child: child} | artifact.filters],

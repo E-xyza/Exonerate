@@ -36,7 +36,8 @@ defmodule Exonerate.Filter.Items do
 
     schema = Validator.parse(context.schema,
       ["items" | context.pointer],
-      authority: context.authority)
+      authority: context.authority,
+      format_options: context.format_options)
 
     %{artifact |
       needs_accumulator: true,
@@ -54,7 +55,8 @@ defmodule Exonerate.Filter.Items do
     schemas = Enum.map(0..(length(s) - 1),
       &Validator.parse(context.schema,
         ["#{&1}", "items" | context.pointer],
-        authority: context.authority))
+        authority: context.authority,
+        format_options: context.format_options))
 
     %{artifact |
       needs_accumulator: true,

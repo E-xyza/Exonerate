@@ -14,7 +14,8 @@ defmodule Exonerate.Filter.Then do
     schema = Validator.parse(
       validator.schema,
       ["then" | validator.pointer],
-      authority: validator.authority)
+      authority: validator.authority,
+      format_options: validator.format_options)
 
     module = %__MODULE__{context: validator, schema: schema}
 

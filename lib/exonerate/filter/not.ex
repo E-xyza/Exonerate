@@ -17,7 +17,8 @@ defmodule Exonerate.Filter.Not do
     schema = Validator.parse(
       validator.schema,
       ["not" | validator.pointer],
-      authority: validator.authority)
+      authority: validator.authority,
+      format_options: validator.format_options)
 
     module = %__MODULE__{context: validator, schema: schema}
 

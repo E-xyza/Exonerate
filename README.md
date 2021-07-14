@@ -18,12 +18,18 @@ Works in progress:
 - support for contentMediaType
 - support for contentEncoding
 - support for named anchors
+- better uri support
+- support for defp
+- support for function_from_file
+- support for function_from_map
 
 Note:
 - by default, ALL strings are considered to be invalid unless they are valid
   UTF-8 encodings and will be validated.  If you require a raw binary, (for example
   if you are ingesting raw data in `multipart/form-encoded`, use the
   `{"format": "binary"}` filter on your string.
+- some parts of the public API e.g. function_from_* options may change to better
+  suit the standard.
 
 String formatting included:
 - date-time

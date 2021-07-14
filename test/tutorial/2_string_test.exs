@@ -133,20 +133,18 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     Exonerate.function_from_string(:def, :datetime, ~s({"type": "string", "format": "date-time"}))
-    Exonerate.function_from_string(:def, :datetime_utc, ~s({"type": "string", "format": "date-time"}),
-      format_options: %{"#" => [:utc]})
-    Exonerate.function_from_string(:def, :datetime_naive, ~s({"type": "string", "format": "date-time"}),
-      format_options: %{"#" => [:naive]})
-    Exonerate.function_from_string(:def, :datetime_disabled, ~s({"type": "string", "format": "date-time"}),
-      format_options: %{"#" => false})
-    Exonerate.function_from_string(:def, :datetime_custom, ~s({"type": "string", "format": "date-time"}),
-      format_options: %{"#" => {Custom, :format, []}})
-    Exonerate.function_from_string(:def, :datetime_custom_params, ~s({"type": "string", "format": "date-time"}),
-      format_options: %{"#" => {Custom, :format, ["ok"]}})
-    Exonerate.function_from_string(:def, :datetime_custom_private, ~s({"type": "string", "format": "date-time"}),
-      format_options: %{"#" => {:format, []}})
-    Exonerate.function_from_string(:def, :datetime_custom_private_params, ~s({"type": "string", "format": "date-time"}),
-      format_options: %{"#" => {:format, ["ok"]}})
+    Exonerate.function_from_string(:def, :datetime_utc, ~s({"type": "string", "format": "date-time", "comment": "a"}),
+      format_options: %{"/" => [:utc]})
+    Exonerate.function_from_string(:def, :datetime_disabled, ~s({"type": "string", "format": "date-time", "comment": "b"}),
+      format_options: %{"/" => false})
+    Exonerate.function_from_string(:def, :datetime_custom, ~s({"type": "string", "format": "date-time", "comment": "c"}),
+      format_options: %{"/" => {Custom, :format, []}})
+    Exonerate.function_from_string(:def, :datetime_custom_params, ~s({"type": "string", "format": "date-time", "comment": "d"}),
+      format_options: %{"/" => {Custom, :format, ["ok"]}})
+    Exonerate.function_from_string(:def, :datetime_custom_private, ~s({"type": "string", "format": "date-time", "comment": "e"}),
+      format_options: %{"/" => {:format, []}})
+    Exonerate.function_from_string(:def, :datetime_custom_private_params, ~s({"type": "string", "format": "date-time", "comment": "f"}),
+      format_options: %{"/" => {:format, ["ok"]}})
 
     Exonerate.function_from_string(:def, :date, ~s({"type": "string", "format": "date"}))
 
@@ -158,11 +156,11 @@ defmodule ExonerateTest.Tutorial.StringTest do
 
     Exonerate.function_from_string(:def, :ipv6, ~s({"type": "string", "format": "ipv6"}))
 
-    Exonerate.function_from_string(:def, :custom, ~s({"type": "string", "format": "custom"}),
-        format_options: %{"#" => {Custom, :format, ["ok"]}})
+    Exonerate.function_from_string(:def, :custom, ~s({"type": "string", "format": "custom", "comment": "a"}),
+        format_options: %{"/" => {Custom, :format, ["ok"]}})
 
-    Exonerate.function_from_string(:def, :custom_private, ~s({"type": "string", "format": "custom"}),
-        format_options: %{"#" => {:format, ["ok"]}})
+    Exonerate.function_from_string(:def, :custom_private, ~s({"type": "string", "format": "custom", "comment": "b"}),
+        format_options: %{"/" => {:format, ["ok"]}})
 
     defp format("ok"), do: true
     defp format(_), do: false
@@ -183,11 +181,6 @@ defmodule ExonerateTest.Tutorial.StringTest do
     test "date-time-utc" do
       assert :ok == Format.datetime_utc(to_string(DateTime.utc_now()))
       assert {:error, _} = Format.datetime_utc(to_string(NaiveDateTime.utc_now()))
-    end
-
-    test "date-time-naive" do
-      assert {:error, _} = Format.datetime_naive(to_string(DateTime.utc_now()))
-      assert :ok == Format.datetime_naive(to_string(NaiveDateTime.utc_now()))
     end
 
     test "date-time-disabled" do

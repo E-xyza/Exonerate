@@ -18,7 +18,8 @@ defmodule Exonerate.Filter.OneOf do
       &Validator.parse(
         validator.schema,
         ["#{&1}", "oneOf" | validator.pointer],
-        authority: validator.authority))
+        authority: validator.authority,
+        format_options: validator.format_options))
 
     # CONSIDER OPTING-IN TO TYPE OPTIMIZATION.  NOTE IT BREAKS ERROR PATH REPORTING.
 

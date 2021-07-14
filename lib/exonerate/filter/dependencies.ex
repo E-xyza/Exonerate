@@ -21,7 +21,8 @@ defmodule Exonerate.Filter.Dependencies do
         {k, Validator.parse(
           context.schema,
           [k, "dependencies" | context.pointer],
-          authority: context.authority
+          authority: context.authority,
+          format_options: context.format_options
         )}
     end)
 

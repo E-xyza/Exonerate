@@ -3,6 +3,7 @@ defmodule Exonerate.Filter.Format do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
+  alias Exonerate.Pointer
   alias Exonerate.Registry
   alias Exonerate.Validator
 
@@ -34,7 +35,28 @@ defmodule Exonerate.Filter.Format do
   # pass over the binary format, which gets special treatment elsewhere.
   def parse(artifact, %{"format" => "binary"}), do: artifact
   def parse(artifact = %Exonerate.Type.String{}, %{"format" => format}) do
-    fun = Map.get(@defaults, format, {:__annotate, nil, []})
+    artifact.context.format_options
+
+    default = {default_fun, builtin_scaffold, _} = Map.get(@defaults, format, {:__annotate, nil, []})
+
+    fun = try do
+      artifact.context.pointer
+      |> Pointer.to_uri
+      |> :erlang.map_get(artifact.context.format_options)
+      |> case do
+        false ->
+          {:__annotate, nil, []}
+        args when is_list(args) ->
+          {default_fun, builtin_scaffold, args}
+        {fun, args} ->
+          {fun, nil, args}
+        {module, fun, args} ->
+          {{module, fun}, nil, args}
+      end
+    rescue
+      _e in KeyError ->
+        default
+    end
 
     %{artifact |
       pipeline: [fun(artifact, "format") | artifact.pipeline],
@@ -56,6 +78,17 @@ defmodule Exonerate.Filter.Format do
         string
       end
       unquote_splicing(builtin_fn)
+    end]}
+  end
+
+  def compile(filter = %__MODULE__{fun: {{module, fun}, nil, args}}) do
+    {[],[quote do
+      defp unquote(fun(filter, "format"))(string, path) do
+        unless apply(unquote(module), unquote(fun), [string | unquote(args)]) do
+          Exonerate.mismatch(string, path)
+        end
+        string
+      end
     end]}
   end
 
@@ -81,19 +114,19 @@ defmodule Exonerate.Filter.Format do
 
   defp builtins(:uuid) do
     quote do
-      defp __uuid_validate(string, :any), do: match?({:ok?, _}, :inet.parse_ipv4strict_address(String.to_charlist(string)))
+      defp __uuid_validate(string, :any), do: match?({:ok, _}, :inet.parse_ipv4strict_address(String.to_charlist(string)))
     end
   end
 
   defp builtins(:ipv4) do
     quote do
-      defp __ipv4_validate(string), do: match?({:ok?, _}, :inet.parse_ipv4strict_address(String.to_charlist(string)))
+      defp __ipv4_validate(string), do: match?({:ok, _}, :inet.parse_ipv4strict_address(String.to_charlist(string)))
     end
   end
 
   defp builtins(:ipv6) do
     quote do
-      def __ipv6_validate(string), do: match?({:ok?, _}, :inet.parse_ipv6strict_address(String.to_charlist(string)))
+      def __ipv6_validate(string), do: match?({:ok, _}, :inet.parse_ipv6strict_address(String.to_charlist(string)))
     end
   end
 

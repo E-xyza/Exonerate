@@ -6,7 +6,7 @@ defmodule Exonerate.Filter.If do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
-  
+
   import Validator, only: [fun: 2]
 
   defstruct [:context, :schema, :then, :else]
@@ -18,7 +18,8 @@ defmodule Exonerate.Filter.If do
     schema = Validator.parse(
       validator.schema,
       ["if" | validator.pointer],
-      authority: validator.authority)
+      authority: validator.authority,
+      format_options: validator.format_options)
 
     module = %__MODULE__{context: validator, schema: schema, then: validator.then, else: validator.else}
 

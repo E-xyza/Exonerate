@@ -10,7 +10,14 @@ defmodule Exonerate do
     |> Keyword.get(:entrypoint, "/")
     |> Pointer.from_uri
 
-    opts = Keyword.merge(opts, authority: Atom.to_string(name))
+    format_options = opts[:format_options]
+    |> Code.eval_quoted([], __CALLER__)
+    |> elem(0)
+    |> Kernel.||(%{})
+
+    opts = Keyword.merge(opts,
+      authority: Atom.to_string(name),
+      format_options: format_options)
 
     schema = schema_json
     |> Macro.expand(__CALLER__)

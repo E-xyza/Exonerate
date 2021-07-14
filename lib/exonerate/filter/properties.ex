@@ -16,7 +16,8 @@ defmodule Exonerate.Filter.Properties do
         {k, Validator.parse(
         context.schema,
         [k, "properties" | context.pointer],
-        authority: context.authority)}
+        authority: context.authority,
+        format_options: context.format_options)}
       end)
 
     %{artifact |

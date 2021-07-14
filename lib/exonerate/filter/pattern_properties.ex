@@ -16,7 +16,8 @@ defmodule Exonerate.Filter.PatternProperties do
           Validator.parse(
             context.schema,
             [pattern, "patternProperties" | context.pointer],
-            authority: context.authority)}
+            authority: context.authority,
+            format_options: context.format_options)}
     end)
 
     filter = %__MODULE__{context: context, patterns: patterns}

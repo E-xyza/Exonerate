@@ -2,7 +2,7 @@ defmodule Exonerate.Filter.Contains do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
-  
+
   alias Exonerate.Validator
 
   import Validator, only: [fun: 2]
@@ -13,7 +13,11 @@ defmodule Exonerate.Filter.Contains do
 
   def parse(artifact = %{context: context}, %{"contains" => _}) do
     schema =
-      Validator.parse(context.schema, ["contains" | context.pointer], authority: context.authority)
+      Validator.parse(
+        context.schema,
+        ["contains" | context.pointer],
+        authority: context.authority,
+        format_options: context.format_options)
 
     filter = %__MODULE__{
       context: artifact.context,

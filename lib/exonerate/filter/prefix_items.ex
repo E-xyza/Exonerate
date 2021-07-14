@@ -4,7 +4,7 @@ defmodule Exonerate.Filter.PrefixItems do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
-  
+
   import Validator, only: [fun: 2]
 
   defstruct [:context, :schema, :additional_items]
@@ -13,7 +13,8 @@ defmodule Exonerate.Filter.PrefixItems do
     schemas = Enum.map(0..(length(s) - 1),
       &Validator.parse(context.schema,
         ["#{&1}", "prefixItems" | context.pointer],
-        authority: context.authority))
+        authority: context.authority,
+        format_options: context.format_options))
 
     %{artifact |
       needs_accumulator: true,
