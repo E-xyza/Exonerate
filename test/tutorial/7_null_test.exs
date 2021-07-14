@@ -10,15 +10,17 @@ defmodule ExonerateTest.Tutorial.NullTest do
   Literally conforms to all the tests presented in this document.
   """
 
+  @moduletag :tutorial
+
   defmodule Null do
     @moduledoc """
     tests from:
 
     https://json-schema.org/understanding-json-schema/null.html#null
     """
-    import Exonerate
 
-    defschema null: ~s({ "type": "null" })
+    require Exonerate
+    Exonerate.function_from_string(:def, :null, ~s({ "type": "null" }))
   end
 
   describe "the null test" do
@@ -28,11 +30,9 @@ defmodule ExonerateTest.Tutorial.NullTest do
     end
 
     test "doesn't match not quite bools" do
-      assert  {:mismatch, {"#", false}} == Null.null(false)
-      assert  {:mismatch, {"#", 0}} == Null.null(0)
-      assert  {:mismatch, {"#", ""}} == Null.null("")
+      assert  {:error, _} = Null.null(false)
+      assert  {:error, _} = Null.null(0)
+      assert  {:error, _} = Null.null("")
     end
   end
 end
-
-

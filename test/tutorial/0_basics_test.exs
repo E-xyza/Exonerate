@@ -9,17 +9,19 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
   Literally conforms to all the tests presented in this document.
   """
 
+  @moduletag :tutorial
+
   defmodule HelloWorld do
     @moduledoc """
     tests from:
 
     https://json-schema.org/understanding-json-schema/basics.html#hello-world
     """
-    import Exonerate
+    require Exonerate
 
-    defschema helloworld1: "{}"
-    defschema helloworld2: "true"
-    defschema helloworld3: "false"
+    Exonerate.function_from_string(:def, :helloworld1, "{}")
+    Exonerate.function_from_string(:def, :helloworld2, "true")
+    Exonerate.function_from_string(:def, :helloworld3, "false")
   end
 
   describe "the hello world basic test" do
@@ -36,8 +38,10 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     end
 
     test "false matches nothing" do
-      assert {:mismatch, {"#", "Resistance is futile...  This will always fail!!!"}}
-        == HelloWorld.helloworld3("Resistance is futile...  This will always fail!!!")
+      assert {:error, list} = HelloWorld.helloworld3("Resistance is futile...  This will always fail!!!")
+      assert list[:schema_pointer] == "helloworld3#/"
+      assert list[:error_value] == "Resistance is futile...  This will always fail!!!"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -47,9 +51,9 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
 
     https://json-schema.org/understanding-json-schema/basics.html#the-type-keyword
     """
-    import Exonerate
+    require Exonerate
 
-    defschema type: ~s({"type": "string"})
+    Exonerate.function_from_string(:def, :type, ~s({"type": "string"}))
   end
 
   describe "the type keyword test" do
@@ -58,7 +62,10 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     end
 
     test "string type does not match nonstring" do
-      assert {:mismatch, {"#", 42}} == TypeKeyword.type(42)
+      assert {:error, list} = TypeKeyword.type(42)
+      assert list[:schema_pointer] == "type#/type"
+      assert list[:error_value] == 42
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -68,9 +75,9 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
 
     https://json-schema.org/understanding-json-schema/basics.html#declaring-a-json-schema
     """
-    import Exonerate
+    require Exonerate
 
-    defschema schema: ~s({"$schema": "http://json-schema.org/schema#"})
+    Exonerate.function_from_string(:def, :schema, ~s({"$schema": "http://json-schema.org/schema#"}))
   end
 
   describe "the schema keyword test" do
@@ -85,9 +92,9 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
 
     https://json-schema.org/understanding-json-schema/basics.html#declaring-a-unique-identifier
     """
-    import Exonerate
+    require Exonerate
 
-    defschema id: ~s({"$id": "http://yourdomain.com/schemas/myschema.json"})
+    Exonerate.function_from_string(:def, :id, ~s({"$id": "http://yourdomain.com/schemas/myschema.json"}))
   end
 
   describe "the id keyword test" do

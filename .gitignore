@@ -1,6 +1,7 @@
 .elixir_ls
 _build
 deps
+/docs/
 
 # don't get the automated tests
 

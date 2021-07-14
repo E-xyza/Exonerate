@@ -5,15 +5,20 @@ defmodule Exonerate.MixProject do
     [
       app: :exonerate,
       version: "0.1.0",
-      elixir: "~> 1.7",
+      elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      preferred_cli_env: [exoneratebuildtests: :test],
-      #for dialyxir
-      dialyzer: [
-        plt_add_deps: :transitive,
-        plt_add_apps: [:mix]
-      ]
+      elixirc_paths: elixirc_paths(Mix.env()),
+      package: [
+        description: "JSON Schema code generator",
+        licenses: ["MIT"],
+        # we need to package the zig BEAM adapters and the c include files as a part
+        # of the hex packaging system.
+        files: ~w(lib mix.exs README* LICENSE* VERSIONS*),
+        links: %{"GitHub" => "https://github.com/ityonemo/exonerate"}
+      ],
+      source_url: "https://github.com/ityonemo/exonerate/",
+      docs: [main: "Exonerate"]
     ]
   end
 
@@ -24,9 +29,13 @@ defmodule Exonerate.MixProject do
     ]
   end
 
+  def elixirc_paths(:test), do: ["lib", "test/support"]
+  def elixirc_paths(_), do: ["lib"]
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:ex_doc, "~> 0.24", only: :dev},
       {:dialyxir, "~> 1.0.0-rc.4", only: :dev, runtime: false},
       {:httpoison, "~> 0.13", only: [:test]},
       {:jason, "~> 1.1"},

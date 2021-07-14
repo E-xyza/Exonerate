@@ -2,6 +2,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   use ExUnit.Case, async: true
 
   @moduletag :object
+  @moduletag :tutorial
 
   @moduledoc """
   basic tests from:
@@ -18,9 +19,9 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#object
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema object: ~s({ "type": "object" })
+    Exonerate.function_from_string(:def, :object, ~s({ "type": "object" }))
   end
 
   describe "basic objects example" do
@@ -58,11 +59,17 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     @badarray ["An", "array", "not", "an", "object"]
 
     test "objects mismatches a string or array" do
-      assert {:mismatch, {"#", "Not an object"}} =
-        Object.object("Not an object")
+      assert {:error, list} = Object.object("Not an object")
 
-      assert {:mismatch, {"#", @badarray}} =
-        Object.object(@badarray)
+      assert list[:schema_pointer] == "object#/type"
+      assert list[:error_value] == "Not an object"
+      assert list[:json_pointer] == "/"
+
+      assert {:error, list} = Object.object(@badarray)
+
+      assert list[:schema_pointer] == "object#/type"
+      assert list[:error_value] == @badarray
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -74,9 +81,9 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#properties
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema address1:
+    Exonerate.function_from_string(:def, :address1,
     """
     {
       "type": "object",
@@ -88,9 +95,9 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
                        }
       }
     }
-    """
+    """)
 
-    defschema address2:
+    Exonerate.function_from_string(:def, :address2,
     """
     {
       "type": "object",
@@ -103,9 +110,9 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "additionalProperties": false
     }
-    """
+    """)
 
-    defschema address3:
+    Exonerate.function_from_string(:def, :address3,
     """
     {
       "type": "object",
@@ -118,14 +125,14 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "additionalProperties": { "type": "string" }
     }
-    """
+    """)
   end
 
   @addr1 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue" })
   @addr2 ~s({ "number": "1600", "street_name": "Pennsylvania", "street_type": "Avenue" })
   @addr3 ~s({ "number": 1600, "street_name": "Pennsylvania" })
   @addr4 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue", "direction": "NW" })
-  @addr5 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue","office_number": 201  })
+  @addr5 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue", "office_number": 201 })
 
   describe "matching simple addresses" do
     test "explicit addresses match correctly" do
@@ -151,10 +158,14 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
 
     test "mismatched inner property doesn't match" do
-      assert {:mismatch, {"#/properties/number", "1600"}} ==
+      assert {:error, list} =
         @addr2
         |> Jason.decode!
         |> Properties.address1
+
+      assert list[:schema_pointer] == "address1#/properties/number/type"
+      assert list[:error_value] == "1600"
+      assert list[:json_pointer] == "/number"
     end
   end
 
@@ -166,9 +177,12 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
 
     test "extra properties matches correctly" do
-      addr4 = Jason.decode(@addr4)
-      assert {:mismatch, {"#", addr4}} ==
-        Properties.address2(addr4)
+      addr4 = Jason.decode!(@addr4)
+      assert {:error, list} = Properties.address2(addr4)
+
+      assert list[:schema_pointer] == "address2#/additionalProperties"
+      assert list[:error_value] == {"direction", "NW"}
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -187,7 +201,11 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "extra nonstring property doesn't match" do
       addr5 = Jason.decode!(@addr5)
-      assert {:mismatch, {"#/additional_properties", 201}} == Properties.address2(addr5)
+      assert {:error, list} = Properties.address3(addr5)
+
+      assert list[:schema_pointer] == "address3#/additionalProperties/type"
+      assert list[:error_value] == 201
+      assert list[:json_pointer] == "/office_number"
     end
   end
 
@@ -199,9 +217,9 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#required-properties
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema contactinfo:
+    Exonerate.function_from_string(:def, :contactinfo,
     """
     {
       "type": "object",
@@ -213,7 +231,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "required": ["name", "email"]
     }
-    """
+    """)
   end
 
   @contact1 """
@@ -252,8 +270,11 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "deficient info is a problem" do
       contact3 = Jason.decode!(@contact3)
-      assert {:mismatch, {"#", contact3}} ==
-        RequiredProperties.contactinfo(contact3)
+      assert {:error, list} = RequiredProperties.contactinfo(contact3)
+
+      assert list[:schema_pointer] == "contactinfo#/required/1"
+      assert list[:error_value] == contact3
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -265,9 +286,9 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#property-names
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema token:
+    Exonerate.function_from_string(:def, :token,
     """
     {
       "type": "object",
@@ -275,7 +296,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
       }
     }
-    """
+    """)
   end
 
   @token1 ~s({ "_a_proper_token_001": "value" })
@@ -290,8 +311,11 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "not matching the property name doesn't match" do
       token2 = Jason.decode!(@token2)
-      assert {:mismatch, {"#/property_names", "001 invalid"}} =
-        PropertyNames.token(token2)
+      assert {:error, list} = PropertyNames.token(token2)
+
+      assert list[:schema_pointer] == "token#/propertyNames/pattern"
+      assert list[:error_value] == "001 invalid"
+      assert list[:json_pointer] == "/001 invalid"
     end
   end
 
@@ -303,16 +327,16 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#size
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema object:
+    Exonerate.function_from_string(:def, :object,
     """
     {
       "type": "object",
       "minProperties": 2,
       "maxProperties": 3
     }
-    """
+    """)
   end
 
   @objsize1 ~s({})
@@ -324,12 +348,20 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   describe "matching property size" do
     test "empty object mismatches" do
       objsize1 = Jason.decode!(@objsize1)
-      assert {:mismatch, {"#", objsize1}} == Size.object(objsize1)
+      assert {:error, list} = Size.object(objsize1)
+
+      assert list[:schema_pointer] == "object#/minProperties"
+      assert list[:error_value] == objsize1
+      assert list[:json_pointer] == "/"
     end
 
     test "too small object mismatches" do
       objsize2 = Jason.decode!(@objsize2)
-      assert {:mismatch, {"#", objsize2}} == Size.object(objsize2)
+      assert {:error, list} = Size.object(objsize2)
+
+      assert list[:schema_pointer] == "object#/minProperties"
+      assert list[:error_value] == objsize2
+      assert list[:json_pointer] == "/"
     end
 
     test "small goldilocks matches correctly" do
@@ -346,188 +378,11 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "too large object mismatches" do
       objsize5 = Jason.decode!(@objsize5)
-      assert {:mismatch, {"#", objsize5}} ==
-        Size.object(objsize5)
-    end
-  end
+      assert {:error, list} = Size.object(objsize5)
 
-  defmodule PropertyDependencies do
-
-    @moduledoc """
-    tests from:
-
-    https://json-schema.org/understanding-json-schema/reference/object.html#property-dependencies
-
-    """
-    import Exonerate
-
-    defschema dependency1:
-    """
-    {
-      "type": "object",
-
-      "properties": {
-        "name": { "type": "string" },
-        "credit_card": { "type": "number" },
-        "billing_address": { "type": "string" }
-      },
-
-      "required": ["name"],
-
-      "dependencies": {
-        "credit_card": ["billing_address"]
-      }
-    }
-    """
-
-    defschema dependency2:
-    """
-    {
-      "type": "object",
-
-      "properties": {
-        "name": { "type": "string" },
-        "credit_card": { "type": "number" },
-        "billing_address": { "type": "string" }
-      },
-
-      "required": ["name"],
-
-      "dependencies": {
-        "credit_card": ["billing_address"],
-        "billing_address": ["credit_card"]
-      }
-    }
-    """
-  end
-
-  @propdependency1 """
-  {
-    "name": "John Doe",
-    "credit_card": 5555555555555555,
-    "billing_address": "555 Debtor's Lane"
-  }
-  """
-  @propdependency2 """
-  {
-    "name": "John Doe",
-    "credit_card": 5555555555555555
-  }
-  """
-  @propdependency3 ~s({"name": "John Doe"})
-  @propdependency4 """
-  {
-    "name": "John Doe",
-    "billing_address": "555 Debtor's Lane"
-  }
-  """
-
-  describe "matching one-way dependency" do
-    test "meeting dependency matches" do
-      assert :ok = @propdependency1
-      |> Jason.decode!
-      |> PropertyDependencies.dependency1
-    end
-    test "failing to meet dependency mismatches" do
-      propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {"#/dependencies/credit_card", propdependency2}} ==
-        PropertyDependencies.dependency1(propdependency2)
-    end
-    test "no dependency doesn't need to be met" do
-      assert :ok = @propdependency3
-      |> Jason.decode!
-      |> PropertyDependencies.dependency1
-    end
-    test "dependency is one-way" do
-      assert :ok = @propdependency4
-      |> Jason.decode!
-      |> PropertyDependencies.dependency1
-    end
-  end
-
-  describe "matching two-way dependency" do
-    test "one-way dependency mismatches" do
-      propdependency2 = Jason.decode!(@propdependency2)
-      assert {:mismatch, {"#/dependencies/credit_card", propdependency2}} ==
-        PropertyDependencies.dependency2(propdependency2)
-    end
-    test "dependency is now two-way" do
-      propdependency4 = Jason.decode!(@propdependency4)
-      assert {:mismatch, {"#/dependencies/billing_address", propdependency4}} ==
-        PropertyDependencies.dependency2(propdependency4)
-    end
-  end
-
-  defmodule SchemaDependencies do
-
-    @moduledoc """
-    tests from:
-
-    https://json-schema.org/understanding-json-schema/reference/object.html#schema-dependencies
-
-    """
-    import Exonerate
-
-    defschema schemadependency:
-    """
-    {
-      "type": "object",
-
-      "properties": {
-        "name": { "type": "string" },
-        "credit_card": { "type": "number" }
-      },
-
-      "required": ["name"],
-
-      "dependencies": {
-        "credit_card": {
-          "properties": {
-            "billing_address": { "type": "string" }
-          },
-          "required": ["billing_address"]
-        }
-      }
-    }
-    """
-
-  end
-
-  @schemadependency1 """
-  {
-    "name": "John Doe",
-    "credit_card": 5555555555555555,
-    "billing_address": "555 Debtor's Lane"
-  }
-  """
-  @schemadependency2 """
-  {
-    "name": "John Doe",
-    "credit_card": 5555555555555555
-  }
-  """
-  @schemadependency3 """
-  {
-    "name": "John Doe",
-    "billing_address": "555 Debtor's Lane"
-  }
-  """
-
-  describe "matching schema dependency" do
-    test "full compliance works" do
-      assert :ok = @schemadependency1
-      |> Jason.decode!
-      |> SchemaDependencies.schemadependency
-    end
-    test "partial compliance does not work" do
-      schemadependency2 = Jason.decode!(@schemadependency2)
-      assert {:mismatch, {"#/dependencies/credit_card", schemadependency2}} ==
-        SchemaDependencies.schemadependency(schemadependency2)
-    end
-    test "omitting a trigger works" do
-      assert :ok = @schemadependency3
-      |> Jason.decode!
-      |> SchemaDependencies.schemadependency
+      assert list[:schema_pointer] == "object#/maxProperties"
+      assert list[:error_value] == objsize5
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -539,9 +394,9 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     https://json-schema.org/understanding-json-schema/reference/object.html#pattern-properties
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema patternprop1:
+    Exonerate.function_from_string(:def, :patternprop1,
     """
     {
       "type": "object",
@@ -551,7 +406,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "additionalProperties": false
     }
-    """
+    """)
   end
 
   @patternmatch1 ~s({ "S_25": "This is a string" })
@@ -566,6 +421,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       |> Jason.decode!
       |> PatternProperties.patternprop1
     end
+
     test "integer pattern works" do
       assert :ok = @patternmatch2
       |> Jason.decode!
@@ -574,19 +430,29 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
     test "integers shouldn't match string pattern" do
       patternmatch3 = Jason.decode!(@patternmatch3)
-      assert {:mismatch, {"#/pattern_properties/1", 42}} ==
-        PatternProperties.patternprop1(patternmatch3)
+      assert {:error, list} = PatternProperties.patternprop1(patternmatch3)
+
+      assert list[:schema_pointer] == "patternprop1#/patternProperties/%5ES_/type"
+      assert list[:error_value] == 42
+      assert list[:json_pointer] == "/S_0"
     end
+
     test "strings shouldn't match integer pattern" do
       patternmatch4 = Jason.decode!(@patternmatch4)
-      assert {:mismatch, {"#/pattern_properties/0", "This is a string"}} ==
-        PatternProperties.patternprop1(patternmatch4)
+      assert {:error, list} = PatternProperties.patternprop1(patternmatch4)
+
+      assert list[:schema_pointer] == "patternprop1#/patternProperties/%5EI_/type"
+      assert list[:error_value] == "This is a string"
+      assert list[:json_pointer] == "/I_42"
     end
 
     test "additional properties shouldn't match" do
       patternmatch5 = Jason.decode!(@patternmatch5)
-      assert {:mismatch, {"#/additional_properties", "value"}} ==
-        PatternProperties.patternprop1(patternmatch5)
+      assert {:error, list} = PatternProperties.patternprop1(patternmatch5)
+
+      assert list[:schema_pointer] == "patternprop1#/additionalProperties"
+      assert list[:error_value] == {"keyword", "value"}
+      assert list[:json_pointer] == "/"
     end
   end
 end

@@ -2,6 +2,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
   use ExUnit.Case, async: true
 
   @moduletag :numeric
+  @moduletag :tutorial
 
   @moduledoc """
   basic tests from:
@@ -20,9 +21,9 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     NOTE: the elixir version is opinionated about accepting multiples for non-integer
     types and does not implement them for floating points.
     """
-    import Exonerate
+    require Exonerate
 
-    defschema integer: ~s({ "type": "integer" })
+    Exonerate.function_from_string(:def, :integer, ~s({ "type": "integer" }))
   end
 
   describe "basic integers example" do
@@ -32,8 +33,18 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     end
 
     test "integer mismatches a float or string" do
-      assert {:mismatch, {"#", 3.1415926}} == Integer.integer(3.1415926)
-      assert {:mismatch, {"#", "42"}} == Integer.integer("42")
+      assert {:error, list} = Integer.integer(3.1415926)
+
+      assert list[:schema_pointer] == "integer#/type"
+      assert list[:error_value] == 3.1415926
+      assert list[:json_pointer] == "/"
+
+      assert {:error, list} = Integer.integer("42")
+
+      assert list[:schema_pointer] == "integer#/type"
+      assert list[:error_value] == "42"
+      assert list[:json_pointer] == "/"
+
     end
   end
 
@@ -45,9 +56,9 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     https://json-schema.org/understanding-json-schema/reference/numeric.html#number
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema number: ~s({ "type": "number" })
+    Exonerate.function_from_string(:def, :number, ~s({ "type": "number" }))
   end
 
   describe "basic numbers example" do
@@ -59,7 +70,12 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     end
 
     test "number mismatches a string" do
-      assert {:mismatch, {"#", "42"}} = Number.number("42")
+      assert {:error, list} = Number.number("42")
+
+      assert list[:schema_pointer] == "number#/type"
+      assert list[:error_value] == "42"
+      assert list[:json_pointer] == "/"
+
     end
   end
 
@@ -73,9 +89,9 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     NOTE: the elixir version is opinionated about accepting multiples for non-integer
     types and does not implement them for floating points.
     """
-    import Exonerate
+    require Exonerate
 
-    defschema integer: ~s({ "type": "integer", "multipleOf": 10 })
+    Exonerate.function_from_string(:def, :integer, ~s({ "type": "integer", "multipleOf": 10 }))
   end
 
   describe "basic multiples example" do
@@ -86,7 +102,12 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     end
 
     test "multiple mismatches noninteger" do
-      assert {:mismatch, {"#", 23}} = Multiple.integer(23)
+      assert {:error, list} = Multiple.integer(23)
+
+      assert list[:schema_pointer] == "integer#/multipleOf"
+      assert list[:error_value] == 23
+      assert list[:json_pointer] == "/"
+
     end
   end
 
@@ -98,15 +119,15 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     https://json-schema.org/understanding-json-schema/reference/numeric.html#range
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema number: """
+    Exonerate.function_from_string(:def, :number, """
                       {
                         "type": "number",
                         "minimum": 0,
                         "exclusiveMaximum": 100
                       }
-                      """
+                      """)
   end
 
   describe "basic ranging example" do
@@ -116,10 +137,25 @@ defmodule ExonerateTest.Tutorial.NumericTest do
       assert :ok = Range.number(99)
     end
 
-    test "multiple mismatches noninteger" do
-      assert {:mismatch, {"#", -1}} = Range.number(-1)
-      assert {:mismatch, {"#", 100}} = Range.number(100)  #exclusive maximum
-      assert {:mismatch, {"#", 101}} = Range.number(101)
+    test "outside values mismatch" do
+      assert {:error, list} = Range.number(-1)
+
+      assert list[:schema_pointer] == "number#/minimum"
+      assert list[:error_value] == -1
+      assert list[:json_pointer] == "/"
+
+      assert {:error, list} = Range.number(100)  #exclusive maximum
+
+      assert list[:schema_pointer] == "number#/exclusiveMaximum"
+      assert list[:error_value] == 100
+      assert list[:json_pointer] == "/"
+
+      assert {:error, list} = Range.number(101)
+
+      assert list[:schema_pointer] == "number#/exclusiveMaximum"
+      assert list[:error_value] == 101
+      assert list[:json_pointer] == "/"
+
     end
   end
 

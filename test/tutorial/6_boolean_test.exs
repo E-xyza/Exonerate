@@ -8,15 +8,18 @@ defmodule ExonerateTest.Tutorial.BooleanTest do
 
   Literally conforms to all the tests presented in this document.
   """
+
+  @moduletag :tutorial
+
   defmodule Boolean do
     @moduledoc """
     tests from:
 
     https://json-schema.org/understanding-json-schema/boolean.html#boolean
     """
-    import Exonerate
 
-    defschema boolean: ~s({ "type": "boolean" })
+    require Exonerate
+    Exonerate.function_from_string(:def, :boolean, ~s({ "type": "boolean" }))
   end
 
   describe "the boolean test" do
@@ -25,9 +28,9 @@ defmodule ExonerateTest.Tutorial.BooleanTest do
       assert :ok = Boolean.boolean(false)
     end
     test "doesn't match not quite bools" do
-      assert  {:mismatch, {"#", "true"}} == Boolean.boolean("true")
+      assert  {:error, _} = Boolean.boolean("true")
 
-      assert  {:mismatch, {"#", 0}} == Boolean.boolean(0)
+      assert  {:error, _} = Boolean.boolean(0)
     end
   end
 end

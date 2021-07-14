@@ -2,6 +2,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
   use ExUnit.Case, async: true
 
   @moduletag :generic
+  @moduletag :tutorial
 
   @moduledoc """
   basic tests from:
@@ -16,9 +17,9 @@ defmodule ExonerateTest.Tutorial.GenericTest do
 
     https://json-schema.org/understanding-json-schema/reference/generic.html#metadata
     """
-    import Exonerate
+    require Exonerate
 
-    defschema metadata: """
+    Exonerate.function_from_string(:def, :metadata, """
     {
       "title" : "Match anything",
       "description" : "This is a schema that matches anything.",
@@ -28,7 +29,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
         4035
       ]
     }
-    """
+    """)
   end
 
   describe "metadata are stored" do
@@ -59,27 +60,27 @@ defmodule ExonerateTest.Tutorial.GenericTest do
 
     https://json-schema.org/understanding-json-schema/reference/generic.html#enumerated-values
     """
-    import Exonerate
+    require Exonerate
 
-    defschema enum1: """
+    Exonerate.function_from_string(:def, :enum1, """
     {
       "type": "string",
       "enum": ["red", "amber", "green"]
     }
-    """
+    """)
 
-    defschema enum2: """
+    Exonerate.function_from_string(:def, :enum2, """
     {
       "enum": ["red", "amber", "green", null, 42]
     }
-    """
+    """)
 
-    defschema enum3: """
+    Exonerate.function_from_string(:def, :enum3, """
     {
       "type": "string",
       "enum": ["red", "amber", "green", null]
     }
-    """
+    """)
   end
 
   @moduletag :one
@@ -90,7 +91,11 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     end
 
     test "unenumerated values don't match" do
-      assert  {:mismatch, {"#", "blue"}} == EnumeratedValues.enum1("blue")
+      assert {:error, list} = EnumeratedValues.enum1("blue")
+
+      assert list[:schema_pointer] == "enum1#/enum"
+      assert list[:error_value] == "blue"
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -102,7 +107,11 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     end
 
     test "unenumerated values don't match" do
-      assert  {:mismatch, {"#", 0}} == EnumeratedValues.enum2(0)
+      assert  {:error, list} = EnumeratedValues.enum2(0)
+
+      assert list[:schema_pointer] == "enum2#/enum"
+      assert list[:error_value] == 0
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -112,7 +121,11 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     end
 
     test "unenumerated values don't match" do
-      assert {:mismatch, {"#", nil}} == EnumeratedValues.enum3(nil)
+      assert {:error, list} = EnumeratedValues.enum3(nil)
+
+      assert list[:schema_pointer] == "enum3#/enum"
+      assert list[:error_value] == nil
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -122,9 +135,9 @@ defmodule ExonerateTest.Tutorial.GenericTest do
 
     https://json-schema.org/understanding-json-schema/reference/generic.html#constant-values
     """
-    import Exonerate
+    require Exonerate
 
-    defschema const: """
+    Exonerate.function_from_string(:def, :const, """
     {
       "properties": {
         "country": {
@@ -132,7 +145,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
         }
       }
     }
-    """
+    """)
   end
 
   describe "consts restrict to a single value" do
@@ -141,8 +154,11 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     end
 
     test "unenumerated values don't match" do
-      assert  {:mismatch, {"#/properties/country", "Canada"}} ==
-        ConstantValues.const(%{"country" => "Canada"})
+      assert {:error, list} = ConstantValues.const(%{"country" => "Canada"})
+
+      assert list[:schema_pointer] == "const#/properties/country/const"
+      assert list[:error_value] == "Canada"
+      assert list[:json_pointer] == "/country"
     end
   end
 end

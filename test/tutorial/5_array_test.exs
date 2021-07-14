@@ -2,6 +2,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
   use ExUnit.Case, async: true
 
   @moduletag :array
+  @moduletag :tutorial
 
   @moduledoc """
   basic tests from:
@@ -17,10 +18,9 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#array
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema array: ~s({ "type": "array" })
-
+    Exonerate.function_from_string(:def, :array, ~s({ "type": "array" }))
   end
 
   describe "basic array type matching" do
@@ -37,8 +37,11 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "object doesn't match array" do
-      assert  {:mismatch, {"#", %{"Not" => "an array"}}} ==
-        Array.array(%{"Not" => "an array"})
+      assert {:error, list} = Array.array(%{"Not" => "an array"})
+
+      assert list[:schema_pointer] == "array#/type"
+      assert list[:error_value] == %{"Not" => "an array"}
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -49,25 +52,25 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#list-validation
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema items: """
+    Exonerate.function_from_string(:def, :items, """
     {
       "type": "array",
       "items": {
         "type": "number"
       }
     }
-    """
+    """)
 
-    defschema contains: """
+    Exonerate.function_from_string(:def, :contains, """
     {
       "type": "array",
       "contains": {
         "type": "number"
       }
     }
-    """
+    """)
 
   end
 
@@ -79,8 +82,11 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "one non-number ruins the party" do
-      assert  {:mismatch, {"#/items", "3"}} ==
-        ListValidation.items([1, 2, "3", 4, 5])
+      assert {:error, list} = ListValidation.items([1, 2, "3", 4, 5])
+
+      assert list[:schema_pointer] == "items#/items/type"
+      assert list[:error_value] == "3"
+      assert list[:json_pointer] == "/2"
     end
 
     test "an empty array passes" do
@@ -98,9 +104,12 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "it fails with no numbers" do
-      assert  {:mismatch,
-        {"#", ["life", "universe", "everything", "forty-two"]}} ==
+      assert  {:error, list} =
           ListValidation.contains(["life", "universe", "everything", "forty-two"])
+
+      assert list[:schema_pointer] == "contains#/contains"
+      assert list[:error_value] == ["life", "universe", "everything", "forty-two"]
+      assert list[:json_pointer] == "/"
     end
 
     test "all numbers is ok" do
@@ -117,9 +126,9 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#tuple-validation
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema tuple: """
+    Exonerate.function_from_string(:def, :tuple, """
     {
       "type": "array",
       "items": [
@@ -139,9 +148,9 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
         }
       ]
     }
-    """
+    """)
 
-    defschema tuple_noadditional: """
+    Exonerate.function_from_string(:def, :tuple_noadditional, """
     {
       "type": "array",
       "items": [
@@ -162,10 +171,10 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       ],
       "additionalItems": false
     }
-    """
+    """)
 
 
-    defschema tuple_additional_with_property:
+    Exonerate.function_from_string(:def, :tuple_additional_with_property,
     """
     {
       "type": "array",
@@ -187,7 +196,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       ],
       "additionalItems": { "type": "string" }
     }
-    """
+    """)
   end
 
   describe "tuple validation" do
@@ -198,13 +207,20 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "drive is not an acceptable street type" do
-      assert  {:mismatch, {"#/items/2", "Drive"}}
-        == TupleValidation.tuple([24, "Sussex", "Drive"])
+      assert  {:error, list} = TupleValidation.tuple([24, "Sussex", "Drive"])
+
+      assert list[:schema_pointer] == "tuple#/items/2/enum"
+      assert list[:error_value] == "Drive"
+      assert list[:json_pointer] == "/2"
     end
 
     test "address is missing a street number" do
-      assert  {:mismatch, {"#/items/0", "Palais de l'Élysée"}} ==
+      assert  {:error, list} =
         TupleValidation.tuple(["Palais de l'Élysée"])
+
+      assert list[:schema_pointer] == "tuple#/items/0/type"
+      assert list[:error_value] == "Palais de l'Élysée"
+      assert list[:json_pointer] == "/0"
     end
 
     test "it's ok to not have all the items" do
@@ -234,9 +250,13 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "it is not ok to provide extra items" do
-      assert  {:mismatch,{"#/additional_items", "Washington"}} ==
+      assert  {:error, list} =
         TupleValidation.tuple_noadditional(
           [1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+
+      assert list[:schema_pointer] == "tuple_noadditional#/additionalItems"
+      assert list[:error_value] == "Washington"
+      assert list[:json_pointer] == "/4"
     end
   end
 
@@ -248,9 +268,13 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "but not extra numbers" do
-      assert  {:mismatch, {"#/additional_items", 20500}} ==
+      assert {:error, list} =
         TupleValidation.tuple_additional_with_property(
           [1600, "Pennsylvania", "Avenue", "NW", 20500])
+
+      assert list[:schema_pointer] == "tuple_additional_with_property#/additionalItems/type"
+      assert list[:error_value] == 20500
+      assert list[:json_pointer] == "/4"
     end
   end
 
@@ -261,23 +285,33 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#length
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema length: """
+    Exonerate.function_from_string(:def, :length, """
     {
       "type": "array",
       "minItems": 2,
       "maxItems": 3
     }
-    """
+    """)
   end
 
   describe "array length works" do
     test "by length" do
-      assert {:mismatch, {"#", []}} == Length.length([])
+      assert {:error, list} = Length.length([])
+
+      assert list[:schema_pointer] == "length#/minItems"
+      assert list[:error_value] == []
+      assert list[:json_pointer] == "/"
+
       assert :ok == Length.length([1, 2])
       assert :ok == Length.length([1, 2, 3])
-      assert {:mismatch, {"#", [1, 2, 3, 4]}} == Length.length([1, 2, 3, 4])
+
+      assert {:error, list} = Length.length([1, 2, 3, 4])
+
+      assert list[:schema_pointer] == "length#/maxItems"
+      assert list[:error_value] == [1, 2, 3, 4]
+      assert list[:json_pointer] == "/"
     end
   end
 
@@ -288,22 +322,25 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     https://json-schema.org/understanding-json-schema/reference/array.html#uniqueness
 
     """
-    import Exonerate
+    require Exonerate
 
-    defschema unique: """
+    Exonerate.function_from_string(:def, :unique, """
     {
       "type": "array",
       "uniqueItems": true
     }
-    """
+    """)
   end
 
   describe "array uniqueness works" do
     test "for arrays" do
       assert :ok = Uniqueness.unique([1, 2, 3, 4, 5])
 
-      assert {:mismatch, {"#", [1, 2, 3, 3, 4]}} ==
-        Uniqueness.unique([1, 2, 3, 3, 4])
+      assert {:error, list} = Uniqueness.unique([1, 2, 3, 3, 4])
+
+      assert list[:schema_pointer] == "unique#/uniqueItems"
+      assert list[:error_value] == 3
+      assert list[:json_pointer] == "/3"
     end
 
     test "empty array always passes" do
