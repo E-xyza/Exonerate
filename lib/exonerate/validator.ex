@@ -1,4 +1,6 @@
 defmodule Exonerate.Validator do
+  @moduledoc false
+  
   alias Exonerate.Compiler
   alias Exonerate.Filter
   alias Exonerate.Tools

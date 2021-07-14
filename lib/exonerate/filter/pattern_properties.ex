@@ -1,4 +1,6 @@
 defmodule Exonerate.Filter.PatternProperties do
+  @moduledoc false
+  
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}

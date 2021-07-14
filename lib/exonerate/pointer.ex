@@ -1,4 +1,6 @@
 defmodule Exonerate.Pointer do
+  @moduledoc false
+
   # JSONPointer implementation.  Internally, it's managed as a
   # list of strings, with the head of the list being the outermost
   # leaf in the JSON structure, and the end of the list being the

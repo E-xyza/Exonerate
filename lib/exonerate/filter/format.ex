@@ -1,4 +1,6 @@
 defmodule Exonerate.Filter.Format do
+  @moduledoc false
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}

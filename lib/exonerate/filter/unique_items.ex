@@ -1,4 +1,6 @@
 defmodule Exonerate.Filter.UniqueItems do
+  @moduledoc false
+  
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}

@@ -1,4 +1,6 @@
 defmodule Exonerate.Filter.MinProperties do
+  @moduledoc false
+  
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}

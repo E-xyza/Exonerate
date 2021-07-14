@@ -1,4 +1,6 @@
 defmodule Exonerate.Filter.DependentSchemas do
+  @moduledoc false
+  
   # NB "dependentSchemas" is just a repackaging of "dependencies" except only permitting the
   # maps (specification of full schema to be applied to the object)
 

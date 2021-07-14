@@ -1,4 +1,6 @@
 defmodule Exonerate.Filter.DependentRequired do
+  @moduledoc false
+  
   # NB "dependentSchemas" is just a repackaging of "dependencies" except only permitting the
   # array form ("other keys")
 

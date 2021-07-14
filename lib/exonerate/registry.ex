@@ -1,4 +1,6 @@
 defmodule Exonerate.Registry do
+  @moduledoc false
+  
   # registry for existing registry paths.  Since each module is compiled by a
   # single process, let's tie the registry information to the lifetime of the
   # module compilation.  This is done by spinning up an ets table that stores

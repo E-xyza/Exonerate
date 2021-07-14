@@ -1,4 +1,6 @@
 defmodule Exonerate.Type.Number do
+  @moduledoc false
+
   # boilerplate!!
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler

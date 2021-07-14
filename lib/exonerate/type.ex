@@ -1,4 +1,6 @@
 defmodule Exonerate.Type do
+  @moduledoc false
+  
   @type json ::
     %{optional(String.t) => json}
     | list(json)

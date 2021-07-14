@@ -1,4 +1,6 @@
 defmodule Exonerate.Type.Null do
+  @moduledoc false
+
   # boilerplate!!
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler
@@ -20,7 +22,7 @@ defmodule Exonerate.Type.Null do
   def compile(artifact) do
     combining = Validator.combining(artifact.context, quote do null end, quote do path end)
     quote do
-      defp unquote(Validator.to_fun(artifact.context))(null, path) when is_nil(null) do
+      defp unquote(Validator.fun(artifact))(null, path) when is_nil(null) do
         unquote_splicing(combining)
       end
     end

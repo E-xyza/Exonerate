@@ -1,4 +1,5 @@
 defmodule Exonerate.Type.Array do
+  @moduledoc false
   # boilerplate!!
   @behaviour Exonerate.Type
   @derive Exonerate.Compiler

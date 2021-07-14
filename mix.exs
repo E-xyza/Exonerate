@@ -31,6 +31,7 @@ defmodule Exonerate.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:ex_doc, "~> 0.24", only: :dev},
       {:dialyxir, "~> 1.0.0-rc.4", only: :dev, runtime: false},
       {:httpoison, "~> 0.13", only: [:test]},
       {:jason, "~> 1.1"},

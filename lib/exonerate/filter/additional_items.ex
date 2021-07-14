@@ -1,4 +1,6 @@
 defmodule Exonerate.Filter.AdditionalItems do
+  @moduledoc false
+  
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
 

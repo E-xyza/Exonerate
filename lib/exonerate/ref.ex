@@ -1,4 +1,6 @@
 defmodule Exonerate.Ref do
+  @moduledoc false
+
   alias Exonerate.Pointer
   alias Exonerate.Registry
 

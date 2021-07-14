@@ -1,8 +1,10 @@
 defmodule Exonerate.Filter.MaxContains do
+  @moduledoc false
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
-  
+
   alias Exonerate.Validator
 
   import Validator, only: [fun: 2]

@@ -1,4 +1,6 @@
 defmodule Exonerate.Tools do
+  @moduledoc false
+  
   def inspect(macro, filter \\ true) do
     if filter do
       macro
