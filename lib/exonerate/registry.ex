@@ -75,6 +75,19 @@ defmodule Exonerate.Registry do
     Process.get(__MODULE__)
   end
 
+  # cache for formatting
+  def format_needed(format) do
+    init_if_needed()
+    tid = table()
+    case :ets.lookup(tid, {:format, format}) do
+      [] ->
+        :ets.insert(table(), {{:format, format}})
+        true
+      [_] ->
+        false
+    end
+  end
+
   # if you are doing something single-threaded (like compiling multiple modules in a test), you might need to do this.
   def sweep do
     if table = Process.get(__MODULE__) do

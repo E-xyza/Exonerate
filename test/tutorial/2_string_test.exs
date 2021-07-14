@@ -134,17 +134,25 @@ defmodule ExonerateTest.Tutorial.StringTest do
 
     Exonerate.function_from_string(:def, :datetime, ~s({"type": "string", "format": "date-time"}))
     Exonerate.function_from_string(:def, :datetime_utc, ~s({"type": "string", "format": "date-time"}),
-      format_options: %{"#" => :utc})
+      format_options: %{"#" => [:utc]})
     Exonerate.function_from_string(:def, :datetime_naive, ~s({"type": "string", "format": "date-time"}),
-      format_options: %{"#" => :naive})
+      format_options: %{"#" => [:naive]})
+    Exonerate.function_from_string(:def, :datetime_disabled, ~s({"type": "string", "format": "date-time"}),
+      format_options: %{"#" => false})
     Exonerate.function_from_string(:def, :datetime_custom, ~s({"type": "string", "format": "date-time"}),
       format_options: %{"#" => {Custom, :format, []}})
     Exonerate.function_from_string(:def, :datetime_custom_params, ~s({"type": "string", "format": "date-time"}),
       format_options: %{"#" => {Custom, :format, ["ok"]}})
+    Exonerate.function_from_string(:def, :datetime_custom_private, ~s({"type": "string", "format": "date-time"}),
+      format_options: %{"#" => {:format, []}})
+    Exonerate.function_from_string(:def, :datetime_custom_private_params, ~s({"type": "string", "format": "date-time"}),
+      format_options: %{"#" => {:format, ["ok"]}})
 
     Exonerate.function_from_string(:def, :date, ~s({"type": "string", "format": "date"}))
 
     Exonerate.function_from_string(:def, :time, ~s({"type": "string", "format": "time"}))
+
+    Exonerate.function_from_string(:def, :uuid, ~s({"type": "string", "format": "uuid"}))
 
     Exonerate.function_from_string(:def, :ipv4, ~s({"type": "string", "format": "ipv4"}))
 
@@ -152,9 +160,18 @@ defmodule ExonerateTest.Tutorial.StringTest do
 
     Exonerate.function_from_string(:def, :custom, ~s({"type": "string", "format": "custom"}),
         format_options: %{"#" => {Custom, :format, ["ok"]}})
+
+    Exonerate.function_from_string(:def, :custom_private, ~s({"type": "string", "format": "custom"}),
+        format_options: %{"#" => {:format, ["ok"]}})
+
+    defp format("ok"), do: true
+    defp format(_), do: false
+
+    defp format(a, a), do: true
+    defp format(_, _), do: false
   end
 
-  describe "formats" do
+  describe "formats:" do
     test "date-time" do
       assert :ok == Format.datetime(to_string(DateTime.utc_now()))
       assert :ok == Format.datetime(to_string(NaiveDateTime.utc_now()))
@@ -164,13 +181,17 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "date-time-utc" do
-      assert :ok == Format.datetime(to_string(DateTime.utc_now()))
-      assert {:error, _} = Format.datetime(to_string(NaiveDateTime.utc_now()))
+      assert :ok == Format.datetime_utc(to_string(DateTime.utc_now()))
+      assert {:error, _} = Format.datetime_utc(to_string(NaiveDateTime.utc_now()))
     end
 
     test "date-time-naive" do
-      assert {:error, _} = Format.datetime(to_string(DateTime.utc_now()))
-      assert :ok == Format.datetime(to_string(NaiveDateTime.utc_now()))
+      assert {:error, _} = Format.datetime_naive(to_string(DateTime.utc_now()))
+      assert :ok == Format.datetime_naive(to_string(NaiveDateTime.utc_now()))
+    end
+
+    test "date-time-disabled" do
+      assert :ok == Format.datetime_disabled("foobar")
     end
 
     test "date-time-custom" do
@@ -181,6 +202,16 @@ defmodule ExonerateTest.Tutorial.StringTest do
     test "date-time-custom-params" do
       assert :ok == Format.datetime_custom_params("ok")
       assert {:error, _} = Format.datetime_custom_params("bar")
+    end
+
+    test "date-time-custom-private" do
+      assert :ok == Format.datetime_custom_private("ok")
+      assert {:error, _} = Format.datetime_custom_private("bar")
+    end
+
+    test "date-time-custom-private-params" do
+      assert :ok == Format.datetime_custom_private_params("ok")
+      assert {:error, _} = Format.datetime_custom_private_params("bar")
     end
 
     test "date" do
@@ -204,6 +235,11 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "custom" do
+      assert :ok == Format.custom("ok")
+      assert {:error, _} = Format.custom("foo")
+    end
+
+    test "custom-private" do
       assert :ok == Format.custom("ok")
       assert {:error, _} = Format.custom("foo")
     end

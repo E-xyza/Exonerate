@@ -26,9 +26,10 @@ Note:
   `{"format": "binary"}` filter on your string.
 
 String formatting included:
-- datetime
+- date-time
 - date
 - time
+- uuid
 - ipv4
 - ipv6
 

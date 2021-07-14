@@ -14,7 +14,7 @@ defmodule Exonerate.Type.String do
 
   import Validator, only: [fun: 2]
 
-  @validator_filters ~w(minLength maxLength pattern)# format)
+  @validator_filters ~w(minLength maxLength format pattern)
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true

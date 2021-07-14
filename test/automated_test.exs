@@ -10,7 +10,7 @@ defmodule ExonerateTest.AutomatedTests do
     # integer filters do not match float values:
     {"type.json", 0, 1},
     {"enum.json", 7, 2},
-    {"enum.json", 8, 2}
+    {"enum.json", 8, 2},
   ]
 
   @describe_omissions [
@@ -23,7 +23,14 @@ defmodule ExonerateTest.AutomatedTests do
     # no support for relative uri (for now)
     {"ref.json", 11},
     # currently no support for unevaluated
-    {"ref.json", 13}
+    {"ref.json", 13},
+    # these are more than just annotations, and are tested in test.
+    {"format.json", 3},
+    {"format.json", 4},
+    {"format.json", 7},
+    {"format.json", 8},
+    {"format.json", 9},
+    {"format.json", 17},
   ]
 
   def build_tests(directory \\ @test_base_dir) do
