@@ -5,10 +5,10 @@ defmodule Exonerate do
   Currently supports JSONSchema draft 0.7.  *except:*
 
   - integer filters do not match exact integer floating point values.
-  - multipleOf is not supported for number types.  This is because
-  elixir does not support a floating point remainder guard, and also
-  because it is impossible for a floating point to guarantee sane results
-  (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
+  - multipleOf is not supported for the number type (don't worry, it IS supported
+    for integers).  This is because Elixir does not support a floating point
+    remainder guard, and also because it is impossible for a floating point to
+    guarantee sane results (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
   - currently remoteref is not supported.
 
   For details, see:  http://json-schema.org
@@ -202,7 +202,7 @@ defmodule Exonerate do
   end
 
   #################################################################
-  ## PRIVATE HELPER FUNCTIONS
+  ## PRIVATE HELPER MACROS
 
   @doc false
   defmacro mismatch(value, path, opts \\ []) do

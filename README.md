@@ -1,6 +1,6 @@
 # Exonerate
 
-**A JSONSchema -> Elixir module code generator**
+**A JSONSchema -> Elixir macro**
 
 Currently supports JSONSchema draft 0.7.  *except:*
 
