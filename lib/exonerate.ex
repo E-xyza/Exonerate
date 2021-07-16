@@ -120,6 +120,21 @@ defmodule Exonerate do
   """
   defmacro function_from_file(type, name, file, opts \\ [])
   defmacro function_from_file(type, name, file, opts) do
+    format_options = opts[:format_options]
+    |> Code.eval_quoted([], __CALLER__)
+    |> elem(0)
+    |> Kernel.||(%{})
+
+    opts = Keyword.merge(opts,
+      authority: Atom.to_string(name),
+      format_options: format_options)
+
+    schema = file
+    |> Macro.expand(__CALLER__)
+    |> File.read!
+    |> Jason.decode!
+
+    compile_json(type, name, schema, opts)
   end
 
   defp compile_json(type, name, schema, opts) do
