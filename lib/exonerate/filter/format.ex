@@ -37,7 +37,6 @@ defmodule Exonerate.Filter.Format do
   # pass over the binary format, which gets special treatment elsewhere.
   def parse(artifact, %{"format" => "binary"}), do: artifact
   def parse(artifact = %Exonerate.Type.String{}, %{"format" => format}) do
-
     default = {default_fun, builtin_scaffold, _} = Map.get(@defaults, format, {:__annotate, nil, []})
 
     fun = try do
@@ -56,7 +55,18 @@ defmodule Exonerate.Filter.Format do
       end
     rescue
       _e in KeyError ->
-        default
+        case Enum.find_value(artifact.context.format, fn
+          {k, v} when is_atom(k) ->
+            if Atom.to_string(k) == format, do: v
+          _ -> nil
+        end) do
+          nil ->
+            default
+          {fun, args} ->
+            {fun, nil, args}
+          {module, fun, args} ->
+            {{module, fun}, nil, args}
+        end
     end
 
     %{artifact |

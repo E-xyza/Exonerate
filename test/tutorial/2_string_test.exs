@@ -162,6 +162,9 @@ defmodule ExonerateTest.Tutorial.StringTest do
     Exonerate.function_from_string(:def, :custom_private, ~s({"type": "string", "format": "custom", "comment": "b"}),
         format: %{"/" => {:format, ["ok"]}})
 
+    Exonerate.function_from_string(:def, :custom_broad, ~s({"type": "string", "format": "custom"}),
+        format: %{custom: {Custom, :format, ["ok"]}})
+
     defp format("ok"), do: true
     defp format(_), do: false
 
@@ -233,8 +236,13 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "custom-private" do
-      assert :ok == Format.custom("ok")
-      assert {:error, _} = Format.custom("foo")
+      assert :ok == Format.custom_private("ok")
+      assert {:error, _} = Format.custom_private("foo")
+    end
+
+    test "custom-broad" do
+      assert :ok == Format.custom_broad("ok")
+      assert {:error, _} = Format.custom_broad("foo")
     end
   end
 end
