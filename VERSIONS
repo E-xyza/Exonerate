@@ -10,3 +10,4 @@
 - function_from_file support
 - format_options -> format
 - specification for broad formatting
+- ability to use other decoders (e.g. YAML)
