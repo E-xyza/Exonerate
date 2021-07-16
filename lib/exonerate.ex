@@ -78,36 +78,23 @@ defmodule Exonerate do
     forces the date-time to be an ISO-8601 datetime string.
 
   - `:entrypoint`: a JSONpointer to the internal location inside of a json document where you would like to start
-    the JSONschema.  A json document might contain multiple schemasFor example:
-
-    ```
-      multischema = \"""
-      {
-        "schema1": {"type": "string"},
-        "schema2": {"type": "number"}
-      }
-      \"""
-
-      Exonerate.function_from_string(:def, :schema1, multischema, entrypoint: "/schema1")
-      Exonerate.function_from_string(:def, :schema2, multischema, entrypoint: "/schema2")
-    ```
-
-    In more practical terms, this enables you to store single documents and reuse components, especially when
-    combined with `$ref` tags.  Exonerate will be parsimonious and minimize producing multiple functions for
-    validation trees so long as the instantiated functions are within the same module.
+    the JSONschema.  This should be in JSONPointer form.  See https://datatracker.ietf.org/doc/html/rfc6901 for
+    more information about JSONPointer
   """
 
+  alias Exonerate.Metadata
   alias Exonerate.Pointer
   alias Exonerate.Type
   alias Exonerate.Registry
   alias Exonerate.Validator
 
-  defmacro function_from_string(type, name, schema, opts \\ [])
-  defmacro function_from_string(:def, name, schema_json, opts) do
-    entrypoint = opts
-    |> Keyword.get(:entrypoint, "/")
-    |> Pointer.from_uri
+  @doc """
+  generates a series of functions that validates a provided JSONSchema.
 
+  Note that the `schema` parameter must be a string literal.
+  """
+  defmacro function_from_string(type, name, schema, opts \\ [])
+  defmacro function_from_string(type, name, schema_json, opts)  do
     format_options = opts[:format_options]
     |> Code.eval_quoted([], __CALLER__)
     |> elem(0)
@@ -121,6 +108,25 @@ defmodule Exonerate do
     |> Macro.expand(__CALLER__)
     |> Jason.decode!
 
+    compile_json(type, name, schema, opts)
+  end
+
+
+  @doc """
+  generates a series of functions that validates a JSONschema in a file at
+  the provided path.
+
+  Note that the `schema` parameter must be a string literal.
+  """
+  defmacro function_from_file(type, name, file, opts \\ [])
+  defmacro function_from_file(type, name, file, opts) do
+  end
+
+  defp compile_json(type, name, schema, opts) do
+    entrypoint = opts
+    |> Keyword.get(:entrypoint, "/")
+    |> Pointer.from_uri
+
     impl = schema
     |> Validator.parse(entrypoint, opts)
     |> Validator.compile
@@ -129,6 +135,14 @@ defmodule Exonerate do
 
     # let's see if there's anything leftover.
     dangling_refs = unroll_refs(schema)
+
+    entrypoint_body = quote do
+      try do
+        unquote(Pointer.to_fun(entrypoint, opts))(value, "/")
+      catch
+        error = {:error, e} when is_list(e) -> error
+      end
+    end
 
     quote do
       @typep unquote(json_type) ::
@@ -146,45 +160,18 @@ defmodule Exonerate do
           json_pointer: Path.t
         ]}
 
-      unquote_splicing(metadata_functions(name, schema, entrypoint))
+      unquote_splicing(Metadata.metadata_functions(name, schema, entrypoint))
 
-      def unquote(name)(value) do
-        try do
-          unquote(Pointer.to_fun(entrypoint, opts))(value, "/")
-        catch
-          error = {:error, e} when is_list(e) -> error
-        end
+      case unquote(type) do
+        :def ->
+          def unquote(name)(value), do: unquote(entrypoint_body)
+        :defp ->
+          defp unquote(name)(value), do: unquote(entrypoint_body)
       end
 
       unquote(impl)
       unquote(dangling_refs)
     end # |> Exonerate.Tools.inspect(name == :maxProperties_1)
-  end
-
-  @metadata_call %{
-    "$id" => :id,
-    "$schema" => :schema,
-    "default" => :default,
-    "examples" => :examples,
-    "description" => :description,
-    "title" => :title
-  }
-
-  @metadata_keys Map.keys(@metadata_call)
-  defp metadata_functions(name, schema, entrypoint) do
-    case Pointer.eval(entrypoint, schema) do
-      bool when is_boolean(bool) -> []
-      map when is_map(map) ->
-        for {k, v} when k in @metadata_keys <- map do
-          call = @metadata_call[k]
-          quote do
-            @spec unquote(name)(unquote(call)) :: String.t
-            def unquote(name)(unquote(call)) do
-              unquote(v)
-            end
-          end
-        end
-    end
   end
 
   defp unroll_refs(schema) do
@@ -203,6 +190,7 @@ defmodule Exonerate do
 
   #################################################################
   ## PRIVATE HELPER MACROS
+  ## used internally by macro generation functions
 
   @doc false
   defmacro mismatch(value, path, opts \\ []) do
