@@ -1,6 +1,6 @@
 defmodule Exonerate.Registry do
   @moduledoc false
-  
+
   # registry for existing registry paths.  Since each module is compiled by a
   # single process, let's tie the registry information to the lifetime of the
   # module compilation.  This is done by spinning up an ets table that stores
@@ -83,10 +83,25 @@ defmodule Exonerate.Registry do
     tid = table()
     case :ets.lookup(tid, {:format, format}) do
       [] ->
-        :ets.insert(table(), {{:format, format}})
+        :ets.insert(tid, {{:format, format}})
         true
       [_] ->
         false
+    end
+  end
+
+  # cache for files
+  @spec get_file(Path.t) :: {:loaded, String.t} | {:cached, String.t}
+  def get_file(path) do
+    init_if_needed()
+    tid = table()
+    case :ets.lookup(tid, {:file, path}) do
+      [] ->
+        contents = File.read!(path)
+        :ets.insert(tid, {{:file, path}, contents})
+        {:loaded, contents}
+      [{{:file, ^path}, contents}] ->
+        {:cached, contents}
     end
   end
 

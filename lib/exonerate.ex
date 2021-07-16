@@ -118,8 +118,8 @@ defmodule Exonerate do
 
   Note that the `schema` parameter must be a string literal.
   """
-  defmacro function_from_file(type, name, file, opts \\ [])
-  defmacro function_from_file(type, name, file, opts) do
+  defmacro function_from_file(type, name, path, opts \\ [])
+  defmacro function_from_file(type, name, path, opts) do
     format_options = opts[:format_options]
     |> Code.eval_quoted([], __CALLER__)
     |> elem(0)
@@ -129,12 +129,18 @@ defmodule Exonerate do
       authority: Atom.to_string(name),
       format_options: format_options)
 
-    schema = file
+    {schema, extra} = path
     |> Macro.expand(__CALLER__)
-    |> File.read!
-    |> Jason.decode!
+    |> Registry.get_file
+    |> case do
+      {:cached, contents} -> {Jason.decode!(contents), [quote do @external_resource unquote(path) end]}
+      {:loaded, contents} -> {Jason.decode!(contents), []}
+    end
 
-    compile_json(type, name, schema, opts)
+    quote do
+      unquote_splicing(extra)
+      unquote(compile_json(type, name, schema, opts))
+    end
   end
 
   defp compile_json(type, name, schema, opts) do
