@@ -1,6 +1,6 @@
 defmodule Exonerate.Filter.DependentSchemas do
   @moduledoc false
-  
+
   # NB "dependentSchemas" is just a repackaging of "dependencies" except only permitting the
   # maps (specification of full schema to be applied to the object)
 
@@ -24,7 +24,7 @@ defmodule Exonerate.Filter.DependentSchemas do
           context.schema,
           [k, "dependentSchemas" | context.pointer],
           authority: context.authority,
-          format_options: context.format_options
+          format: context.format
         )}
     end)
 

@@ -1,6 +1,6 @@
 defmodule Exonerate.Filter.Properties do
   @moduledoc false
-  
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
@@ -19,7 +19,7 @@ defmodule Exonerate.Filter.Properties do
         context.schema,
         [k, "properties" | context.pointer],
         authority: context.authority,
-        format_options: context.format_options)}
+        format: context.format)}
       end)
 
     %{artifact |

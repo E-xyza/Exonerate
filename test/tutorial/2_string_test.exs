@@ -134,17 +134,17 @@ defmodule ExonerateTest.Tutorial.StringTest do
 
     Exonerate.function_from_string(:def, :datetime, ~s({"type": "string", "format": "date-time"}))
     Exonerate.function_from_string(:def, :datetime_utc, ~s({"type": "string", "format": "date-time", "comment": "a"}),
-      format_options: %{"/" => [:utc]})
+      format: %{"/" => [:utc]})
     Exonerate.function_from_string(:def, :datetime_disabled, ~s({"type": "string", "format": "date-time", "comment": "b"}),
-      format_options: %{"/" => false})
+      format: %{"/" => false})
     Exonerate.function_from_string(:def, :datetime_custom, ~s({"type": "string", "format": "date-time", "comment": "c"}),
-      format_options: %{"/" => {Custom, :format, []}})
+      format: %{"/" => {Custom, :format, []}})
     Exonerate.function_from_string(:def, :datetime_custom_params, ~s({"type": "string", "format": "date-time", "comment": "d"}),
-      format_options: %{"/" => {Custom, :format, ["ok"]}})
+      format: %{"/" => {Custom, :format, ["ok"]}})
     Exonerate.function_from_string(:def, :datetime_custom_private, ~s({"type": "string", "format": "date-time", "comment": "e"}),
-      format_options: %{"/" => {:format, []}})
+      format: %{"/" => {:format, []}})
     Exonerate.function_from_string(:def, :datetime_custom_private_params, ~s({"type": "string", "format": "date-time", "comment": "f"}),
-      format_options: %{"/" => {:format, ["ok"]}})
+      format: %{"/" => {:format, ["ok"]}})
 
     Exonerate.function_from_string(:def, :date, ~s({"type": "string", "format": "date"}))
 
@@ -157,10 +157,10 @@ defmodule ExonerateTest.Tutorial.StringTest do
     Exonerate.function_from_string(:def, :ipv6, ~s({"type": "string", "format": "ipv6"}))
 
     Exonerate.function_from_string(:def, :custom, ~s({"type": "string", "format": "custom", "comment": "a"}),
-        format_options: %{"/" => {Custom, :format, ["ok"]}})
+        format: %{"/" => {Custom, :format, ["ok"]}})
 
     Exonerate.function_from_string(:def, :custom_private, ~s({"type": "string", "format": "custom", "comment": "b"}),
-        format_options: %{"/" => {:format, ["ok"]}})
+        format: %{"/" => {:format, ["ok"]}})
 
     defp format("ok"), do: true
     defp format(_), do: false

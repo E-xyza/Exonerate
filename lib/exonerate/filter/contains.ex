@@ -1,6 +1,6 @@
 defmodule Exonerate.Filter.Contains do
   @moduledoc false
-  
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
@@ -19,7 +19,7 @@ defmodule Exonerate.Filter.Contains do
         context.schema,
         ["contains" | context.pointer],
         authority: context.authority,
-        format_options: context.format_options)
+        format: context.format)
 
     filter = %__MODULE__{
       context: artifact.context,

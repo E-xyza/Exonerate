@@ -59,7 +59,7 @@ defmodule Exonerate do
 
   The following options are available:
 
-  - `:format_options`: a map of JSONpointers to tags with corresponding `{"format" => "..."}` filters.
+  - `:format`: a map of JSONpointers to tags with corresponding `{"format" => "..."}` filters.
     Exonerate ships with filters for the following default content:
     - `date-time`
     - `date`
@@ -94,23 +94,18 @@ defmodule Exonerate do
   Note that the `schema` parameter must be a string literal.
   """
   defmacro function_from_string(type, name, schema, opts \\ [])
-  defmacro function_from_string(type, name, schema_json, opts)  do
-    format_options = opts[:format_options]
-    |> Code.eval_quoted([], __CALLER__)
-    |> elem(0)
-    |> Kernel.||(%{})
-
+  defmacro function_from_string(type, name, schema_ast, opts)  do
     opts = Keyword.merge(opts,
       authority: Atom.to_string(name),
-      format_options: format_options)
+      format: resolve_opts(opts, :format, %{}, __CALLER__),
+      use: resolve_opts(opts, :use, {Jason, :decode!}, __CALLER__))
 
-    schema = schema_json
+    schema = schema_ast
     |> Macro.expand(__CALLER__)
-    |> Jason.decode!
+    |> decode(opts)
 
     compile_json(type, name, schema, opts)
   end
-
 
   @doc """
   generates a series of functions that validates a JSONschema in a file at
@@ -120,27 +115,30 @@ defmodule Exonerate do
   """
   defmacro function_from_file(type, name, path, opts \\ [])
   defmacro function_from_file(type, name, path, opts) do
-    format_options = opts[:format_options]
-    |> Code.eval_quoted([], __CALLER__)
-    |> elem(0)
-    |> Kernel.||(%{})
-
     opts = Keyword.merge(opts,
       authority: Atom.to_string(name),
-      format_options: format_options)
+      format: resolve_opts(opts, :format, %{}, __CALLER__),
+      use: resolve_opts(opts, :use, {Jason, :decode!}, __CALLER__))
 
     {schema, extra} = path
     |> Macro.expand(__CALLER__)
     |> Registry.get_file
     |> case do
-      {:cached, contents} -> {Jason.decode!(contents), [quote do @external_resource unquote(path) end]}
-      {:loaded, contents} -> {Jason.decode!(contents), []}
+      {:cached, contents} -> {decode(contents, opts), [quote do @external_resource unquote(path) end]}
+      {:loaded, contents} -> {decode(contents, opts), []}
     end
 
     quote do
       unquote_splicing(extra)
       unquote(compile_json(type, name, schema, opts))
     end
+  end
+
+  defp resolve_opts(opts, key, default, caller) do
+    opts[key]
+    |> Code.eval_quoted([], caller)
+    |> elem(0)
+    |> Kernel.||(default)
   end
 
   defp compile_json(type, name, schema, opts) do
@@ -193,6 +191,15 @@ defmodule Exonerate do
       unquote(impl)
       unquote(dangling_refs)
     end # |> Exonerate.Tools.inspect(name == :maxProperties_1)
+  end
+
+  defp decode(contents, opts) do
+    case Keyword.get(opts, :use, {Jason, :decode!}) do
+      {module, fun} ->
+        apply(module, fun, [contents])
+      {module, fun, extra_args} ->
+        apply(module, fun, [contents | extra_args])
+    end
   end
 
   defp unroll_refs(schema) do

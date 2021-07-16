@@ -1,6 +1,6 @@
 defmodule Exonerate.Validator do
   @moduledoc false
-  
+
   alias Exonerate.Compiler
   alias Exonerate.Filter
   alias Exonerate.Tools
@@ -23,7 +23,7 @@ defmodule Exonerate.Validator do
     then: false,
     else: false,
     needed_by: nil,
-    format_options: %{}
+    format: %{}
   ]
 
   @type t :: %__MODULE__{
@@ -39,7 +39,7 @@ defmodule Exonerate.Validator do
     then: boolean,
     else: boolean,
     needed_by: [%{pointer: Pointer.t, fun: atom}],
-    format_options: %{String.t => {atom, [term]} | {module, atom, [term]}}
+    format: %{(String.t | atom) => {atom, [term]} | {module, atom, [term]}}
   } | Ref.t
 
   @spec new(Type.json, Pointer.t, keyword) :: t

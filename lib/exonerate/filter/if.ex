@@ -19,7 +19,7 @@ defmodule Exonerate.Filter.If do
       validator.schema,
       ["if" | validator.pointer],
       authority: validator.authority,
-      format_options: validator.format_options)
+      format: validator.format)
 
     module = %__MODULE__{context: validator, schema: schema, then: validator.then, else: validator.else}
 
