@@ -60,6 +60,7 @@ defmodule Exonerate do
   The following options are available:
 
   - `:format`: a map of JSONpointers to tags with corresponding `{"format" => "..."}` filters.
+
     Exonerate ships with filters for the following default content:
     - `date-time`
     - `date`
@@ -69,10 +70,13 @@ defmodule Exonerate do
 
     To disable these filters, pass `false` to the path, e.g. `%{"/" => false}` or `%{"/foo/bar/" => false}`.
     To specify a custom format filter, pass either function/args or mfa to the path, e.g.
-    `%{"/path/to/fun" => {Module, :fun, [123]}}` The corresponding function will be called with the string as the
-    first argument and the supplied arguments after.  If you use the function/args (e.g. `{:private_function, [123]}`)
-    it may be a private function in the same module.  The custom function should return `true` on successful
-    validation and `false` on failure.
+    `%{"/path/to/fun" => {Module, :fun, [123]}}` or if you want the f/a or mfa to apply to all tags of a
+    given format string, create use the atom of the type name as the key for your map.
+
+    The corresponding function will be called with the candidate formatted string as the first argument
+    and the supplied arguments after.  If you use the function/args (e.g. `{:private_function, [123]}`)
+    it may be a private function in the same module.  The custom function should return `true` on
+    successful validation and `false` on failure.
 
     `date-time` ships with the parameter `:utc` which you may pass as `%{"/path/to/date-time/" => [:utc]}` that
     forces the date-time to be an ISO-8601 datetime string.
