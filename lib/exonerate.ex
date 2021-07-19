@@ -146,7 +146,7 @@ defmodule Exonerate do
 
   @spec precache_file!(Path.t) :: binary
   @doc "lets you precache a file so you don't have to repeat loading it twice"
-  defdelegate precache_file!(path), to: Registry, as: :get_file
+  defdelegate precache_file!(path), to: Registry, as: :get_file!
 
   defp resolve_opts(opts, caller, defaults) do
     Enum.reduce(defaults, opts, fn {k, default}, opts ->
