@@ -84,6 +84,9 @@ defmodule Exonerate do
   - `:entrypoint`: a JSONpointer to the internal location inside of a json document where you would like to start
     the JSONschema.  This should be in JSONPointer form.  See https://datatracker.ietf.org/doc/html/rfc6901 for
     more information about JSONPointer
+
+  - `:decoder`: specify `{module, function}` to use as the decoder for the text that turns into JSON
+    (e.g. YAML instead of JSON)
   """
 
   alias Exonerate.Metadata
@@ -92,6 +95,11 @@ defmodule Exonerate do
   alias Exonerate.Registry
   alias Exonerate.Validator
 
+  @common_defaults [
+    format: %{},
+    decoder: {Jason, :decode!}
+  ]
+
   @doc """
   generates a series of functions that validates a provided JSONSchema.
 
@@ -99,10 +107,9 @@ defmodule Exonerate do
   """
   defmacro function_from_string(type, name, schema, opts \\ [])
   defmacro function_from_string(type, name, schema_ast, opts)  do
-    opts = Keyword.merge(opts,
-      authority: Atom.to_string(name),
-      format: resolve_opts(opts, :format, %{}, __CALLER__),
-      use: resolve_opts(opts, :use, {Jason, :decode!}, __CALLER__))
+    opts = opts
+    |> Keyword.merge(authority: Atom.to_string(name))
+    |> resolve_opts(__CALLER__, @common_defaults)
 
     schema = schema_ast
     |> Macro.expand(__CALLER__)
@@ -115,14 +122,13 @@ defmodule Exonerate do
   generates a series of functions that validates a JSONschema in a file at
   the provided path.
 
-  Note that the `schema` parameter must be a string literal.
+  Note that the `path` parameter must be a string literal.
   """
   defmacro function_from_file(type, name, path, opts \\ [])
   defmacro function_from_file(type, name, path, opts) do
-    opts = Keyword.merge(opts,
-      authority: Atom.to_string(name),
-      format: resolve_opts(opts, :format, %{}, __CALLER__),
-      use: resolve_opts(opts, :use, {Jason, :decode!}, __CALLER__))
+    opts = opts
+    |> Keyword.merge(authority: Atom.to_string(name))
+    |> resolve_opts(__CALLER__, @common_defaults)
 
     {schema, extra} = path
     |> Macro.expand(__CALLER__)
@@ -138,11 +144,26 @@ defmodule Exonerate do
     end
   end
 
-  defp resolve_opts(opts, key, default, caller) do
-    opts[key]
-    |> Code.eval_quoted([], caller)
-    |> elem(0)
-    |> Kernel.||(default)
+  @spec precache_file!(Path.t) :: binary
+  @doc "lets you precache a file so you don't have to repeat loading it twice"
+  def precache_file!(path) do
+     path
+    |> Registry.get_file!
+    |> elem(1)
+  end
+
+  defp resolve_opts(opts, caller, defaults) do
+    Enum.reduce(defaults, opts, fn {k, default}, opts ->
+      if Keyword.has_key?(opts, k) do
+        new_v = opts[k]
+        |> Code.eval_quoted([], caller)
+        |> elem(0)
+
+        Keyword.put(opts, k, new_v)
+      else
+        Keyword.put(opts, k, default)
+      end
+    end)
   end
 
   defp compile_json(type, name, schema, opts) do
@@ -198,7 +219,7 @@ defmodule Exonerate do
   end
 
   defp decode(contents, opts) do
-    case Keyword.get(opts, :use, {Jason, :decode!}) do
+    case opts[:decoder] do
       {module, fun} ->
         apply(module, fun, [contents])
       {module, fun, extra_args} ->
