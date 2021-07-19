@@ -1,6 +1,6 @@
 defmodule Exonerate.Filter.Dependencies do
   @moduledoc false
-  
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
@@ -24,7 +24,7 @@ defmodule Exonerate.Filter.Dependencies do
           context.schema,
           [k, "dependencies" | context.pointer],
           authority: context.authority,
-          format_options: context.format_options
+          format: context.format
         )}
     end)
 

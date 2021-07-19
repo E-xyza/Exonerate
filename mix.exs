@@ -4,13 +4,13 @@ defmodule Exonerate.MixProject do
   def project do
     [
       app: :exonerate,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
       package: [
-        description: "JSON Schema code generator",
+        description: "JSON Schema macro generator",
         licenses: ["MIT"],
         # we need to package the zig BEAM adapters and the c include files as a part
         # of the hex packaging system.
@@ -37,7 +37,7 @@ defmodule Exonerate.MixProject do
     [
       {:ex_doc, "~> 0.24", only: :dev},
       {:dialyxir, "~> 1.0.0-rc.4", only: :dev, runtime: false},
-      {:httpoison, "~> 0.13", only: [:test]},
+      {:yaml_elixir, "~> 2.7", only: :test},
       {:jason, "~> 1.1"},
     ]
   end

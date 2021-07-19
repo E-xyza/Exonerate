@@ -93,7 +93,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = EnumeratedValues.enum1("blue")
 
-      assert list[:schema_pointer] == "enum1#/enum"
+      assert list[:schema_pointer] == "/enum"
       assert list[:error_value] == "blue"
       assert list[:json_pointer] == "/"
     end
@@ -109,7 +109,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert  {:error, list} = EnumeratedValues.enum2(0)
 
-      assert list[:schema_pointer] == "enum2#/enum"
+      assert list[:schema_pointer] == "/enum"
       assert list[:error_value] == 0
       assert list[:json_pointer] == "/"
     end
@@ -123,7 +123,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = EnumeratedValues.enum3(nil)
 
-      assert list[:schema_pointer] == "enum3#/enum"
+      assert list[:schema_pointer] == "/enum"
       assert list[:error_value] == nil
       assert list[:json_pointer] == "/"
     end
@@ -156,7 +156,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = ConstantValues.const(%{"country" => "Canada"})
 
-      assert list[:schema_pointer] == "const#/properties/country/const"
+      assert list[:schema_pointer] == "/properties/country/const"
       assert list[:error_value] == "Canada"
       assert list[:json_pointer] == "/country"
     end

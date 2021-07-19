@@ -5,10 +5,10 @@ defmodule Exonerate do
   Currently supports JSONSchema draft 0.7.  *except:*
 
   - integer filters do not match exact integer floating point values.
-  - multipleOf is not supported for number types.  This is because
-  elixir does not support a floating point remainder guard, and also
-  because it is impossible for a floating point to guarantee sane results
-  (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
+  - multipleOf is not supported for the number type (don't worry, it IS supported
+    for integers).  This is because Elixir does not support a floating point
+    remainder guard, and also because it is impossible for a floating point to
+    guarantee sane results (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
   - currently remoteref is not supported.
 
   For details, see:  http://json-schema.org
@@ -59,7 +59,8 @@ defmodule Exonerate do
 
   The following options are available:
 
-  - `:format_options`: a map of JSONpointers to tags with corresponding `{"format" => "..."}` filters.
+  - `:format`: a map of JSONpointers to tags with corresponding `{"format" => "..."}` filters.
+
     Exonerate ships with filters for the following default content:
     - `date-time`
     - `date`
@@ -69,57 +70,106 @@ defmodule Exonerate do
 
     To disable these filters, pass `false` to the path, e.g. `%{"/" => false}` or `%{"/foo/bar/" => false}`.
     To specify a custom format filter, pass either function/args or mfa to the path, e.g.
-    `%{"/path/to/fun" => {Module, :fun, [123]}}` The corresponding function will be called with the string as the
-    first argument and the supplied arguments after.  If you use the function/args (e.g. `{:private_function, [123]}`)
-    it may be a private function in the same module.  The custom function should return `true` on successful
-    validation and `false` on failure.
+    `%{"/path/to/fun" => {Module, :fun, [123]}}` or if you want the f/a or mfa to apply to all tags of a
+    given format string, create use the atom of the type name as the key for your map.
+
+    The corresponding function will be called with the candidate formatted string as the first argument
+    and the supplied arguments after.  If you use the function/args (e.g. `{:private_function, [123]}`)
+    it may be a private function in the same module.  The custom function should return `true` on
+    successful validation and `false` on failure.
 
     `date-time` ships with the parameter `:utc` which you may pass as `%{"/path/to/date-time/" => [:utc]}` that
     forces the date-time to be an ISO-8601 datetime string.
 
   - `:entrypoint`: a JSONpointer to the internal location inside of a json document where you would like to start
-    the JSONschema.  A json document might contain multiple schemasFor example:
+    the JSONschema.  This should be in JSONPointer form.  See https://datatracker.ietf.org/doc/html/rfc6901 for
+    more information about JSONPointer
 
-    ```
-      multischema = \"""
-      {
-        "schema1": {"type": "string"},
-        "schema2": {"type": "number"}
-      }
-      \"""
-
-      Exonerate.function_from_string(:def, :schema1, multischema, entrypoint: "/schema1")
-      Exonerate.function_from_string(:def, :schema2, multischema, entrypoint: "/schema2")
-    ```
-
-    In more practical terms, this enables you to store single documents and reuse components, especially when
-    combined with `$ref` tags.  Exonerate will be parsimonious and minimize producing multiple functions for
-    validation trees so long as the instantiated functions are within the same module.
+  - `:decoder`: specify `{module, function}` to use as the decoder for the text that turns into JSON
+    (e.g. YAML instead of JSON)
   """
 
+  alias Exonerate.Metadata
   alias Exonerate.Pointer
   alias Exonerate.Type
   alias Exonerate.Registry
   alias Exonerate.Validator
 
+  @common_defaults [
+    format: %{},
+    decoder: {Jason, :decode!}
+  ]
+
+  @doc """
+  generates a series of functions that validates a provided JSONSchema.
+
+  Note that the `schema` parameter must be a string literal.
+  """
   defmacro function_from_string(type, name, schema, opts \\ [])
-  defmacro function_from_string(:def, name, schema_json, opts) do
+  defmacro function_from_string(type, name, schema_ast, opts)  do
+    opts = opts
+    |> Keyword.merge(authority: Atom.to_string(name))
+    |> resolve_opts(__CALLER__, @common_defaults)
+
+    schema = schema_ast
+    |> Macro.expand(__CALLER__)
+    |> decode(opts)
+
+    compile_json(type, name, schema, opts)
+  end
+
+  @doc """
+  generates a series of functions that validates a JSONschema in a file at
+  the provided path.
+
+  Note that the `path` parameter must be a string literal.
+  """
+  defmacro function_from_file(type, name, path, opts \\ [])
+  defmacro function_from_file(type, name, path, opts) do
+    opts = opts
+    |> Keyword.merge(authority: Atom.to_string(name))
+    |> resolve_opts(__CALLER__, @common_defaults)
+
+    {schema, extra} = path
+    |> Macro.expand(__CALLER__)
+    |> Registry.get_file
+    |> case do
+      {:cached, contents} -> {decode(contents, opts), [quote do @external_resource unquote(path) end]}
+      {:loaded, contents} -> {decode(contents, opts), []}
+    end
+
+    quote do
+      unquote_splicing(extra)
+      unquote(compile_json(type, name, schema, opts))
+    end
+  end
+
+  @spec precache_file!(Path.t) :: binary
+  @doc "lets you precache a file so you don't have to repeat loading it twice"
+  def precache_file!(path) do
+     path
+    |> Registry.get_file!
+    |> elem(1)
+  end
+
+  defp resolve_opts(opts, caller, defaults) do
+    Enum.reduce(defaults, opts, fn {k, default}, opts ->
+      if Keyword.has_key?(opts, k) do
+        new_v = opts[k]
+        |> Code.eval_quoted([], caller)
+        |> elem(0)
+
+        Keyword.put(opts, k, new_v)
+      else
+        Keyword.put(opts, k, default)
+      end
+    end)
+  end
+
+  defp compile_json(type, name, schema, opts) do
     entrypoint = opts
     |> Keyword.get(:entrypoint, "/")
     |> Pointer.from_uri
-
-    format_options = opts[:format_options]
-    |> Code.eval_quoted([], __CALLER__)
-    |> elem(0)
-    |> Kernel.||(%{})
-
-    opts = Keyword.merge(opts,
-      authority: Atom.to_string(name),
-      format_options: format_options)
-
-    schema = schema_json
-    |> Macro.expand(__CALLER__)
-    |> Jason.decode!
 
     impl = schema
     |> Validator.parse(entrypoint, opts)
@@ -129,6 +179,14 @@ defmodule Exonerate do
 
     # let's see if there's anything leftover.
     dangling_refs = unroll_refs(schema)
+
+    entrypoint_body = quote do
+      try do
+        unquote(Pointer.to_fun(entrypoint, opts))(value, "/")
+      catch
+        error = {:error, e} when is_list(e) -> error
+      end
+    end
 
     quote do
       @typep unquote(json_type) ::
@@ -146,14 +204,13 @@ defmodule Exonerate do
           json_pointer: Path.t
         ]}
 
-      unquote_splicing(metadata_functions(name, schema, entrypoint))
+      unquote_splicing(Metadata.metadata_functions(name, schema, entrypoint))
 
-      def unquote(name)(value) do
-        try do
-          unquote(Pointer.to_fun(entrypoint, opts))(value, "/")
-        catch
-          error = {:error, e} when is_list(e) -> error
-        end
+      case unquote(type) do
+        :def ->
+          def unquote(name)(value), do: unquote(entrypoint_body)
+        :defp ->
+          defp unquote(name)(value), do: unquote(entrypoint_body)
       end
 
       unquote(impl)
@@ -161,29 +218,12 @@ defmodule Exonerate do
     end # |> Exonerate.Tools.inspect(name == :maxProperties_1)
   end
 
-  @metadata_call %{
-    "$id" => :id,
-    "$schema" => :schema,
-    "default" => :default,
-    "examples" => :examples,
-    "description" => :description,
-    "title" => :title
-  }
-
-  @metadata_keys Map.keys(@metadata_call)
-  defp metadata_functions(name, schema, entrypoint) do
-    case Pointer.eval(entrypoint, schema) do
-      bool when is_boolean(bool) -> []
-      map when is_map(map) ->
-        for {k, v} when k in @metadata_keys <- map do
-          call = @metadata_call[k]
-          quote do
-            @spec unquote(name)(unquote(call)) :: String.t
-            def unquote(name)(unquote(call)) do
-              unquote(v)
-            end
-          end
-        end
+  defp decode(contents, opts) do
+    case opts[:decoder] do
+      {module, fun} ->
+        apply(module, fun, [contents])
+      {module, fun, extra_args} ->
+        apply(module, fun, [contents | extra_args])
     end
   end
 
@@ -202,13 +242,18 @@ defmodule Exonerate do
   end
 
   #################################################################
-  ## PRIVATE HELPER FUNCTIONS
+  ## PRIVATE HELPER MACROS
+  ## used internally by macro generation functions
 
   @doc false
   defmacro mismatch(value, path, opts \\ []) do
     schema_path! = __CALLER__.function
     |> elem(0)
     |> to_string
+    |> String.split("#/")
+    |> tl()
+    |> Enum.join
+    |> amend_path
 
     schema_path! = if guard = opts[:guard] do
       quote do
@@ -225,6 +270,9 @@ defmodule Exonerate do
       json_pointer: unquote(path)}
     end
   end
+
+  defp amend_path(path = ("/" <> _)), do: path
+  defp amend_path(path), do: "/" <> path
 
   @doc false
   defmacro pipeline(variable_ast, path_ast, pipeline) do

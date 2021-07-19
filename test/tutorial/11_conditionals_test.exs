@@ -86,7 +86,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       assert {:error, list} =
         PropertyDependencies.dependency1(propdependency2)
 
-      assert list[:schema_pointer] == "dependency1#/dependencies/credit_card/0"
+      assert list[:schema_pointer] == "/dependencies/credit_card/0"
       assert list[:error_value] == propdependency2
       assert list[:json_pointer] == "/"
     end
@@ -108,7 +108,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       assert {:error, list} =
         PropertyDependencies.dependency2(propdependency2)
 
-      assert list[:schema_pointer] == "dependency2#/dependencies/credit_card/0"
+      assert list[:schema_pointer] == "/dependencies/credit_card/0"
       assert list[:error_value] == propdependency2
       assert list[:json_pointer] == "/"
     end
@@ -118,7 +118,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       assert {:error, list} =
         PropertyDependencies.dependency2(propdependency4)
 
-      assert list[:schema_pointer] == "dependency2#/dependencies/billing_address/0"
+      assert list[:schema_pointer] == "/dependencies/billing_address/0"
       assert list[:error_value] == propdependency4
       assert list[:json_pointer] == "/"
     end
@@ -190,7 +190,7 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       assert {:error, list} =
         SchemaDependencies.schemadependency(schemadependency2)
 
-      assert list[:schema_pointer] == "schemadependency#/dependencies/credit_card/required/0"
+      assert list[:schema_pointer] == "/dependencies/credit_card/required/0"
       assert list[:error_value] == %{"credit_card" => 5555555555555555, "name" => "John Doe"}
       assert list[:json_pointer] == "/"
     end

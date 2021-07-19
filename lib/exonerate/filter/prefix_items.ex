@@ -1,6 +1,6 @@
 defmodule Exonerate.Filter.PrefixItems do
   @moduledoc false
-  
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.PrefixItems do
       &Validator.parse(context.schema,
         ["#{&1}", "prefixItems" | context.pointer],
         authority: context.authority,
-        format_options: context.format_options))
+        format: context.format))
 
     %{artifact |
       needs_accumulator: true,

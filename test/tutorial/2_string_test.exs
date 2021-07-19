@@ -36,7 +36,7 @@ defmodule ExonerateTest.Tutorial.StringTest do
     test "number mismatches a string" do
       assert {:error, list} = String.string(42)
 
-      assert list[:schema_pointer] == "string#/type"
+      assert list[:schema_pointer] == "/type"
       assert list[:error_value] == 42
       assert list[:json_pointer] == "/"
     end
@@ -69,13 +69,13 @@ defmodule ExonerateTest.Tutorial.StringTest do
     test "string of incorrect sizes don't match" do
       assert {:error, list} = Length.string("A")
 
-      assert list[:schema_pointer] == "string#/minLength"
+      assert list[:schema_pointer] == "/minLength"
       assert list[:error_value] == "A"
       assert list[:json_pointer] == "/"
 
       assert {:error, list} = Length.string("ABCD")
 
-      assert list[:schema_pointer] == "string#/maxLength"
+      assert list[:schema_pointer] == "/maxLength"
       assert list[:error_value] == "ABCD"
       assert list[:json_pointer] == "/"
     end
@@ -108,14 +108,14 @@ defmodule ExonerateTest.Tutorial.StringTest do
       assert {:error, list} =
         Pattern.string("(888)555-1212 ext. 532")
 
-      assert list[:schema_pointer] == "string#/pattern"
+      assert list[:schema_pointer] == "/pattern"
       assert list[:error_value] == "(888)555-1212 ext. 532"
       assert list[:json_pointer] == "/"
 
       assert {:error, list} =
         Pattern.string("(800)FLOWERS")
 
-      assert list[:schema_pointer] == "string#/pattern"
+      assert list[:schema_pointer] == "/pattern"
       assert list[:error_value] == "(800)FLOWERS"
       assert list[:json_pointer] == "/"
     end
@@ -134,17 +134,17 @@ defmodule ExonerateTest.Tutorial.StringTest do
 
     Exonerate.function_from_string(:def, :datetime, ~s({"type": "string", "format": "date-time"}))
     Exonerate.function_from_string(:def, :datetime_utc, ~s({"type": "string", "format": "date-time", "comment": "a"}),
-      format_options: %{"/" => [:utc]})
+      format: %{"/" => [:utc]})
     Exonerate.function_from_string(:def, :datetime_disabled, ~s({"type": "string", "format": "date-time", "comment": "b"}),
-      format_options: %{"/" => false})
+      format: %{"/" => false})
     Exonerate.function_from_string(:def, :datetime_custom, ~s({"type": "string", "format": "date-time", "comment": "c"}),
-      format_options: %{"/" => {Custom, :format, []}})
+      format: %{"/" => {Custom, :format, []}})
     Exonerate.function_from_string(:def, :datetime_custom_params, ~s({"type": "string", "format": "date-time", "comment": "d"}),
-      format_options: %{"/" => {Custom, :format, ["ok"]}})
+      format: %{"/" => {Custom, :format, ["ok"]}})
     Exonerate.function_from_string(:def, :datetime_custom_private, ~s({"type": "string", "format": "date-time", "comment": "e"}),
-      format_options: %{"/" => {:format, []}})
+      format: %{"/" => {:format, []}})
     Exonerate.function_from_string(:def, :datetime_custom_private_params, ~s({"type": "string", "format": "date-time", "comment": "f"}),
-      format_options: %{"/" => {:format, ["ok"]}})
+      format: %{"/" => {:format, ["ok"]}})
 
     Exonerate.function_from_string(:def, :date, ~s({"type": "string", "format": "date"}))
 
@@ -157,10 +157,13 @@ defmodule ExonerateTest.Tutorial.StringTest do
     Exonerate.function_from_string(:def, :ipv6, ~s({"type": "string", "format": "ipv6"}))
 
     Exonerate.function_from_string(:def, :custom, ~s({"type": "string", "format": "custom", "comment": "a"}),
-        format_options: %{"/" => {Custom, :format, ["ok"]}})
+        format: %{"/" => {Custom, :format, ["ok"]}})
 
     Exonerate.function_from_string(:def, :custom_private, ~s({"type": "string", "format": "custom", "comment": "b"}),
-        format_options: %{"/" => {:format, ["ok"]}})
+        format: %{"/" => {:format, ["ok"]}})
+
+    Exonerate.function_from_string(:def, :custom_broad, ~s({"type": "string", "format": "custom"}),
+        format: %{custom: {Custom, :format, ["ok"]}})
 
     defp format("ok"), do: true
     defp format(_), do: false
@@ -233,8 +236,13 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "custom-private" do
-      assert :ok == Format.custom("ok")
-      assert {:error, _} = Format.custom("foo")
+      assert :ok == Format.custom_private("ok")
+      assert {:error, _} = Format.custom_private("foo")
+    end
+
+    test "custom-broad" do
+      assert :ok == Format.custom_broad("ok")
+      assert {:error, _} = Format.custom_broad("foo")
     end
   end
 end

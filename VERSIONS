@@ -4,3 +4,10 @@
 
 - initial release
 - support for JSONSchema-draft 6 and almost all of JSONSchema-draft 7
+
+## 0.1.1
+- defp support
+- function_from_file support
+- format_options -> format
+- specification for broad formatting
+- ability to use other decoders (e.g. YAML)

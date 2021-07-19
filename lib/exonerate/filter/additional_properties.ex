@@ -1,6 +1,6 @@
 defmodule Exonerate.Filter.AdditionalProperties do
   @moduledoc false
-  
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
@@ -21,7 +21,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
       context.schema,
       ["additionalProperties" | context.pointer],
       authority: context.authority,
-      format_options: context.format_options)
+      format: context.format)
 
     %{artifact |
       filters: [%__MODULE__{context: context, child: child} | artifact.filters],
