@@ -39,7 +39,7 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
 
     test "false matches nothing" do
       assert {:error, list} = HelloWorld.helloworld3("Resistance is futile...  This will always fail!!!")
-      assert list[:schema_pointer] == "helloworld3#/"
+      assert list[:schema_pointer] == "/"
       assert list[:error_value] == "Resistance is futile...  This will always fail!!!"
       assert list[:json_pointer] == "/"
     end
@@ -63,7 +63,7 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
 
     test "string type does not match nonstring" do
       assert {:error, list} = TypeKeyword.type(42)
-      assert list[:schema_pointer] == "type#/type"
+      assert list[:schema_pointer] == "/type"
       assert list[:error_value] == 42
       assert list[:json_pointer] == "/"
     end

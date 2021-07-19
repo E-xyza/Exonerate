@@ -250,6 +250,10 @@ defmodule Exonerate do
     schema_path! = __CALLER__.function
     |> elem(0)
     |> to_string
+    |> String.split("#/")
+    |> tl()
+    |> Enum.join
+    |> amend_path
 
     schema_path! = if guard = opts[:guard] do
       quote do
@@ -266,6 +270,9 @@ defmodule Exonerate do
       json_pointer: unquote(path)}
     end
   end
+
+  defp amend_path(path = ("/" <> _)), do: path
+  defp amend_path(path), do: "/" <> path
 
   @doc false
   defmacro pipeline(variable_ast, path_ast, pipeline) do

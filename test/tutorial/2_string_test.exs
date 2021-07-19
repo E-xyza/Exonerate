@@ -36,7 +36,7 @@ defmodule ExonerateTest.Tutorial.StringTest do
     test "number mismatches a string" do
       assert {:error, list} = String.string(42)
 
-      assert list[:schema_pointer] == "string#/type"
+      assert list[:schema_pointer] == "/type"
       assert list[:error_value] == 42
       assert list[:json_pointer] == "/"
     end
@@ -69,13 +69,13 @@ defmodule ExonerateTest.Tutorial.StringTest do
     test "string of incorrect sizes don't match" do
       assert {:error, list} = Length.string("A")
 
-      assert list[:schema_pointer] == "string#/minLength"
+      assert list[:schema_pointer] == "/minLength"
       assert list[:error_value] == "A"
       assert list[:json_pointer] == "/"
 
       assert {:error, list} = Length.string("ABCD")
 
-      assert list[:schema_pointer] == "string#/maxLength"
+      assert list[:schema_pointer] == "/maxLength"
       assert list[:error_value] == "ABCD"
       assert list[:json_pointer] == "/"
     end
@@ -108,14 +108,14 @@ defmodule ExonerateTest.Tutorial.StringTest do
       assert {:error, list} =
         Pattern.string("(888)555-1212 ext. 532")
 
-      assert list[:schema_pointer] == "string#/pattern"
+      assert list[:schema_pointer] == "/pattern"
       assert list[:error_value] == "(888)555-1212 ext. 532"
       assert list[:json_pointer] == "/"
 
       assert {:error, list} =
         Pattern.string("(800)FLOWERS")
 
-      assert list[:schema_pointer] == "string#/pattern"
+      assert list[:schema_pointer] == "/pattern"
       assert list[:error_value] == "(800)FLOWERS"
       assert list[:json_pointer] == "/"
     end
