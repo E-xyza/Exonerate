@@ -82,3 +82,8 @@ iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok
 
 ```
+
+## Licensing notes
+
+This software contains verbatim code from https://github.com/json-schema-org/JSON-Schema-Test-Suite
+which is copyright Julian Berman, et. al, and released under the MIT license.
