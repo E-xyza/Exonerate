@@ -34,30 +34,48 @@ defmodule Exonerate.Filter.OneOf do
   def combining(filter, value_ast, path_ast) do
     funs = Enum.map(filter.schemas, &fun(&1, []))
     quote do
-      case Exonerate.pipeline(0, {unquote(value_ast), unquote(path_ast)}, unquote(funs)) do
-        1 -> :ok
-        _ -> Exonerate.mismatch(unquote(value_ast), unquote(path_ast), guard: "oneOf")
+      case Exonerate.pipeline({0, [], []}, {unquote(value_ast), unquote(path_ast)}, unquote(funs)) do
+        {1, _, _} -> :ok
+        {0, _, errors} ->
+          Exonerate.mismatch(
+            unquote(value_ast),
+            unquote(path_ast),
+            guard: "oneOf",
+            reason: "no matches",
+            failures: Enum.reverse(errors))
+        {_, matches, errors} ->
+          Exonerate.mismatch(
+            unquote(value_ast),
+            unquote(path_ast),
+            guard: "oneOf",
+            reason: "multiple matches",
+            failures: Enum.reverse(errors),
+            matches: Enum.reverse(matches))
       end
     end
   end
 
   def compile(filter = %__MODULE__{}) do
-    #calls = Enum.map(filter.schemas, &quote do
-    #  unquote(Validator.to_fun(&1))(value, path)
-    #end)
+    Enum.flat_map(filter.schemas, fn schema->
+      local_path =
+        schema
+        |> fun([])
+        |> Exonerate.fun_to_path()
 
-    Enum.flat_map(filter.schemas, fn schema -> [
-      quote do
-        defp unquote(fun(schema, []))(acc, {value, path}) do
-          try do
-            unquote(fun(schema, []))(value, path)
-            acc + 1
-          catch
-            error = {:error, list} when is_list(list) -> acc
+      [
+        quote do
+          defp unquote(fun(schema, []))({count, matches, errors}, {value, path}) do
+            try do
+              unquote(fun(schema, []))(value, path)
+              {count + 1, [unquote(local_path) | matches], errors}
+            catch
+              error = {:error, list} when is_list(list) ->
+              {count, matches, [list | errors]}
+            end
           end
-        end
-      end,
-      Validator.compile(schema)]
+        end,
+        Validator.compile(schema)
+      ]
     end)
   end
 end

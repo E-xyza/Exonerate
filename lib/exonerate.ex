@@ -242,14 +242,20 @@ defmodule Exonerate do
   ## used internally by macro generation functions
 
   @doc false
-  defmacro mismatch(value, path, opts \\ []) do
-    schema_path! = __CALLER__.function
-    |> elem(0)
+  def fun_to_path(fun) do
+    fun
     |> to_string
     |> String.split("#/")
     |> tl()
     |> Enum.join
     |> amend_path
+  end
+
+  @doc false
+  defmacro mismatch(value, path, opts \\ []) do
+    schema_path! = __CALLER__.function
+    |> elem(0)
+    |> fun_to_path
 
     schema_path! = if guard = opts[:guard] do
       quote do
@@ -259,11 +265,13 @@ defmodule Exonerate do
       schema_path!
     end
 
+    extras = Keyword.take(opts, [:reason, :failures, :matches])
+
     quote do
       throw {:error,
-      schema_pointer: unquote(schema_path!),
+      [schema_pointer: unquote(schema_path!),
       error_value: unquote(value),
-      json_pointer: unquote(path)}
+      json_pointer: unquote(path)] ++ unquote(extras)}
     end
   end
 
