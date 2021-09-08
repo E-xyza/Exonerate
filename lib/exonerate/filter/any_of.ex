@@ -37,26 +37,37 @@ defmodule Exonerate.Filter.AnyOf do
   def combining(filter, value_ast, path_ast) do
     funs = Enum.map(filter.schemas, &fun(&1, []))
     quote do
-      case Exonerate.pipeline(0, {unquote(value_ast), unquote(path_ast)}, unquote(funs)) do
-        0 -> Exonerate.mismatch(unquote(value_ast), unquote(path_ast), guard: "anyOf")
-        _ -> :ok
+      result = try do
+        Exonerate.pipeline([], {unquote(value_ast), unquote(path_ast)}, unquote(funs))
+      catch
+        :ok -> :ok
+      end
+
+      case result do
+        :ok -> :ok
+        list when is_list(list) ->
+          Exonerate.mismatch(
+            unquote(value_ast),
+            unquote(path_ast),
+            guard: "anyOf",
+            failures: Enum.reverse(list))
       end
     end
   end
 
   def compile(filter = %__MODULE__{}) do
-    #calls = Enum.map(filter.schemas, &quote do
-    #  unquote(Validator.to_fun(&1))(value, path)
-    #end)
-
     Enum.flat_map(filter.schemas, fn schema -> [
       quote do
-        defp unquote(fun(schema, []))(acc, {value, path}) do
-          try do
+        defp unquote(fun(schema, []))(fail_so_far, {value, path}) do
+          result = try do
             unquote(fun(schema, []))(value, path)
-            acc + 1
           catch
-            error = {:error, list} when is_list(list) -> acc
+            {:error, list} -> list
+          end
+
+          case result do
+            :ok -> throw :ok
+            list when is_list(list) -> [list | fail_so_far]
           end
         end
       end,

@@ -48,4 +48,29 @@ defmodule ExonerateTest.CompositionTest do
     end
   end
 
+  Exonerate.function_from_string(:defp, :any_of, """
+  {
+    "anyOf": [
+      { "type": "string", "maxLength": 5 },
+      { "type": "number", "minimum": 0 }
+    ]
+  }
+  """)
+
+  describe "anyOf" do
+    test "reports all failures when there are multiple failures" do
+      assert {:error, list} = any_of("foobarbaz")
+      assert "/anyOf" = list[:schema_pointer]
+      assert [[
+        schema_pointer: "/anyOf/0/maxLength",
+        error_value: "foobarbaz",
+        json_pointer: "/"
+      ],[
+        schema_pointer: "/anyOf/1/type",
+        error_value: "foobarbaz",
+        json_pointer: "/"
+      ]] = list[:failures]
+    end
+  end
+
 end
