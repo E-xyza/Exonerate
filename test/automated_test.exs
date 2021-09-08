@@ -1,4 +1,4 @@
-defmodule ExonerateTest.AutomatedTests do
+defmodule ExonerateTest.AutomatedTests202112 do
   @test_base_dir __DIR__
   |> Path.join("_draft2020-12")
   |> Path.expand()
@@ -135,18 +135,18 @@ defmodule ExonerateTest.AutomatedTests do
 end
 
 unless :isolate in ExUnit.configuration()[:include] do
-  ExonerateTest.AutomatedTests.build_tests()
+  ExonerateTest.AutomatedTests202112.build_tests()
 end
 
 defmodule TestOneTest do
   use ExUnit.Case, async: true
 
-  require ExonerateTest.AutomatedTests
+  require ExonerateTest.AutomatedTests202112
   require Exonerate
 
   @moduletag :isolate
 
   # uncomment the next line to test only one candidate.
   @tag :skip
-  ExonerateTest.AutomatedTests.make("maxProperties.json", 1)
+  ExonerateTest.AutomatedTests202112.make("maxProperties.json", 1)
 end

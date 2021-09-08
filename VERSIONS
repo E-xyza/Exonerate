@@ -11,3 +11,6 @@
 - format_options -> format
 - specification for broad formatting
 - ability to use other decoders (e.g. YAML)
+
+# 0.2.0
+- error details for aggregates like allOf, anyOf, oneOf
