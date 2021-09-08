@@ -34,6 +34,7 @@ omit_tests = [
 
 ExonerateTest.Automate.directory(
   directory2020,
+  prefix: D2020,
   omit_modules: omit_modules,
   omit_describes: omit_describes,
   omit_tests: omit_tests)

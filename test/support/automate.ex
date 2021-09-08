@@ -1,6 +1,6 @@
 defmodule ExonerateTest.Automate do
   def directory(directory, opts \\ []) do
-    opts = Keyword.merge([omit_modules: [], omit_describes: [], omit_tests: []], opts)
+    opts = Keyword.merge([omit_modules: [], omit_describes: [], omit_tests: [], prefix: X], opts)
 
     directory
     |> File.ls!
@@ -28,7 +28,7 @@ defmodule ExonerateTest.Automate do
   defp to_test_module(test_list, modulename, path, opts) do
     Exonerate.Registry.sweep()
 
-    module = Module.concat([ExonerateTest, String.capitalize(modulename), Test])
+    module = Module.concat([ExonerateTest, opts[:prefix], String.capitalize(modulename), Test])
     describe_blocks = test_list
     |> Enum.with_index
     |> Enum.reject(fn {_, index} -> {path, index} in opts[:omit_describes] end)
