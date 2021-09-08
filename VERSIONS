@@ -14,3 +14,4 @@
 
 # 0.2.0
 - error details for compositions like anyOf, oneOf
+- "ref traces" for jumping through references

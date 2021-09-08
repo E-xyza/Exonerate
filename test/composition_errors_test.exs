@@ -72,5 +72,4 @@ defmodule ExonerateTest.CompositionTest do
       ]] = list[:failures]
     end
   end
-
 end

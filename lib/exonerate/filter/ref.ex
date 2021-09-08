@@ -28,9 +28,25 @@ defmodule Exonerate.Filter.Ref do
     end
 
     fun = Registry.request(filter.context.schema, Pointer.from_uri(uri))
+    ref_path = Pointer.to_uri(filter.context.pointer)
 
     quote do
-      unquote(fun)(unquote(value_ast), unquote(path_ast))
+      result = try do
+        unquote(fun)(unquote(value_ast), unquote(path_ast))
+      catch
+        {:error, props} ->
+          ref_trace = props
+          |> Keyword.get(:ref_trace)
+          |> List.wrap()
+
+          Keyword.put(props, :ref_trace, [unquote(ref_path) | ref_trace])
+      end
+
+      case result do
+        :ok -> :ok
+        list when is_list(list) ->
+          throw({:error, list})
+      end
     end
   end
 
