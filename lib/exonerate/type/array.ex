@@ -34,7 +34,7 @@ defmodule Exonerate.Type.Array do
   @impl true
   @spec parse(Validator.t, Type.json) :: t
   # draft <= 7 refs inhibit type-based analysis
-  def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(6 7) do
+  def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
     %__MODULE__{context: validator}
   end
 

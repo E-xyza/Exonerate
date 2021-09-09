@@ -13,6 +13,9 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
 
   defstruct [:context, :minimum, :parent]
 
+  # ignore version-4-type exclusiveMaximum specifiers.
+  def parse(artifact, %{"exclusiveMinimum" => bool}) when is_boolean(bool), do: artifact
+
   def parse(artifact = %type{}, %{"exclusiveMinimum" => minimum}) when type in [Integer, Number] do
     %{artifact |
       filters: [%__MODULE__{context: artifact.context, minimum: minimum, parent: type} | artifact.filters]}

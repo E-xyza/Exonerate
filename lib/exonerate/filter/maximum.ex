@@ -5,6 +5,7 @@ defmodule Exonerate.Filter.Maximum do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
+  alias Exonerate.Filter.ExclusiveMaximum
   alias Exonerate.Type.Integer
   alias Exonerate.Type.Number
   alias Exonerate.Validator
@@ -12,6 +13,12 @@ defmodule Exonerate.Filter.Maximum do
   import Validator, only: [fun: 2]
 
   defstruct [:context, :maximum, :parent]
+
+  # for draft-4, punt to ExclusiveMaximum if "exclusiveMaximum" is specified.
+  def parse(artifact = %type{}, %{"maximum" => maximum, "exclusiveMaximum" => true}) when type in [Integer, Number] do
+    %{artifact |
+      filters: [%ExclusiveMaximum{context: artifact.context, maximum: maximum, parent: type} | artifact.filters]}
+  end
 
   def parse(artifact = %type{}, %{"maximum" => maximum}) when type in [Integer, Number] do
     %{artifact |
