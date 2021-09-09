@@ -1,10 +1,11 @@
 defmodule Exonerate.Filter.Minimum do
   @moduledoc false
-  
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
+  alias Exonerate.Filter.ExclusiveMinimum
   alias Exonerate.Type.Integer
   alias Exonerate.Type.Number
   alias Exonerate.Validator
@@ -12,6 +13,12 @@ defmodule Exonerate.Filter.Minimum do
   import Validator, only: [fun: 2]
 
   defstruct [:context, :minimum, :parent]
+
+  # for draft-4, punt to ExclusiveMinimum if "exclusiveMinimum" is specified.
+  def parse(artifact = %type{}, %{"minimum" => minimum, "exclusiveMinimum" => true}) when type in [Integer, Number] do
+    %{artifact |
+      filters: [%ExclusiveMinimum{context: artifact.context, minimum: minimum, parent: type} | artifact.filters]}
+  end
 
   def parse(artifact = %type{}, %{"minimum" => minimum}) when type in [Integer, Number] do
     %{artifact |

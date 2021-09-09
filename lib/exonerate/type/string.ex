@@ -21,6 +21,12 @@ defmodule Exonerate.Type.String do
 
   @impl true
   @spec parse(Validator.t, Type.json) :: t
+
+  # draft <= 7 refs inhibit type-based analysis
+  def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
+    %__MODULE__{context: validator}
+  end
+
   def parse(validator, schema) do
     %__MODULE__{context: validator, format_binary: format_binary(schema)}
     |> Tools.collect(@validator_filters, fn

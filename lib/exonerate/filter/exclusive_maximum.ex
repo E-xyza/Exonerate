@@ -1,6 +1,6 @@
 defmodule Exonerate.Filter.ExclusiveMaximum do
   @moduledoc false
-  
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
@@ -13,6 +13,8 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
 
   defstruct [:context, :maximum, :parent]
 
+  # ignore version-4-type exclusiveMaximum specifiers.
+  def parse(artifact, %{"exclusiveMaximum" => bool}) when is_boolean(bool), do: artifact
   def parse(artifact = %type{}, %{"exclusiveMaximum" => maximum}) when type in [Integer, Number] do
     %{artifact |
       filters: [%__MODULE__{context: artifact.context, maximum: maximum, parent: type} | artifact.filters]}

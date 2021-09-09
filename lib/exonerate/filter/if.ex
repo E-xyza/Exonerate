@@ -13,19 +13,20 @@ defmodule Exonerate.Filter.If do
 
 
   @impl true
-  def parse(validator = %Validator{}, %{"if" => _}) do
+  def parse(context = %Validator{}, %{"if" => _}) do
 
     schema = Validator.parse(
-      validator.schema,
-      ["if" | validator.pointer],
-      authority: validator.authority,
-      format: validator.format)
+      context.schema,
+      ["if" | context.pointer],
+      authority: context.authority,
+      format: context.format,
+      draft: context.draft)
 
-    module = %__MODULE__{context: validator, schema: schema, then: validator.then, else: validator.else}
+    module = %__MODULE__{context: context, schema: schema, then: context.then, else: context.else}
 
-    %{validator |
-      children: [module | validator.children],
-      combining: [module | validator.combining]}
+    %{context |
+      children: [module | context.children],
+      combining: [module | context.combining]}
   end
 
   def combining(filter, value_ast, path_ast) do

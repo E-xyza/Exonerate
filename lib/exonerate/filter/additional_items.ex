@@ -10,9 +10,10 @@ defmodule Exonerate.Filter.AdditionalItems do
   def parse(artifact = %{context: context}, %{"additionalItems" => _}) do
 
     schema = Validator.parse(context.schema,
-    ["additionalItems" | context.pointer],
-    authority: context.authority,
-    format: context.format)
+      ["additionalItems" | context.pointer],
+      authority: context.authority,
+      format: context.format,
+      draft: context.draft)
 
     %{artifact |
       needs_accumulator: true,

@@ -11,3 +11,8 @@
 - format_options -> format
 - specification for broad formatting
 - ability to use other decoders (e.g. YAML)
+
+# 0.2.0
+- error details for compositions like anyOf, oneOf
+- "ref traces" for jumping through references
+- support for draft-4, draft-6, draft-7 and draft-2019, draft-2020

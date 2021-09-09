@@ -19,7 +19,8 @@ defmodule Exonerate.Filter.Properties do
         context.schema,
         [k, "properties" | context.pointer],
         authority: context.authority,
-        format: context.format)}
+        format: context.format,
+        draft: context.draft)}
       end)
 
     %{artifact |

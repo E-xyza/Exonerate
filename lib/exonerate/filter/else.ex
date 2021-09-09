@@ -9,17 +9,18 @@ defmodule Exonerate.Filter.Else do
   alias Exonerate.Validator
 
   @impl true
-  def parse(validator = %Validator{}, %{"else" => _}) do
+  def parse(context = %Validator{}, %{"else" => _}) do
 
     schema = Validator.parse(
-      validator.schema,
-      ["else" | validator.pointer],
-      authority: validator.authority,
-      format: validator.format)
+      context.schema,
+      ["else" | context.pointer],
+      authority: context.authority,
+      format: context.format,
+      draft: context.draft)
 
-    module = %__MODULE__{context: validator, schema: schema}
+    module = %__MODULE__{context: context, schema: schema}
 
-    %{validator | children: [module | validator.children], else: true}
+    %{context | children: [module | context.children], else: true}
   end
 
   def compile(filter = %__MODULE__{}) do

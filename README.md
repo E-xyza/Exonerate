@@ -2,7 +2,7 @@
 
 **A JSONSchema -> Elixir macro**
 
-Currently supports JSONSchema draft 0.7.  *except:*
+Currently supports JSONSchema drafts 4, 6, 7, 2019, 2020.  *except:*
 
 - integer filters do not match exact integer floating point values.
 - multipleOf is not supported for number types.  This is because
@@ -10,6 +10,7 @@ elixir does not support a floating point remainder guard, and also
 because it is impossible for a floating point to guarantee sane results
 (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
 - currently remoteref is not supported.
+- 'definitions' is disabled in pre-draft-7, for now.  Please use absolute refs.
 
 Works in progress:
 
@@ -19,8 +20,6 @@ Works in progress:
 - support for contentEncoding
 - support for named anchors
 - better uri support
-- support for defp
-- support for function_from_file
 - support for function_from_map
 - support for more formatted strings
 
@@ -82,3 +81,8 @@ iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok
 
 ```
+
+## Licensing notes
+
+This software contains verbatim code from https://github.com/json-schema-org/JSON-Schema-Test-Suite
+which is copyright Julian Berman, et. al, and released under the MIT license.

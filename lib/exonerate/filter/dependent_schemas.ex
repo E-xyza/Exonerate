@@ -24,7 +24,8 @@ defmodule Exonerate.Filter.DependentSchemas do
           context.schema,
           [k, "dependentSchemas" | context.pointer],
           authority: context.authority,
-          format: context.format
+          format: context.format,
+          draft: context.draft
         )}
     end)
 

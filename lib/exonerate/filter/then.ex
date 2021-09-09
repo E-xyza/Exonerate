@@ -9,17 +9,18 @@ defmodule Exonerate.Filter.Then do
   alias Exonerate.Validator
 
   @impl true
-  def parse(validator = %Validator{}, %{"then" => _}) do
+  def parse(context = %Validator{}, %{"then" => _}) do
 
     schema = Validator.parse(
-      validator.schema,
-      ["then" | validator.pointer],
-      authority: validator.authority,
-      format: validator.format)
+      context.schema,
+      ["then" | context.pointer],
+      authority: context.authority,
+      format: context.format,
+      draft: context.draft)
 
-    module = %__MODULE__{context: validator, schema: schema}
+    module = %__MODULE__{context: context, schema: schema}
 
-    %{validator | children: [module | validator.children], then: true}
+    %{context | children: [module | context.children], then: true}
   end
 
   def compile(filter = %__MODULE__{}) do

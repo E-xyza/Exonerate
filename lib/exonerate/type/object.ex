@@ -29,6 +29,11 @@ defmodule Exonerate.Type.Object do
 
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
+  # draft <= 7 refs inhibit type-based analysis
+  def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
+    %__MODULE__{context: validator}
+  end
+
   def parse(validator = %Validator{}, schema) do
     %__MODULE__{context: validator}
     |> Tools.collect(@validator_filters, fn

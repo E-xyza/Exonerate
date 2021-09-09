@@ -73,7 +73,7 @@ defmodule Exonerate do
     `%{"/path/to/fun" => {Module, :fun, [123]}}` or if you want the f/a or mfa to apply to all tags of a
     given format string, create use the atom of the type name as the key for your map.
 
-    The corresponding function will be called with the candidate formatted string as the first argument
+    The corresponding function will be called with thue candidate formatted string as the first argument
     and the supplied arguments after.  If you use the function/args (e.g. `{:private_function, [123]}`)
     it may be a private function in the same module.  The custom function should return `true` on
     successful validation and `false` on failure.
@@ -87,6 +87,10 @@ defmodule Exonerate do
 
   - `:decoder`: specify `{module, function}` to use as the decoder for the text that turns into JSON
     (e.g. YAML instead of JSON)
+
+  - `:draft`: specifies any special draft information.  Defaults to "2020", which is intercompatible
+    with "2019".  "4", "6", and "7" are also supported.  Note: Validation is NOT performed on the
+    schema, so draft-7 schema components will work in a schema that is set has the draft set as "2020".
   """
 
   alias Exonerate.Metadata
@@ -242,14 +246,20 @@ defmodule Exonerate do
   ## used internally by macro generation functions
 
   @doc false
-  defmacro mismatch(value, path, opts \\ []) do
-    schema_path! = __CALLER__.function
-    |> elem(0)
+  def fun_to_path(fun) do
+    fun
     |> to_string
     |> String.split("#/")
     |> tl()
     |> Enum.join
     |> amend_path
+  end
+
+  @doc false
+  defmacro mismatch(value, path, opts \\ []) do
+    schema_path! = __CALLER__.function
+    |> elem(0)
+    |> fun_to_path
 
     schema_path! = if guard = opts[:guard] do
       quote do
@@ -259,11 +269,13 @@ defmodule Exonerate do
       schema_path!
     end
 
+    extras = Keyword.take(opts, [:reason, :failures, :matches])
+
     quote do
       throw {:error,
-      schema_pointer: unquote(schema_path!),
+      [schema_pointer: unquote(schema_path!),
       error_value: unquote(value),
-      json_pointer: unquote(path)}
+      json_pointer: unquote(path)] ++ unquote(extras)}
     end
   end
 
