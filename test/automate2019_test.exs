@@ -2,7 +2,8 @@ directory2020 = __DIR__
 |> Path.join("_draft2019-09")
 |> Path.expand()
 
-omit_modules = ~w(refRemote.json anchor.json dynamicRef.json defs.json id.json)
+omit_modules = ~w(refRemote.json anchor.json dynamicRef.json defs.json id.json
+  unevaluatedProperties.json unevaluatedItems.json format.json)
 
 omit_describes = [
   # no external URIs.
@@ -15,6 +16,10 @@ omit_describes = [
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},
   {"multipleOf.json", 3},
+  # floats don't match ints
+  {"type.json", 0},
+  {"enum.json", 7},
+  {"enum.json", 8},
 ]
 
 omit_tests = []

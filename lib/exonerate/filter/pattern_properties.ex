@@ -19,7 +19,8 @@ defmodule Exonerate.Filter.PatternProperties do
             context.schema,
             [pattern, "patternProperties" | context.pointer],
             authority: context.authority,
-            format: context.format)}
+            format: context.format,
+            draft: context.draft)}
     end)
 
     filter = %__MODULE__{context: context, patterns: patterns}

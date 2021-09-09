@@ -12,23 +12,24 @@ defmodule Exonerate.Filter.OneOf do
   defstruct [:context, :schemas]
 
   @impl true
-  def parse(validator = %Validator{}, %{"oneOf" => s}) do
+  def parse(context = %Validator{}, %{"oneOf" => s}) do
 
     schemas = Enum.map(0..(length(s) - 1),
       &Validator.parse(
-        validator.schema,
-        ["#{&1}", "oneOf" | validator.pointer],
-        authority: validator.authority,
-        format: validator.format))
+        context.schema,
+        ["#{&1}", "oneOf" | context.pointer],
+        authority: context.authority,
+        format: context.format,
+        draft: context.draft))
 
     # CONSIDER OPTING-IN TO TYPE OPTIMIZATION.  NOTE IT BREAKS ERROR PATH REPORTING.
 
-    module = %__MODULE__{context: validator, schemas: schemas}
+    module = %__MODULE__{context: context, schemas: schemas}
 
-    %{validator |
+    %{context |
     #  types: types,
-      children: [module | validator.children],
-      combining: [module | validator.combining]}
+      children: [module | context.children],
+      combining: [module | context.combining]}
   end
 
   def combining(filter, value_ast, path_ast) do

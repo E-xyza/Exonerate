@@ -64,7 +64,7 @@ defmodule ExonerateTest.Automate do
     |> Enum.map(&to_test_block(&1, schema_name))
     quote do
       describe unquote(description!) do
-        Exonerate.function_from_string(:def, unquote(schema_name), unquote(schema!))
+        Exonerate.function_from_string(:def, unquote(schema_name), unquote(schema!), unquote(opts))
         unquote_splicing(test_blocks)
       end
     end

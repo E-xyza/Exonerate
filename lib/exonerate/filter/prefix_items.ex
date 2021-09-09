@@ -16,7 +16,8 @@ defmodule Exonerate.Filter.PrefixItems do
       &Validator.parse(context.schema,
         ["#{&1}", "prefixItems" | context.pointer],
         authority: context.authority,
-        format: context.format))
+        format: context.format,
+        draft: context.draft))
 
     %{artifact |
       needs_accumulator: true,

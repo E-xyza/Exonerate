@@ -17,6 +17,10 @@ omit_describes = [
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},
   {"multipleOf.json", 3},
+  # floats don't match ints
+  {"type.json", 0},
+  {"enum.json", 7},
+  {"enum.json", 8},
 ]
 
 omit_tests = []
@@ -26,4 +30,5 @@ ExonerateTest.Automate.directory(
   prefix: Draft7,
   omit_modules: omit_modules,
   omit_describes: omit_describes,
-  omit_tests: omit_tests)
+  omit_tests: omit_tests,
+  draft: "7")

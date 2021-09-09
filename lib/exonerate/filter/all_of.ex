@@ -18,7 +18,8 @@ defmodule Exonerate.Filter.AllOf do
         validator.schema,
         ["#{&1}", "allOf" | validator.pointer],
         authority: validator.authority,
-        format: validator.format))
+        format: validator.format,
+        draft: validator.draft))
 
     # CONSIDER OPTING-IN TO THIS OPTIMIZATION.  NOTE IT BREAKS ERROR PATH REPORTING.
     #types = schemas

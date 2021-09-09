@@ -23,6 +23,7 @@ defmodule Exonerate.Validator do
     then: false,
     else: false,
     needed_by: nil,
+    draft: "2020",
     format: %{}
   ]
 
@@ -39,6 +40,7 @@ defmodule Exonerate.Validator do
     then: boolean,
     else: boolean,
     needed_by: [%{pointer: Pointer.t, fun: atom}],
+    draft: String.t,
     format: %{(String.t | atom) => {atom, [term]} | {module, atom, [term]}}
   } | Ref.t
 
@@ -59,13 +61,24 @@ defmodule Exonerate.Validator do
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @spec analyze(t) :: t
-  defp analyze(validator! = %__MODULE__{}) do
+  defp analyze(validator! = %__MODULE__{draft: draft}) do
     validator! = register(validator!)
 
     case traverse(validator!) do
       # TODO: break this out into its own function.
       ref = %Ref{} -> ref
       bool when is_boolean(bool) -> validator!
+
+      # in draft 7, a $ref parameter clobbers its siblings.
+      schema = %{"$ref" => _} when draft == "7" ->
+        validator!
+        |> Filter.parse(Exonerate.Filter.Ref, schema)
+        |> Tools.collect(@all_types, fn
+          v = %{types: types}, type when is_map_key(types, type) ->
+            %{v | types: Map.put(v.types, type, type.parse(v, traverse(v)))}
+          v, _type -> v
+        end)
+
       schema when is_map(schema) ->
         # TODO: put this into its own function
         validator!

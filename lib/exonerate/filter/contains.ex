@@ -19,7 +19,8 @@ defmodule Exonerate.Filter.Contains do
         context.schema,
         ["contains" | context.pointer],
         authority: context.authority,
-        format: context.format)
+        format: context.format,
+        draft: context.draft)
 
     filter = %__MODULE__{
       context: artifact.context,

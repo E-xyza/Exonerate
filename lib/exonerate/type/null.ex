@@ -13,6 +13,8 @@ defmodule Exonerate.Type.Null do
 
   @impl true
   @spec parse(Validator.t, Type.json) :: t
+  # draft-7 refs inhibit type-based analysis
+  def parse(validator = %{draft: "7"}, %{"$ref" => _}), do: %__MODULE__{context: validator}
   def parse(validator, _schema) do
     %__MODULE__{context: validator}
   end

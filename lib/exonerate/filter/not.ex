@@ -12,19 +12,20 @@ defmodule Exonerate.Filter.Not do
   import Validator, only: [fun: 2]
 
   @impl true
-  def parse(validator = %Validator{}, %{"not" => _}) do
+  def parse(context = %Validator{}, %{"not" => _}) do
 
     schema = Validator.parse(
-      validator.schema,
-      ["not" | validator.pointer],
-      authority: validator.authority,
-      format: validator.format)
+      context.schema,
+      ["not" | context.pointer],
+      authority: context.authority,
+      format: context.format,
+      draft: context.draft)
 
-    module = %__MODULE__{context: validator, schema: schema}
+    module = %__MODULE__{context: context, schema: schema}
 
-    %{validator |
-      children: [module | validator.children],
-      combining: [module | validator.combining]}
+    %{context |
+      children: [module | context.children],
+      combining: [module | context.combining]}
   end
 
   def combining(filter, value_ast, path_ast) do
