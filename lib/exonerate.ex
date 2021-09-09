@@ -2,7 +2,7 @@ defmodule Exonerate do
   @moduledoc """
   An opinionated JSONSchema compiler for elixir.
 
-  Currently supports JSONSchema draft 0.7.  *except:*
+  Currently supports JSONSchema drafts 4, 6, 7, 2019, and 2020.  *except:*
 
   - integer filters do not match exact integer floating point values.
   - multipleOf is not supported for the number type (don't worry, it IS supported
@@ -89,8 +89,8 @@ defmodule Exonerate do
     (e.g. YAML instead of JSON)
 
   - `:draft`: specifies any special draft information.  Defaults to "2020", which is intercompatible
-    with "2019".  "4", "6", and "7" are also supported.  Note: Validation is NOT performed on the
-    schema, so draft-7 schema components will work in a schema that is set has the draft set as "2020".
+    with `"2019"`.  `"4"`, `"6"`, and `"7"` are also supported.  Note: Validation is NOT performed on
+    the schema, so intermingling draft components is possible (but not recommended).
   """
 
   alias Exonerate.Metadata
