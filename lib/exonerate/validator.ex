@@ -69,8 +69,8 @@ defmodule Exonerate.Validator do
       ref = %Ref{} -> ref
       bool when is_boolean(bool) -> validator!
 
-      # in draft 7, a $ref parameter clobbers its siblings.
-      schema = %{"$ref" => _} when draft == "7" ->
+      # in drafts 6 7, a $ref parameter clobbers its siblings.
+      schema = %{"$ref" => _} when draft in ~w(6 7) ->
         validator!
         |> Filter.parse(Exonerate.Filter.Ref, schema)
         |> Tools.collect(@all_types, fn
