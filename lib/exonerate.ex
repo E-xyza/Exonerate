@@ -89,8 +89,8 @@ defmodule Exonerate do
     (e.g. YAML instead of JSON)
 
   - `:draft`: specifies any special draft information.  Defaults to "2020", which is intercompatible
-    with "2019".  "7" is also supported.  Note: Validation is NOT performed on the schema, so draft-7
-    schema components will work in a schema that is set has the draft set as "2020".
+    with "2019".  "4", "6", and "7" are also supported.  Note: Validation is NOT performed on the
+    schema, so draft-7 schema components will work in a schema that is set has the draft set as "2020".
   """
 
   alias Exonerate.Metadata
