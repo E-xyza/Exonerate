@@ -269,7 +269,7 @@ defmodule Exonerate do
       schema_path!
     end
 
-    extras = Keyword.take(opts, [:reason, :failures, :matches])
+    extras = Keyword.take(opts, [:reason, :failures, :matches, :required])
 
     quote do
       throw {:error,
