@@ -188,6 +188,19 @@ defmodule Exonerate do
       end
     end
 
+    call = case type do
+      :def ->
+        quote do
+          # metadata functions not available for defp
+          unquote_splicing(Metadata.metadata_functions(name, schema, entrypoint))
+          def unquote(name)(value), do: unquote(entrypoint_body)
+        end
+      :defp ->
+        quote do
+          defp unquote(name)(value), do: unquote(entrypoint_body)
+        end
+    end
+
     quote do
       @typep unquote(json_type) ::
         bool
@@ -204,18 +217,11 @@ defmodule Exonerate do
           json_pointer: Path.t
         ]}
 
-      unquote_splicing(Metadata.metadata_functions(name, schema, entrypoint))
-
-      case unquote(type) do
-        :def ->
-          def unquote(name)(value), do: unquote(entrypoint_body)
-        :defp ->
-          defp unquote(name)(value), do: unquote(entrypoint_body)
-      end
+      unquote(call)
 
       unquote(impl)
       unquote(dangling_refs)
-    end # |> Exonerate.Tools.inspect(name == :maxProperties_1)
+    end 
   end
 
   defp decode(contents, opts) do
