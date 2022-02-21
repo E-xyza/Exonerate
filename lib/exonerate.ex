@@ -44,7 +44,8 @@ defmodule Exonerate do
   ## Metadata
 
   The following metadata are accessible for the entrypoint in the jsonschema, by passing the corresponding
-  atom.
+  atom.  Note this is only activated for `def` functions, and will not be available
+  for `defp` functions.
 
   | JSONschema tag | atom parameter |
   |----------------|----------------|
@@ -221,7 +222,7 @@ defmodule Exonerate do
 
       unquote(impl)
       unquote(dangling_refs)
-    end 
+    end
   end
 
   defp decode(contents, opts) do
