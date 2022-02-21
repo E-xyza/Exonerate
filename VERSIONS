@@ -19,3 +19,7 @@
 
 # 0.2.1
 - expose missing `required` as an extra paramter
+
+# 0.2.2
+- fixes it so that defp content with metadata don't cause compilation
+  errors
