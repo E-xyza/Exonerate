@@ -6,7 +6,6 @@ defmodule Exonerate.Filter.Ref do
   @derive {Inspect, except: [:context]}
   defstruct [:context, :ref]
 
-  alias Exonerate.Pointer
   alias Exonerate.Registry
   alias Exonerate.Validator
 
@@ -27,8 +26,8 @@ defmodule Exonerate.Filter.Ref do
       "#" <> rest -> rest
     end
 
-    fun = Registry.request(filter.context.schema, Pointer.from_uri(uri))
-    ref_path = Pointer.to_uri(filter.context.pointer)
+    fun = Registry.request(filter.context.schema, JsonPointer.from_uri(uri))
+    ref_path = JsonPointer.to_uri(filter.context.pointer)
 
     quote do
       result = try do

@@ -5,7 +5,6 @@ defmodule Exonerate.Filter.Format do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Pointer
   alias Exonerate.Registry
   alias Exonerate.Validator
 
@@ -41,7 +40,7 @@ defmodule Exonerate.Filter.Format do
 
     fun = try do
       artifact.context.pointer
-      |> Pointer.to_uri
+      |> JsonPointer.to_uri
       |> :erlang.map_get(artifact.context.format)
       |> case do
         false ->

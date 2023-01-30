@@ -8,7 +8,7 @@ defmodule Exonerate.Registry do
   # pointer.  Thus multiple entrypoints using the same schema can share
   # validation functions.
 
-  alias Exonerate.Pointer
+  alias Exonerate.Tools
   alias Exonerate.Type
 
   @spec get_table() :: :ok
@@ -24,12 +24,12 @@ defmodule Exonerate.Registry do
 
   @type state :: :needs | :built
 
-  @spec id(state, Type.json, Pointer.t) :: term
+  @spec id(state, Type.json, JsonPointer.t) :: term
   defp id(state, schema, pointer) do
     {state, :erlang.phash2(schema), pointer}
   end
 
-  @spec register(Type.json, Pointer.t, atom) :: :ok | {:exists, atom} | {:needed, atom}
+  @spec register(Type.json, JsonPointer.t, atom) :: :ok | {:exists, atom} | {:needed, atom}
   def register(schema, pointer, function) do
     tid = get_table()
     built_id = id(:built, schema, pointer)
@@ -46,11 +46,11 @@ defmodule Exonerate.Registry do
       [{^needs_id, authority}] ->
         :ets.delete(tid, needs_id)
         :ets.insert(tid, {built_id, function})
-        {:needed, Pointer.to_fun(pointer, authority: authority)}
+        {:needed, Tools.jsonpointer_to_fun_name(pointer, authority: authority)}
     end
   end
 
-  @spec request(Type.json, Pointer.t) :: atom
+  @spec request(Type.json, JsonPointer.t) :: atom
   def request(schema, pointer) do
     tid = get_table()
     id = id(:built, schema, pointer)
@@ -58,13 +58,13 @@ defmodule Exonerate.Registry do
       [] ->
         authority = "__registry:#{elem(id, 1)}"
         :ets.insert(tid, {id(:needs, schema, pointer), authority})
-        Pointer.to_fun(pointer, authority: authority)
+        Tools.jsonpointer_to_fun_name(pointer, authority: authority)
       [{^id, function}] ->
         function
     end
   end
 
-  @spec needed(Type.json) :: [%{pointer: Pointer.t, fun: atom}]
+  @spec needed(Type.json) :: [%{pointer: JsonPointer.t, fun: atom}]
   def needed(schema) do
     schema_hash = :erlang.phash2(schema)
     matchspec = [{{{:"$1", :"$2", :"$3"}, :"$4"}, [{:==, :needs, :"$1"}, {:==, schema_hash, :"$2"}], [%{pointer: :"$3", authority: :"$4"}]}]

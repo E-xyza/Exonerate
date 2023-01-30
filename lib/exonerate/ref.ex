@@ -1,12 +1,11 @@
 defmodule Exonerate.Ref do
   @moduledoc false
 
-  alias Exonerate.Pointer
   alias Exonerate.Registry
 
   defstruct [:pointer, :authority, :target]
   @type t :: %__MODULE__{
-    pointer: Pointer.t,
+    pointer: JsonPointer.t,
     target: atom
   }
 
@@ -15,7 +14,7 @@ defmodule Exonerate.Ref do
   end
 
   def from_uri("#" <> uri, %{pointer: pointer, schema: schema, authority: authority}) do
-    target = Registry.request(schema, Pointer.from_uri(uri))
+    target = Registry.request(schema, JsonPointer.from_uri(uri))
     %__MODULE__{pointer: pointer, authority: authority, target: target}
   end
 end

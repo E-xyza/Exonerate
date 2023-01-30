@@ -2,6 +2,7 @@
 _build
 deps
 /docs/
+/doc/
 
 # don't get the automated tests
 

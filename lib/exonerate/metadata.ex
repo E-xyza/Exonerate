@@ -1,8 +1,6 @@
 defmodule Exonerate.Metadata do
   @moduledoc false
 
-  alias Exonerate.Pointer
-
   @metadata_call %{
     "$id" => :id,
     "$schema" => :schema,
@@ -15,7 +13,7 @@ defmodule Exonerate.Metadata do
   @metadata_keys Map.keys(@metadata_call)
 
   def metadata_functions(name, schema, entrypoint) do
-    case Pointer.eval(entrypoint, schema) do
+    case JsonPointer.resolve!(schema, entrypoint) do
       nil -> raise "the entrypoint #{entrypoint} does not exist in your JSONschema"
       bool when is_boolean(bool) -> []
       map when is_map(map) ->

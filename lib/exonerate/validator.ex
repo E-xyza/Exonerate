@@ -5,7 +5,6 @@ defmodule Exonerate.Validator do
   alias Exonerate.Filter
   alias Exonerate.Tools
   alias Exonerate.Type
-  alias Exonerate.Pointer
   alias Exonerate.Ref
   alias Exonerate.Registry
 
@@ -30,7 +29,7 @@ defmodule Exonerate.Validator do
   @type t :: %__MODULE__{
     authority: String.t,
     # global state
-    pointer: Pointer.t,
+    pointer: JsonPointer.t,
     schema: Type.schema,
     required_refs: [[String.t]],
     types: %{optional(Type.t) => nil | Type.type_struct},
@@ -39,17 +38,17 @@ defmodule Exonerate.Validator do
     children: [module],
     then: boolean,
     else: boolean,
-    needed_by: [%{pointer: Pointer.t, fun: atom}],
+    needed_by: [%{pointer: JsonPointer.t, fun: atom}],
     draft: String.t,
     format: %{(String.t | atom) => {atom, [term]} | {module, atom, [term]}}
   } | Ref.t
 
-  @spec new(Type.json, Pointer.t, keyword) :: t
+  @spec new(Type.json, JsonPointer.t, keyword) :: t
   defp new(schema, pointer, opts) do
     struct(%__MODULE__{schema: schema, pointer: pointer, authority: opts[:authority] || ""}, opts)
   end
 
-  @spec parse(Type.json, Pointer.t, keyword) :: t
+  @spec parse(Type.json, JsonPointer.t, keyword) :: t
   def parse(schema, pointer, opts \\ []) do
     schema
     |> new(pointer, opts)
@@ -135,15 +134,15 @@ defmodule Exonerate.Validator do
 
   @spec compile(t) :: Macro.t
   def compile(validator = %__MODULE__{pointer: pointer, schema: schema, authority: authority}) do
-    case Pointer.eval(pointer, schema) do
+    case JsonPointer.resolve!(schema, pointer) do
       true ->
         quote do
-          defp unquote(Pointer.to_fun(pointer, authority: authority))(_, _), do: :ok
+          defp unquote(Tools.pointer_to_fun_name(pointer, authority: authority))(_, _), do: :ok
           unquote_splicing(build_needed(validator))
         end
       false ->
         quote do
-          defp unquote(Pointer.to_fun(pointer, authority: authority))(value, path) do
+          defp unquote(Tools.pointer_to_fun_name(pointer, authority: authority))(value, path) do
             Exonerate.mismatch(value, path)
           end
           unquote_splicing(build_needed(validator))
@@ -155,7 +154,7 @@ defmodule Exonerate.Validator do
   def compile(ref = %Ref{}) do
     # TODO: break this out into its own compiler protocol impl.
     quote do
-      defp unquote(Pointer.to_fun(ref.pointer, authority: ref.authority))(value, path) do
+      defp unquote(Tools.pointer_to_fun_name(ref.pointer, authority: ref.authority))(value, path) do
         unquote(ref.target)(value, path)
       end
     end
@@ -218,7 +217,7 @@ defmodule Exonerate.Validator do
 
   @spec traverse(t) :: Type.json
   def traverse(validator = %__MODULE__{}) do
-    Pointer.eval(validator.pointer, validator.schema)
+    JsonPointer.resolve!(validator.schema, validator.pointer)
   end
   def traverse(ref = %Ref{}), do: ref
 
@@ -231,7 +230,7 @@ defmodule Exonerate.Validator do
     |> fun(rest)
   end
   def fun(%__MODULE__{pointer: pointer, authority: authority}, []) do
-    Pointer.to_fun(pointer, authority: authority)
+    Tools.pointer_to_fun_name(pointer, authority: authority)
   end
   def fun(validator = %__MODULE__{}, one_hop), do: fun(validator, List.wrap(one_hop))
   def fun(%{context: context}, nexthops), do: fun(context, nexthops)

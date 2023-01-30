@@ -95,7 +95,7 @@ defmodule Exonerate do
   """
 
   alias Exonerate.Metadata
-  alias Exonerate.Pointer
+  alias Exonerate.Tools
   alias Exonerate.Type
   alias Exonerate.Registry
   alias Exonerate.Validator
@@ -170,7 +170,7 @@ defmodule Exonerate do
   defp compile_json(type, name, schema, opts) do
     entrypoint = opts
     |> Keyword.get(:entrypoint, "/")
-    |> Pointer.from_uri
+    |> JsonPointer.from_uri
 
     impl = schema
     |> Validator.parse(entrypoint, opts)
@@ -183,7 +183,7 @@ defmodule Exonerate do
 
     entrypoint_body = quote do
       try do
-        unquote(Pointer.to_fun(entrypoint, opts))(value, "/")
+        unquote(Tools.pointer_to_fun_name(entrypoint, opts))(value, "/")
       catch
         error = {:error, e} when is_list(e) -> error
       end
