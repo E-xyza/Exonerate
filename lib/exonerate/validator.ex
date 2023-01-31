@@ -12,43 +12,46 @@ defmodule Exonerate.Validator do
   @initial_typemap Type.all()
   @all_types Map.keys(@initial_typemap)
 
-  defstruct @enforce_keys ++ [
-    required_refs: [],
-    # compile-time optimizations
-    types: @initial_typemap,
-    guards: [],
-    combining: [],
-    children: [],
-    then: false,
-    else: false,
-    needed_by: nil,
-    draft: "2020",
-    format: %{}
-  ]
+  defstruct @enforce_keys ++
+              [
+                required_refs: [],
+                # compile-time optimizations
+                types: @initial_typemap,
+                guards: [],
+                combining: [],
+                children: [],
+                then: false,
+                else: false,
+                needed_by: nil,
+                draft: "2020",
+                format: %{}
+              ]
 
-  @type t :: %__MODULE__{
-    authority: String.t,
-    # global state
-    pointer: JsonPointer.t,
-    schema: Type.schema,
-    required_refs: [[String.t]],
-    types: %{optional(Type.t) => nil | Type.type_struct},
-    guards: [module],
-    combining: [module],
-    children: [module],
-    then: boolean,
-    else: boolean,
-    needed_by: [%{pointer: JsonPointer.t, fun: atom}],
-    draft: String.t,
-    format: %{(String.t | atom) => {atom, [term]} | {module, atom, [term]}}
-  } | Ref.t
+  @type t ::
+          %__MODULE__{
+            authority: String.t(),
+            # global state
+            pointer: JsonPointer.t(),
+            schema: Type.schema(),
+            required_refs: [[String.t()]],
+            types: %{optional(Type.t()) => nil | Type.type_struct()},
+            guards: [module],
+            combining: [module],
+            children: [module],
+            then: boolean,
+            else: boolean,
+            needed_by: [%{pointer: JsonPointer.t(), fun: atom}],
+            draft: String.t(),
+            format: %{(String.t() | atom) => {atom, [term]} | {module, atom, [term]}}
+          }
+          | Ref.t()
 
-  @spec new(Type.json, JsonPointer.t, keyword) :: t
+  @spec new(Type.json(), JsonPointer.t(), keyword) :: t
   defp new(schema, pointer, opts) do
     struct(%__MODULE__{schema: schema, pointer: pointer, authority: opts[:authority] || ""}, opts)
   end
 
-  @spec parse(Type.json, JsonPointer.t, keyword) :: t
+  @spec parse(Type.json(), JsonPointer.t(), keyword) :: t
   def parse(schema, pointer, opts \\ []) do
     schema
     |> new(pointer, opts)
@@ -65,8 +68,11 @@ defmodule Exonerate.Validator do
 
     case traverse(validator!) do
       # TODO: break this out into its own function.
-      ref = %Ref{} -> ref
-      bool when is_boolean(bool) -> validator!
+      ref = %Ref{} ->
+        ref
+
+      bool when is_boolean(bool) ->
+        validator!
 
       # in drafts 6 7, a $ref parameter clobbers its siblings.
       schema = %{"$ref" => _} when draft in ~w(4 6 7) ->
@@ -75,34 +81,48 @@ defmodule Exonerate.Validator do
         |> Tools.collect(@all_types, fn
           v = %{types: types}, type when is_map_key(types, type) ->
             %{v | types: Map.put(v.types, type, type.parse(v, traverse(v)))}
-          v, _type -> v
+
+          v, _type ->
+            v
         end)
 
       schema when is_map(schema) ->
         # TODO: put this into its own function
         validator!
-        |> Tools.collect(@validator_filters,
+        |> Tools.collect(
+          @validator_filters,
           fn
             v, filter when is_map_key(schema, filter) ->
-              Filter.parse(v, @validator_modules[filter], schema) # restore the pointer location.
-            v, _ -> v
-          end)
+              # restore the pointer location.
+              Filter.parse(v, @validator_modules[filter], schema)
+
+            v, _ ->
+              v
+          end
+        )
         |> Tools.collect(@all_types, fn
           v = %{types: types}, type when is_map_key(types, type) ->
             %{v | types: Map.put(v.types, type, type.parse(v, traverse(v)))}
-          v, _type -> v
+
+          v, _type ->
+            v
         end)
+
       invalid ->
-        raise ArgumentError, "#{inspect invalid} is not a valid JSONSchema"
+        raise ArgumentError, "#{inspect(invalid)} is not a valid JSONSchema"
     end
   end
+
   defp analyze(ref = %Ref{}), do: ref
 
   defp register(validator) do
-    case Registry.register(validator.schema, validator.pointer, fun(validator))  do
-      :ok -> validator
+    case Registry.register(validator.schema, validator.pointer, fun(validator)) do
+      :ok ->
+        validator
+
       {:exists, target} ->
         %Ref{pointer: validator.pointer, authority: validator.authority, target: target}
+
       {:needed, needed_by} ->
         # on re-entrant registry requests we don't want to make another function.
         if needed_by == fun(validator) do
@@ -113,12 +133,13 @@ defmodule Exonerate.Validator do
     end
   end
 
-  @spec jump_into(t, String.t) :: t
+  @spec jump_into(t, String.t()) :: t
   @doc """
   advances the pointer in the validator prior to evaluating.
   """
   def jump_into(validator, nexthop, should_clear \\ false) do
-    clear(%{validator | pointer: [nexthop | validator.pointer]}, should_clear)
+    next_pointer = JsonPointer.traverse(validator.pointer, nexthop)
+    clear(%{validator | pointer: next_pointer}, should_clear)
   end
 
   defp clear(validator, false), do: validator
@@ -132,7 +153,7 @@ defmodule Exonerate.Validator do
     %{old_validator | types: validator.types}
   end
 
-  @spec compile(t) :: Macro.t
+  @spec compile(t) :: Macro.t()
   def compile(validator = %__MODULE__{pointer: pointer, schema: schema, authority: authority}) do
     case JsonPointer.resolve!(schema, pointer) do
       true ->
@@ -140,17 +161,21 @@ defmodule Exonerate.Validator do
           defp unquote(Tools.pointer_to_fun_name(pointer, authority: authority))(_, _), do: :ok
           unquote_splicing(build_needed(validator))
         end
+
       false ->
         quote do
           defp unquote(Tools.pointer_to_fun_name(pointer, authority: authority))(value, path) do
             Exonerate.mismatch(value, path)
           end
+
           unquote_splicing(build_needed(validator))
         end
+
       object when is_map(object) ->
         build_schema(validator)
     end
   end
+
   def compile(ref = %Ref{}) do
     # TODO: break this out into its own compiler protocol impl.
     quote do
@@ -160,68 +185,88 @@ defmodule Exonerate.Validator do
     end
   end
 
-  def build_schema(validator = %{types: types}) when types == %{String => %{format_binary: true}} do
+  def build_schema(validator = %{types: types})
+      when types == %{String => %{format_binary: true}} do
     # no available types, go straight to mismatch.
     quote do
       defp unquote(fun(validator))(value, path) do
         Exonerate.mismatch(value, path)
       end
+
       unquote_splicing(build_needed(validator))
     end
   end
 
   def build_schema(validator) do
-    guards = validator.guards
-    |> Enum.map(&%{&1 | context: validator})
-    |> Enum.map(&Compiler.compile/1)
-
-    {funs, type_children} = validator.types
-      |> Map.values
+    guards =
+      validator.guards
+      |> Enum.map(&%{&1 | context: validator})
       |> Enum.map(&Compiler.compile/1)
-      |> Enum.unzip
+
+    {funs, type_children} =
+      validator.types
+      |> Map.values()
+      |> Enum.map(&Compiler.compile/1)
+      |> Enum.unzip()
 
     direct_children = Enum.map(validator.children, &Compiler.compile/1)
 
     children = type_children ++ direct_children
 
-    combining = combining(validator, quote do value end, quote do path end)
+    combining =
+      combining(
+        validator,
+        quote do
+          value
+        end,
+        quote do
+          path
+        end
+      )
 
     quote do
       unquote_splicing(Tools.flatten(guards))
       unquote_splicing(Tools.flatten(funs))
+
       defp unquote(fun(validator))(value, path) do
-        unquote_splicing(combining)
+        (unquote_splicing(combining))
       end
-      unquote_splicing(Enum.flat_map(children, &(&1)))
+
+      unquote_splicing(Enum.flat_map(children, & &1))
       unquote_splicing(build_needed(validator))
     end
   end
 
   defp build_needed(%__MODULE__{needed_by: nil}), do: []
+
   defp build_needed(validator = %__MODULE__{needed_by: what}) do
-    [quote do
-      defp unquote(what)(value, path) do
-        unquote(fun(validator))(value, path)
+    [
+      quote do
+        defp unquote(what)(value, path) do
+          unquote(fun(validator))(value, path)
+        end
       end
-    end]
+    ]
   end
 
   def combining(%{combining: []}, _, _) do
     [:ok]
   end
+
   def combining(validator, value_ast, path_ast) do
     Enum.map(validator.combining, fn filter = %module{} ->
       module.combining(filter, value_ast, path_ast)
     end)
   end
 
-  @spec traverse(t) :: Type.json
+  @spec traverse(t) :: Type.json()
   def traverse(validator = %__MODULE__{}) do
     JsonPointer.resolve!(validator.schema, validator.pointer)
   end
+
   def traverse(ref = %Ref{}), do: ref
 
-  @spec fun(t | Filter.t | Type.t, String | [String.t]) :: atom
+  @spec fun(t | Filter.t() | Type.t(), String | [String.t()]) :: atom
   def fun(validator_filter_or_type, nexthops \\ [])
 
   def fun(validator = %__MODULE__{}, [nexthop | rest]) do
@@ -229,10 +274,11 @@ defmodule Exonerate.Validator do
     |> jump_into(nexthop)
     |> fun(rest)
   end
+
   def fun(%__MODULE__{pointer: pointer, authority: authority}, []) do
     Tools.pointer_to_fun_name(pointer, authority: authority)
   end
+
   def fun(validator = %__MODULE__{}, one_hop), do: fun(validator, List.wrap(one_hop))
   def fun(%{context: context}, nexthops), do: fun(context, nexthops)
-
 end

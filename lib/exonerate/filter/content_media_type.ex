@@ -1,4 +1,4 @@
-#defmodule Exonerate.Filter.ContentMediaType do
+# defmodule Exonerate.Filter.ContentMediaType do
 #  @behaviour Exonerate.Filter
 #
 #  @impl true
@@ -27,5 +27,5 @@
 #  #     end
 #  #   end]
 #  #end
-#end
+# end
 #

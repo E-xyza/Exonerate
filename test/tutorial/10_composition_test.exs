@@ -36,13 +36,13 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     end
 
     test "things that match none don't match" do
-      assert  {:error, list} = Combining.combining("too long")
+      assert {:error, list} = Combining.combining("too long")
 
       assert list[:schema_pointer] == "/anyOf"
       assert list[:error_value] == "too long"
       assert list[:json_pointer] == "/"
 
-      assert  {:error, list} = Combining.combining(-5)
+      assert {:error, list} = Combining.combining(-5)
 
       assert list[:schema_pointer] == "/anyOf"
       assert list[:error_value] == -5
@@ -83,7 +83,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     end
 
     test "things that mismatch one don't match" do
-      assert  {:error, list} = AllOf.allof("too long")
+      assert {:error, list} = AllOf.allof("too long")
 
       assert list[:schema_pointer] == "/allOf/1/maxLength"
       assert list[:error_value] == "too long"
@@ -93,13 +93,13 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
 
   describe "logical impossibilities" do
     test "are possible of allof" do
-      assert  {:error, list} = AllOf.impossible("No way")
+      assert {:error, list} = AllOf.impossible("No way")
 
       assert list[:schema_pointer] == "/allOf/1/type"
       assert list[:error_value] == "No way"
       assert list[:json_pointer] == "/"
 
-      assert  {:error, list} = AllOf.impossible(-1)
+      assert {:error, list} = AllOf.impossible(-1)
 
       assert list[:schema_pointer] == "/allOf/0/type"
       assert list[:error_value] == -1
@@ -132,8 +132,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     end
 
     test "things that mismatch one don't match" do
-      assert  {:error, list} =
-        AnyOf.anyof(%{"Not a" => "string or number"})
+      assert {:error, list} = AnyOf.anyof(%{"Not a" => "string or number"})
 
       assert list[:schema_pointer] == "/anyOf"
       assert list[:error_value] == %{"Not a" => "string or number"}
@@ -184,7 +183,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     end
 
     test "multiples of both don't" do
-      assert  {:error, list} = OneOf.oneof(15)
+      assert {:error, list} = OneOf.oneof(15)
 
       assert list[:schema_pointer] == "/oneOf"
       assert list[:error_value] == 15
@@ -199,7 +198,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     end
 
     test "multiples of neither don't" do
-      assert  {:error, list} = OneOf.factorout(2)
+      assert {:error, list} = OneOf.factorout(2)
 
       assert list[:schema_pointer] == "/oneOf"
       assert list[:error_value] == 2
@@ -207,14 +206,13 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     end
 
     test "multiples of both don't" do
-      assert  {:error, list} = OneOf.factorout(15)
+      assert {:error, list} = OneOf.factorout(15)
 
       assert list[:schema_pointer] == "/oneOf"
       assert list[:error_value] == 15
       assert list[:json_pointer] == "/"
     end
   end
-
 
   defmodule Not do
     @moduledoc """
@@ -236,7 +234,7 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     end
 
     test "things that mismatch one don't match" do
-      assert  {:error, list} = Not.no("I am a string")
+      assert {:error, list} = Not.no("I am a string")
 
       assert list[:schema_pointer] == "/not"
       assert list[:error_value] == "I am a string"

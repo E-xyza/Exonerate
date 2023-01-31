@@ -14,13 +14,18 @@ defmodule Exonerate.Metadata do
 
   def metadata_functions(name, schema, entrypoint) do
     case JsonPointer.resolve!(schema, entrypoint) do
-      nil -> raise "the entrypoint #{entrypoint} does not exist in your JSONschema"
-      bool when is_boolean(bool) -> []
+      nil ->
+        raise "the entrypoint #{entrypoint} does not exist in your JSONschema"
+
+      bool when is_boolean(bool) ->
+        []
+
       map when is_map(map) ->
         for {k, v} when k in @metadata_keys <- map do
           call = @metadata_call[k]
+
           quote do
-            @spec unquote(name)(unquote(call)) :: String.t
+            @spec unquote(name)(unquote(call)) :: String.t()
             def unquote(name)(unquote(call)) do
               unquote(v)
             end

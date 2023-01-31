@@ -12,26 +12,31 @@ defmodule Exonerate.Filter.AllOf do
 
   @impl true
   def parse(validator = %Validator{}, %{"allOf" => s}) do
-
-    schemas = Enum.map(0..(length(s) - 1),
-      &Validator.parse(
-        validator.schema,
-        ["#{&1}", "allOf" | validator.pointer],
-        authority: validator.authority,
-        format: validator.format,
-        draft: validator.draft))
+    schemas =
+      Enum.map(
+        0..(length(s) - 1),
+        &Validator.parse(
+          validator.schema,
+          JsonPointer.traverse(validator.pointer, ["allOf", "#{&1}"]),
+          authority: validator.authority,
+          format: validator.format,
+          draft: validator.draft
+        )
+      )
 
     # CONSIDER OPTING-IN TO THIS OPTIMIZATION.  NOTE IT BREAKS ERROR PATH REPORTING.
-    #types = schemas
-    #|> Enum.map(&(&1.types))
-    #|> Enum.map(&Map.new(&1, fn {k, _} -> {k, nil} end))
-    #|> Enum.reduce(&Type.intersection/2)
+    # types = schemas
+    # |> Enum.map(&(&1.types))
+    # |> Enum.map(&Map.new(&1, fn {k, _} -> {k, nil} end))
+    # |> Enum.reduce(&Type.intersection/2)
 
     module = %__MODULE__{context: validator, schemas: schemas}
 
-    %{validator |
-      children: [module | validator.children],
-      combining: [module | validator.combining]}
+    %{
+      validator
+      | children: [module | validator.children],
+        combining: [module | validator.combining]
+    }
   end
 
   def combining(filter, value_ast, path_ast) do
@@ -41,14 +46,21 @@ defmodule Exonerate.Filter.AllOf do
   end
 
   def compile(filter = %__MODULE__{}) do
-    calls = Enum.map(filter.schemas, &quote do
-      unquote(fun(&1, []))(value, path)
-    end)
+    calls =
+      Enum.map(
+        filter.schemas,
+        &quote do
+          unquote(fun(&1, []))(value, path)
+        end
+      )
 
-    [quote do
-      defp unquote(fun(filter, "allOf"))(value, path) do
-        unquote_splicing(calls)
+    [
+      quote do
+        defp unquote(fun(filter, "allOf"))(value, path) do
+          (unquote_splicing(calls))
+        end
       end
-    end | Enum.map(filter.schemas, &Validator.compile/1)]
+      | Enum.map(filter.schemas, &Validator.compile/1)
+    ]
   end
 end

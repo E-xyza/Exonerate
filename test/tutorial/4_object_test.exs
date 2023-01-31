@@ -12,7 +12,6 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   """
 
   defmodule Object do
-
     @moduledoc """
     tests from:
 
@@ -27,33 +26,33 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   describe "basic objects example" do
     test "various objects match correctly" do
       assert :ok =
-      """
-      {
-        "key"         : "value",
-        "another_key" : "another_value"
-      }
-      """
-      |> Jason.decode!
-      |> Object.object
+               """
+               {
+                 "key"         : "value",
+                 "another_key" : "another_value"
+               }
+               """
+               |> Jason.decode!()
+               |> Object.object()
 
       assert :ok =
-      """
-      {
-          "Sun"     : 1.9891e30,
-          "Jupiter" : 1.8986e27,
-          "Saturn"  : 5.6846e26,
-          "Neptune" : 10.243e25,
-          "Uranus"  : 8.6810e25,
-          "Earth"   : 5.9736e24,
-          "Venus"   : 4.8685e24,
-          "Mars"    : 6.4185e23,
-          "Mercury" : 3.3022e23,
-          "Moon"    : 7.349e22,
-          "Pluto"   : 1.25e22
-      }
-      """
-      |> Jason.decode!
-      |> Object.object
+               """
+               {
+                   "Sun"     : 1.9891e30,
+                   "Jupiter" : 1.8986e27,
+                   "Saturn"  : 5.6846e26,
+                   "Neptune" : 10.243e25,
+                   "Uranus"  : 8.6810e25,
+                   "Earth"   : 5.9736e24,
+                   "Venus"   : 4.8685e24,
+                   "Mars"    : 6.4185e23,
+                   "Mercury" : 3.3022e23,
+                   "Moon"    : 7.349e22,
+                   "Pluto"   : 1.25e22
+               }
+               """
+               |> Jason.decode!()
+               |> Object.object()
     end
 
     @badarray ["An", "array", "not", "an", "object"]
@@ -74,7 +73,6 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   end
 
   defmodule Properties do
-
     @moduledoc """
     tests from:
 
@@ -83,8 +81,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :address1,
-    """
+    Exonerate.function_from_string(:def, :address1, """
     {
       "type": "object",
       "properties": {
@@ -97,8 +94,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     }
     """)
 
-    Exonerate.function_from_string(:def, :address2,
-    """
+    Exonerate.function_from_string(:def, :address2, """
     {
       "type": "object",
       "properties": {
@@ -112,8 +108,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     }
     """)
 
-    Exonerate.function_from_string(:def, :address3,
-    """
+    Exonerate.function_from_string(:def, :address3, """
     {
       "type": "object",
       "properties": {
@@ -136,15 +131,17 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching simple addresses" do
     test "explicit addresses match correctly" do
-      assert :ok = @addr1
-      |> Jason.decode!
-      |> Properties.address1
+      assert :ok =
+               @addr1
+               |> Jason.decode!()
+               |> Properties.address1()
     end
 
     test "deficient properties match correctly" do
-      assert :ok = @addr3
-      |> Jason.decode!
-      |> Properties.address1
+      assert :ok =
+               @addr3
+               |> Jason.decode!()
+               |> Properties.address1()
     end
 
     test "empty object matches correctly" do
@@ -152,16 +149,17 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
 
     test "extra properties matches correctly" do
-      assert :ok = @addr4
-      |> Jason.decode!
-      |> Properties.address1
+      assert :ok =
+               @addr4
+               |> Jason.decode!()
+               |> Properties.address1()
     end
 
     test "mismatched inner property doesn't match" do
       assert {:error, list} =
-        @addr2
-        |> Jason.decode!
-        |> Properties.address1
+               @addr2
+               |> Jason.decode!()
+               |> Properties.address1()
 
       assert list[:schema_pointer] == "/properties/number/type"
       assert list[:error_value] == "1600"
@@ -171,9 +169,10 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching addresses with additionalProperties forbidden" do
     test "explicit addresses match correctly" do
-      assert :ok = @addr1
-      |> Jason.decode!
-      |> Properties.address2
+      assert :ok =
+               @addr1
+               |> Jason.decode!()
+               |> Properties.address2()
     end
 
     test "extra properties matches correctly" do
@@ -188,15 +187,17 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching addresses with additionalProperties as an object" do
     test "explicit addresses match correctly" do
-      assert :ok = @addr1
-      |> Jason.decode!
-      |> Properties.address3
+      assert :ok =
+               @addr1
+               |> Jason.decode!()
+               |> Properties.address3()
     end
 
     test "matching additionalProperties matches correctly" do
-      assert :ok = @addr4
-      |> Jason.decode!
-      |> Properties.address3
+      assert :ok =
+               @addr4
+               |> Jason.decode!()
+               |> Properties.address3()
     end
 
     test "extra nonstring property doesn't match" do
@@ -210,7 +211,6 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   end
 
   defmodule RequiredProperties do
-
     @moduledoc """
     tests from:
 
@@ -219,8 +219,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :contactinfo,
-    """
+    Exonerate.function_from_string(:def, :contactinfo, """
     {
       "type": "object",
       "properties": {
@@ -257,15 +256,17 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching required properties" do
     test "basic contact matches correctly" do
-      assert :ok = @contact1
-      |> Jason.decode!
-      |> RequiredProperties.contactinfo
+      assert :ok =
+               @contact1
+               |> Jason.decode!()
+               |> RequiredProperties.contactinfo()
     end
 
     test "extra info doesn't invalidate match" do
-      assert :ok = @contact2
-      |> Jason.decode!
-      |> RequiredProperties.contactinfo
+      assert :ok =
+               @contact2
+               |> Jason.decode!()
+               |> RequiredProperties.contactinfo()
     end
 
     test "deficient info is a problem" do
@@ -279,7 +280,6 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   end
 
   defmodule PropertyNames do
-
     @moduledoc """
     tests from:
 
@@ -288,8 +288,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :token,
-    """
+    Exonerate.function_from_string(:def, :token, """
     {
       "type": "object",
       "propertyNames": {
@@ -304,9 +303,10 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching property names" do
     test "basic contact matches correctly" do
-      assert :ok = @token1
-      |> Jason.decode!
-      |> PropertyNames.token
+      assert :ok =
+               @token1
+               |> Jason.decode!()
+               |> PropertyNames.token()
     end
 
     test "not matching the property name doesn't match" do
@@ -320,7 +320,6 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   end
 
   defmodule Size do
-
     @moduledoc """
     tests from:
 
@@ -329,8 +328,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :object,
-    """
+    Exonerate.function_from_string(:def, :object, """
     {
       "type": "object",
       "minProperties": 2,
@@ -365,15 +363,17 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
 
     test "small goldilocks matches correctly" do
-      assert :ok = @objsize3
-      |> Jason.decode!
-      |> Size.object
+      assert :ok =
+               @objsize3
+               |> Jason.decode!()
+               |> Size.object()
     end
 
     test "big goldilocks matches correctly" do
-      assert :ok = @objsize4
-      |> Jason.decode!
-      |> Size.object
+      assert :ok =
+               @objsize4
+               |> Jason.decode!()
+               |> Size.object()
     end
 
     test "too large object mismatches" do
@@ -387,7 +387,6 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   end
 
   defmodule PatternProperties do
-
     @moduledoc """
     tests from:
 
@@ -396,8 +395,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :patternprop1,
-    """
+    Exonerate.function_from_string(:def, :patternprop1, """
     {
       "type": "object",
       "patternProperties": {
@@ -417,15 +415,17 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching pattern properties without additionals" do
     test "string pattern works" do
-      assert :ok = @patternmatch1
-      |> Jason.decode!
-      |> PatternProperties.patternprop1
+      assert :ok =
+               @patternmatch1
+               |> Jason.decode!()
+               |> PatternProperties.patternprop1()
     end
 
     test "integer pattern works" do
-      assert :ok = @patternmatch2
-      |> Jason.decode!
-      |> PatternProperties.patternprop1
+      assert :ok =
+               @patternmatch2
+               |> Jason.decode!()
+               |> PatternProperties.patternprop1()
     end
 
     test "integers shouldn't match string pattern" do

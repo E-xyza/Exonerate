@@ -107,7 +107,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     end
 
     test "unenumerated values don't match" do
-      assert  {:error, list} = EnumeratedValues.enum2(0)
+      assert {:error, list} = EnumeratedValues.enum2(0)
 
       assert list[:schema_pointer] == "/enum"
       assert list[:error_value] == 0

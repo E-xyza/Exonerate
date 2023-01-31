@@ -19,7 +19,7 @@ defmodule Exonerate.Type.Number do
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true
-  @spec parse(Validator.t, Type.json) :: t
+  @spec parse(Validator.t(), Type.json()) :: t
   # draft <= 7 refs inhibit type-based analysis
   def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
     %__MODULE__{context: validator}
@@ -30,18 +30,29 @@ defmodule Exonerate.Type.Number do
     |> Tools.collect(@validator_filters, fn
       artifact, filter when is_map_key(schema, filter) ->
         Filter.parse(artifact, @validator_modules[filter], schema)
-      artifact, _ -> artifact
+
+      artifact, _ ->
+        artifact
     end)
   end
 
   @impl true
-  @spec compile(t) :: Macro.t
+  @spec compile(t) :: Macro.t()
   def compile(artifact) do
-    combining = Validator.combining(artifact.context, quote do number end, quote do path end)
+    combining =
+      Validator.combining(
+        artifact.context,
+        quote do
+          number
+        end,
+        quote do
+          path
+        end
+      )
 
     quote do
       defp unquote(fun(artifact, []))(number, path) when is_number(number) do
-        unquote_splicing(combining)
+        (unquote_splicing(combining))
       end
     end
   end

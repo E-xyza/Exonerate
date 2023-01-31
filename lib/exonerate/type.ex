@@ -1,17 +1,18 @@
 defmodule Exonerate.Type do
   @moduledoc false
-  
+
   @type json ::
-    %{optional(String.t) => json}
-    | list(json)
-    | String.t
-    | number
-    | boolean
-    | nil
+          %{optional(String.t()) => json}
+          | list(json)
+          | String.t()
+          | number
+          | boolean
+          | nil
 
   @map Map.new(
-    ~w(string integer number object array boolean null),
-    &{&1, String.to_atom("Elixir.Exonerate.Type." <> String.capitalize(&1))})
+         ~w(string integer number object array boolean null),
+         &{&1, String.to_atom("Elixir.Exonerate.Type." <> String.capitalize(&1))}
+       )
 
   alias Exonerate.Type.{Array, Boolean, Null, Integer, Number, Object, String}
   alias Exonerate.Validator
@@ -20,11 +21,11 @@ defmodule Exonerate.Type do
   @type artifact :: %{__struct__: t}
 
   # a JsonSchema must be either true, false, or a json map.
-  @type schema :: boolean | %{optional(String.t) => json}
+  @type schema :: boolean | %{optional(String.t()) => json}
 
   @callback __struct__() :: artifact
-  @callback parse(Validator.t, json) :: artifact
-  @callback compile(artifact) :: Macro.t
+  @callback parse(Validator.t(), json) :: artifact
+  @callback compile(artifact) :: Macro.t()
 
   @guards %{
     String => :is_binary,
@@ -41,16 +42,16 @@ defmodule Exonerate.Type do
 
   defguard is_schema(schema) when is_map(schema) or is_boolean(schema)
 
-  @spec all() :: %{optional(Type.t) => nil}
+  @spec all() :: %{optional(Type.t()) => nil}
   def all, do: Map.new([String, Integer, Number, Object, Array, Boolean, Null], &{&1, nil})
 
-  @spec from_string(String.t) :: t
+  @spec from_string(String.t()) :: t
   def from_string(string), do: Map.fetch!(@map, string)
 
   def intersection(map1, map2) do
     for {k, v} when is_map_key(map2, k) <- map1, into: %{} do
       # TODO: revisit this!
-      if v || map2[k], do: raise "both maps should be nil"
+      if v || map2[k], do: raise("both maps should be nil")
       {k, nil}
     end
   end

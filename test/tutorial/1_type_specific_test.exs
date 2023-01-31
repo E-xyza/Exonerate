@@ -51,5 +51,4 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
       assert list[:json_pointer] == "/"
     end
   end
-
 end

@@ -1,4 +1,4 @@
-#defmodule Exonerate.Filter.UnevaluatedProperties do
+# defmodule Exonerate.Filter.UnevaluatedProperties do
 #  @behaviour Exonerate.Filter
 #
 #  alias Exonerate.Type
@@ -25,4 +25,4 @@
 #  defp code(_object, _validation) do
 #    []
 #  end
-#end
+# end

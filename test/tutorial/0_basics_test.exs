@@ -28,17 +28,23 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     test "empty object matches everything" do
       assert :ok = HelloWorld.helloworld1(42)
       assert :ok = HelloWorld.helloworld1("i'm a string")
-      assert :ok = HelloWorld.helloworld1(%{ "an" => [ "arbitrarily", "nested" ], "data" => "structure" })
+
+      assert :ok =
+               HelloWorld.helloworld1(%{"an" => ["arbitrarily", "nested"], "data" => "structure"})
     end
 
     test "true matches everything" do
       assert :ok = HelloWorld.helloworld2(42)
       assert :ok = HelloWorld.helloworld2("i'm a string")
-      assert :ok = HelloWorld.helloworld2(%{ "an" => [ "arbitrarily", "nested" ], "data" => "structure" })
+
+      assert :ok =
+               HelloWorld.helloworld2(%{"an" => ["arbitrarily", "nested"], "data" => "structure"})
     end
 
     test "false matches nothing" do
-      assert {:error, list} = HelloWorld.helloworld3("Resistance is futile...  This will always fail!!!")
+      assert {:error, list} =
+               HelloWorld.helloworld3("Resistance is futile...  This will always fail!!!")
+
       assert list[:schema_pointer] == "/"
       assert list[:error_value] == "Resistance is futile...  This will always fail!!!"
       assert list[:json_pointer] == "/"
@@ -77,7 +83,11 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :schema, ~s({"$schema": "http://json-schema.org/schema#"}))
+    Exonerate.function_from_string(
+      :def,
+      :schema,
+      ~s({"$schema": "http://json-schema.org/schema#"})
+    )
   end
 
   describe "the schema keyword test" do
@@ -94,7 +104,11 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :id, ~s({"$id": "http://yourdomain.com/schemas/myschema.json"}))
+    Exonerate.function_from_string(
+      :def,
+      :id,
+      ~s({"$id": "http://yourdomain.com/schemas/myschema.json"})
+    )
   end
 
   describe "the id keyword test" do

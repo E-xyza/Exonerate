@@ -10,13 +10,14 @@ defmodule Exonerate.Filter.Then do
 
   @impl true
   def parse(context = %Validator{}, %{"then" => _}) do
-
-    schema = Validator.parse(
-      context.schema,
-      ["then" | context.pointer],
-      authority: context.authority,
-      format: context.format,
-      draft: context.draft)
+    schema =
+      Validator.parse(
+        context.schema,
+        JsonPointer.traverse(context.pointer, "then"),
+        authority: context.authority,
+        format: context.format,
+        draft: context.draft
+      )
 
     module = %__MODULE__{context: context, schema: schema}
 

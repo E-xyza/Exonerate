@@ -20,7 +20,7 @@ defmodule Exonerate.Type.String do
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
   @impl true
-  @spec parse(Validator.t, Type.json) :: t
+  @spec parse(Validator.t(), Type.json()) :: t
 
   # draft <= 7 refs inhibit type-based analysis
   def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
@@ -32,7 +32,9 @@ defmodule Exonerate.Type.String do
     |> Tools.collect(@validator_filters, fn
       artifact, filter when is_map_key(schema, filter) ->
         Filter.parse(artifact, @validator_modules[filter], schema)
-      artifact, _ -> artifact
+
+      artifact, _ ->
+        artifact
     end)
   end
 
@@ -40,9 +42,19 @@ defmodule Exonerate.Type.String do
   defp format_binary(_), do: false
 
   @impl true
-  @spec compile(t) :: Macro.t
+  @spec compile(t) :: Macro.t()
   def compile(artifact = %{format_binary: true}) do
-    combining = Validator.combining(artifact.context, quote do string end, quote do path end)
+    combining =
+      Validator.combining(
+        artifact.context,
+        quote do
+          string
+        end,
+        quote do
+          path
+        end
+      )
+
     quote do
       defp unquote(fun(artifact, []))(string, path) when is_binary(string) do
         Exonerate.pipeline(string, path, unquote(artifact.pipeline))
@@ -52,8 +64,16 @@ defmodule Exonerate.Type.String do
   end
 
   def compile(artifact) do
-
-    combining = Validator.combining(artifact.context, quote do string end, quote do path end)
+    combining =
+      Validator.combining(
+        artifact.context,
+        quote do
+          string
+        end,
+        quote do
+          path
+        end
+      )
 
     quote do
       defp unquote(fun(artifact, []))(string, path) when is_binary(string) do
@@ -66,5 +86,4 @@ defmodule Exonerate.Type.String do
       end
     end
   end
-
 end

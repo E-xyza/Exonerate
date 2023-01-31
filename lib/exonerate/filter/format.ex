@@ -30,82 +30,116 @@ defmodule Exonerate.Filter.Format do
     "hostname" => {:__annotate, nil, []},
     "idn-hostname" => {:__annotate, nil, []},
     "email" => {:__annotate, nil, []},
-    "idn-email" => {:__annotate, nil, []},
+    "idn-email" => {:__annotate, nil, []}
   }
 
   # pass over the binary format, which gets special treatment elsewhere.
   def parse(artifact, %{"format" => "binary"}), do: artifact
-  def parse(artifact = %Exonerate.Type.String{}, %{"format" => format}) do
-    default = {default_fun, builtin_scaffold, _} = Map.get(@defaults, format, {:__annotate, nil, []})
 
-    fun = try do
-      artifact.context.pointer
-      |> JsonPointer.to_uri
-      |> :erlang.map_get(artifact.context.format)
-      |> case do
-        false ->
-          {:__annotate, nil, []}
-        args when is_list(args) ->
-          {default_fun, builtin_scaffold, args}
-        {fun, args} ->
-          {fun, nil, args}
-        {module, fun, args} ->
-          {{module, fun}, nil, args}
-      end
-    rescue
-      _e in KeyError ->
-        case Enum.find_value(artifact.context.format, fn
-          {k, v} when is_atom(k) ->
-            if Atom.to_string(k) == format, do: v
-          _ -> nil
-        end) do
-          nil ->
-            default
+  def parse(artifact = %Exonerate.Type.String{}, %{"format" => format}) do
+    default =
+      {default_fun, builtin_scaffold, _} = Map.get(@defaults, format, {:__annotate, nil, []})
+
+    fun =
+      try do
+        artifact.context.pointer
+        |> JsonPointer.to_uri()
+        |> :erlang.map_get(artifact.context.format)
+        |> case do
+          false ->
+            {:__annotate, nil, []}
+
+          args when is_list(args) ->
+            {default_fun, builtin_scaffold, args}
+
           {fun, args} ->
             {fun, nil, args}
+
           {module, fun, args} ->
             {{module, fun}, nil, args}
         end
-    end
+      rescue
+        _e in KeyError ->
+          case Enum.find_value(artifact.context.format, fn
+                 {k, v} when is_atom(k) ->
+                   if Atom.to_string(k) == format, do: v
 
-    %{artifact |
-      pipeline: [fun(artifact, "format") | artifact.pipeline],
-      filters: [%__MODULE__{context: artifact.context, fun: fun} | artifact.filters]}
+                 _ ->
+                   nil
+               end) do
+            nil ->
+              default
+
+            {fun, args} ->
+              {fun, nil, args}
+
+            {module, fun, args} ->
+              {{module, fun}, nil, args}
+          end
+      end
+
+    %{
+      artifact
+      | pipeline: [fun(artifact, "format") | artifact.pipeline],
+        filters: [%__MODULE__{context: artifact.context, fun: fun} | artifact.filters]
+    }
   end
 
   def compile(filter = %__MODULE__{fun: {function, builtin, args}}) when is_atom(function) do
-    builtin_fn = List.wrap(if Registry.format_needed(function) do
-      builtins(builtin)
-    end)
-
-    call = {function, [], [quote do string end | args]}
-
-    {[],[quote do
-      defp unquote(fun(filter, "format"))(string, path) do
-        unless unquote(call) do
-          Exonerate.mismatch(string, path)
+    builtin_fn =
+      List.wrap(
+        if Registry.format_needed(function) do
+          builtins(builtin)
         end
-        string
-      end
-      unquote_splicing(builtin_fn)
-    end]}
+      )
+
+    call =
+      {function, [],
+       [
+         quote do
+           string
+         end
+         | args
+       ]}
+
+    {[],
+     [
+       quote do
+         defp unquote(fun(filter, "format"))(string, path) do
+           unless unquote(call) do
+             Exonerate.mismatch(string, path)
+           end
+
+           string
+         end
+
+         unquote_splicing(builtin_fn)
+       end
+     ]}
   end
 
   def compile(filter = %__MODULE__{fun: {{module, fun}, nil, args}}) do
-    {[],[quote do
-      defp unquote(fun(filter, "format"))(string, path) do
-        unless apply(unquote(module), unquote(fun), [string | unquote(args)]) do
-          Exonerate.mismatch(string, path)
-        end
-        string
-      end
-    end]}
+    {[],
+     [
+       quote do
+         defp unquote(fun(filter, "format"))(string, path) do
+           unless apply(unquote(module), unquote(fun), [string | unquote(args)]) do
+             Exonerate.mismatch(string, path)
+           end
+
+           string
+         end
+       end
+     ]}
   end
 
   defp builtins(:datetime) do
     quote do
-      defp __datetime_validate(string, :any), do: match?({:ok, _}, NaiveDateTime.from_iso8601(string))
-      defp __datetime_validate(string, :utc), do: match?({:ok, _, _}, Elixir.DateTime.from_iso8601(string))
+      defp __datetime_validate(string, :any),
+        do: match?({:ok, _}, NaiveDateTime.from_iso8601(string))
+
+      defp __datetime_validate(string, :utc),
+        do: match?({:ok, _, _}, Elixir.DateTime.from_iso8601(string))
     end
   end
 
@@ -123,19 +157,22 @@ defmodule Exonerate.Filter.Format do
 
   defp builtins(:uuid) do
     quote do
-      defp __uuid_validate(string, :any), do: match?({:ok, _}, :inet.parse_ipv4strict_address(String.to_charlist(string)))
+      defp __uuid_validate(string, :any),
+        do: match?({:ok, _}, :inet.parse_ipv4strict_address(String.to_charlist(string)))
     end
   end
 
   defp builtins(:ipv4) do
     quote do
-      defp __ipv4_validate(string), do: match?({:ok, _}, :inet.parse_ipv4strict_address(String.to_charlist(string)))
+      defp __ipv4_validate(string),
+        do: match?({:ok, _}, :inet.parse_ipv4strict_address(String.to_charlist(string)))
     end
   end
 
   defp builtins(:ipv6) do
     quote do
-      def __ipv6_validate(string), do: match?({:ok, _}, :inet.parse_ipv6strict_address(String.to_charlist(string)))
+      def __ipv6_validate(string),
+        do: match?({:ok, _}, :inet.parse_ipv6strict_address(String.to_charlist(string)))
     end
   end
 

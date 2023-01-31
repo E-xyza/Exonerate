@@ -25,15 +25,17 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
 
   describe "basic array type matching" do
     test "an array" do
-      assert :ok = ~s([1, 2, 3, 4, 5])
-      |> Jason.decode!
-      |> Array.array
+      assert :ok =
+               ~s([1, 2, 3, 4, 5])
+               |> Jason.decode!()
+               |> Array.array()
     end
 
     test "different types of values are ok" do
-      assert :ok = ~s([3, "different", { "types" : "of values" }])
-      |> Jason.decode!
-      |> Array.array
+      assert :ok =
+               ~s([3, "different", { "types" : "of values" }])
+               |> Jason.decode!()
+               |> Array.array()
     end
 
     test "object doesn't match array" do
@@ -71,14 +73,14 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       }
     }
     """)
-
   end
 
   describe "basic array items matching" do
     test "an array of numbers" do
-      assert :ok = ~s([1, 2, 3, 4, 5])
-      |> Jason.decode!
-      |> ListValidation.items
+      assert :ok =
+               ~s([1, 2, 3, 4, 5])
+               |> Jason.decode!()
+               |> ListValidation.items()
     end
 
     test "one non-number ruins the party" do
@@ -90,22 +92,24 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "an empty array passes" do
-      assert :ok = ~s([])
-      |> Jason.decode!
-      |> ListValidation.items
+      assert :ok =
+               ~s([])
+               |> Jason.decode!()
+               |> ListValidation.items()
     end
   end
 
   describe "basic array contains matching" do
     test "a single number is enough to make it pass" do
-      assert :ok = ~s(["life", "universe", "everything", 42])
-      |> Jason.decode!
-      |> ListValidation.contains
+      assert :ok =
+               ~s(["life", "universe", "everything", 42])
+               |> Jason.decode!()
+               |> ListValidation.contains()
     end
 
     test "it fails with no numbers" do
-      assert  {:error, list} =
-          ListValidation.contains(["life", "universe", "everything", "forty-two"])
+      assert {:error, list} =
+               ListValidation.contains(["life", "universe", "everything", "forty-two"])
 
       assert list[:schema_pointer] == "/contains"
       assert list[:error_value] == ["life", "universe", "everything", "forty-two"]
@@ -113,9 +117,10 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "all numbers is ok" do
-      assert :ok = ~s([1, 2, 3, 4, 5])
-      |> Jason.decode!
-      |> ListValidation.items
+      assert :ok =
+               ~s([1, 2, 3, 4, 5])
+               |> Jason.decode!()
+               |> ListValidation.items()
     end
   end
 
@@ -173,9 +178,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     }
     """)
 
-
-    Exonerate.function_from_string(:def, :tuple_additional_with_property,
-    """
+    Exonerate.function_from_string(:def, :tuple_additional_with_property, """
     {
       "type": "array",
       "items": [
@@ -201,13 +204,14 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
 
   describe "tuple validation" do
     test "a single number is enough to make it pass" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW"])
-      |> Jason.decode!
-      |> TupleValidation.tuple
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue", "NW"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple()
     end
 
     test "drive is not an acceptable street type" do
-      assert  {:error, list} = TupleValidation.tuple([24, "Sussex", "Drive"])
+      assert {:error, list} = TupleValidation.tuple([24, "Sussex", "Drive"])
 
       assert list[:schema_pointer] == "/items/2/enum"
       assert list[:error_value] == "Drive"
@@ -215,8 +219,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "address is missing a street number" do
-      assert  {:error, list} =
-        TupleValidation.tuple(["Palais de l'Élysée"])
+      assert {:error, list} = TupleValidation.tuple(["Palais de l'Élysée"])
 
       assert list[:schema_pointer] == "/items/0/type"
       assert list[:error_value] == "Palais de l'Élysée"
@@ -224,35 +227,44 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     end
 
     test "it's ok to not have all the items" do
-      assert :ok = ~s([10, "Downing", "Street"])
-      |> Jason.decode!
-      |> TupleValidation.tuple
+      assert :ok =
+               ~s([10, "Downing", "Street"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple()
     end
 
     test "it's ok to have extra items" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
-      |> Jason.decode!
-      |> TupleValidation.tuple
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple()
     end
   end
 
   describe "tuple validation can happen with additionalItems" do
     test "the basic still passes" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW"])
-      |> Jason.decode!
-      |> TupleValidation.tuple_noadditional
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue", "NW"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple_noadditional()
     end
 
     test "it is ok to not provide all the items" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue"])
-      |> Jason.decode!
-      |> TupleValidation.tuple_noadditional
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple_noadditional()
     end
 
     test "it is not ok to provide extra items" do
-      assert  {:error, list} =
-        TupleValidation.tuple_noadditional(
-          [1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+      assert {:error, list} =
+               TupleValidation.tuple_noadditional([
+                 1600,
+                 "Pennsylvania",
+                 "Avenue",
+                 "NW",
+                 "Washington"
+               ])
 
       assert list[:schema_pointer] == "/additionalItems"
       assert list[:error_value] == "Washington"
@@ -262,15 +274,21 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
 
   describe "tuple validation can happen with additionalItems and properties" do
     test "extra strings are ok" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
-      |> Jason.decode!
-      |> TupleValidation.tuple_additional_with_property
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple_additional_with_property()
     end
 
     test "but not extra numbers" do
       assert {:error, list} =
-        TupleValidation.tuple_additional_with_property(
-          [1600, "Pennsylvania", "Avenue", "NW", 20500])
+               TupleValidation.tuple_additional_with_property([
+                 1600,
+                 "Pennsylvania",
+                 "Avenue",
+                 "NW",
+                 20500
+               ])
 
       assert list[:schema_pointer] == "/additionalItems/type"
       assert list[:error_value] == 20500
@@ -347,5 +365,4 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       assert :ok = Uniqueness.unique([])
     end
   end
-
 end

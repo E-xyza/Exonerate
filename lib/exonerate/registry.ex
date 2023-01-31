@@ -24,82 +24,96 @@ defmodule Exonerate.Registry do
 
   @type state :: :needs | :built
 
-  @spec id(state, Type.json, JsonPointer.t) :: term
+  @spec id(state, Type.json(), JsonPointer.t()) :: term
   defp id(state, schema, pointer) do
     {state, :erlang.phash2(schema), pointer}
   end
 
-  @spec register(Type.json, JsonPointer.t, atom) :: :ok | {:exists, atom} | {:needed, atom}
+  @spec register(Type.json(), JsonPointer.t(), atom) :: :ok | {:exists, atom} | {:needed, atom}
   def register(schema, pointer, function) do
     tid = get_table()
     built_id = id(:built, schema, pointer)
     needs_id = id(:needs, schema, pointer)
+
     case :ets.lookup(tid, needs_id) do
       [] ->
         case :ets.lookup(tid, built_id) do
           [] ->
             :ets.insert(tid, {built_id, function})
             :ok
+
           [{^built_id, function}] ->
             {:exists, function}
         end
+
       [{^needs_id, authority}] ->
         :ets.delete(tid, needs_id)
         :ets.insert(tid, {built_id, function})
-        {:needed, Tools.jsonpointer_to_fun_name(pointer, authority: authority)}
+        {:needed, Tools.pointer_to_fun_name(pointer, authority: authority)}
     end
   end
 
-  @spec request(Type.json, JsonPointer.t) :: atom
+  @spec request(Type.json(), JsonPointer.t()) :: atom
   def request(schema, pointer) do
     tid = get_table()
     id = id(:built, schema, pointer)
+
     case :ets.lookup(tid, id) do
       [] ->
         authority = "__registry:#{elem(id, 1)}"
         :ets.insert(tid, {id(:needs, schema, pointer), authority})
-        Tools.jsonpointer_to_fun_name(pointer, authority: authority)
+        Tools.pointer_to_fun_name(pointer, authority: authority)
+
       [{^id, function}] ->
         function
     end
   end
 
-  @spec needed(Type.json) :: [%{pointer: JsonPointer.t, fun: atom}]
+  @spec needed(Type.json()) :: [%{pointer: JsonPointer.t(), fun: atom}]
   def needed(schema) do
     schema_hash = :erlang.phash2(schema)
-    matchspec = [{{{:"$1", :"$2", :"$3"}, :"$4"}, [{:==, :needs, :"$1"}, {:==, schema_hash, :"$2"}], [%{pointer: :"$3", authority: :"$4"}]}]
+
+    matchspec = [
+      {{{:"$1", :"$2", :"$3"}, :"$4"}, [{:==, :needs, :"$1"}, {:==, schema_hash, :"$2"}],
+       [%{pointer: :"$3", authority: :"$4"}]}
+    ]
+
     :ets.select(get_table(), matchspec)
   end
 
   # cache for formatting
   def format_needed(format) do
     tid = get_table()
+
     case :ets.lookup(tid, {:format, format}) do
       [] ->
         :ets.insert(tid, {{:format, format}})
         true
+
       [_] ->
         false
     end
   end
 
   # cache for files
-  @spec get_file(Path.t) :: {:loaded, String.t} | {:cached, String.t} | {:error, term}
+  @spec get_file(Path.t()) :: {:loaded, String.t()} | {:cached, String.t()} | {:error, term}
   def get_file(path) do
     tid = get_table()
-    with [] <- :ets.lookup(tid, {:file, path}),
-         {:ok, file}  <- File.read(path) do
 
+    with [] <- :ets.lookup(tid, {:file, path}),
+         {:ok, file} <- File.read(path) do
       :ets.insert(tid, {{:file, path}, file})
       {:loaded, file}
     else
       [{{:file, ^path}, contents}] ->
         {:cached, contents}
-      e = {:error, _} -> e
+
+      e = {:error, _} ->
+        e
     end
   end
 
-  @spec get_file!(Path.t) :: String.t
+  @spec get_file!(Path.t()) :: String.t()
   def get_file!(path) do
     case get_file(path) do
       {:error, e} -> raise "#{e}"

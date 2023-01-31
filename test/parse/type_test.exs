@@ -21,7 +21,8 @@ defmodule ExonerateTest.Parse.TypeTest do
     end
 
     test "multiple types restrict the types" do
-      assert %Validator{types: %{Number => _, String => _}} = Validator.parse(%{"type" => ["string", "number"]}, [])
+      assert %Validator{types: %{Number => _, String => _}} =
+               Validator.parse(%{"type" => ["string", "number"]}, [])
     end
   end
 end

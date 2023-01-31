@@ -14,7 +14,6 @@ defmodule ExonerateTest.Tutorial.StringTest do
   @moduletag :tutorial
 
   defmodule String do
-
     @moduledoc """
     tests from:
 
@@ -43,7 +42,6 @@ defmodule ExonerateTest.Tutorial.StringTest do
   end
 
   defmodule Length do
-
     @moduledoc """
     tests from:
 
@@ -52,12 +50,12 @@ defmodule ExonerateTest.Tutorial.StringTest do
     require Exonerate
 
     Exonerate.function_from_string(:def, :string, """
-                      {
-                        "type": "string",
-                        "minLength": 2,
-                        "maxLength": 3
-                      }
-                      """)
+    {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 3
+    }
+    """)
   end
 
   describe "strings length example" do
@@ -82,7 +80,6 @@ defmodule ExonerateTest.Tutorial.StringTest do
   end
 
   defmodule Pattern do
-
     @moduledoc """
     tests from:
 
@@ -91,11 +88,11 @@ defmodule ExonerateTest.Tutorial.StringTest do
     require Exonerate
 
     Exonerate.function_from_string(:def, :string, """
-                      {
-                        "type": "string",
-                        "pattern": "^(\\\\([0-9]{3}\\\\))?[0-9]{3}-[0-9]{4}$"
-                      }
-                      """)
+    {
+      "type": "string",
+      "pattern": "^(\\\\([0-9]{3}\\\\))?[0-9]{3}-[0-9]{4}$"
+    }
+    """)
   end
 
   describe "strings pattern example" do
@@ -105,15 +102,13 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     test "string of incorrect patterns don't match" do
-      assert {:error, list} =
-        Pattern.string("(888)555-1212 ext. 532")
+      assert {:error, list} = Pattern.string("(888)555-1212 ext. 532")
 
       assert list[:schema_pointer] == "/pattern"
       assert list[:error_value] == "(888)555-1212 ext. 532"
       assert list[:json_pointer] == "/"
 
-      assert {:error, list} =
-        Pattern.string("(800)FLOWERS")
+      assert {:error, list} = Pattern.string("(800)FLOWERS")
 
       assert list[:schema_pointer] == "/pattern"
       assert list[:error_value] == "(800)FLOWERS"
@@ -133,18 +128,48 @@ defmodule ExonerateTest.Tutorial.StringTest do
     end
 
     Exonerate.function_from_string(:def, :datetime, ~s({"type": "string", "format": "date-time"}))
-    Exonerate.function_from_string(:def, :datetime_utc, ~s({"type": "string", "format": "date-time", "comment": "a"}),
-      format: %{"/" => [:utc]})
-    Exonerate.function_from_string(:def, :datetime_disabled, ~s({"type": "string", "format": "date-time", "comment": "b"}),
-      format: %{"/" => false})
-    Exonerate.function_from_string(:def, :datetime_custom, ~s({"type": "string", "format": "date-time", "comment": "c"}),
-      format: %{"/" => {Custom, :format, []}})
-    Exonerate.function_from_string(:def, :datetime_custom_params, ~s({"type": "string", "format": "date-time", "comment": "d"}),
-      format: %{"/" => {Custom, :format, ["ok"]}})
-    Exonerate.function_from_string(:def, :datetime_custom_private, ~s({"type": "string", "format": "date-time", "comment": "e"}),
-      format: %{"/" => {:format, []}})
-    Exonerate.function_from_string(:def, :datetime_custom_private_params, ~s({"type": "string", "format": "date-time", "comment": "f"}),
-      format: %{"/" => {:format, ["ok"]}})
+
+    Exonerate.function_from_string(
+      :def,
+      :datetime_utc,
+      ~s({"type": "string", "format": "date-time", "comment": "a"}),
+      format: %{"/" => [:utc]}
+    )
+
+    Exonerate.function_from_string(
+      :def,
+      :datetime_disabled,
+      ~s({"type": "string", "format": "date-time", "comment": "b"}),
+      format: %{"/" => false}
+    )
+
+    Exonerate.function_from_string(
+      :def,
+      :datetime_custom,
+      ~s({"type": "string", "format": "date-time", "comment": "c"}),
+      format: %{"/" => {Custom, :format, []}}
+    )
+
+    Exonerate.function_from_string(
+      :def,
+      :datetime_custom_params,
+      ~s({"type": "string", "format": "date-time", "comment": "d"}),
+      format: %{"/" => {Custom, :format, ["ok"]}}
+    )
+
+    Exonerate.function_from_string(
+      :def,
+      :datetime_custom_private,
+      ~s({"type": "string", "format": "date-time", "comment": "e"}),
+      format: %{"/" => {:format, []}}
+    )
+
+    Exonerate.function_from_string(
+      :def,
+      :datetime_custom_private_params,
+      ~s({"type": "string", "format": "date-time", "comment": "f"}),
+      format: %{"/" => {:format, ["ok"]}}
+    )
 
     Exonerate.function_from_string(:def, :date, ~s({"type": "string", "format": "date"}))
 
@@ -156,14 +181,26 @@ defmodule ExonerateTest.Tutorial.StringTest do
 
     Exonerate.function_from_string(:def, :ipv6, ~s({"type": "string", "format": "ipv6"}))
 
-    Exonerate.function_from_string(:def, :custom, ~s({"type": "string", "format": "custom", "comment": "a"}),
-        format: %{"/" => {Custom, :format, ["ok"]}})
+    Exonerate.function_from_string(
+      :def,
+      :custom,
+      ~s({"type": "string", "format": "custom", "comment": "a"}),
+      format: %{"/" => {Custom, :format, ["ok"]}}
+    )
 
-    Exonerate.function_from_string(:def, :custom_private, ~s({"type": "string", "format": "custom", "comment": "b"}),
-        format: %{"/" => {:format, ["ok"]}})
+    Exonerate.function_from_string(
+      :def,
+      :custom_private,
+      ~s({"type": "string", "format": "custom", "comment": "b"}),
+      format: %{"/" => {:format, ["ok"]}}
+    )
 
-    Exonerate.function_from_string(:def, :custom_broad, ~s({"type": "string", "format": "custom"}),
-        format: %{custom: {Custom, :format, ["ok"]}})
+    Exonerate.function_from_string(
+      :def,
+      :custom_broad,
+      ~s({"type": "string", "format": "custom"}),
+      format: %{custom: {Custom, :format, ["ok"]}}
+    )
 
     defp format("ok"), do: true
     defp format(_), do: false

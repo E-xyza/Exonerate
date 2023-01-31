@@ -24,15 +24,14 @@ defmodule ExonerateTest.Tutorial.NullTest do
   end
 
   describe "the null test" do
-
     test "only matches true nulls" do
       assert :ok = Null.null(nil)
     end
 
     test "doesn't match not quite bools" do
-      assert  {:error, _} = Null.null(false)
-      assert  {:error, _} = Null.null(0)
-      assert  {:error, _} = Null.null("")
+      assert {:error, _} = Null.null(false)
+      assert {:error, _} = Null.null(0)
+      assert {:error, _} = Null.null("")
     end
   end
 end

@@ -6,12 +6,11 @@ defmodule ExonerateTest.Parse.BasicsTest do
   describe "when you send a path" do
     test "it gets saved as the 'pointer' key" do
       assert %{pointer: []} = Validator.parse(%{}, [])
-      assert %{pointer: ["foo"]} =
-        Validator.parse(%{"foo" => %{"type" => "integer"}}, ["foo"])
+      assert %{pointer: ["foo"]} = Validator.parse(%{"foo" => %{"type" => "integer"}}, ["foo"])
     end
 
     test "if raises if the path is not traversible" do
-      assert_raise KeyError, fn ->
+      assert_raise ArgumentError, fn ->
         Validator.parse(%{}, ["foo"])
       end
 

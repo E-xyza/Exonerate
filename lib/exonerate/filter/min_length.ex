@@ -1,6 +1,6 @@
 defmodule Exonerate.Filter.MinLength do
   @moduledoc false
-  
+
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
@@ -14,26 +14,43 @@ defmodule Exonerate.Filter.MinLength do
   def parse(artifact = %Exonerate.Type.String{}, %{"minLength" => length}) do
     pipeline = List.wrap(unless artifact.format_binary, do: fun(artifact, "minLength"))
 
-    %{artifact |
-      pipeline: pipeline ++ artifact.pipeline,
-      filters: [%__MODULE__{context: artifact.context, length: length, format_binary: artifact.format_binary} | artifact.filters]}
+    %{
+      artifact
+      | pipeline: pipeline ++ artifact.pipeline,
+        filters: [
+          %__MODULE__{
+            context: artifact.context,
+            length: length,
+            format_binary: artifact.format_binary
+          }
+          | artifact.filters
+        ]
+    }
   end
 
   def compile(filter = %__MODULE__{format_binary: true}) do
-    {[quote do
-      defp unquote(fun(filter, []))(string, path) when is_binary(string) and byte_size(string) < unquote(filter.length) do
-        Exonerate.mismatch(string, path, guard: "minLength")
-      end
-    end],[]}
+    {[
+       quote do
+         defp unquote(fun(filter, []))(string, path)
+              when is_binary(string) and byte_size(string) < unquote(filter.length) do
+           Exonerate.mismatch(string, path, guard: "minLength")
+         end
+       end
+     ], []}
   end
+
   def compile(filter = %__MODULE__{}) do
-    {[], [quote do
-      defp unquote(fun(filter, "minLength"))(string, path) do
-        if String.length(string) < unquote(filter.length) do
-          Exonerate.mismatch(string, path)
-        end
-        string
-      end
-    end]}
+    {[],
+     [
+       quote do
+         defp unquote(fun(filter, "minLength"))(string, path) do
+           if String.length(string) < unquote(filter.length) do
+             Exonerate.mismatch(string, path)
+           end
+
+           string
+         end
+       end
+     ]}
   end
 end

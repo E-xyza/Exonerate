@@ -1,6 +1,7 @@
-directory2020 = __DIR__
-|> Path.join("_draft2020-12")
-|> Path.expand()
+directory2020 =
+  __DIR__
+  |> Path.join("_draft2020-12")
+  |> Path.expand()
 
 omit_modules = ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json
 refRemote.json unevaluatedItems.json unevaluatedProperties.json)
@@ -22,14 +23,14 @@ omit_describes = [
   {"format.json", 7},
   {"format.json", 8},
   {"format.json", 9},
-  {"format.json", 17},
+  {"format.json", 17}
 ]
 
 omit_tests = [
   # integer filters do not match float values:
   {"type.json", 0, 1},
   {"enum.json", 7, 2},
-  {"enum.json", 8, 2},
+  {"enum.json", 8, 2}
 ]
 
 ExonerateTest.Automate.directory(
@@ -37,4 +38,5 @@ ExonerateTest.Automate.directory(
   prefix: D2020,
   omit_modules: omit_modules,
   omit_describes: omit_describes,
-  omit_tests: omit_tests)
+  omit_tests: omit_tests
+)

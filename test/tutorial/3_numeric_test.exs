@@ -12,7 +12,6 @@ defmodule ExonerateTest.Tutorial.NumericTest do
   """
 
   defmodule Integer do
-
     @moduledoc """
     tests from:
 
@@ -44,12 +43,10 @@ defmodule ExonerateTest.Tutorial.NumericTest do
       assert list[:schema_pointer] == "/type"
       assert list[:error_value] == "42"
       assert list[:json_pointer] == "/"
-
     end
   end
 
   defmodule Number do
-
     @moduledoc """
     tests from:
 
@@ -66,7 +63,7 @@ defmodule ExonerateTest.Tutorial.NumericTest do
       assert :ok = Number.number(42)
       assert :ok = Number.number(-1)
       assert :ok = Number.number(5.0)
-      assert :ok = "2.99792458e8" |> Jason.decode! |> Number.number
+      assert :ok = "2.99792458e8" |> Jason.decode!() |> Number.number()
     end
 
     test "number mismatches a string" do
@@ -75,12 +72,10 @@ defmodule ExonerateTest.Tutorial.NumericTest do
       assert list[:schema_pointer] == "/type"
       assert list[:error_value] == "42"
       assert list[:json_pointer] == "/"
-
     end
   end
 
   defmodule Multiple do
-
     @moduledoc """
     tests from:
 
@@ -107,12 +102,10 @@ defmodule ExonerateTest.Tutorial.NumericTest do
       assert list[:schema_pointer] == "/multipleOf"
       assert list[:error_value] == 23
       assert list[:json_pointer] == "/"
-
     end
   end
 
   defmodule Range do
-
     @moduledoc """
     tests from:
 
@@ -122,17 +115,18 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     require Exonerate
 
     Exonerate.function_from_string(:def, :number, """
-                      {
-                        "type": "number",
-                        "minimum": 0,
-                        "exclusiveMaximum": 100
-                      }
-                      """)
+    {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 100
+    }
+    """)
   end
 
   describe "basic ranging example" do
     test "interior values match correctly" do
-      assert :ok = Range.number(0)   #note inclusive minimum.
+      # note inclusive minimum.
+      assert :ok = Range.number(0)
       assert :ok = Range.number(10)
       assert :ok = Range.number(99)
     end
@@ -144,7 +138,8 @@ defmodule ExonerateTest.Tutorial.NumericTest do
       assert list[:error_value] == -1
       assert list[:json_pointer] == "/"
 
-      assert {:error, list} = Range.number(100)  #exclusive maximum
+      # exclusive maximum
+      assert {:error, list} = Range.number(100)
 
       assert list[:schema_pointer] == "/exclusiveMaximum"
       assert list[:error_value] == 100
@@ -155,8 +150,6 @@ defmodule ExonerateTest.Tutorial.NumericTest do
       assert list[:schema_pointer] == "/exclusiveMaximum"
       assert list[:error_value] == 101
       assert list[:json_pointer] == "/"
-
     end
   end
-
 end

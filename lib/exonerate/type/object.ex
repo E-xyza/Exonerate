@@ -39,22 +39,38 @@ defmodule Exonerate.Type.Object do
     |> Tools.collect(@validator_filters, fn
       artifact, filter when is_map_key(schema, filter) ->
         Filter.parse(artifact, @validator_modules[filter], schema)
-      artifact, _ -> artifact
+
+      artifact, _ ->
+        artifact
     end)
   end
 
-  @spec compile(t) :: Macro.t
+  @spec compile(t) :: Macro.t()
   def compile(artifact) do
-    iteration = List.wrap(if artifact.iterate do
-      [quote do
-        Enum.each(object, fn
-          {k, v} ->
-            Exonerate.pipeline(false, {path, k, v}, unquote(artifact.kv_pipeline))
-        end)
-      end]
-    end)
+    iteration =
+      List.wrap(
+        if artifact.iterate do
+          [
+            quote do
+              Enum.each(object, fn
+                {k, v} ->
+                  Exonerate.pipeline(false, {path, k, v}, unquote(artifact.kv_pipeline))
+              end)
+            end
+          ]
+        end
+      )
 
-    combining = Validator.combining(artifact.context, quote do object end, quote do path end)
+    combining =
+      Validator.combining(
+        artifact.context,
+        quote do
+          object
+        end,
+        quote do
+          path
+        end
+      )
 
     quote do
       defp unquote(fun(artifact, []))(object, path) when is_map(object) do

@@ -15,7 +15,8 @@ defmodule ExonerateTest.FunctionFromFileTest do
     :def,
     :bar,
     "test/assets/basic.yaml",
-    decoder: {YamlElixir, :read_from_string!})
+    decoder: {YamlElixir, :read_from_string!}
+  )
 
   test "bar" do
     assert :ok = bar("bar")

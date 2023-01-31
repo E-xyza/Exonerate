@@ -1,4 +1,4 @@
-#defmodule Exonerate.Filter.ContentSchema do
+# defmodule Exonerate.Filter.ContentSchema do
 #  @behaviour Exonerate.Filter
 #
 #  @impl true
@@ -27,5 +27,5 @@
 #  #     end
 #  #   end]
 #  #end
-#end
+# end
 #

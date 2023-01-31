@@ -4,24 +4,29 @@ defmodule ExonerateTest.MiscTest do
   require Exonerate
 
   Exonerate.function_from_string(:def, :utf8_string, ~s({"type": "string"}))
-  Exonerate.function_from_string(:def, :non_utf8_string, ~s({"type": "string", "format": "binary"}))
+
+  Exonerate.function_from_string(
+    :def,
+    :non_utf8_string,
+    ~s({"type": "string", "format": "binary"})
+  )
 
   Exonerate.function_from_string(:def, :utf8_length, """
-                      {
-                        "type": "string",
-                        "minLength": 2,
-                        "maxLength": 3
-                      }
-                      """)
+  {
+    "type": "string",
+    "minLength": 2,
+    "maxLength": 3
+  }
+  """)
 
   Exonerate.function_from_string(:def, :non_utf8_length, """
-                      {
-                        "type": "string",
-                        "format": "binary",
-                        "minLength": 8,
-                        "maxLength": 12
-                      }
-                      """)
+  {
+    "type": "string",
+    "format": "binary",
+    "minLength": 8,
+    "maxLength": 12
+  }
+  """)
 
   describe "for the `string` type" do
     test "non-UTF8 string is rejected when no format is set" do

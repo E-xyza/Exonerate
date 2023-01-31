@@ -10,13 +10,14 @@ defmodule Exonerate.Filter.Else do
 
   @impl true
   def parse(context = %Validator{}, %{"else" => _}) do
-
-    schema = Validator.parse(
-      context.schema,
-      ["else" | context.pointer],
-      authority: context.authority,
-      format: context.format,
-      draft: context.draft)
+    schema =
+      Validator.parse(
+        context.schema,
+        JsonPointer.traverse(context.pointer, "else"),
+        authority: context.authority,
+        format: context.format,
+        draft: context.draft
+      )
 
     module = %__MODULE__{context: context, schema: schema}
 

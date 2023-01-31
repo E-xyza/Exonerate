@@ -1,4 +1,4 @@
-#defmodule Exonerate.Filter.UnevaluatedItems do
+# defmodule Exonerate.Filter.UnevaluatedItems do
 #  @behaviour Exonerate.Filter
 #
 #  alias Exonerate.Type
@@ -39,4 +39,4 @@
 #      unquote(Exonerate.Validation.from_schema(object, ["unevaluatedItems" | validation.path]))
 #    end]
 #  end
-#end
+# end
