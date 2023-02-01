@@ -6,14 +6,14 @@ defmodule Exonerate.Filter.AdditionalProperties do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
-  defstruct [:context, :child]
+  defstruct [:context, :child, :unevaluated_token]
 
   import Validator, only: [fun: 2]
 
   def parse(artifact = %{context: context}, %{"additionalProperties" => false}) do
     %{
       artifact
-      | filters: [%__MODULE__{context: context, child: false} | artifact.filters],
+      | filters: [filter_from(artifact, false) | artifact.filters],
         kv_pipeline: [fun(artifact, "additionalProperties") | artifact.kv_pipeline],
         iterate: true
     }
@@ -31,9 +31,17 @@ defmodule Exonerate.Filter.AdditionalProperties do
 
     %{
       artifact
-      | filters: [%__MODULE__{context: context, child: child} | artifact.filters],
+      | filters: [filter_from(artifact, child) | artifact.filters],
         kv_pipeline: [fun(artifact, "additionalProperties") | artifact.kv_pipeline],
         iterate: true
+    }
+  end
+
+  defp filter_from(artifact, child) do
+    %__MODULE__{
+      context: artifact.context,
+      child: child,
+      unevaluated_token: artifact.unevaluated_token
     }
   end
 
@@ -45,6 +53,13 @@ defmodule Exonerate.Filter.AdditionalProperties do
            unless seen do
              Exonerate.mismatch({k, v}, path)
            end
+
+           require Exonerate.Filter.UnevaluatedHelper
+
+           Exonerate.Filter.UnevaluatedHelper.register_key(
+             unquote(filter.unevaluated_token),
+             k
+           )
 
            seen
          end
@@ -60,6 +75,13 @@ defmodule Exonerate.Filter.AdditionalProperties do
            unless seen do
              unquote(fun(filter, "additionalProperties"))(v, Path.join(path, k))
            end
+
+           require Exonerate.Filter.UnevaluatedHelper
+
+           Exonerate.Filter.UnevaluatedHelper.register_key(
+             unquote(filter.unevaluated_token),
+             k
+           )
 
            seen
          end

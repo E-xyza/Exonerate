@@ -40,4 +40,22 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
     assert :ok = with_pattern_properties(%{"S_1" => "foo", "bar" => 47})
     assert {:error, _} = with_pattern_properties(%{"S_1" => "foo", "bar" => "baz"})
   end
+
+  Exonerate.function_from_string(
+    :def,
+    :with_additional_properties,
+    """
+    {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "unevaluatedProperties": {"type": "number"}
+    }
+    """
+  )
+
+  # note that unevaluatedProperties will never trigger.
+  test "with additionalProperties" do
+    assert {:error, _} = with_additional_properties(%{"foo" => 47})
+    assert :ok = with_additional_properties(%{"foo" => "bar"})
+  end
 end
