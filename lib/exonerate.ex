@@ -123,7 +123,9 @@ defmodule Exonerate do
       |> Macro.expand(__CALLER__)
       |> decode(opts)
 
-    compile_json(type, name, schema, opts)
+    type
+    |> compile_json(name, schema, opts)
+    |> Tools.maybe_dump(opts)
   end
 
   @doc """
@@ -157,10 +159,13 @@ defmodule Exonerate do
           {decode(contents, opts), []}
       end
 
-    quote do
-      unquote_splicing(extra)
-      unquote(compile_json(type, name, schema, opts))
-    end
+    Tools.maybe_dump(
+      quote do
+        unquote_splicing(extra)
+        unquote(compile_json(type, name, schema, opts))
+      end,
+      opts
+    )
   end
 
   @spec precache_file!(Path.t()) :: binary

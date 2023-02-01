@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.Properties do
 
   import Validator, only: [fun: 2]
 
-  defstruct [:context, :children]
+  defstruct [:context, :children, :unevaluated_token]
 
   def parse(artifact = %{context: context}, %{"properties" => properties}) do
     children =
@@ -30,8 +30,16 @@ defmodule Exonerate.Filter.Properties do
     %{
       artifact
       | iterate: true,
-        filters: [%__MODULE__{context: context, children: children} | artifact.filters],
+        filters: [filter_from(artifact, children) | artifact.filters],
         kv_pipeline: [fun(artifact, "properties") | artifact.kv_pipeline]
+    }
+  end
+
+  defp filter_from(artifact, children) do
+    %__MODULE__{
+      context: artifact.context,
+      children: children,
+      unevaluated_token: artifact.unevaluated_token
     }
   end
 
@@ -41,7 +49,14 @@ defmodule Exonerate.Filter.Properties do
       |> Enum.map(fn {k, v} ->
         {quote do
            defp unquote(fun(filter, "properties"))(_, {path, unquote(k), v}) do
+             require Exonerate.Filter.UnevaluatedHelper
              unquote(fun(filter, ["properties", k]))(v, Path.join(path, unquote(k)))
+
+             Exonerate.Filter.UnevaluatedHelper.register_key(
+               unquote(filter.unevaluated_token),
+               unquote(k)
+             )
+
              true
            end
          end, Validator.compile(v)}

@@ -11,6 +11,10 @@ defmodule Exonerate.Tools do
     macro
   end
 
+  def maybe_dump(macro, opts) do
+    __MODULE__.inspect(macro, Keyword.get(opts, :dump))
+  end
+
   ## ENUMERABLE TOOLS
 
   def collect(accumulator, enumerable, reducer) do

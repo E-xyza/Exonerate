@@ -14,6 +14,7 @@ defmodule Exonerate.Type.Object do
 
   defstruct [
     :context,
+    :unevaluated_token,
     iterate: false,
     filters: [],
     kv_pipeline: [],
@@ -22,10 +23,12 @@ defmodule Exonerate.Type.Object do
 
   @type t :: %__MODULE__{}
 
+  # note:
+  # unevaluatedProperties MUST be the first filter
   # additionalProperties MUST precede patternProperties
-  @validator_filters ~w(required maxProperties minProperties additionalProperties
-    properties patternProperties dependentRequired dependentSchemas
-    dependencies propertyNames)
+  @validator_filters ~w(unevaluatedProperties required maxProperties
+    minProperties additionalProperties properties patternProperties
+    dependentRequired dependentSchemas dependencies propertyNames)
 
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
 
@@ -35,7 +38,12 @@ defmodule Exonerate.Type.Object do
   end
 
   def parse(validator = %Validator{}, schema) do
-    %__MODULE__{context: validator}
+    unevaluated_token =
+      if Map.has_key?(schema, "unevaluatedProperties") do
+        :"unevaluatedProperties-#{:erlang.phash2(schema)}"
+      end
+
+    %__MODULE__{context: validator, unevaluated_token: unevaluated_token}
     |> Tools.collect(@validator_filters, fn
       artifact, filter when is_map_key(schema, filter) ->
         Filter.parse(artifact, @validator_modules[filter], schema)
@@ -47,6 +55,28 @@ defmodule Exonerate.Type.Object do
 
   @spec compile(t) :: Macro.t()
   def compile(artifact) do
+    {unevaluated_start, unevaluated_end} =
+      if token = artifact.unevaluated_token do
+        {[
+           quote bind_quoted: [unevaluated_token: token] do
+             unevaluated_previous = Process.put(unevaluated_token, MapSet.new())
+           end
+         ],
+         [
+           quote bind_quoted: [unevaluated_token: token] do
+             if unevaluated_previous do
+               Process.put(unevaluated_token, unevaluated_previous)
+             else
+               Process.delete(unevaluated_token)
+             end
+
+             :ok
+           end
+         ]}
+      else
+        {[], []}
+      end
+
     iteration =
       List.wrap(
         if artifact.iterate do
@@ -75,7 +105,7 @@ defmodule Exonerate.Type.Object do
     quote do
       defp unquote(fun(artifact, []))(object, path) when is_map(object) do
         Exonerate.pipeline(object, path, unquote(artifact.pipeline))
-        unquote_splicing(iteration ++ combining)
+        unquote_splicing(unevaluated_start ++ iteration ++ combining ++ unevaluated_end)
       end
     end
   end
