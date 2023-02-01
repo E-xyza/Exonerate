@@ -49,8 +49,9 @@ defmodule Exonerate.Filter.Properties do
       |> Enum.map(fn {k, v} ->
         {quote do
            defp unquote(fun(filter, "properties"))(_, {path, unquote(k), v}) do
-             require Exonerate.Filter.UnevaluatedHelper
              unquote(fun(filter, ["properties", k]))(v, Path.join(path, unquote(k)))
+
+             require Exonerate.Filter.UnevaluatedHelper
 
              Exonerate.Filter.UnevaluatedHelper.register_key(
                unquote(filter.unevaluated_token),

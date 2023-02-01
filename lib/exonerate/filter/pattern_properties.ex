@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.PatternProperties do
 
   import Validator, only: [fun: 2]
 
-  defstruct [:context, :patterns]
+  defstruct [:context, :patterns, :unevaluated_token]
 
   def parse(artifact = %{context: context}, %{"patternProperties" => patterns}) do
     patterns =
@@ -25,15 +25,21 @@ defmodule Exonerate.Filter.PatternProperties do
            )}
       end)
 
-    filter = %__MODULE__{context: context, patterns: patterns}
-
     %{
       artifact
       | iterate: true,
         kv_pipeline:
           Enum.map(patterns, fn {k, _} -> fun(artifact, ["patternProperties", k]) end) ++
             artifact.kv_pipeline,
-        filters: [filter | artifact.filters]
+        filters: [filter_from(artifact, patterns) | artifact.filters]
+    }
+  end
+
+  defp filter_from(artifact, patterns) do
+    %__MODULE__{
+      context: artifact.context,
+      patterns: patterns,
+      unevaluated_token: artifact.unevaluated_token
     }
   end
 
@@ -45,6 +51,14 @@ defmodule Exonerate.Filter.PatternProperties do
            defp unquote(fun(filter, ["patternProperties", pattern]))(seen, {path, key, value}) do
              if Regex.match?(sigil_r(<<unquote(pattern)>>, []), key) do
                unquote(fun(filter, ["patternProperties", pattern]))(value, Path.join(path, key))
+
+               require Exonerate.Filter.UnevaluatedHelper
+
+               Exonerate.Filter.UnevaluatedHelper.register_key(
+                 unquote(filter.unevaluated_token),
+                 key
+               )
+
                true
              else
                seen
