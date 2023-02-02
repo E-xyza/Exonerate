@@ -58,4 +58,26 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
     assert {:error, _} = with_additional_properties(%{"foo" => 47})
     assert :ok = with_additional_properties(%{"foo" => "bar"})
   end
+
+  describe "when used with in-place combiners" do
+  Exonerate.function_from_string(
+    :def,
+    :with_all_of,
+    """
+    {
+      "type": "object",
+      "allOf": [
+        {"properties": {"foo": {"type": "string"}}},
+        {"properties": {"bar": {"type": "boolean"}}}
+      ],
+      "unevaluatedProperties": {"type": "number"}
+    }
+    """
+  )
+
+  test "it works with allOf" do
+    assert {:error, _} = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => "42"})
+    assert :ok = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => 47})
+  end
+  end
 end
