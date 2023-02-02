@@ -17,6 +17,7 @@ defmodule Exonerate.Validator do
                 required_refs: [],
                 # compile-time optimizations
                 types: @initial_typemap,
+                evaluated_tokens: [],
                 guards: [],
                 combining: [],
                 children: [],
@@ -35,6 +36,7 @@ defmodule Exonerate.Validator do
             schema: Type.schema(),
             required_refs: [[String.t()]],
             types: %{optional(Type.t()) => nil | Type.type_struct()},
+            evaluated_tokens: [atom],
             guards: [module],
             combining: [module],
             children: [module],

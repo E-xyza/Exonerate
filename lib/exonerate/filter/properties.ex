@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.Properties do
 
   import Validator, only: [fun: 2]
 
-  defstruct [:context, :children, :unevaluated_token]
+  defstruct [:context, :children, :evaluated_tokens]
 
   def parse(artifact = %{context: context}, %{"properties" => properties}) do
     children =
@@ -35,11 +35,11 @@ defmodule Exonerate.Filter.Properties do
     }
   end
 
-  defp filter_from(artifact, children) do
+  defp filter_from(artifact = %{context: context}, children) do
     %__MODULE__{
-      context: artifact.context,
+      context: context,
       children: children,
-      unevaluated_token: artifact.unevaluated_token
+      evaluated_tokens: artifact.evaluated_tokens ++ context.evaluated_tokens
     }
   end
 
@@ -53,8 +53,8 @@ defmodule Exonerate.Filter.Properties do
 
              require Exonerate.Filter.UnevaluatedHelper
 
-             Exonerate.Filter.UnevaluatedHelper.register_key(
-               unquote(filter.unevaluated_token),
+             Exonerate.Filter.UnevaluatedHelper.register_keys(
+               unquote(filter.evaluated_tokens),
                unquote(k)
              )
 

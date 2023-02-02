@@ -6,7 +6,7 @@ defmodule Exonerate.Filter.UnevaluatedProperties do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
-  defstruct [:context, :child, :unevaluated_token]
+  defstruct [:context, :child, :evaluated_tokens]
 
   import Validator, only: [fun: 2]
 
@@ -37,42 +37,15 @@ defmodule Exonerate.Filter.UnevaluatedProperties do
     }
   end
 
-  defp filter_from(artifact, child) do
+  defp filter_from(artifact = %{context: context}, child) do
     %__MODULE__{
-      context: artifact.context,
+      context: context,
       child: child,
-      unevaluated_token: artifact.unevaluated_token
+      evaluated_tokens: artifact.evaluated_tokens ++ context.evaluated_tokens
     }
   end
 
-  def compile(filter = %__MODULE__{child: false}) do
-    {[],
-     [
-       quote do
-         defp unquote(fun(filter, "unevaluatedProperties"))(seen, {path, k, v}) do
-           unless seen do
-             Exonerate.mismatch({k, v}, path)
-           end
-
-           seen
-         end
-       end
-     ]}
-  end
-
-  def compile(filter = %__MODULE__{child: child, unevaluated_token: unevaluated_token}) do
-    {[],
-     [
-       quote do
-         defp unquote(fun(filter, "unevaluatedProperties"))(_seen, {path, k, v}) do
-           unless k in Process.get(unquote(unevaluated_token)) do
-             unquote(fun(filter, "unevaluatedProperties"))(v, Path.join(path, k))
-           end
-
-           true
-         end
-       end,
-       Validator.compile(child)
-     ]}
+  def compile(%__MODULE__{child: child, evaluated_tokens: evaluated_tokens}) do
+    {[], [Validator.compile(child)]}
   end
 end

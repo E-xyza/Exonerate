@@ -6,7 +6,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Validator
-  defstruct [:context, :child, :unevaluated_token]
+  defstruct [:context, :child, :evaluated_tokens]
 
   import Validator, only: [fun: 2]
 
@@ -37,11 +37,11 @@ defmodule Exonerate.Filter.AdditionalProperties do
     }
   end
 
-  defp filter_from(artifact, child) do
+  defp filter_from(artifact = %{context: context}, child) do
     %__MODULE__{
-      context: artifact.context,
+      context: context,
       child: child,
-      unevaluated_token: artifact.unevaluated_token
+      evaluated_tokens: artifact.evaluated_tokens ++ context.evaluated_tokens
     }
   end
 
@@ -56,8 +56,8 @@ defmodule Exonerate.Filter.AdditionalProperties do
 
            require Exonerate.Filter.UnevaluatedHelper
 
-           Exonerate.Filter.UnevaluatedHelper.register_key(
-             unquote(filter.unevaluated_token),
+           Exonerate.Filter.UnevaluatedHelper.register_keys(
+             unquote(filter.evaluated_tokens),
              k
            )
 
@@ -78,8 +78,8 @@ defmodule Exonerate.Filter.AdditionalProperties do
 
            require Exonerate.Filter.UnevaluatedHelper
 
-           Exonerate.Filter.UnevaluatedHelper.register_key(
-             unquote(filter.unevaluated_token),
+           Exonerate.Filter.UnevaluatedHelper.register_keys(
+             unquote(filter.evaluated_tokens),
              k
            )
 
