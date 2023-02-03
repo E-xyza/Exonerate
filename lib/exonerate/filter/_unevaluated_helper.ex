@@ -27,7 +27,9 @@ defmodule Exonerate.Filter.UnevaluatedHelper do
 
   defmacro fetch_tokens(tokens) do
     quote do
-      Map.new(unquote(tokens), fn token -> {token, Process.get(token) || raise "expected token #{token} not found"} end)
+      Map.new(unquote(tokens), fn token ->
+        {token, Process.get(token) || raise("expected token #{token} not found")}
+      end)
     end
   end
 

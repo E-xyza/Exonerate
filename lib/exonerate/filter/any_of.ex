@@ -13,10 +13,11 @@ defmodule Exonerate.Filter.AnyOf do
 
   @impl true
   def parse(validator = %Validator{}, schema = %{"anyOf" => s}) do
-    evaluated_tokens = schema
-    |> UnevaluatedHelper.token
-    |> List.wrap
-    |> Kernel.++(validator.evaluated_tokens)
+    evaluated_tokens =
+      schema
+      |> UnevaluatedHelper.token()
+      |> List.wrap()
+      |> Kernel.++(validator.evaluated_tokens)
 
     schemas =
       Enum.map(
@@ -50,14 +51,19 @@ defmodule Exonerate.Filter.AnyOf do
     quote do
       require Exonerate.Filter.UnevaluatedHelper
       token_map = Exonerate.Filter.UnevaluatedHelper.fetch_tokens(unquote(token_list))
+
       case unquote(fun)({unquote(value_ast), unquote(path_ast)}) do
         :ok ->
-          new_tokens_map = unquote(token_list)
-          |> Exonerate.Filter.UnevaluatedHelper.fetch_tokens()
-          |> Enum.reduce(token_map, fn {key, value}, acc -> Map.update!(acc, key, &MapSet.union(&1, value)) end)
-          
+          new_tokens_map =
+            unquote(token_list)
+            |> Exonerate.Filter.UnevaluatedHelper.fetch_tokens()
+            |> Enum.reduce(token_map, fn {key, value}, acc ->
+              Map.update!(acc, key, &MapSet.union(&1, value))
+            end)
+
           Exonerate.Filter.UnevaluatedHelper.restore_tokens(unquote(token_list), new_tokens_map)
           :ok
+
         error = {:error, _} ->
           Exonerate.Filter.UnevaluatedHelper.purge_tokens(unquote(token_list))
           Exonerate.Filter.UnevaluatedHelper.restore_tokens(unquote(token_list), token_map)
@@ -98,18 +104,31 @@ defmodule Exonerate.Filter.AnyOf do
   def combining(filter = %__MODULE__{evaluated_tokens: tokens}, value_ast, path_ast) do
     funs = Enum.map(filter.schemas, &fun(&1, []))
 
-    traversals = Enum.map(funs, fn fun ->
-      quote do Exonerate.Filter.AnyOf.single_traverse(unquote(fun), unquote(value_ast), unquote(path_ast), unquote(tokens)) end
-    end)
+    traversals =
+      Enum.map(funs, fn fun ->
+        quote do
+          Exonerate.Filter.AnyOf.single_traverse(
+            unquote(fun),
+            unquote(value_ast),
+            unquote(path_ast),
+            unquote(tokens)
+          )
+        end
+      end)
 
     quote do
       require Exonerate.Filter.AnyOf
       result = unquote(traversals)
+
       if Enum.any?(result, &(&1 === :ok)) do
         :ok
       else
         failures = Enum.map(result, fn {:error, list} -> list end)
-        Exonerate.mismatch(unquote(value_ast), unquote(path_ast), guard: "anyOf", failures: failures)
+
+        Exonerate.mismatch(unquote(value_ast), unquote(path_ast),
+          guard: "anyOf",
+          failures: failures
+        )
       end
     end
   end
