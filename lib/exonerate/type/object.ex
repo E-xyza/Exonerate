@@ -8,6 +8,7 @@ defmodule Exonerate.Type.Object do
 
   alias Exonerate.Filter
   alias Exonerate.Filter.UnevaluatedHelper
+  alias Exonerate.Filter.UnevaluatedProperties
   alias Exonerate.Tools
   alias Exonerate.Validator
 
@@ -91,33 +92,60 @@ defmodule Exonerate.Type.Object do
         end
       )
 
-    if token do
-      filter = fun(artifact, "unevaluatedProperties")
-
-      quote do
-        defp unquote(fun(artifact, []))(object, path) when is_map(object) do
-          Exonerate.pipeline(object, path, unquote(artifact.pipeline))
-          unquote_splicing(unevaluated_start ++ iteration ++ combining)
-
-          evaluated =
-            unquote(token)
-            |> Process.get()
-            |> Enum.to_list()
-
-          object
-          |> Map.drop(evaluated)
-          |> Enum.each(fn {k, v} ->
-            unquote(filter)(v, Path.join(path, k))
-          end)
+    case {token, unevaluated_false?(artifact)} do
+      {nil, _} ->
+        quote do
+          defp unquote(fun(artifact, []))(object, path) when is_map(object) do
+            Exonerate.pipeline(object, path, unquote(artifact.pipeline))
+            unquote_splicing(unevaluated_start ++ iteration ++ combining)
+          end
         end
-      end
-    else
-      quote do
-        defp unquote(fun(artifact, []))(object, path) when is_map(object) do
-          Exonerate.pipeline(object, path, unquote(artifact.pipeline))
-          unquote_splicing(unevaluated_start ++ iteration ++ combining)
+
+      {_, true} ->
+        quote do
+          defp unquote(fun(artifact, []))(object, path) when is_map(object) do
+            Exonerate.pipeline(object, path, unquote(artifact.pipeline))
+            unquote_splicing(unevaluated_start ++ iteration ++ combining)
+
+            evaluated =
+              unquote(token)
+              |> Process.get()
+              |> Enum.to_list()
+
+            test = Map.drop(object, evaluated)
+
+            unless test === %{} do
+              Exonerate.mismatch(test, Path.join(path, "unevaluatedProperties"))
+            end
+
+            :ok
+          end
         end
-      end
+
+      {_, false} ->
+        filter = fun(artifact, "unevaluatedProperties")
+
+        quote do
+          defp unquote(fun(artifact, []))(object, path) when is_map(object) do
+            Exonerate.pipeline(object, path, unquote(artifact.pipeline))
+            unquote_splicing(unevaluated_start ++ iteration ++ combining)
+
+            evaluated =
+              unquote(token)
+              |> Process.get()
+              |> Enum.to_list()
+
+            object
+            |> Map.drop(evaluated)
+            |> Enum.each(fn {k, v} ->
+              unquote(filter)(v, Path.join(path, k))
+            end)
+          end
+        end
     end
+  end
+
+  defp unevaluated_false?(artifact) do
+    Enum.any?(artifact.filters, &match?(%UnevaluatedProperties{child: false}, &1))
   end
 end

@@ -35,7 +35,7 @@ defmodule Exonerate.Filter.UnevaluatedProperties do
     }
   end
 
-  def compile(%__MODULE__{child: child, evaluated_tokens: evaluated_tokens}) do
-    {[], [Validator.compile(child)]}
+  def compile(%__MODULE__{child: child}) do
+    {[], List.wrap(if child, do: Validator.compile(child))}
   end
 end

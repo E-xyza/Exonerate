@@ -1,5 +1,5 @@
 defmodule ExonerateTest.Unevaluated.PropertiesTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   require Exonerate
 
   describe "when as part of a primary operation" do
@@ -20,6 +20,25 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
       assert :ok = with_properties(%{"foo" => "bar"})
       assert :ok = with_properties(%{"foo" => "bar", "baz" => 47})
       assert {:error, _} = with_properties(%{"foo" => "bar", "baz" => "quux"})
+    end
+
+    Exonerate.function_from_string(
+      :def,
+      :with_properties_false,
+      """
+      {
+        "type": "object",
+        "properties": {"foo": {"type": "string"}},
+        "unevaluatedProperties": false
+      }
+      """
+    )
+
+    test "with properties, but false" do
+      assert :ok = with_properties_false(%{})
+      assert :ok = with_properties_false(%{"foo" => "bar"})
+      assert {:error, _} = with_properties_false(%{"foo" => "bar", "baz" => "quux"})
+      assert {:error, _} = with_properties_false(%{"baz" => "quux"})
     end
 
     Exonerate.function_from_string(
@@ -132,7 +151,7 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
       assert {:error, _} = with_one_of(%{"bar" => true, "baz" => "42"})
       assert :ok = with_one_of(%{"bar" => true, "baz" => 47})
 
-      # cross-evaluation
+      #      cross-evaluation
       assert {:error, _} = with_one_of(%{"foo" => "bar", "bar" => "42"})
       assert :ok = with_one_of(%{"foo" => "bar", "bar" => 47})
 

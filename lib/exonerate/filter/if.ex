@@ -30,7 +30,13 @@ defmodule Exonerate.Filter.If do
         evaluated_tokens: evaluated_tokens
       )
 
-    module = %__MODULE__{context: context, schema: schema, then: context.then, else: context.else, evaluated_tokens: evaluated_tokens}
+    module = %__MODULE__{
+      context: context,
+      schema: schema,
+      then: context.then,
+      else: context.else,
+      evaluated_tokens: evaluated_tokens
+    }
 
     %{context | children: [module | context.children], combining: [module | context.combining]}
   end
