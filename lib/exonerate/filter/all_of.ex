@@ -6,12 +6,19 @@ defmodule Exonerate.Filter.AllOf do
   @derive {Inspect, except: [:context]}
   defstruct [:context, :schemas]
 
+  alias Exonerate.Filter.UnevaluatedHelper
   alias Exonerate.Validator
 
   import Validator, only: [fun: 2]
 
   @impl true
-  def parse(validator = %Validator{}, %{"allOf" => s}) do
+  def parse(validator = %Validator{}, schema = %{"allOf" => s}) do
+    evaluated_tokens =
+      schema
+      |> UnevaluatedHelper.token()
+      |> List.wrap()
+      |> Kernel.++(validator.evaluated_tokens)
+
     schemas =
       Enum.map(
         0..(length(s) - 1),
@@ -20,7 +27,8 @@ defmodule Exonerate.Filter.AllOf do
           JsonPointer.traverse(validator.pointer, ["allOf", "#{&1}"]),
           authority: validator.authority,
           format: validator.format,
-          draft: validator.draft
+          draft: validator.draft,
+          evaluated_tokens: evaluated_tokens
         )
       )
 

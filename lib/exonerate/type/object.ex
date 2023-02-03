@@ -7,6 +7,7 @@ defmodule Exonerate.Type.Object do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Filter
+  alias Exonerate.Filter.UnevaluatedHelper
   alias Exonerate.Tools
   alias Exonerate.Validator
 
@@ -25,8 +26,8 @@ defmodule Exonerate.Type.Object do
 
   # note:
   # additionalProperties MUST precede patternProperties
-  @validator_filters ~w(required maxProperties minProperties
-    additionalProperties properties patternProperties dependentRequired 
+  @validator_filters ~w(unevaluatedProperties required maxProperties minProperties
+    additionalProperties properties patternProperties dependentRequired
     dependentSchemas dependencies propertyNames)
 
   @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
@@ -38,11 +39,9 @@ defmodule Exonerate.Type.Object do
 
   def parse(validator = %Validator{}, schema) do
     evaluated_tokens =
-      List.wrap(
-        if Map.has_key?(schema, "unevaluatedProperties") do
-          :"unevaluatedProperties-#{:erlang.phash2(schema)}"
-        end
-      )
+      schema
+      |> UnevaluatedHelper.token()
+      |> List.wrap()
 
     %__MODULE__{context: validator, evaluated_tokens: evaluated_tokens}
     |> Tools.collect(@validator_filters, fn
@@ -92,35 +91,33 @@ defmodule Exonerate.Type.Object do
         end
       )
 
-    filter = fun(artifact, "unevaluatedProperties")
+    if token do
+      filter = fun(artifact, "unevaluatedProperties")
 
-    quote do
-      defp unquote(fun(artifact, []))(object, path) when is_map(object) do
-        Exonerate.pipeline(object, path, unquote(artifact.pipeline))
-        unquote_splicing(unevaluated_start ++ iteration ++ combining)
+      quote do
+        defp unquote(fun(artifact, []))(object, path) when is_map(object) do
+          Exonerate.pipeline(object, path, unquote(artifact.pipeline))
+          unquote_splicing(unevaluated_start ++ iteration ++ combining)
 
-        require Exonerate.Type.Object
+          evaluated =
+            unquote(token)
+            |> Process.get()
+            |> Enum.to_list()
 
-        Exonerate.Type.Object.check_unevaluated(object, unquote(token), unquote(filter), path)
+          object
+          |> Map.drop(evaluated)
+          |> Enum.each(fn {k, v} ->
+            unquote(filter)(v, Path.join(path, k))
+          end)
+        end
       end
-    end
-  end
-
-  defmacro check_unevaluated(_object, nil, _filter, _path), do: :ok
-
-  defmacro check_unevaluated(object, token, filter, path) do
-    quote do
-      evaluated =
-        unquote(token)
-        |> Process.get()
-        |> dbg(limit: 25)
-        |> Enum.to_list()
-#
-      #unquote(object)
-      #|> Map.drop()
-      #|> Enum.each(fn {k, v} ->
-      #  unquote(filter)(v, Path.join(unquote(path), k))
-      #end)
+    else
+      quote do
+        defp unquote(fun(artifact, []))(object, path) when is_map(object) do
+          Exonerate.pipeline(object, path, unquote(artifact.pipeline))
+          unquote_splicing(unevaluated_start ++ iteration ++ combining)
+        end
+      end
     end
   end
 end

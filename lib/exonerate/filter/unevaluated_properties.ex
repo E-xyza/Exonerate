@@ -11,12 +11,7 @@ defmodule Exonerate.Filter.UnevaluatedProperties do
   import Validator, only: [fun: 2]
 
   def parse(artifact, %{"unevaluatedProperties" => false}) do
-    %{
-      artifact
-      | filters: [filter_from(artifact, false) | artifact.filters],
-        kv_pipeline: [fun(artifact, "unevaluatedProperties") | artifact.kv_pipeline],
-        iterate: true
-    }
+    %{artifact | filters: [filter_from(artifact, false) | artifact.filters]}
   end
 
   def parse(artifact = %{context: context}, %{"unevaluatedProperties" => _}) do
@@ -29,12 +24,7 @@ defmodule Exonerate.Filter.UnevaluatedProperties do
         draft: context.draft
       )
 
-    %{
-      artifact
-      | filters: [filter_from(artifact, child) | artifact.filters],
-        kv_pipeline: [fun(artifact, "unevaluatedProperties") | artifact.kv_pipeline],
-        iterate: true
-    }
+    %{artifact | filters: [filter_from(artifact, child) | artifact.filters]}
   end
 
   defp filter_from(artifact = %{context: context}, child) do
