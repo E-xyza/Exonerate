@@ -97,12 +97,18 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
     )
 
     test "it works with anyOf" do
-      assert {:error, _} = with_all_of(%{"foo" => "bar", "baz" => "42"})
-      assert :ok = with_all_of(%{"foo" => "bar", "baz" => 47})
-      assert {:error, _} = with_all_of(%{"bar" => true, "baz" => "42"})
-      assert :ok = with_all_of(%{"bar" => true, "baz" => 47})
-      assert {:error, _} = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => "42"})
-      assert :ok = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => 47})
+      assert {:error, _} = with_any_of(%{"foo" => "bar", "baz" => "42"})
+      assert :ok = with_any_of(%{"foo" => "bar", "baz" => 47})
+      assert {:error, _} = with_any_of(%{"bar" => true, "baz" => "42"})
+      assert :ok = with_any_of(%{"bar" => true, "baz" => 47})
+      assert {:error, _} = with_any_of(%{"foo" => "bar", "bar" => true, "baz" => "42"})
+      assert :ok = with_any_of(%{"foo" => "bar", "bar" => true, "baz" => 47})
+
+      # cross evaluation
+      assert {:error, _} = with_any_of(%{"foo" => "bar", "bar" => "42"})
+      assert :ok = with_any_of(%{"foo" => "bar", "bar" => 47})
+      assert {:error, _} = with_any_of(%{"foo" => true, "bar" => true})
+      assert :ok = with_any_of(%{"foo" => 47, "bar" => true})
     end
 
     test "it works with oneOf"

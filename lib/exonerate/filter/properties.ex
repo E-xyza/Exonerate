@@ -53,7 +53,7 @@ defmodule Exonerate.Filter.Properties do
 
              require Exonerate.Filter.UnevaluatedHelper
 
-             Exonerate.Filter.UnevaluatedHelper.register_keys(
+             Exonerate.Filter.UnevaluatedHelper.register_tokens(
                unquote(filter.evaluated_tokens),
                unquote(k)
              )

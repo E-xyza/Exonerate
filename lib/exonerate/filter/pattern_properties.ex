@@ -54,7 +54,7 @@ defmodule Exonerate.Filter.PatternProperties do
 
                require Exonerate.Filter.UnevaluatedHelper
 
-               Exonerate.Filter.UnevaluatedHelper.register_keys(
+               Exonerate.Filter.UnevaluatedHelper.register_tokens(
                  unquote(filter.evaluated_tokens),
                  key
                )

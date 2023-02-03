@@ -56,7 +56,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
 
            require Exonerate.Filter.UnevaluatedHelper
 
-           Exonerate.Filter.UnevaluatedHelper.register_keys(
+           Exonerate.Filter.UnevaluatedHelper.register_tokens(
              unquote(filter.evaluated_tokens),
              k
            )
@@ -78,7 +78,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
 
            require Exonerate.Filter.UnevaluatedHelper
 
-           Exonerate.Filter.UnevaluatedHelper.register_keys(
+           Exonerate.Filter.UnevaluatedHelper.register_tokens(
              unquote(filter.evaluated_tokens),
              k
            )
