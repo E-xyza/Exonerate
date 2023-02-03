@@ -5,14 +5,21 @@ defmodule Exonerate.Filter.OneOf do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
+  alias Exonerate.Filter.UnevaluatedHelper
   alias Exonerate.Validator
 
   import Validator, only: [fun: 2]
 
-  defstruct [:context, :schemas]
+  defstruct [:context, :schemas, :evaluated_tokens]
 
   @impl true
-  def parse(context = %Validator{}, %{"oneOf" => s}) do
+  def parse(context = %Validator{}, schema = %{"oneOf" => s}) do
+    evaluated_tokens =
+      schema
+      |> UnevaluatedHelper.token()
+      |> List.wrap()
+      |> Kernel.++(context.evaluated_tokens)
+
     schemas =
       Enum.map(
         0..(length(s) - 1),
@@ -21,13 +28,12 @@ defmodule Exonerate.Filter.OneOf do
           JsonPointer.traverse(context.pointer, ["oneOf", "#{&1}"]),
           authority: context.authority,
           format: context.format,
-          draft: context.draft
+          draft: context.draft,
+          evaluated_tokens: evaluated_tokens
         )
       )
 
-    # CONSIDER OPTING-IN TO TYPE OPTIMIZATION.  NOTE IT BREAKS ERROR PATH REPORTING.
-
-    module = %__MODULE__{context: context, schemas: schemas}
+    module = %__MODULE__{context: context, schemas: schemas, evaluated_tokens: evaluated_tokens}
 
     %{
       context
@@ -55,6 +61,9 @@ defmodule Exonerate.Filter.OneOf do
           )
 
         {_, matches, errors} ->
+          require Exonerate.Filter.UnevaluatedHelper
+          Exonerate.Filter.UnevaluatedHelper.purge_tokens(unquote(filter.evaluated_tokens))
+
           Exonerate.mismatch(
             unquote(value_ast),
             unquote(path_ast),
@@ -67,7 +76,7 @@ defmodule Exonerate.Filter.OneOf do
     end
   end
 
-  def compile(filter = %__MODULE__{}) do
+  def compile(filter = %__MODULE__{evaluated_tokens: []}) do
     Enum.flat_map(filter.schemas, fn schema ->
       local_path =
         schema
@@ -82,6 +91,45 @@ defmodule Exonerate.Filter.OneOf do
               {count + 1, [unquote(local_path) | matches], errors}
             catch
               error = {:error, list} when is_list(list) ->
+                {count, matches, [list | errors]}
+            end
+          end
+        end,
+        Validator.compile(schema)
+      ]
+    end)
+  end
+
+  def compile(filter = %__MODULE__{evaluated_tokens: tokens}) do
+    Enum.flat_map(filter.schemas, fn schema ->
+      local_path =
+        schema
+        |> fun([])
+        |> Exonerate.fun_to_path()
+
+      [
+        quote do
+          defp unquote(fun(schema, []))({count, matches, errors}, {value, path}) do
+            require Exonerate.Filter.UnevaluatedHelper
+            token_map = Exonerate.Filter.UnevaluatedHelper.fetch_tokens(unquote(tokens))
+
+            try do
+              unquote(fun(schema, []))(value, path)
+
+              new_tokens_map =
+                unquote(tokens)
+                |> Exonerate.Filter.UnevaluatedHelper.fetch_tokens()
+                |> Enum.reduce(token_map, fn {key, value}, acc ->
+                  Map.update!(acc, key, &MapSet.union(&1, value))
+                end)
+
+              Exonerate.Filter.UnevaluatedHelper.restore_tokens(unquote(tokens), new_tokens_map)
+
+              {count + 1, [unquote(local_path) | matches], errors}
+            catch
+              error = {:error, list} when is_list(list) ->
+                Exonerate.Filter.UnevaluatedHelper.purge_tokens(unquote(tokens))
+                Exonerate.Filter.UnevaluatedHelper.restore_tokens(unquote(tokens), token_map)
                 {count, matches, [list | errors]}
             end
           end
