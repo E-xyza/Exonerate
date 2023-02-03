@@ -80,5 +80,35 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
       assert {:error, _} = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => "42"})
       assert :ok = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => 47})
     end
+
+    Exonerate.function_from_string(
+      :def,
+      :with_any_of,
+      """
+      {
+        "type": "object",
+        "anyOf": [
+          {"properties": {"foo": {"type": "string"}}},
+          {"properties": {"bar": {"type": "boolean"}}}
+        ],
+        "unevaluatedProperties": {"type": "number"}
+      }
+      """
+    )
+
+    test "it works with anyOf" do
+      assert {:error, _} = with_all_of(%{"foo" => "bar", "baz" => "42"})
+      assert :ok = with_all_of(%{"foo" => "bar", "baz" => 47})
+      assert {:error, _} = with_all_of(%{"bar" => true, "baz" => "42"})
+      assert :ok = with_all_of(%{"bar" => true, "baz" => 47})
+      assert {:error, _} = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => "42"})
+      assert :ok = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => 47})
+    end
+
+    test "it works with oneOf"
+
+    # note it's not necessary for unevaluatedProperties to work with "not"
+
+    test "it works with if"
   end
 end
