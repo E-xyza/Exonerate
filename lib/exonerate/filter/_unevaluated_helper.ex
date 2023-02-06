@@ -14,8 +14,18 @@ defmodule Exonerate.Filter.UnevaluatedHelper do
     end
   end
 
+  defmacrop assert(predicate, message) do
+    quote bind_quoted: [predicate: predicate, message: message] do
+      unless predicate, do: raise message
+    end
+  end
+
   defmacro register_tokens(tokens, key) do
+    assert Enum.uniq(tokens) === tokens, "token list #{inspect tokens} contains duplicates"
+
     Enum.map(tokens, fn token ->
+      assert is_atom(token), "#{token} isn't an atom"
+
       quote bind_quoted: [evaluated_tokens: token, key: key] do
         evaluated_set =
           Process.get(evaluated_tokens) || raise "expected token #{evaluated_tokens} not found"
