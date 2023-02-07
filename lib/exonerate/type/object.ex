@@ -12,8 +12,6 @@ defmodule Exonerate.Type.Object do
   alias Exonerate.Tools
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [
     :context,
     evaluated_tokens: [],
@@ -38,7 +36,7 @@ defmodule Exonerate.Type.Object do
     %__MODULE__{context: context}
   end
 
-  def parse(context = %Context{}, schema) do
+  def parse(context, schema) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()
@@ -95,7 +93,7 @@ defmodule Exonerate.Type.Object do
     case {token, unevaluated_false?(filter)} do
       {nil, _} ->
         quote do
-          defp unquote(fun(filter, []))(object, path) when is_map(object) do
+          defp unquote([])(object, path) when is_map(object) do
             Exonerate.pipeline(object, path, unquote(filter.pipeline))
             unquote_splicing(unevaluated_start ++ iteration ++ combining)
           end
@@ -103,7 +101,7 @@ defmodule Exonerate.Type.Object do
 
       {_, true} ->
         quote do
-          defp unquote(fun(filter, []))(object, path) when is_map(object) do
+          defp unquote([])(object, path) when is_map(object) do
             Exonerate.pipeline(object, path, unquote(filter.pipeline))
             unquote_splicing(unevaluated_start ++ iteration ++ combining)
 
@@ -123,10 +121,10 @@ defmodule Exonerate.Type.Object do
         end
 
       {_, false} ->
-        filter = fun(filter, "unevaluatedProperties")
+        filter = "unevaluatedProperties"
 
         quote do
-          defp unquote(fun(filter, []))(object, path) when is_map(object) do
+          defp unquote([])(object, path) when is_map(object) do
             Exonerate.pipeline(object, path, unquote(filter.pipeline))
             unquote_splicing(unevaluated_start ++ iteration ++ combining)
 

@@ -10,7 +10,7 @@ defmodule Exonerate.Filter.Else do
   alias Exonerate.Context
 
   @impl true
-  def parse(context = %Context{}, schema = %{"else" => _}) do
+  def parse(context, schema = %{"else" => _}) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()

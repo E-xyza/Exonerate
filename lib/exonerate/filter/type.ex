@@ -14,7 +14,7 @@ defmodule Exonerate.Filter.Type do
   @behaviour Exonerate.Filter
 
   @spec parse(Context.t(), Type.json()) :: Context.t()
-  def parse(context = %Context{}, %{"type" => schema}) do
+  def parse(context, %{"type" => schema}) do
     types =
       schema
       |> List.wrap()

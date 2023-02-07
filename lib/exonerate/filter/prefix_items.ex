@@ -7,8 +7,6 @@ defmodule Exonerate.Filter.PrefixItems do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :schema, :additional_items]
 
   def parse(filter = %{context: context}, %{"prefixItems" => s}) when is_list(s) do
@@ -27,7 +25,7 @@ defmodule Exonerate.Filter.PrefixItems do
     %{
       filter
       | needs_accumulator: true,
-        accumulator_pipeline: [fun(filter, "prefixItems") | filter.accumulator_pipeline],
+        accumulator_pipeline: ["prefixItems" | filter.accumulator_pipeline],
         accumulator_init: Map.put(filter.accumulator_init, :index, 0),
         filters: [
           %__MODULE__{
@@ -46,8 +44,8 @@ defmodule Exonerate.Filter.PrefixItems do
       |> Enum.with_index()
       |> Enum.map(fn {schema, index} ->
         {quote do
-           defp unquote(fun(filter, "prefixItems"))(acc = %{index: unquote(index)}, {path, item}) do
-             unquote(fun(filter, ["prefixItems", to_string(index)]))(
+           defp unquote("prefixItems")(acc = %{index: unquote(index)}, {path, item}) do
+             unquote(["prefixItems", to_string(index)])(
                item,
                Path.join(path, unquote("#{index}"))
              )
@@ -61,14 +59,14 @@ defmodule Exonerate.Filter.PrefixItems do
     additional_item_filter =
       if filter.additional_items do
         quote do
-          defp unquote(fun(filter, "prefixItems"))(acc = %{index: index}, {path, item}) do
-            unquote(fun(filter, "additionalItems"))(item, Path.join(path, to_string(index)))
+          defp unquote("prefixItems")(acc = %{index: index}, {path, item}) do
+            unquote("additionalItems")(item, Path.join(path, to_string(index)))
             acc
           end
         end
       else
         quote do
-          defp unquote(fun(filter, "prefixItems"))(acc = %{index: _}, {_item, _path}), do: acc
+          defp unquote("prefixItems")(acc = %{index: _}, {_item, _path}), do: acc
         end
       end
 

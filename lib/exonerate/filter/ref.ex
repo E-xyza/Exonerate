@@ -10,7 +10,7 @@ defmodule Exonerate.Filter.Ref do
   alias Exonerate.Context
 
   @impl true
-  def parse(context = %Context{}, %{"$ref" => ref}) do
+  def parse(context, %{"$ref" => ref}) do
     module = %__MODULE__{context: context, ref: ref}
 
     %{

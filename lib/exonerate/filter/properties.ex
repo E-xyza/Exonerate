@@ -7,8 +7,6 @@ defmodule Exonerate.Filter.Properties do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :children, :evaluated_tokens]
 
   def parse(filter = %{context: context}, %{"properties" => properties}) do
@@ -31,7 +29,7 @@ defmodule Exonerate.Filter.Properties do
       filter
       | iterate: true,
         filters: [filter_from(filter, children) | filter.filters],
-        kv_pipeline: [fun(filter, "properties") | filter.kv_pipeline]
+        kv_pipeline: ["properties" | filter.kv_pipeline]
     }
   end
 
@@ -48,8 +46,8 @@ defmodule Exonerate.Filter.Properties do
       children
       |> Enum.map(fn {k, v} ->
         {quote do
-           defp unquote(fun(filter, "properties"))(_, {path, unquote(k), v}) do
-             unquote(fun(filter, ["properties", k]))(v, Path.join(path, unquote(k)))
+           defp unquote("properties")(_, {path, unquote(k), v}) do
+             unquote(["properties", k])(v, Path.join(path, unquote(k)))
 
              require Exonerate.Filter.UnevaluatedHelper
 
@@ -68,7 +66,7 @@ defmodule Exonerate.Filter.Properties do
      guarded_clauses ++
        [
          quote do
-           defp unquote(fun(filter, "properties"))(seen, {_path, _key, _value}) do
+           defp unquote("properties")(seen, {_path, _key, _value}) do
              seen
            end
          end

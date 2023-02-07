@@ -8,8 +8,6 @@ defmodule Exonerate.Filter.Format do
   alias Exonerate.Registry
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :fun]
 
   @defaults %{
@@ -80,7 +78,7 @@ defmodule Exonerate.Filter.Format do
 
     %{
       filter
-      | pipeline: [fun(filter, "format") | filter.pipeline],
+      | pipeline: ["format" | filter.pipeline],
         filters: [%__MODULE__{context: filter.context, fun: fun} | filter.filters]
     }
   end
@@ -105,7 +103,7 @@ defmodule Exonerate.Filter.Format do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "format"))(string, path) do
+         defp unquote("format")(string, path) do
            unless unquote(call) do
              Exonerate.mismatch(string, path)
            end
@@ -122,7 +120,7 @@ defmodule Exonerate.Filter.Format do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "format"))(string, path) do
+         defp unquote("format")(string, path) do
            unless apply(unquote(module), unquote(fun), [string | unquote(args)]) do
              Exonerate.mismatch(string, path)
            end

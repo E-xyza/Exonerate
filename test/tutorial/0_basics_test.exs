@@ -51,29 +51,30 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     end
   end
 
-  # defmodule TypeKeyword do
-  # @moduledoc """
-  # tests from:
-  #
-  # https://json-schema.org/understanding-json-schema/basics.html#the-type-keyword
-  # """
-  # require Exonerate
-  #
-  # Exonerate.function_from_string(:def, :type, ~s({"type": "string"}))
-  # end
-  #
-  # describe "the type keyword test" do
-  # test "string type matches string" do
-  # assert :ok = TypeKeyword.type("I'm a string")
-  # end
-  #
-  # test "string type does not match nonstring" do
-  # assert {:error, list} = TypeKeyword.type(42)
-  # assert list[:schema_pointer] == "/type"
-  # assert list[:error_value] == 42
-  # assert list[:json_pointer] == "/"
-  # end
-  # end
+  defmodule TypeKeyword do
+    @moduledoc """
+    tests from:
+
+    https://json-schema.org/understanding-json-schema/basics.html#the-type-keyword
+    """
+    require Exonerate
+
+    Exonerate.function_from_string(:def, :type, ~s({"type": "string"}))
+  end
+
+  describe "the type keyword test" do
+    test "string type matches string" do
+      assert :ok = TypeKeyword.type("I'm a string")
+    end
+
+    test "string type does not match nonstring" do
+      assert {:error, list} = TypeKeyword.type(42)
+      assert list[:schema_pointer] == "/type"
+      assert list[:error_value] == 42
+      assert list[:json_pointer] == "/"
+    end
+  end
+
   #
   # defmodule JsonSchema do
   # @moduledoc """

@@ -9,8 +9,6 @@ defmodule Exonerate.Type.Array do
   alias Exonerate.Tools
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [
     :context,
     :additional_items,
@@ -56,9 +54,9 @@ defmodule Exonerate.Type.Array do
     {accumulator_pipeline, index_accumulator} =
       if :index in Map.keys(filter.accumulator_init) do
         {
-          filter.accumulator_pipeline ++ [fun(filter, ":index")],
+          filter.accumulator_pipeline ++ [":index"],
           quote do
-            defp unquote(fun(filter, ":index"))(acc, _) do
+            defp unquote(":index")(acc, _) do
               %{acc | index: acc.index + 1}
             end
           end
@@ -88,7 +86,7 @@ defmodule Exonerate.Type.Array do
       )
 
     quote do
-      defp unquote(fun(filter, []))(array, path) when is_list(array) do
+      defp unquote([])(array, path) when is_list(array) do
         array
         |> Enum.reduce(unquote(accumulator), fn item, acc ->
           Exonerate.pipeline(acc, {path, item}, unquote(accumulator_pipeline))

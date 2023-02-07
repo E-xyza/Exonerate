@@ -7,8 +7,6 @@ defmodule Exonerate.Filter.Contains do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :contains, :min_contains]
 
   def parse(filter, %{"contains" => _, "minContains" => 0}), do: filter
@@ -33,9 +31,9 @@ defmodule Exonerate.Filter.Contains do
       filter
       | needs_accumulator: true,
         accumulator_pipeline: [
-          fun(filter, ["contains", ":reduce"]) | filter.accumulator_pipeline
+          ["contains", ":reduce"] | filter.accumulator_pipeline
         ],
-        post_reduce_pipeline: [fun(filter, "contains") | filter.post_reduce_pipeline],
+        post_reduce_pipeline: ["contains" | filter.post_reduce_pipeline],
         accumulator_init: Map.put_new(filter.accumulator_init, :contains, 0),
         filters: [filter | filter.filters]
     }
@@ -48,20 +46,20 @@ defmodule Exonerate.Filter.Contains do
         end
       else
         quote do
-          defp unquote(fun(filter, "contains"))(%{contains: 0}, {path, array}) do
+          defp unquote("contains")(%{contains: 0}, {path, array}) do
             Exonerate.mismatch(array, path)
           end
 
-          defp unquote(fun(filter, "contains"))(acc, {_path, _array}), do: acc
+          defp unquote("contains")(acc, {_path, _array}), do: acc
         end
       end
 
     {[],
      [
        quote do
-         defp unquote(fun(filter, ["contains", ":reduce"]))(acc, {path, item}) do
+         defp unquote(["contains", ":reduce"])(acc, {path, item}) do
            try do
-             unquote(fun(filter, "contains"))(item, path)
+             unquote("contains")(item, path)
              # yes, it has been seen
              %{acc | contains: acc.contains + 1}
            catch

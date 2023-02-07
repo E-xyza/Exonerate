@@ -10,8 +10,6 @@ defmodule Exonerate.Type.Integer do
   alias Exonerate.Tools
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, filters: []]
   @type t :: %__MODULE__{}
 
@@ -51,7 +49,7 @@ defmodule Exonerate.Type.Integer do
       )
 
     quote do
-      defp unquote(fun(filter, []))(integer, path) when is_integer(integer) do
+      defp unquote([])(integer, path) when is_integer(integer) do
         (unquote_splicing(combining))
       end
     end

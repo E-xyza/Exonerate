@@ -8,8 +8,6 @@ defmodule Exonerate.Filter.UnevaluatedProperties do
   alias Exonerate.Context
   defstruct [:context, :child, :evaluated_tokens]
 
-  import Context, only: [fun: 2]
-
   def parse(filter, %{"unevaluatedProperties" => false}) do
     %{filter | filters: [filter_from(filter, false) | filter.filters]}
   end

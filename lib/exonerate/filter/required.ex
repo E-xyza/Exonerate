@@ -7,8 +7,6 @@ defmodule Exonerate.Filter.Required do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :props]
 
   def parse(filter, %{"required" => prop}) do
@@ -23,7 +21,7 @@ defmodule Exonerate.Filter.Required do
      |> Enum.with_index()
      |> Enum.map(fn {prop, index} ->
        quote do
-         defp unquote(fun(filter, []))(object, path)
+         defp unquote([])(object, path)
               when is_map(object) and not is_map_key(object, unquote(prop)) do
            required_path = Path.join(path, unquote(prop))
 

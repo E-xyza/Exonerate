@@ -7,12 +7,10 @@ defmodule Exonerate.Filter.MinLength do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :length, :format_binary]
 
   def parse(filter = %Exonerate.Type.String{}, %{"minLength" => length}) do
-    pipeline = List.wrap(unless filter.format_binary, do: fun(filter, "minLength"))
+    pipeline = List.wrap(unless filter.format_binary, do: "minLength")
 
     %{
       filter
@@ -31,7 +29,7 @@ defmodule Exonerate.Filter.MinLength do
   def compile(filter = %__MODULE__{format_binary: true}) do
     {[
        quote do
-         defp unquote(fun(filter, []))(string, path)
+         defp unquote([])(string, path)
               when is_binary(string) and byte_size(string) < unquote(filter.length) do
            Exonerate.mismatch(string, path, guard: "minLength")
          end
@@ -43,7 +41,7 @@ defmodule Exonerate.Filter.MinLength do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "minLength"))(string, path) do
+         defp unquote("minLength")(string, path) do
            if String.length(string) < unquote(filter.length) do
              Exonerate.mismatch(string, path)
            end

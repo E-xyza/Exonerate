@@ -12,8 +12,6 @@ defmodule Exonerate.Filter.DependentSchemas do
   alias Exonerate.Context
   defstruct [:context, :dependencies]
 
-  import Context, only: [fun: 2]
-
   def parse(filter = %Object{context: context}, %{"dependentSchemas" => deps}) do
     deps =
       deps
@@ -37,7 +35,7 @@ defmodule Exonerate.Filter.DependentSchemas do
 
     %{
       filter
-      | pipeline: [fun(filter, "dependentSchemas") | filter.pipeline],
+      | pipeline: ["dependentSchemas" | filter.pipeline],
         filters: [%__MODULE__{context: context, dependencies: deps} | filter.filters]
     }
   end
@@ -47,25 +45,25 @@ defmodule Exonerate.Filter.DependentSchemas do
       deps
       |> Enum.map(fn
         {key, false} ->
-          {fun(filter, ["dependentSchemas", key]),
+          {["dependentSchemas", key],
            quote do
-             defp unquote(fun(filter, ["dependentSchemas", key]))(value, path)
+             defp unquote(["dependentSchemas", key])(value, path)
                   when is_map_key(value, unquote(key)) do
                Exonerate.mismatch(value, Path.join(path, unquote(key)))
              end
 
-             defp unquote(fun(filter, ["dependentSchemas", key]))(value, _), do: value
+             defp unquote(["dependentSchemas", key])(value, _), do: value
            end}
 
         {key, schema} ->
-          {fun(filter, ["dependentSchemas", ":" <> key]),
+          {["dependentSchemas", ":" <> key],
            quote do
-             defp unquote(fun(filter, ["dependentSchemas", ":" <> key]))(value, path)
+             defp unquote(["dependentSchemas", ":" <> key])(value, path)
                   when is_map_key(value, unquote(key)) do
-               unquote(fun(filter, ["dependentSchemas", key]))(value, path)
+               unquote(["dependentSchemas", key])(value, path)
              end
 
-             defp unquote(fun(filter, ["dependentSchemas", ":" <> key]))(value, _), do: value
+             defp unquote(["dependentSchemas", ":" <> key])(value, _), do: value
              unquote(Context.compile(schema))
            end}
       end)
@@ -74,7 +72,7 @@ defmodule Exonerate.Filter.DependentSchemas do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "dependentSchemas"))(value, path) do
+         defp unquote("dependentSchemas")(value, path) do
            Exonerate.pipeline(value, path, unquote(pipeline))
            :ok
          end

@@ -9,8 +9,6 @@ defmodule Exonerate.Filter.MultipleOf do
   alias Exonerate.Type.Number
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :factor]
 
   def parse(filter = %type{}, %{"multipleOf" => factor})
@@ -24,7 +22,7 @@ defmodule Exonerate.Filter.MultipleOf do
   def compile(filter = %__MODULE__{}) do
     {[
        quote do
-         defp unquote(fun(filter, []))(integer, path)
+         defp unquote([])(integer, path)
               when is_integer(integer) and rem(integer, unquote(filter.factor)) != 0 do
            Exonerate.mismatch(integer, path, guard: "multipleOf")
          end

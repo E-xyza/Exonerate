@@ -7,8 +7,6 @@ defmodule Exonerate.Filter.MaxProperties do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :count]
 
   def parse(filter, %{"maxProperties" => count}) do
@@ -21,7 +19,7 @@ defmodule Exonerate.Filter.MaxProperties do
   def compile(filter = %__MODULE__{count: count}) do
     {[
        quote do
-         defp unquote(fun(filter, []))(object, path)
+         defp unquote([])(object, path)
               when is_map(object) and :erlang.map_size(object) > unquote(count) do
            Exonerate.mismatch(object, path, guard: unquote("maxProperties"))
          end

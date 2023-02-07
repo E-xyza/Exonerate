@@ -14,8 +14,6 @@ defmodule Exonerate.Type.String do
   alias Exonerate.Type
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   @context_filters ~w(minLength maxLength format pattern)
   @context_modules Map.new(@context_filters, &{&1, Filter.from_string(&1)})
 
@@ -56,7 +54,7 @@ defmodule Exonerate.Type.String do
       )
 
     quote do
-      defp unquote(fun(filter, []))(string, path) when is_binary(string) do
+      defp unquote([])(string, path) when is_binary(string) do
         Exonerate.pipeline(string, path, unquote(filter.pipeline))
         unquote_splicing(combining)
       end
@@ -76,7 +74,7 @@ defmodule Exonerate.Type.String do
       )
 
     quote do
-      defp unquote(fun(filter, []))(string, path) when is_binary(string) do
+      defp unquote([])(string, path) when is_binary(string) do
         if String.valid?(string) do
           Exonerate.pipeline(string, path, unquote(filter.pipeline))
           unquote_splicing(combining)

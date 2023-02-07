@@ -8,8 +8,6 @@ defmodule Exonerate.Filter.Dependencies do
   alias Exonerate.Type.Object
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :dependencies]
 
   def parse(filter = %Object{context: context}, %{"dependencies" => deps}) do
@@ -38,7 +36,7 @@ defmodule Exonerate.Filter.Dependencies do
 
     %{
       filter
-      | pipeline: [fun(filter, "dependencies") | filter.pipeline],
+      | pipeline: ["dependencies" | filter.pipeline],
         filters: [%__MODULE__{context: context, dependencies: deps} | filter.filters]
     }
   end
@@ -48,21 +46,21 @@ defmodule Exonerate.Filter.Dependencies do
       deps
       |> Enum.map(fn
         {key, false} ->
-          {fun(filter, ["dependencies", key]),
+          {["dependencies", key],
            quote do
-             defp unquote(fun(filter, ["dependencies", key]))(value, path)
+             defp unquote(["dependencies", key])(value, path)
                   when is_map_key(value, unquote(key)) do
                Exonerate.mismatch(value, Path.join(path, unquote(key)))
              end
 
-             defp unquote(fun(filter, ["dependencies", key]))(value, _), do: value
+             defp unquote(["dependencies", key])(value, _), do: value
            end}
 
         # one item optimization
         {key, [dependent_key]} ->
-          {fun(filter, ["dependencies", key]),
+          {["dependencies", key],
            quote do
-             defp unquote(fun(filter, ["dependencies", key]))(value, path)
+             defp unquote(["dependencies", key])(value, path)
                   when is_map_key(value, unquote(key)) do
                unless is_map_key(value, unquote(dependent_key)) do
                  Exonerate.mismatch(value, path, guard: "0")
@@ -71,13 +69,13 @@ defmodule Exonerate.Filter.Dependencies do
                value
              end
 
-             defp unquote(fun(filter, ["dependencies", key]))(value, _), do: value
+             defp unquote(["dependencies", key])(value, _), do: value
            end}
 
         {key, dependent_keys} when is_list(dependent_keys) ->
-          {fun(filter, ["dependencies", key]),
+          {["dependencies", key],
            quote do
-             defp unquote(fun(filter, ["dependencies", key]))(value, path)
+             defp unquote(["dependencies", key])(value, path)
                   when is_map_key(value, unquote(key)) do
                unquote(dependent_keys)
                |> Enum.with_index()
@@ -89,18 +87,18 @@ defmodule Exonerate.Filter.Dependencies do
                value
              end
 
-             defp unquote(fun(filter, ["dependencies", key]))(value, _), do: value
+             defp unquote(["dependencies", key])(value, _), do: value
            end}
 
         {key, schema} ->
-          {fun(filter, ["dependencies", ":" <> key]),
+          {["dependencies", ":" <> key],
            quote do
-             defp unquote(fun(filter, ["dependencies", ":" <> key]))(value, path)
+             defp unquote(["dependencies", ":" <> key])(value, path)
                   when is_map_key(value, unquote(key)) do
-               unquote(fun(filter, ["dependencies", key]))(value, path)
+               unquote(["dependencies", key])(value, path)
              end
 
-             defp unquote(fun(filter, ["dependencies", ":" <> key]))(value, _), do: value
+             defp unquote(["dependencies", ":" <> key])(value, _), do: value
              unquote(Context.compile(schema))
            end}
       end)
@@ -109,7 +107,7 @@ defmodule Exonerate.Filter.Dependencies do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "dependencies"))(value, path) do
+         defp unquote("dependencies")(value, path) do
            Exonerate.pipeline(value, path, unquote(pipeline))
            :ok
          end

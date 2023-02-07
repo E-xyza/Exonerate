@@ -7,8 +7,6 @@ defmodule Exonerate.Filter.PatternProperties do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :patterns, :evaluated_tokens]
 
   def parse(filter = %{context: context}, %{"patternProperties" => patterns}) do
@@ -29,7 +27,7 @@ defmodule Exonerate.Filter.PatternProperties do
       filter
       | iterate: true,
         kv_pipeline:
-          Enum.map(patterns, fn {k, _} -> fun(filter, ["patternProperties", k]) end) ++
+          Enum.map(patterns, fn {k, _} -> ["patternProperties", k] end) ++
             filter.kv_pipeline,
         filters: [filter_from(filter, patterns) | filter.filters]
     }
@@ -48,9 +46,9 @@ defmodule Exonerate.Filter.PatternProperties do
      Enum.map(patterns, fn
        {pattern, compiled} ->
          quote do
-           defp unquote(fun(filter, ["patternProperties", pattern]))(seen, {path, key, value}) do
+           defp unquote(["patternProperties", pattern])(seen, {path, key, value}) do
              if Regex.match?(sigil_r(<<unquote(pattern)>>, []), key) do
-               unquote(fun(filter, ["patternProperties", pattern]))(value, Path.join(path, key))
+               unquote(["patternProperties", pattern])(value, Path.join(path, key))
 
                require Exonerate.Filter.UnevaluatedHelper
 

@@ -7,12 +7,10 @@ defmodule Exonerate.Filter.MaxLength do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :length, :format_binary]
 
   def parse(filter = %Exonerate.Type.String{}, %{"maxLength" => length}) do
-    pipeline = List.wrap(unless filter.format_binary, do: fun(filter, "maxLength"))
+    pipeline = List.wrap(unless filter.format_binary, do: "maxLength")
 
     %{
       filter
@@ -31,7 +29,7 @@ defmodule Exonerate.Filter.MaxLength do
   def compile(filter = %__MODULE__{format_binary: true}) do
     {[
        quote do
-         defp unquote(fun(filter, []))(string, path)
+         defp unquote([])(string, path)
               when is_binary(string) and byte_size(string) > unquote(filter.length) do
            Exonerate.mismatch(string, path, guard: "maxLength")
          end
@@ -43,7 +41,7 @@ defmodule Exonerate.Filter.MaxLength do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "maxLength"))(string, path) do
+         defp unquote("maxLength")(string, path) do
            if String.length(string) > unquote(filter.length) do
              Exonerate.mismatch(string, path)
            end

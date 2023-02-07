@@ -9,8 +9,6 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
   alias Exonerate.Type.Number
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :minimum, :parent]
 
   # ignore version-4-type exclusiveMaximum specifiers.
@@ -30,7 +28,7 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
   def compile(filter = %__MODULE__{parent: Integer}) do
     {[
        quote do
-         defp unquote(fun(filter, []))(integer, path)
+         defp unquote([])(integer, path)
               when is_integer(integer) and integer <= unquote(filter.minimum) do
            Exonerate.mismatch(integer, path, guard: "exclusiveMinimum")
          end
@@ -41,7 +39,7 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
   def compile(filter = %__MODULE__{parent: Number}) do
     {[
        quote do
-         defp unquote(fun(filter, []))(number, path)
+         defp unquote([])(number, path)
               when is_number(number) and number <= unquote(filter.minimum) do
            Exonerate.mismatch(number, path, guard: "exclusiveMinimum")
          end

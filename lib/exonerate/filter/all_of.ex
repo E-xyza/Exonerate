@@ -9,10 +9,8 @@ defmodule Exonerate.Filter.AllOf do
   alias Exonerate.Filter.UnevaluatedHelper
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   @impl true
-  def parse(context = %Context{}, schema = %{"allOf" => s}) do
+  def parse(context, schema = %{"allOf" => s}) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()
@@ -49,7 +47,7 @@ defmodule Exonerate.Filter.AllOf do
 
   def combining(filter, value_ast, path_ast) do
     quote do
-      unquote(fun(filter, "allOf"))(unquote(value_ast), unquote(path_ast))
+      unquote("allOf")(unquote(value_ast), unquote(path_ast))
     end
   end
 
@@ -57,14 +55,14 @@ defmodule Exonerate.Filter.AllOf do
     calls =
       Enum.map(
         filter.schemas,
-        &quote do
-          unquote(fun(&1, []))(value, path)
+        quote do
+          unquote([])(value, path)
         end
       )
 
     [
       quote do
-        defp unquote(fun(filter, "allOf"))(value, path) do
+        defp unquote("allOf")(value, path) do
           (unquote_splicing(calls))
         end
       end

@@ -9,10 +9,8 @@ defmodule Exonerate.Filter.AnyOf do
   alias Exonerate.Filter.UnevaluatedHelper
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   @impl true
-  def parse(context = %Context{}, schema = %{"anyOf" => s}) do
+  def parse(context, schema = %{"anyOf" => s}) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()
@@ -75,7 +73,7 @@ defmodule Exonerate.Filter.AnyOf do
   # in the case where we don't do a full traverse, we can optimize this with a
   # quit-early clause.
   def combining(filter = %__MODULE__{evaluated_tokens: []}, value_ast, path_ast) do
-    funs = Enum.map(filter.schemas, &fun(&1, []))
+    funs = Enum.map(filter.schemas, [])
 
     quote do
       result =
@@ -102,7 +100,7 @@ defmodule Exonerate.Filter.AnyOf do
 
   # if we have unevaluated tokens analysis we will need to run a full traversal
   def combining(filter = %__MODULE__{evaluated_tokens: tokens}, value_ast, path_ast) do
-    funs = Enum.map(filter.schemas, &fun(&1, []))
+    funs = Enum.map(filter.schemas, [])
 
     traversals =
       Enum.map(funs, fn fun ->
@@ -137,10 +135,10 @@ defmodule Exonerate.Filter.AnyOf do
     Enum.flat_map(filter.schemas, fn schema ->
       [
         quote do
-          defp unquote(fun(schema, []))(fail_so_far, {value, path}) do
+          defp unquote([])(fail_so_far, {value, path}) do
             result =
               try do
-                unquote(fun(schema, []))(value, path)
+                unquote([])(value, path)
               catch
                 {:error, list} -> list
               end
@@ -160,10 +158,10 @@ defmodule Exonerate.Filter.AnyOf do
     Enum.flat_map(filter.schemas, fn schema ->
       [
         quote do
-          defp unquote(fun(schema, []))({value, path}) do
+          defp unquote([])({value, path}) do
             result =
               try do
-                unquote(fun(schema, []))(value, path)
+                unquote([])(value, path)
               catch
                 error = {:error, _} -> error
               end

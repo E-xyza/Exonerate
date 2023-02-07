@@ -8,12 +8,10 @@ defmodule Exonerate.Filter.OneOf do
   alias Exonerate.Filter.UnevaluatedHelper
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :schemas, :evaluated_tokens]
 
   @impl true
-  def parse(context = %Context{}, schema = %{"oneOf" => s}) do
+  def parse(context, schema = %{"oneOf" => s}) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()
@@ -44,7 +42,7 @@ defmodule Exonerate.Filter.OneOf do
   end
 
   def combining(filter, value_ast, path_ast) do
-    funs = Enum.map(filter.schemas, &fun(&1, []))
+    funs = Enum.map(filter.schemas, [])
 
     quote do
       case Exonerate.pipeline({0, [], []}, {unquote(value_ast), unquote(path_ast)}, unquote(funs)) do
@@ -80,14 +78,13 @@ defmodule Exonerate.Filter.OneOf do
     Enum.flat_map(filter.schemas, fn schema ->
       local_path =
         schema
-        |> fun([])
         |> Exonerate.fun_to_path()
 
       [
         quote do
-          defp unquote(fun(schema, []))({count, matches, errors}, {value, path}) do
+          defp unquote([])({count, matches, errors}, {value, path}) do
             try do
-              unquote(fun(schema, []))(value, path)
+              unquote([])(value, path)
               {count + 1, [unquote(local_path) | matches], errors}
             catch
               error = {:error, list} when is_list(list) ->
@@ -104,17 +101,16 @@ defmodule Exonerate.Filter.OneOf do
     Enum.flat_map(filter.schemas, fn schema ->
       local_path =
         schema
-        |> fun([])
         |> Exonerate.fun_to_path()
 
       [
         quote do
-          defp unquote(fun(schema, []))({count, matches, errors}, {value, path}) do
+          defp unquote([])({count, matches, errors}, {value, path}) do
             require Exonerate.Filter.UnevaluatedHelper
             token_map = Exonerate.Filter.UnevaluatedHelper.fetch_tokens(unquote(tokens))
 
             try do
-              unquote(fun(schema, []))(value, path)
+              unquote([])(value, path)
 
               new_tokens_map =
                 unquote(tokens)

@@ -8,12 +8,10 @@ defmodule Exonerate.Filter.If do
   alias Exonerate.Filter.UnevaluatedHelper
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :schema, :then, :else, :evaluated_tokens]
 
   @impl true
-  def parse(context = %Context{}, schema = %{"if" => _}) do
+  def parse(context, schema = %{"if" => _}) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()
@@ -43,7 +41,7 @@ defmodule Exonerate.Filter.If do
 
   def combining(filter, value_ast, path_ast) do
     quote do
-      unquote(fun(filter, ["if", ":test"]))(unquote(value_ast), unquote(path_ast))
+      unquote(["if", ":test"])(unquote(value_ast), unquote(path_ast))
     end
   end
 
@@ -51,7 +49,7 @@ defmodule Exonerate.Filter.If do
     then_clause =
       if filter.then do
         quote do
-          unquote(fun(filter, "then"))(value, path)
+          unquote("then")(value, path)
         end
       else
         :ok
@@ -60,7 +58,7 @@ defmodule Exonerate.Filter.If do
     else_clause =
       if filter.else do
         quote do
-          unquote(fun(filter, "else"))(value, path)
+          unquote("else")(value, path)
         end
       else
         :ok
@@ -70,10 +68,10 @@ defmodule Exonerate.Filter.If do
       case filter.evaluated_tokens do
         [] ->
           quote do
-            defp unquote(fun(filter, ["if", ":test"]))(value, path) do
+            defp unquote(["if", ":test"])(value, path) do
               conditional =
                 try do
-                  unquote(fun(filter, "if"))(value, path)
+                  unquote("if")(value, path)
                 catch
                   error = {:error, list} when is_list(list) -> error
                 end
@@ -87,13 +85,13 @@ defmodule Exonerate.Filter.If do
 
         tokens ->
           quote do
-            defp unquote(fun(filter, ["if", ":test"]))(value, path) do
+            defp unquote(["if", ":test"])(value, path) do
               require Exonerate.Filter.UnevaluatedHelper
               token_map = Exonerate.Filter.UnevaluatedHelper.fetch_tokens(unquote(tokens))
 
               conditional =
                 try do
-                  unquote(fun(filter, "if"))(value, path)
+                  unquote("if")(value, path)
                 catch
                   error = {:error, list} when is_list(list) ->
                     error

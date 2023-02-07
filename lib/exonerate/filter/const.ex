@@ -9,10 +9,8 @@ defmodule Exonerate.Filter.Const do
   alias Exonerate.Type
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   @impl true
-  def parse(validation = %Context{}, %{"const" => const}) do
+  def parse(validation, %{"const" => const}) do
     type = %{Type.of(const) => nil}
 
     %{
@@ -24,7 +22,7 @@ defmodule Exonerate.Filter.Const do
 
   def compile(filter = %__MODULE__{}) do
     quote do
-      defp unquote(fun(filter, []))(value, path)
+      defp unquote([])(value, path)
            when value != unquote(Macro.escape(filter.const)) do
         Exonerate.mismatch(value, path, guard: "const")
       end

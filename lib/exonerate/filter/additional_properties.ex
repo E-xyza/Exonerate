@@ -8,13 +8,11 @@ defmodule Exonerate.Filter.AdditionalProperties do
   alias Exonerate.Context
   defstruct [:context, :child, :evaluated_tokens]
 
-  import Context, only: [fun: 2]
-
   def parse(filter = %{context: context}, %{"additionalProperties" => false}) do
     %{
       filter
       | filters: [filter_from(filter, false) | filter.filters],
-        kv_pipeline: [fun(filter, "additionalProperties") | filter.kv_pipeline],
+        kv_pipeline: ["additionalProperties" | filter.kv_pipeline],
         iterate: true
     }
   end
@@ -32,7 +30,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
     %{
       filter
       | filters: [filter_from(filter, child) | filter.filters],
-        kv_pipeline: [fun(filter, "additionalProperties") | filter.kv_pipeline],
+        kv_pipeline: ["additionalProperties" | filter.kv_pipeline],
         iterate: true
     }
   end
@@ -49,7 +47,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "additionalProperties"))(seen, {path, k, v}) do
+         defp unquote("additionalProperties")(seen, {path, k, v}) do
            unless seen do
              Exonerate.mismatch({k, v}, path)
            end
@@ -71,9 +69,9 @@ defmodule Exonerate.Filter.AdditionalProperties do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "additionalProperties"))(seen, {path, k, v}) do
+         defp unquote("additionalProperties")(seen, {path, k, v}) do
            unless seen do
-             unquote(fun(filter, "additionalProperties"))(v, Path.join(path, k))
+             unquote("additionalProperties")(v, Path.join(path, k))
            end
 
            require Exonerate.Filter.UnevaluatedHelper

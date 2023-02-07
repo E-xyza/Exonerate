@@ -7,14 +7,12 @@ defmodule Exonerate.Filter.Pattern do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :pattern]
 
   def parse(filter = %Exonerate.Type.String{}, %{"pattern" => pattern}) do
     %{
       filter
-      | pipeline: [fun(filter, "pattern") | filter.pipeline],
+      | pipeline: ["pattern" | filter.pipeline],
         filters: [%__MODULE__{context: filter.context, pattern: pattern} | filter.filters]
     }
   end
@@ -22,7 +20,7 @@ defmodule Exonerate.Filter.Pattern do
   def compile(filter = %__MODULE__{}) do
     {[
        quote do
-         defp unquote(fun(filter, "pattern"))(string, path) do
+         defp unquote("pattern")(string, path) do
            unless Regex.match?(sigil_r(<<unquote(filter.pattern)>>, []), string) do
              Exonerate.mismatch(string, path)
            end

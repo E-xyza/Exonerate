@@ -7,8 +7,6 @@ defmodule Exonerate.Filter.Items do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :schema, :additional_items, :prefix_size]
 
   def parse(filter = %{context: context}, %{"items" => true}) do
@@ -25,7 +23,7 @@ defmodule Exonerate.Filter.Items do
       %{
         filter
         | needs_accumulator: true,
-          accumulator_pipeline: [fun(filter, "items") | filter.accumulator_pipeline],
+          accumulator_pipeline: ["items" | filter.accumulator_pipeline],
           accumulator_init: Map.put(filter.accumulator_init, :index, 0),
           filters: [filter | filter.filters]
       }
@@ -37,7 +35,7 @@ defmodule Exonerate.Filter.Items do
   end
 
   def parse(filter = %{context: context}, %{"items" => s}) when is_map(s) do
-    fun = fun(filter, "items")
+    fun = "items"
 
     schema =
       Context.parse(
@@ -64,7 +62,7 @@ defmodule Exonerate.Filter.Items do
   end
 
   def parse(filter = %{context: context}, %{"items" => s}) when is_list(s) do
-    fun = fun(filter, "items")
+    fun = "items"
 
     schemas =
       Enum.map(
@@ -99,7 +97,7 @@ defmodule Exonerate.Filter.Items do
   def compile(filter = %__MODULE__{schema: false, prefix_size: 0}) do
     {[
        quote do
-         defp unquote(fun(filter, []))(array, path) when is_list(array) and array != [] do
+         defp unquote([])(array, path) when is_list(array) and array != [] do
            Exonerate.mismatch(array, path, guard: "items")
          end
        end
@@ -110,12 +108,12 @@ defmodule Exonerate.Filter.Items do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "items"))(acc = %{index: index}, {path, array})
+         defp unquote("items")(acc = %{index: index}, {path, array})
               when index < unquote(filter.prefix_size) do
            acc
          end
 
-         defp unquote(fun(filter, "items"))(%{index: index}, {path, array}) do
+         defp unquote("items")(%{index: index}, {path, array}) do
            Exonerate.mismatch(array, path, guard: to_string(index))
          end
        end
@@ -126,8 +124,8 @@ defmodule Exonerate.Filter.Items do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "items"))(acc, {path, item}) do
-           unquote(fun(filter, "items"))(item, Path.join(path, to_string(acc.index)))
+         defp unquote("items")(acc, {path, item}) do
+           unquote("items")(item, Path.join(path, to_string(acc.index)))
            acc
          end
 
@@ -142,8 +140,8 @@ defmodule Exonerate.Filter.Items do
       |> Enum.with_index()
       |> Enum.map(fn {schema, index} ->
         {quote do
-           defp unquote(fun(filter, "items"))(acc = %{index: unquote(index)}, {path, item}) do
-             unquote(fun(filter, ["items", to_string(index)]))(
+           defp unquote("items")(acc = %{index: unquote(index)}, {path, item}) do
+             unquote(["items", to_string(index)])(
                item,
                Path.join(path, unquote("#{index}"))
              )
@@ -157,14 +155,14 @@ defmodule Exonerate.Filter.Items do
     additional_item_filter =
       if filter.additional_items do
         quote do
-          defp unquote(fun(filter, "items"))(acc = %{index: index}, {path, item}) do
-            unquote(fun(filter, "additionalItems"))(item, Path.join(path, to_string(index)))
+          defp unquote("items")(acc = %{index: index}, {path, item}) do
+            unquote("additionalItems")(item, Path.join(path, to_string(index)))
             acc
           end
         end
       else
         quote do
-          defp unquote(fun(filter, "items"))(acc = %{index: _}, {_item, _path}), do: acc
+          defp unquote("items")(acc = %{index: _}, {_item, _path}), do: acc
         end
       end
 

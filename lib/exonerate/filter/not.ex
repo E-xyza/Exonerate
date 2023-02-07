@@ -9,10 +9,8 @@ defmodule Exonerate.Filter.Not do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   @impl true
-  def parse(context = %Context{}, %{"not" => _}) do
+  def parse(context, %{"not" => _}) do
     schema =
       Context.parse(
         context.schema,
@@ -31,7 +29,7 @@ defmodule Exonerate.Filter.Not do
     quote do
       negated =
         try do
-          unquote(fun(filter, "not"))(unquote(value_ast), unquote(path_ast))
+          unquote("not")(unquote(value_ast), unquote(path_ast))
         catch
           error = {:error, list} when is_list(list) -> error
         end

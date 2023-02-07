@@ -8,8 +8,6 @@ defmodule Exonerate.Filter.PropertyNames do
   alias Exonerate.Type.Object
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :schema]
 
   def parse(filter, %{"propertyNames" => true}) do
@@ -35,14 +33,14 @@ defmodule Exonerate.Filter.PropertyNames do
       filter
       | iterate: true,
         filters: [%__MODULE__{context: context, schema: schema} | filter.filters],
-        kv_pipeline: [fun(filter, "propertyNames") | filter.kv_pipeline]
+        kv_pipeline: ["propertyNames" | filter.kv_pipeline]
     }
   end
 
   def compile(filter = %__MODULE__{schema: false}) do
     {[
        quote do
-         defp unquote(fun(filter, []))(object, path) when object != %{} do
+         defp unquote([])(object, path) when object != %{} do
            Exonerate.mismatch(object, path, guard: "propertyNames")
          end
        end
@@ -57,8 +55,8 @@ defmodule Exonerate.Filter.PropertyNames do
        body ++
        [
          quote do
-           defp unquote(fun(filter, "propertyNames"))(seen, {path, key, value}) do
-             unquote(fun(filter, "propertyNames"))(key, Path.join(path, key))
+           defp unquote("propertyNames")(seen, {path, key, value}) do
+             unquote("propertyNames")(key, Path.join(path, key))
              seen
            end
          end

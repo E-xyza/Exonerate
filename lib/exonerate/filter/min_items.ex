@@ -7,12 +7,10 @@ defmodule Exonerate.Filter.MinItems do
 
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :count]
 
   def parse(filter, %{"minItems" => count}) do
-    check_key = fun(filter, "minItems")
+    check_key = "minItems"
 
     %{
       filter
@@ -27,7 +25,7 @@ defmodule Exonerate.Filter.MinItems do
     {[],
      [
        quote do
-         defp unquote(fun(filter, "minItems"))(acc, {path, array}) do
+         defp unquote("minItems")(acc, {path, array}) do
            if acc.index < unquote(count) do
              Exonerate.mismatch(array, path)
            end

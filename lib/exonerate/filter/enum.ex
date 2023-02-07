@@ -8,12 +8,10 @@ defmodule Exonerate.Filter.Enum do
   alias Exonerate.Type.{Array, Boolean, Integer, Null, Number, Object, String}
   alias Exonerate.Context
 
-  import Context, only: [fun: 2]
-
   defstruct [:context, :enums]
 
   @impl true
-  def parse(validation = %Context{}, %{"enum" => enums}) do
+  def parse(validation, %{"enum" => enums}) do
     types = Map.new(enums, &{Type.of(&1), nil})
 
     %{
@@ -40,14 +38,14 @@ defmodule Exonerate.Filter.Enum do
     # erlang OTP < 24 compiler flaw.
     if true in literals do
       quote do
-        defp unquote(fun(context, []))(value, path)
+        defp unquote([])(value, path)
              when value not in unquote(Enum.reject(literals, &(&1 === true))) and value != true do
           Exonerate.mismatch(value, path, guard: "enum")
         end
       end
     else
       quote do
-        defp unquote(fun(context, []))(value, path)
+        defp unquote([])(value, path)
              when value not in unquote(literals) do
           Exonerate.mismatch(value, path, guard: "enum")
         end
