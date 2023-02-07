@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.MaxLength do
 
   defstruct [:context, :length, :format_binary]
 
-  def parse(filter = %Exonerate.Type.String{}, %{"maxLength" => length}) do
+  def parse(filter, %{"maxLength" => length}) do
     pipeline = List.wrap(unless filter.format_binary, do: "maxLength")
 
     %{

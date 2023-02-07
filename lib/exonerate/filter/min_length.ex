@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.MinLength do
 
   defstruct [:context, :length, :format_binary]
 
-  def parse(filter = %Exonerate.Type.String{}, %{"minLength" => length}) do
+  def parse(filter, %{"minLength" => length}) do
     pipeline = List.wrap(unless filter.format_binary, do: "minLength")
 
     %{

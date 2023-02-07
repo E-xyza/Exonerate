@@ -34,7 +34,7 @@ defmodule Exonerate.Filter.Format do
   # pass over the binary format, which gets special treatment elsewhere.
   def parse(filter, %{"format" => "binary"}), do: filter
 
-  def parse(filter = %Exonerate.Type.String{}, %{"format" => format}) do
+  def parse(filter, %{"format" => format}) do
     default =
       {default_fun, builtin_scaffold, _} = Map.get(@defaults, format, {:__annotate, nil, []})
 

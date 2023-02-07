@@ -9,7 +9,7 @@ defmodule Exonerate.Filter.Pattern do
 
   defstruct [:context, :pattern]
 
-  def parse(filter = %Exonerate.Type.String{}, %{"pattern" => pattern}) do
+  def parse(filter, %{"pattern" => pattern}) do
     %{
       filter
       | pipeline: ["pattern" | filter.pipeline],
