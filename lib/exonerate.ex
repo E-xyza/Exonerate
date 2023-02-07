@@ -95,10 +95,7 @@ defmodule Exonerate do
   """
 
   alias Exonerate.Cache
-  alias Exonerate.Metadata
   alias Exonerate.Tools
-  alias Exonerate.Type
-  alias Exonerate.Context
 
   @common_defaults [
     format: %{},
@@ -123,12 +120,15 @@ defmodule Exonerate do
     Cache.put(name, schema)
 
     call = Tools.pointer_to_fun_name(root_pointer, authority: name)
+    {schema_str, id} = if is_map(schema), do: {schema["$schema"], schema["$id"]}, else: {nil, nil}
 
     Tools.maybe_dump(
       quote do
-        unquote(type)(unquote(name)(value), do: unquote(call)(value, "/"))
-
         require Exonerate.Context
+        Exonerate.schema(unquote(type), unquote(name), unquote(schema_str))
+        Exonerate.id(unquote(type), unquote(name), unquote(id))
+
+        unquote(type)(unquote(name)(value), do: unquote(call)(value, "/"))
         Exonerate.Context.from_cached(unquote(name), unquote(root_pointer), unquote(opts))
       end,
       opts
@@ -173,5 +173,25 @@ defmodule Exonerate do
     #  end,
     #  opts
     # )
+  end
+
+  @doc false
+  # private api.  Causes the $schema metadata to be accessible by passing the `:schema` atom.
+  defmacro schema(type, name, schema) do
+    if schema do
+      quote do
+        unquote(type)(unquote(name)(:schema), do: unquote(schema))
+      end
+    end
+  end
+
+  @doc false
+  # private api.  Causes the $id metadata to be accessible by passing the `:id` atom.
+  defmacro id(type, name, id) do
+    if id do
+      quote do
+        unquote(type)(unquote(name)(:id), do: unquote(id))
+      end
+    end
   end
 end
