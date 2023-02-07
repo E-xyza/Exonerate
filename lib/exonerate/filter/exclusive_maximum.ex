@@ -7,22 +7,22 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
 
   alias Exonerate.Type.Integer
   alias Exonerate.Type.Number
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :maximum, :parent]
 
   # ignore version-4-type exclusiveMaximum specifiers.
-  def parse(artifact, %{"exclusiveMaximum" => bool}) when is_boolean(bool), do: artifact
+  def parse(filter, %{"exclusiveMaximum" => bool}) when is_boolean(bool), do: filter
 
-  def parse(artifact = %type{}, %{"exclusiveMaximum" => maximum})
+  def parse(filter = %type{}, %{"exclusiveMaximum" => maximum})
       when type in [Integer, Number] do
     %{
-      artifact
+      filter
       | filters: [
-          %__MODULE__{context: artifact.context, maximum: maximum, parent: type}
-          | artifact.filters
+          %__MODULE__{context: filter.context, maximum: maximum, parent: type}
+          | filter.filters
         ]
     }
   end

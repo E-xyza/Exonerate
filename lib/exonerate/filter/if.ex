@@ -6,14 +6,14 @@ defmodule Exonerate.Filter.If do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Filter.UnevaluatedHelper
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :schema, :then, :else, :evaluated_tokens]
 
   @impl true
-  def parse(context = %Validator{}, schema = %{"if" => _}) do
+  def parse(context = %Context{}, schema = %{"if" => _}) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()
@@ -21,7 +21,7 @@ defmodule Exonerate.Filter.If do
       |> Kernel.++(context.evaluated_tokens)
 
     schema =
-      Validator.parse(
+      Context.parse(
         context.schema,
         JsonPointer.traverse(context.pointer, "if"),
         authority: context.authority,
@@ -123,6 +123,6 @@ defmodule Exonerate.Filter.If do
           end
       end
 
-    [code, Validator.compile(filter.schema)]
+    [code, Context.compile(filter.schema)]
   end
 end

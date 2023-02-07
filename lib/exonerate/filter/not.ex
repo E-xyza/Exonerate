@@ -7,14 +7,14 @@ defmodule Exonerate.Filter.Not do
 
   defstruct [:context, :schema]
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   @impl true
-  def parse(context = %Validator{}, %{"not" => _}) do
+  def parse(context = %Context{}, %{"not" => _}) do
     schema =
-      Validator.parse(
+      Context.parse(
         context.schema,
         JsonPointer.traverse(context.pointer, "not"),
         authority: context.authority,
@@ -47,6 +47,6 @@ defmodule Exonerate.Filter.Not do
   end
 
   def compile(filter = %__MODULE__{}) do
-    [Validator.compile(filter.schema)]
+    [Context.compile(filter.schema)]
   end
 end

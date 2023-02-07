@@ -5,17 +5,17 @@ defmodule Exonerate.Filter.PrefixItems do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :schema, :additional_items]
 
-  def parse(artifact = %{context: context}, %{"prefixItems" => s}) when is_list(s) do
+  def parse(filter = %{context: context}, %{"prefixItems" => s}) when is_list(s) do
     schemas =
       Enum.map(
         0..(length(s) - 1),
-        &Validator.parse(
+        &Context.parse(
           context.schema,
           JsonPointer.traverse(context.pointer, ["prefixItems", "#{&1}"]),
           authority: context.authority,
@@ -25,17 +25,17 @@ defmodule Exonerate.Filter.PrefixItems do
       )
 
     %{
-      artifact
+      filter
       | needs_accumulator: true,
-        accumulator_pipeline: [fun(artifact, "prefixItems") | artifact.accumulator_pipeline],
-        accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
+        accumulator_pipeline: [fun(filter, "prefixItems") | filter.accumulator_pipeline],
+        accumulator_init: Map.put(filter.accumulator_init, :index, 0),
         filters: [
           %__MODULE__{
-            context: artifact.context,
+            context: filter.context,
             schema: schemas,
-            additional_items: artifact.additional_items
+            additional_items: filter.additional_items
           }
-          | artifact.filters
+          | filter.filters
         ]
     }
   end
@@ -54,7 +54,7 @@ defmodule Exonerate.Filter.PrefixItems do
 
              acc
            end
-         end, Validator.compile(schema)}
+         end, Context.compile(schema)}
       end)
       |> Enum.unzip()
 

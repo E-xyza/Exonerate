@@ -7,9 +7,9 @@ defmodule Exonerate.Type.Array do
 
   alias Exonerate.Filter
   alias Exonerate.Tools
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [
     :context,
@@ -29,56 +29,56 @@ defmodule Exonerate.Type.Array do
   # reduction element.
   # items MUST be last to detect the presence of prefixItems and also clear all filters
   # in the items = false optimization.
-  @validator_filters ~w(minItems maxItems additionalItems prefixItems maxContains minContains contains uniqueItems items)
-  @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
+  @context_filters ~w(minItems maxItems additionalItems prefixItems maxContains minContains contains uniqueItems items)
+  @context_modules Map.new(@context_filters, &{&1, Filter.from_string(&1)})
 
   @impl true
-  @spec parse(Validator.t(), Type.json()) :: t
+  @spec parse(Context.t(), Type.json()) :: t
   # draft <= 7 refs inhibit type-based analysis
-  def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
-    %__MODULE__{context: validator}
+  def parse(context = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
+    %__MODULE__{context: context}
   end
 
-  def parse(validator, schema) do
-    %__MODULE__{context: validator}
-    |> Tools.collect(@validator_filters, fn
-      artifact, filter when is_map_key(schema, filter) ->
-        Filter.parse(artifact, @validator_modules[filter], schema)
+  def parse(context, schema) do
+    %__MODULE__{context: context}
+    |> Tools.collect(@context_filters, fn
+      filter, filter when is_map_key(schema, filter) ->
+        Filter.parse(filter, @context_modules[filter], schema)
 
-      artifact, _ ->
-        artifact
+      filter, _ ->
+        filter
     end)
   end
 
   @impl true
   @spec compile(t) :: Macro.t()
-  def compile(artifact) do
+  def compile(filter) do
     {accumulator_pipeline, index_accumulator} =
-      if :index in Map.keys(artifact.accumulator_init) do
+      if :index in Map.keys(filter.accumulator_init) do
         {
-          artifact.accumulator_pipeline ++ [fun(artifact, ":index")],
+          filter.accumulator_pipeline ++ [fun(filter, ":index")],
           quote do
-            defp unquote(fun(artifact, ":index"))(acc, _) do
+            defp unquote(fun(filter, ":index"))(acc, _) do
               %{acc | index: acc.index + 1}
             end
           end
         }
       else
-        {artifact.accumulator_pipeline, :ok}
+        {filter.accumulator_pipeline, :ok}
       end
 
     accumulator =
-      if artifact.needs_array_in_accumulator do
+      if filter.needs_array_in_accumulator do
         quote do
-          Map.put(unquote(Macro.escape(artifact.accumulator_init)), :array, array)
+          Map.put(unquote(Macro.escape(filter.accumulator_init)), :array, array)
         end
       else
-        Macro.escape(artifact.accumulator_init)
+        Macro.escape(filter.accumulator_init)
       end
 
     combining =
-      Validator.combining(
-        artifact.context,
+      Context.combining(
+        filter.context,
         quote do
           array
         end,
@@ -88,12 +88,12 @@ defmodule Exonerate.Type.Array do
       )
 
     quote do
-      defp unquote(fun(artifact, []))(array, path) when is_list(array) do
+      defp unquote(fun(filter, []))(array, path) when is_list(array) do
         array
         |> Enum.reduce(unquote(accumulator), fn item, acc ->
           Exonerate.pipeline(acc, {path, item}, unquote(accumulator_pipeline))
         end)
-        |> Exonerate.pipeline({path, array}, unquote(artifact.post_reduce_pipeline))
+        |> Exonerate.pipeline({path, array}, unquote(filter.post_reduce_pipeline))
 
         unquote_splicing(combining)
       end

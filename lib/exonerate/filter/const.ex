@@ -7,12 +7,12 @@ defmodule Exonerate.Filter.Const do
   defstruct [:context, :const]
 
   alias Exonerate.Type
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   @impl true
-  def parse(validation = %Validator{}, %{"const" => const}) do
+  def parse(validation = %Context{}, %{"const" => const}) do
     type = %{Type.of(const) => nil}
 
     %{

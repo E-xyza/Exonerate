@@ -7,17 +7,17 @@ defmodule Exonerate.Filter.MultipleOf do
 
   alias Exonerate.Type.Integer
   alias Exonerate.Type.Number
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :factor]
 
-  def parse(artifact = %type{}, %{"multipleOf" => factor})
+  def parse(filter = %type{}, %{"multipleOf" => factor})
       when is_integer(factor) and type in [Number, Integer] do
     %{
-      artifact
-      | filters: [%__MODULE__{context: artifact.context, factor: factor} | artifact.filters]
+      filter
+      | filters: [%__MODULE__{context: filter.context, factor: factor} | filter.filters]
     }
   end
 

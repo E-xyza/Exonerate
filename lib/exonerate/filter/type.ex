@@ -7,14 +7,14 @@ defmodule Exonerate.Filter.Type do
   defstruct [:context, :types]
 
   alias Exonerate.Type
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
   # the filter for the "type" parameter.
 
   @behaviour Exonerate.Filter
 
-  @spec parse(Validator.t(), Type.json()) :: Validator.t()
-  def parse(validator = %Validator{}, %{"type" => schema}) do
+  @spec parse(Context.t(), Type.json()) :: Context.t()
+  def parse(context = %Context{}, %{"type" => schema}) do
     types =
       schema
       |> List.wrap()
@@ -22,15 +22,15 @@ defmodule Exonerate.Filter.Type do
       |> Map.new(&{&1, nil})
 
     %{
-      validator
-      | types: Type.intersection(validator.types, types),
-        guards: [%__MODULE__{context: validator, types: Map.keys(types)} | validator.guards]
+      context
+      | types: Type.intersection(context.types, types),
+        guards: [%__MODULE__{context: context, types: Map.keys(types)} | context.guards]
     }
   end
 
   def compile(%__MODULE__{context: context, types: types}) do
     quote do
-      defp unquote(Validator.fun(context))(value, path)
+      defp unquote(Context.fun(context))(value, path)
            when not Exonerate.chain_guards(value, unquote(types)) do
         Exonerate.mismatch(value, path, guard: "type")
       end

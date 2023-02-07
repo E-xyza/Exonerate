@@ -5,19 +5,19 @@ defmodule Exonerate.Filter.MaxItems do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
   defstruct [:context, :count]
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
-  def parse(artifact, %{"maxItems" => count}) do
+  def parse(filter, %{"maxItems" => count}) do
     %{
-      artifact
+      filter
       | needs_accumulator: true,
         needs_array_in_accumulator: true,
-        accumulator_pipeline: [fun(artifact, "maxItems") | artifact.accumulator_pipeline],
-        accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
-        filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]
+        accumulator_pipeline: [fun(filter, "maxItems") | filter.accumulator_pipeline],
+        accumulator_init: Map.put(filter.accumulator_init, :index, 0),
+        filters: [%__MODULE__{context: filter.context, count: count} | filter.filters]
     }
   end
 

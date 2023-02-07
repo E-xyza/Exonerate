@@ -5,18 +5,18 @@ defmodule Exonerate.Filter.PatternProperties do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :patterns, :evaluated_tokens]
 
-  def parse(artifact = %{context: context}, %{"patternProperties" => patterns}) do
+  def parse(filter = %{context: context}, %{"patternProperties" => patterns}) do
     patterns =
       Map.new(patterns, fn
         {pattern, _} ->
           {pattern,
-           Validator.parse(
+           Context.parse(
              context.schema,
              JsonPointer.traverse(context.pointer, ["patternProperties", pattern]),
              authority: context.authority,
@@ -26,20 +26,20 @@ defmodule Exonerate.Filter.PatternProperties do
       end)
 
     %{
-      artifact
+      filter
       | iterate: true,
         kv_pipeline:
-          Enum.map(patterns, fn {k, _} -> fun(artifact, ["patternProperties", k]) end) ++
-            artifact.kv_pipeline,
-        filters: [filter_from(artifact, patterns) | artifact.filters]
+          Enum.map(patterns, fn {k, _} -> fun(filter, ["patternProperties", k]) end) ++
+            filter.kv_pipeline,
+        filters: [filter_from(filter, patterns) | filter.filters]
     }
   end
 
-  defp filter_from(artifact = %{context: context}, patterns) do
+  defp filter_from(filter = %{context: context}, patterns) do
     %__MODULE__{
-      context: artifact.context,
+      context: filter.context,
       patterns: patterns,
-      evaluated_tokens: artifact.evaluated_tokens ++ context.evaluated_tokens
+      evaluated_tokens: filter.evaluated_tokens ++ context.evaluated_tokens
     }
   end
 
@@ -65,7 +65,7 @@ defmodule Exonerate.Filter.PatternProperties do
              end
            end
 
-           unquote(Validator.compile(compiled))
+           unquote(Context.compile(compiled))
          end
      end)}
   end

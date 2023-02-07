@@ -5,25 +5,25 @@ defmodule Exonerate.Filter.MinContains do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :minimum]
 
-  def parse(artifact = %{context: context}, %{"contains" => _, "minContains" => minimum})
+  def parse(filter = %{context: context}, %{"contains" => _, "minContains" => minimum})
       when minimum > 0 do
     %{
-      artifact
+      filter
       | needs_accumulator: true,
-        post_reduce_pipeline: [fun(artifact, "minContains") | artifact.post_reduce_pipeline],
-        accumulator_init: Map.put_new(artifact.accumulator_init, :contains, 0),
-        filters: [%__MODULE__{context: context, minimum: minimum} | artifact.filters]
+        post_reduce_pipeline: [fun(filter, "minContains") | filter.post_reduce_pipeline],
+        accumulator_init: Map.put_new(filter.accumulator_init, :contains, 0),
+        filters: [%__MODULE__{context: context, minimum: minimum} | filter.filters]
     }
   end
 
   # ignore when there is no "contains"
-  def parse(artifact, %{"minContains" => _}), do: artifact
+  def parse(filter, %{"minContains" => _}), do: filter
 
   def compile(filter = %__MODULE__{minimum: minimum}) do
     {[],

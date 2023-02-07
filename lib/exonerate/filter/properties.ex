@@ -5,19 +5,19 @@ defmodule Exonerate.Filter.Properties do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :children, :evaluated_tokens]
 
-  def parse(artifact = %{context: context}, %{"properties" => properties}) do
+  def parse(filter = %{context: context}, %{"properties" => properties}) do
     children =
       Map.new(
         properties,
         fn {k, _} ->
           {k,
-           Validator.parse(
+           Context.parse(
              context.schema,
              JsonPointer.traverse(context.pointer, ["properties", k]),
              authority: context.authority,
@@ -28,18 +28,18 @@ defmodule Exonerate.Filter.Properties do
       )
 
     %{
-      artifact
+      filter
       | iterate: true,
-        filters: [filter_from(artifact, children) | artifact.filters],
-        kv_pipeline: [fun(artifact, "properties") | artifact.kv_pipeline]
+        filters: [filter_from(filter, children) | filter.filters],
+        kv_pipeline: [fun(filter, "properties") | filter.kv_pipeline]
     }
   end
 
-  defp filter_from(artifact = %{context: context}, children) do
+  defp filter_from(filter = %{context: context}, children) do
     %__MODULE__{
       context: context,
       children: children,
-      evaluated_tokens: artifact.evaluated_tokens ++ context.evaluated_tokens
+      evaluated_tokens: filter.evaluated_tokens ++ context.evaluated_tokens
     }
   end
 
@@ -60,7 +60,7 @@ defmodule Exonerate.Filter.Properties do
 
              true
            end
-         end, Validator.compile(v)}
+         end, Context.compile(v)}
       end)
       |> Enum.unzip()
 

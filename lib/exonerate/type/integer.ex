@@ -8,40 +8,40 @@ defmodule Exonerate.Type.Integer do
 
   alias Exonerate.Filter
   alias Exonerate.Tools
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, filters: []]
   @type t :: %__MODULE__{}
 
-  @validator_filters ~w(multipleOf minimum maximum exclusiveMinimum exclusiveMaximum)
-  @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
+  @context_filters ~w(multipleOf minimum maximum exclusiveMinimum exclusiveMaximum)
+  @context_modules Map.new(@context_filters, &{&1, Filter.from_string(&1)})
 
   @impl true
-  @spec parse(Validator.t(), Type.json()) :: t
+  @spec parse(Context.t(), Type.json()) :: t
   # draft <= 7 refs inhibit type-based analysis
-  def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
-    %__MODULE__{context: validator}
+  def parse(context = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
+    %__MODULE__{context: context}
   end
 
-  def parse(validator, schema) do
-    %__MODULE__{context: validator}
-    |> Tools.collect(@validator_filters, fn
-      artifact, filter when is_map_key(schema, filter) ->
-        Filter.parse(artifact, @validator_modules[filter], schema)
+  def parse(context, schema) do
+    %__MODULE__{context: context}
+    |> Tools.collect(@context_filters, fn
+      filter, filter when is_map_key(schema, filter) ->
+        Filter.parse(filter, @context_modules[filter], schema)
 
-      artifact, _ ->
-        artifact
+      filter, _ ->
+        filter
     end)
   end
 
   @impl true
   @spec compile(t) :: Macro.t()
-  def compile(artifact) do
+  def compile(filter) do
     combining =
-      Validator.combining(
-        artifact.context,
+      Context.combining(
+        filter.context,
         quote do
           integer
         end,
@@ -51,7 +51,7 @@ defmodule Exonerate.Type.Integer do
       )
 
     quote do
-      defp unquote(fun(artifact, []))(integer, path) when is_integer(integer) do
+      defp unquote(fun(filter, []))(integer, path) when is_integer(integer) do
         (unquote_splicing(combining))
       end
     end

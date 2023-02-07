@@ -2,22 +2,22 @@ defmodule Exonerate.Filter do
   @moduledoc false
 
   alias Exonerate.Type
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
   # to be filled with a more comprensive list later.
   @type t :: module
-  @type artifact :: %{__struct__: t}
+  @type filter :: %{__struct__: t}
 
-  @callback parse(Validator.t() | Type.artifact(), Type.json()) :: Validator.t() | Type.artifact()
+  @callback parse(Context.t() | Type.filter(), Type.json()) :: Context.t() | Type.filter()
 
   def from_string(filter), do: String.to_atom("Elixir.Exonerate.Filter.#{capitalize(filter)}")
 
-  @spec parse(Validator.t(), Filter.t()) :: Validator.t()
-  def parse(validation, module), do: parse(validation, module, Validator.traverse(validation))
+  @spec parse(Context.t(), Filter.t()) :: Context.t()
+  def parse(validation, module), do: parse(validation, module, Context.traverse(validation))
 
-  @spec parse(Validator.t(), Filter.t(), Type.json()) :: Validator.t()
-  @spec parse(Type.artifact(), Filter.t(), Type.json()) :: Type.artifact()
-  def parse(validator_or_artifact, module, json), do: module.parse(validator_or_artifact, json)
+  @spec parse(Context.t(), Filter.t(), Type.json()) :: Context.t()
+  @spec parse(Type.filter(), Filter.t(), Type.json()) :: Type.filter()
+  def parse(context_or_filter, module, json), do: module.parse(context_or_filter, json)
 
   defp capitalize(<<?$, rest::binary>>), do: capitalize(rest)
 

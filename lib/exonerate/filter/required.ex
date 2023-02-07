@@ -5,16 +5,16 @@ defmodule Exonerate.Filter.Required do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :props]
 
-  def parse(artifact, %{"required" => prop}) do
+  def parse(filter, %{"required" => prop}) do
     %{
-      artifact
-      | filters: [%__MODULE__{context: artifact.context, props: prop} | artifact.filters]
+      filter
+      | filters: [%__MODULE__{context: filter.context, props: prop} | filter.filters]
     }
   end
 

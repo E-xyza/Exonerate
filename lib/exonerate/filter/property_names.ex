@@ -6,36 +6,36 @@ defmodule Exonerate.Filter.PropertyNames do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Type.Object
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :schema]
 
-  def parse(artifact, %{"propertyNames" => true}) do
+  def parse(filter, %{"propertyNames" => true}) do
     # true means no further conditions are added to the schema.
     # this header clause is provided as an optimization.
-    artifact
+    filter
   end
 
-  def parse(artifact = %{context: context}, %{"propertyNames" => false}) do
+  def parse(filter = %{context: context}, %{"propertyNames" => false}) do
     # false means only the empty object is valid
     # this is provided as an optimization.
-    %{artifact | iterate: false, filters: [%__MODULE__{context: context, schema: false}]}
+    %{filter | iterate: false, filters: [%__MODULE__{context: context, schema: false}]}
   end
 
-  def parse(artifact = %Object{context: context}, %{"propertyNames" => schema}) do
+  def parse(filter = %Object{context: context}, %{"propertyNames" => schema}) do
     schema =
       Exonerate.Type.String.parse(
-        Validator.jump_into(artifact.context, "propertyNames", true),
+        Context.jump_into(filter.context, "propertyNames", true),
         schema
       )
 
     %{
-      artifact
+      filter
       | iterate: true,
-        filters: [%__MODULE__{context: context, schema: schema} | artifact.filters],
-        kv_pipeline: [fun(artifact, "propertyNames") | artifact.kv_pipeline]
+        filters: [%__MODULE__{context: context, schema: schema} | filter.filters],
+        kv_pipeline: [fun(filter, "propertyNames") | filter.kv_pipeline]
     }
   end
 

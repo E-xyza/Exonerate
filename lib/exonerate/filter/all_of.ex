@@ -7,27 +7,27 @@ defmodule Exonerate.Filter.AllOf do
   defstruct [:context, :schemas]
 
   alias Exonerate.Filter.UnevaluatedHelper
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   @impl true
-  def parse(validator = %Validator{}, schema = %{"allOf" => s}) do
+  def parse(context = %Context{}, schema = %{"allOf" => s}) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()
       |> List.wrap()
-      |> Kernel.++(validator.evaluated_tokens)
+      |> Kernel.++(context.evaluated_tokens)
 
     schemas =
       Enum.map(
         0..(length(s) - 1),
-        &Validator.parse(
-          validator.schema,
-          JsonPointer.traverse(validator.pointer, ["allOf", "#{&1}"]),
-          authority: validator.authority,
-          format: validator.format,
-          draft: validator.draft,
+        &Context.parse(
+          context.schema,
+          JsonPointer.traverse(context.pointer, ["allOf", "#{&1}"]),
+          authority: context.authority,
+          format: context.format,
+          draft: context.draft,
           evaluated_tokens: evaluated_tokens
         )
       )
@@ -38,12 +38,12 @@ defmodule Exonerate.Filter.AllOf do
     # |> Enum.map(&Map.new(&1, fn {k, _} -> {k, nil} end))
     # |> Enum.reduce(&Type.intersection/2)
 
-    module = %__MODULE__{context: validator, schemas: schemas}
+    module = %__MODULE__{context: context, schemas: schemas}
 
     %{
-      validator
-      | children: [module | validator.children],
-        combining: [module | validator.combining]
+      context
+      | children: [module | context.children],
+        combining: [module | context.combining]
     }
   end
 
@@ -68,7 +68,7 @@ defmodule Exonerate.Filter.AllOf do
           (unquote_splicing(calls))
         end
       end
-      | Enum.map(filter.schemas, &Validator.compile/1)
+      | Enum.map(filter.schemas, &Context.compile/1)
     ]
   end
 end

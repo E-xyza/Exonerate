@@ -9,20 +9,20 @@ defmodule Exonerate.Type.Null do
   defstruct [:context, filters: []]
   @type t :: %__MODULE__{}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
   @impl true
-  @spec parse(Validator.t(), Type.json()) :: t
-  def parse(validator, _schema) do
-    %__MODULE__{context: validator}
+  @spec parse(Context.t(), Type.json()) :: t
+  def parse(context, _schema) do
+    %__MODULE__{context: context}
   end
 
   @impl true
   @spec compile(t) :: Macro.t()
-  def compile(artifact) do
+  def compile(filter) do
     combining =
-      Validator.combining(
-        artifact.context,
+      Context.combining(
+        filter.context,
         quote do
           null
         end,
@@ -32,7 +32,7 @@ defmodule Exonerate.Type.Null do
       )
 
     quote do
-      defp unquote(Validator.fun(artifact))(null, path) when is_nil(null) do
+      defp unquote(Context.fun(filter))(null, path) when is_nil(null) do
         (unquote_splicing(combining))
       end
     end

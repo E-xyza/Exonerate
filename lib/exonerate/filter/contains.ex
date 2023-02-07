@@ -5,17 +5,17 @@ defmodule Exonerate.Filter.Contains do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :contains, :min_contains]
 
-  def parse(artifact, %{"contains" => _, "minContains" => 0}), do: artifact
+  def parse(filter, %{"contains" => _, "minContains" => 0}), do: filter
 
-  def parse(artifact = %{context: context}, %{"contains" => _}) do
+  def parse(filter = %{context: context}, %{"contains" => _}) do
     schema =
-      Validator.parse(
+      Context.parse(
         context.schema,
         JsonPointer.traverse(context.pointer, "contains"),
         authority: context.authority,
@@ -24,20 +24,20 @@ defmodule Exonerate.Filter.Contains do
       )
 
     filter = %__MODULE__{
-      context: artifact.context,
+      context: filter.context,
       contains: schema,
       min_contains: is_map_key(schema, "minContains")
     }
 
     %{
-      artifact
+      filter
       | needs_accumulator: true,
         accumulator_pipeline: [
-          fun(artifact, ["contains", ":reduce"]) | artifact.accumulator_pipeline
+          fun(filter, ["contains", ":reduce"]) | filter.accumulator_pipeline
         ],
-        post_reduce_pipeline: [fun(artifact, "contains") | artifact.post_reduce_pipeline],
-        accumulator_init: Map.put_new(artifact.accumulator_init, :contains, 0),
-        filters: [filter | artifact.filters]
+        post_reduce_pipeline: [fun(filter, "contains") | filter.post_reduce_pipeline],
+        accumulator_init: Map.put_new(filter.accumulator_init, :contains, 0),
+        filters: [filter | filter.filters]
     }
   end
 
@@ -72,7 +72,7 @@ defmodule Exonerate.Filter.Contains do
          end
 
          unquote(rest)
-         unquote(Validator.compile(contains))
+         unquote(Context.compile(contains))
        end
      ]}
   end

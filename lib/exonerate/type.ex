@@ -15,17 +15,17 @@ defmodule Exonerate.Type do
        )
 
   alias Exonerate.Type.{Array, Boolean, Null, Integer, Number, Object, String}
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
   @type t :: String | Integer | Number | Object | Array | Boolean | Null
-  @type artifact :: %{__struct__: t}
+  @type filter :: %{__struct__: t}
 
   # a JsonSchema must be either true, false, or a json map.
   @type schema :: boolean | %{optional(String.t()) => json}
 
-  @callback __struct__() :: artifact
-  @callback parse(Validator.t(), json) :: artifact
-  @callback compile(artifact) :: Macro.t()
+  @callback __struct__() :: filter
+  @callback parse(Context.t(), json) :: filter
+  @callback compile(filter) :: Macro.t()
 
   @guards %{
     String => :is_binary,

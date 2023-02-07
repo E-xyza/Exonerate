@@ -5,42 +5,42 @@ defmodule Exonerate.Filter.Items do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :schema, :additional_items, :prefix_size]
 
-  def parse(artifact = %{context: context}, %{"items" => true}) do
+  def parse(filter = %{context: context}, %{"items" => true}) do
     # true means any array is valid
     # this header clause is provided as an optimization.
-    %{artifact | filters: [%__MODULE__{context: context, schema: true} | artifact.filters]}
+    %{filter | filters: [%__MODULE__{context: context, schema: true} | filter.filters]}
   end
 
-  def parse(artifact = %{context: context}, schema = %{"items" => false}) do
+  def parse(filter = %{context: context}, schema = %{"items" => false}) do
     # false means everything after prefixItems gets checked.
     if prefix_items = schema["prefixItems"] do
       filter = %__MODULE__{context: context, schema: false, prefix_size: length(prefix_items)}
 
       %{
-        artifact
+        filter
         | needs_accumulator: true,
-          accumulator_pipeline: [fun(artifact, "items") | artifact.accumulator_pipeline],
-          accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
-          filters: [filter | artifact.filters]
+          accumulator_pipeline: [fun(filter, "items") | filter.accumulator_pipeline],
+          accumulator_init: Map.put(filter.accumulator_init, :index, 0),
+          filters: [filter | filter.filters]
       }
     else
       # this is provided as an optimization.
       filter = %__MODULE__{context: context, schema: false, prefix_size: 0}
-      %{artifact | filters: [filter]}
+      %{filter | filters: [filter]}
     end
   end
 
-  def parse(artifact = %{context: context}, %{"items" => s}) when is_map(s) do
-    fun = fun(artifact, "items")
+  def parse(filter = %{context: context}, %{"items" => s}) when is_map(s) do
+    fun = fun(filter, "items")
 
     schema =
-      Validator.parse(
+      Context.parse(
         context.schema,
         JsonPointer.traverse(context.pointer, "items"),
         authority: context.authority,
@@ -49,27 +49,27 @@ defmodule Exonerate.Filter.Items do
       )
 
     %{
-      artifact
+      filter
       | needs_accumulator: true,
-        accumulator_pipeline: [fun | artifact.accumulator_pipeline],
-        accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
+        accumulator_pipeline: [fun | filter.accumulator_pipeline],
+        accumulator_init: Map.put(filter.accumulator_init, :index, 0),
         filters: [
           %__MODULE__{
             context: context,
             schema: schema
           }
-          | artifact.filters
+          | filter.filters
         ]
     }
   end
 
-  def parse(artifact = %{context: context}, %{"items" => s}) when is_list(s) do
-    fun = fun(artifact, "items")
+  def parse(filter = %{context: context}, %{"items" => s}) when is_list(s) do
+    fun = fun(filter, "items")
 
     schemas =
       Enum.map(
         0..(length(s) - 1),
-        &Validator.parse(
+        &Context.parse(
           context.schema,
           JsonPointer.traverse(context.pointer, ["items", "#{&1}"]),
           authority: context.authority,
@@ -79,17 +79,17 @@ defmodule Exonerate.Filter.Items do
       )
 
     %{
-      artifact
+      filter
       | needs_accumulator: true,
-        accumulator_pipeline: [fun | artifact.accumulator_pipeline],
-        accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
+        accumulator_pipeline: [fun | filter.accumulator_pipeline],
+        accumulator_init: Map.put(filter.accumulator_init, :index, 0),
         filters: [
           %__MODULE__{
-            context: artifact.context,
+            context: filter.context,
             schema: schemas,
-            additional_items: artifact.additional_items
+            additional_items: filter.additional_items
           }
-          | artifact.filters
+          | filter.filters
         ]
     }
   end
@@ -131,7 +131,7 @@ defmodule Exonerate.Filter.Items do
            acc
          end
 
-         unquote(Validator.compile(schema))
+         unquote(Context.compile(schema))
        end
      ]}
   end
@@ -150,7 +150,7 @@ defmodule Exonerate.Filter.Items do
 
              acc
            end
-         end, Validator.compile(schema)}
+         end, Context.compile(schema)}
       end)
       |> Enum.unzip()
 

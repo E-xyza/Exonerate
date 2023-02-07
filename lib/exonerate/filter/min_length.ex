@@ -5,25 +5,25 @@ defmodule Exonerate.Filter.MinLength do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :length, :format_binary]
 
-  def parse(artifact = %Exonerate.Type.String{}, %{"minLength" => length}) do
-    pipeline = List.wrap(unless artifact.format_binary, do: fun(artifact, "minLength"))
+  def parse(filter = %Exonerate.Type.String{}, %{"minLength" => length}) do
+    pipeline = List.wrap(unless filter.format_binary, do: fun(filter, "minLength"))
 
     %{
-      artifact
-      | pipeline: pipeline ++ artifact.pipeline,
+      filter
+      | pipeline: pipeline ++ filter.pipeline,
         filters: [
           %__MODULE__{
-            context: artifact.context,
+            context: filter.context,
             length: length,
-            format_binary: artifact.format_binary
+            format_binary: filter.format_binary
           }
-          | artifact.filters
+          | filter.filters
         ]
     }
   end

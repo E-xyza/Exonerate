@@ -6,9 +6,9 @@ defmodule Exonerate.Filter.Format do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Registry
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :fun]
 
@@ -34,17 +34,17 @@ defmodule Exonerate.Filter.Format do
   }
 
   # pass over the binary format, which gets special treatment elsewhere.
-  def parse(artifact, %{"format" => "binary"}), do: artifact
+  def parse(filter, %{"format" => "binary"}), do: filter
 
-  def parse(artifact = %Exonerate.Type.String{}, %{"format" => format}) do
+  def parse(filter = %Exonerate.Type.String{}, %{"format" => format}) do
     default =
       {default_fun, builtin_scaffold, _} = Map.get(@defaults, format, {:__annotate, nil, []})
 
     fun =
       try do
-        artifact.context.pointer
+        filter.context.pointer
         |> JsonPointer.to_uri()
-        |> :erlang.map_get(artifact.context.format)
+        |> :erlang.map_get(filter.context.format)
         |> case do
           false ->
             {:__annotate, nil, []}
@@ -60,7 +60,7 @@ defmodule Exonerate.Filter.Format do
         end
       rescue
         _e in KeyError ->
-          case Enum.find_value(artifact.context.format, fn
+          case Enum.find_value(filter.context.format, fn
                  {k, v} when is_atom(k) ->
                    if Atom.to_string(k) == format, do: v
 
@@ -79,9 +79,9 @@ defmodule Exonerate.Filter.Format do
       end
 
     %{
-      artifact
-      | pipeline: [fun(artifact, "format") | artifact.pipeline],
-        filters: [%__MODULE__{context: artifact.context, fun: fun} | artifact.filters]
+      filter
+      | pipeline: [fun(filter, "format") | filter.pipeline],
+        filters: [%__MODULE__{context: filter.context, fun: fun} | filter.filters]
     }
   end
 

@@ -6,14 +6,14 @@ defmodule Exonerate.Filter.Enum do
 
   alias Exonerate.Type
   alias Exonerate.Type.{Array, Boolean, Integer, Null, Number, Object, String}
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :enums]
 
   @impl true
-  def parse(validation = %Validator{}, %{"enum" => enums}) do
+  def parse(validation = %Context{}, %{"enum" => enums}) do
     types = Map.new(enums, &{Type.of(&1), nil})
 
     %{

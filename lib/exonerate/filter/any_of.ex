@@ -7,42 +7,42 @@ defmodule Exonerate.Filter.AnyOf do
   defstruct [:context, :schemas, :evaluated_tokens]
 
   alias Exonerate.Filter.UnevaluatedHelper
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   @impl true
-  def parse(validator = %Validator{}, schema = %{"anyOf" => s}) do
+  def parse(context = %Context{}, schema = %{"anyOf" => s}) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()
       |> List.wrap()
-      |> Kernel.++(validator.evaluated_tokens)
+      |> Kernel.++(context.evaluated_tokens)
 
     schemas =
       Enum.map(
         0..(length(s) - 1),
-        &Validator.parse(
-          validator.schema,
-          JsonPointer.traverse(validator.pointer, ["anyOf", "#{&1}"]),
-          authority: validator.authority,
-          format: validator.format,
-          draft: validator.draft,
+        &Context.parse(
+          context.schema,
+          JsonPointer.traverse(context.pointer, ["anyOf", "#{&1}"]),
+          authority: context.authority,
+          format: context.format,
+          draft: context.draft,
           evaluated_tokens: evaluated_tokens
         )
       )
 
     module = %__MODULE__{
-      context: validator,
+      context: context,
       schemas: schemas,
       evaluated_tokens: evaluated_tokens
     }
 
     %{
-      validator
+      context
       | #  types: types,
-        children: [module | validator.children],
-        combining: [module | validator.combining]
+        children: [module | context.children],
+        combining: [module | context.combining]
     }
   end
 
@@ -151,7 +151,7 @@ defmodule Exonerate.Filter.AnyOf do
             end
           end
         end,
-        Validator.compile(schema)
+        Context.compile(schema)
       ]
     end)
   end
@@ -169,7 +169,7 @@ defmodule Exonerate.Filter.AnyOf do
               end
           end
         end,
-        Validator.compile(schema)
+        Context.compile(schema)
       ]
     end)
   end

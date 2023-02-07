@@ -7,22 +7,22 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
 
   alias Exonerate.Type.Integer
   alias Exonerate.Type.Number
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :minimum, :parent]
 
   # ignore version-4-type exclusiveMaximum specifiers.
-  def parse(artifact, %{"exclusiveMinimum" => bool}) when is_boolean(bool), do: artifact
+  def parse(filter, %{"exclusiveMinimum" => bool}) when is_boolean(bool), do: filter
 
-  def parse(artifact = %type{}, %{"exclusiveMinimum" => minimum})
+  def parse(filter = %type{}, %{"exclusiveMinimum" => minimum})
       when type in [Integer, Number] do
     %{
-      artifact
+      filter
       | filters: [
-          %__MODULE__{context: artifact.context, minimum: minimum, parent: type}
-          | artifact.filters
+          %__MODULE__{context: filter.context, minimum: minimum, parent: type}
+          | filter.filters
         ]
     }
   end

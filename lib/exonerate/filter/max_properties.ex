@@ -5,16 +5,16 @@ defmodule Exonerate.Filter.MaxProperties do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :count]
 
-  def parse(artifact, %{"maxProperties" => count}) do
+  def parse(filter, %{"maxProperties" => count}) do
     %{
-      artifact
-      | filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]
+      filter
+      | filters: [%__MODULE__{context: filter.context, count: count} | filter.filters]
     }
   end
 

@@ -5,17 +5,17 @@ defmodule Exonerate.Filter.Pattern do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :pattern]
 
-  def parse(artifact = %Exonerate.Type.String{}, %{"pattern" => pattern}) do
+  def parse(filter = %Exonerate.Type.String{}, %{"pattern" => pattern}) do
     %{
-      artifact
-      | pipeline: [fun(artifact, "pattern") | artifact.pipeline],
-        filters: [%__MODULE__{context: artifact.context, pattern: pattern} | artifact.filters]
+      filter
+      | pipeline: [fun(filter, "pattern") | filter.pipeline],
+        filters: [%__MODULE__{context: filter.context, pattern: pattern} | filter.filters]
     }
   end
 

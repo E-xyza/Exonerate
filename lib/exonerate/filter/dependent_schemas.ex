@@ -9,12 +9,12 @@ defmodule Exonerate.Filter.DependentSchemas do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Type.Object
-  alias Exonerate.Validator
+  alias Exonerate.Context
   defstruct [:context, :dependencies]
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
-  def parse(artifact = %Object{context: context}, %{"dependentSchemas" => deps}) do
+  def parse(filter = %Object{context: context}, %{"dependentSchemas" => deps}) do
     deps =
       deps
       # as an optimization, just ignore {key, true}
@@ -26,7 +26,7 @@ defmodule Exonerate.Filter.DependentSchemas do
 
         {k, schema} when is_map(schema) ->
           {k,
-           Validator.parse(
+           Context.parse(
              context.schema,
              JsonPointer.traverse(context.pointer, ["dependentSchemas", k]),
              authority: context.authority,
@@ -36,9 +36,9 @@ defmodule Exonerate.Filter.DependentSchemas do
       end)
 
     %{
-      artifact
-      | pipeline: [fun(artifact, "dependentSchemas") | artifact.pipeline],
-        filters: [%__MODULE__{context: context, dependencies: deps} | artifact.filters]
+      filter
+      | pipeline: [fun(filter, "dependentSchemas") | filter.pipeline],
+        filters: [%__MODULE__{context: context, dependencies: deps} | filter.filters]
     }
   end
 
@@ -66,7 +66,7 @@ defmodule Exonerate.Filter.DependentSchemas do
              end
 
              defp unquote(fun(filter, ["dependentSchemas", ":" <> key]))(value, _), do: value
-             unquote(Validator.compile(schema))
+             unquote(Context.compile(schema))
            end}
       end)
       |> Enum.unzip()

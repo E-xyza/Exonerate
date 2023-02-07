@@ -4,12 +4,12 @@ defmodule Exonerate.Filter.AdditionalItems do
   @behaviour Exonerate.Filter
   @derive Exonerate.Compiler
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
   defstruct [:context, :additional_items]
 
-  def parse(artifact = %{context: context}, %{"additionalItems" => _}) do
+  def parse(filter = %{context: context}, %{"additionalItems" => _}) do
     schema =
-      Validator.parse(
+      Context.parse(
         context.schema,
         JsonPointer.traverse(context.pointer, "additionalItems"),
         authority: context.authority,
@@ -18,14 +18,14 @@ defmodule Exonerate.Filter.AdditionalItems do
       )
 
     %{
-      artifact
+      filter
       | needs_accumulator: true,
         additional_items: true,
-        filters: [%__MODULE__{context: context, additional_items: schema} | artifact.filters]
+        filters: [%__MODULE__{context: context, additional_items: schema} | filter.filters]
     }
   end
 
   def compile(%__MODULE__{additional_items: schema}) do
-    {[], [Validator.compile(schema)]}
+    {[], [Context.compile(schema)]}
   end
 end

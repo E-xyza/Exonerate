@@ -9,13 +9,13 @@ defmodule Exonerate.Filter.DependentRequired do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Type.Object
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :dependencies]
 
-  def parse(artifact = %Object{context: context}, %{"dependentRequired" => deps}) do
+  def parse(filter = %Object{context: context}, %{"dependentRequired" => deps}) do
     deps =
       Map.new(deps, fn
         {k, list} when is_list(list) ->
@@ -23,9 +23,9 @@ defmodule Exonerate.Filter.DependentRequired do
       end)
 
     %{
-      artifact
-      | pipeline: [fun(artifact, "dependentRequired") | artifact.pipeline],
-        filters: [%__MODULE__{context: context, dependencies: deps} | artifact.filters]
+      filter
+      | pipeline: [fun(filter, "dependentRequired") | filter.pipeline],
+        filters: [%__MODULE__{context: context, dependencies: deps} | filter.filters]
     }
   end
 

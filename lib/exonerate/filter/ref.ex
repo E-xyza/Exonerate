@@ -7,16 +7,16 @@ defmodule Exonerate.Filter.Ref do
   defstruct [:context, :ref]
 
   alias Exonerate.Registry
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
   @impl true
-  def parse(validator = %Validator{}, %{"$ref" => ref}) do
-    module = %__MODULE__{context: validator, ref: ref}
+  def parse(context = %Context{}, %{"$ref" => ref}) do
+    module = %__MODULE__{context: context, ref: ref}
 
     %{
-      validator
-      | children: [module | validator.children],
-        combining: [module | validator.combining]
+      context
+      | children: [module | context.children],
+        combining: [module | context.combining]
     }
   end
 

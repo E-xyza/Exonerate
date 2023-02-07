@@ -94,11 +94,11 @@ defmodule Exonerate do
     the schema, so intermingling draft components is possible (but not recommended).
   """
 
+  alias Exonerate.Cache
   alias Exonerate.Metadata
   alias Exonerate.Tools
   alias Exonerate.Type
-  alias Exonerate.Registry
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
   @common_defaults [
     format: %{},
@@ -110,22 +110,29 @@ defmodule Exonerate do
 
   Note that the `schema` parameter must be a string literal.
   """
-  defmacro function_from_string(type, name, schema, opts \\ [])
+  defmacro function_from_string(type, name, schema_ast, opts \\ []) do
+    # prewalk the schema text
 
-  defmacro function_from_string(type, name, schema_ast, opts) do
-    opts =
-      opts
-      |> Keyword.merge(authority: Atom.to_string(name))
-      |> resolve_opts(__CALLER__, @common_defaults)
+    root_pointer = JsonPointer.from_uri("/")
 
     schema =
       schema_ast
       |> Macro.expand(__CALLER__)
-      |> decode(opts)
+      |> Jason.decode!()
 
-    type
-    |> compile_json(name, schema, opts)
-    |> Tools.maybe_dump(opts)
+    Cache.put(name, schema)
+
+    call = Tools.pointer_to_fun_name(root_pointer, authority: name)
+
+    Tools.maybe_dump(
+      quote do
+        unquote(type)(unquote(name)(value), do: unquote(call)(value, "/"))
+
+        require Exonerate.Context
+        Exonerate.Context.from_cached(unquote(name), unquote(root_pointer), unquote(opts))
+      end,
+      opts
+    )
   end
 
   @doc """
@@ -137,215 +144,34 @@ defmodule Exonerate do
   defmacro function_from_file(type, name, path, opts \\ [])
 
   defmacro function_from_file(type, name, path, opts) do
-    opts =
-      opts
-      |> Keyword.merge(authority: Atom.to_string(name))
-      |> resolve_opts(__CALLER__, @common_defaults)
-
-    {schema, extra} =
-      path
-      |> Macro.expand(__CALLER__)
-      |> Registry.get_file()
-      |> case do
-        {:cached, contents} ->
-          {decode(contents, opts),
-           [
-             quote do
-               @external_resource unquote(path)
-             end
-           ]}
-
-        {:loaded, contents} ->
-          {decode(contents, opts), []}
-      end
-
-    Tools.maybe_dump(
-      quote do
-        unquote_splicing(extra)
-        unquote(compile_json(type, name, schema, opts))
-      end,
-      opts
-    )
+    # opts =
+    #  opts
+    #  |> Keyword.merge(authority: Atom.to_string(name))
+    #  |> resolve_opts(__CALLER__, @common_defaults)
+    #
+    # {schema, extra} =
+    #  path
+    #  |> Macro.expand(__CALLER__)
+    #  |> Registry.get_file()
+    #  |> case do
+    #    {:cached, contents} ->
+    #      {decode(contents, opts),
+    #       [
+    #         quote do
+    #           @external_resource unquote(path)
+    #         end
+    #       ]}
+    #
+    #    {:loaded, contents} ->
+    #      {decode(contents, opts), []}
+    #  end
+    #
+    # Tools.maybe_dump(
+    #  quote do
+    #    unquote_splicing(extra)
+    #    unquote(compile_json(type, name, schema, opts))
+    #  end,
+    #  opts
+    # )
   end
-
-  @spec precache_file!(Path.t()) :: binary
-  @doc "lets you precache a file so you don't have to repeat loading it twice"
-  defdelegate precache_file!(path), to: Registry, as: :get_file!
-
-  defp resolve_opts(opts, caller, defaults) do
-    Enum.reduce(defaults, opts, fn {k, default}, opts ->
-      if Keyword.has_key?(opts, k) do
-        new_v =
-          opts[k]
-          |> Code.eval_quoted([], caller)
-          |> elem(0)
-
-        Keyword.put(opts, k, new_v)
-      else
-        Keyword.put(opts, k, default)
-      end
-    end)
-  end
-
-  defp compile_json(type, name, schema, opts) do
-    entrypoint =
-      opts
-      |> Keyword.get(:entrypoint, "/")
-      |> JsonPointer.from_uri()
-
-    impl =
-      schema
-      |> Validator.parse(entrypoint, opts)
-      |> Validator.compile()
-
-    json_type = {:"#{name}_json", [], []}
-
-    # let's see if there's anything leftover.
-    dangling_refs = unroll_refs(schema)
-
-    entrypoint_body =
-      quote do
-        try do
-          unquote(Tools.pointer_to_fun_name(entrypoint, opts))(value, "/")
-        catch
-          error = {:error, e} when is_list(e) -> error
-        end
-      end
-
-    call =
-      case type do
-        :def ->
-          quote do
-            # metadata functions not available for defp
-            unquote_splicing(Metadata.metadata_functions(name, schema, entrypoint))
-            def unquote(name)(value), do: unquote(entrypoint_body)
-          end
-
-        :defp ->
-          quote do
-            defp unquote(name)(value), do: unquote(entrypoint_body)
-          end
-      end
-
-    quote do
-      @typep unquote(json_type) ::
-               bool
-               | nil
-               | number
-               | String.t()
-               | [unquote(json_type)]
-               | %{String.t() => unquote(json_type)}
-
-      @spec unquote(name)(unquote(json_type)) ::
-              :ok
-              | {:error,
-                 [
-                   schema_pointer: Path.t(),
-                   error_value: term,
-                   json_pointer: Path.t()
-                 ]}
-
-      unquote(call)
-
-      unquote(impl)
-      unquote(dangling_refs)
-    end
-  end
-
-  defp decode(contents, opts) do
-    case opts[:decoder] do
-      {module, fun} ->
-        apply(module, fun, [contents])
-
-      {module, fun, extra_args} ->
-        apply(module, fun, [contents | extra_args])
-    end
-  end
-
-  defp unroll_refs(schema) do
-    case Registry.needed(schema) do
-      [] ->
-        []
-
-      list when is_list(list) ->
-        ref_impls =
-          Enum.map(list, fn ref ->
-            schema
-            |> Validator.parse(ref.pointer, authority: ref.authority)
-            |> Validator.compile()
-          end)
-
-        # keep going!  This schema might have created new refs.
-        ref_impls ++ unroll_refs(schema)
-    end
-  end
-
-  #################################################################
-  ## PRIVATE HELPER MACROS
-  ## used internally by macro generation functions
-
-  @doc false
-  def fun_to_path(fun) do
-    fun
-    |> to_string
-    |> String.split("#/")
-    |> tl()
-    |> Enum.join()
-    |> amend_path
-  end
-
-  @doc false
-  defmacro mismatch(value, path, opts \\ []) do
-    schema_path! =
-      __CALLER__.function
-      |> elem(0)
-      |> fun_to_path
-
-    schema_path! =
-      if guard = opts[:guard] do
-        quote do
-          Path.join(unquote(schema_path!), unquote(guard))
-        end
-      else
-        schema_path!
-      end
-
-    extras = Keyword.take(opts, [:reason, :failures, :matches, :required])
-
-    quote do
-      throw(
-        {:error,
-         [
-           schema_pointer: unquote(schema_path!),
-           error_value: unquote(value),
-           json_pointer: unquote(path)
-         ] ++ unquote(extras)}
-      )
-    end
-  end
-
-  defp amend_path(path = "/" <> _), do: path
-  defp amend_path(path), do: "/" <> path
-
-  @doc false
-  defmacro pipeline(variable_ast, path_ast, pipeline) do
-    build_pipe(variable_ast, path_ast, pipeline)
-  end
-
-  defp build_pipe(input_ast, params_ast, [fun | rest]) do
-    build_pipe({:|>, [], [input_ast, {fun, [], [params_ast]}]}, params_ast, rest)
-  end
-
-  defp build_pipe(input_ast, _params_ast, []), do: input_ast
-
-  # TODO: generalize these.
-
-  @doc false
-  defmacro chain_guards(variable_ast, types) do
-    types
-    |> Enum.map(&apply_guard(&1, variable_ast))
-    |> Enum.reduce(&{:or, [], [&1, &2]})
-  end
-
-  defp apply_guard(type, variable_ast), do: {Type.guard(type), [], [variable_ast]}
 end

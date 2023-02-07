@@ -5,23 +5,23 @@ defmodule Exonerate.Filter.AdditionalProperties do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
   defstruct [:context, :child, :evaluated_tokens]
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
-  def parse(artifact = %{context: context}, %{"additionalProperties" => false}) do
+  def parse(filter = %{context: context}, %{"additionalProperties" => false}) do
     %{
-      artifact
-      | filters: [filter_from(artifact, false) | artifact.filters],
-        kv_pipeline: [fun(artifact, "additionalProperties") | artifact.kv_pipeline],
+      filter
+      | filters: [filter_from(filter, false) | filter.filters],
+        kv_pipeline: [fun(filter, "additionalProperties") | filter.kv_pipeline],
         iterate: true
     }
   end
 
-  def parse(artifact = %{context: context}, %{"additionalProperties" => _}) do
+  def parse(filter = %{context: context}, %{"additionalProperties" => _}) do
     child =
-      Validator.parse(
+      Context.parse(
         context.schema,
         JsonPointer.traverse(context.pointer, "additionalProperties"),
         authority: context.authority,
@@ -30,18 +30,18 @@ defmodule Exonerate.Filter.AdditionalProperties do
       )
 
     %{
-      artifact
-      | filters: [filter_from(artifact, child) | artifact.filters],
-        kv_pipeline: [fun(artifact, "additionalProperties") | artifact.kv_pipeline],
+      filter
+      | filters: [filter_from(filter, child) | filter.filters],
+        kv_pipeline: [fun(filter, "additionalProperties") | filter.kv_pipeline],
         iterate: true
     }
   end
 
-  defp filter_from(artifact = %{context: context}, child) do
+  defp filter_from(filter = %{context: context}, child) do
     %__MODULE__{
       context: context,
       child: child,
-      evaluated_tokens: artifact.evaluated_tokens ++ context.evaluated_tokens
+      evaluated_tokens: filter.evaluated_tokens ++ context.evaluated_tokens
     }
   end
 
@@ -86,7 +86,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
            seen
          end
        end,
-       Validator.compile(child)
+       Context.compile(child)
      ]}
   end
 end

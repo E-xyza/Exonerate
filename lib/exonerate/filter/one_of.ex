@@ -6,14 +6,14 @@ defmodule Exonerate.Filter.OneOf do
   @derive {Inspect, except: [:context]}
 
   alias Exonerate.Filter.UnevaluatedHelper
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :schemas, :evaluated_tokens]
 
   @impl true
-  def parse(context = %Validator{}, schema = %{"oneOf" => s}) do
+  def parse(context = %Context{}, schema = %{"oneOf" => s}) do
     evaluated_tokens =
       schema
       |> UnevaluatedHelper.token()
@@ -23,7 +23,7 @@ defmodule Exonerate.Filter.OneOf do
     schemas =
       Enum.map(
         0..(length(s) - 1),
-        &Validator.parse(
+        &Context.parse(
           context.schema,
           JsonPointer.traverse(context.pointer, ["oneOf", "#{&1}"]),
           authority: context.authority,
@@ -95,7 +95,7 @@ defmodule Exonerate.Filter.OneOf do
             end
           end
         end,
-        Validator.compile(schema)
+        Context.compile(schema)
       ]
     end)
   end
@@ -134,7 +134,7 @@ defmodule Exonerate.Filter.OneOf do
             end
           end
         end,
-        Validator.compile(schema)
+        Context.compile(schema)
       ]
     end)
   end

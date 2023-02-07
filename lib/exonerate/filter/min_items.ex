@@ -5,21 +5,21 @@ defmodule Exonerate.Filter.MinItems do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :count]
 
-  def parse(artifact, %{"minItems" => count}) do
-    check_key = fun(artifact, "minItems")
+  def parse(filter, %{"minItems" => count}) do
+    check_key = fun(filter, "minItems")
 
     %{
-      artifact
+      filter
       | needs_accumulator: true,
-        post_reduce_pipeline: [check_key | artifact.post_reduce_pipeline],
-        accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
-        filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]
+        post_reduce_pipeline: [check_key | filter.post_reduce_pipeline],
+        accumulator_init: Map.put(filter.accumulator_init, :index, 0),
+        filters: [%__MODULE__{context: filter.context, count: count} | filter.filters]
     }
   end
 

@@ -5,24 +5,24 @@ defmodule Exonerate.Filter.MaxContains do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context, :maximum]
 
-  def parse(artifact = %{context: context}, %{"contains" => _, "maxContains" => maximum}) do
+  def parse(filter = %{context: context}, %{"contains" => _, "maxContains" => maximum}) do
     %{
-      artifact
+      filter
       | needs_accumulator: true,
-        accumulator_pipeline: [fun(artifact, "maxContains") | artifact.accumulator_pipeline],
-        accumulator_init: Map.put_new(artifact.accumulator_init, :contains, 0),
-        filters: [%__MODULE__{context: context, maximum: maximum} | artifact.filters]
+        accumulator_pipeline: [fun(filter, "maxContains") | filter.accumulator_pipeline],
+        accumulator_init: Map.put_new(filter.accumulator_init, :contains, 0),
+        filters: [%__MODULE__{context: context, maximum: maximum} | filter.filters]
     }
   end
 
   # ignore when there is no "contains"
-  def parse(artifact, %{"maxContains" => _}), do: artifact
+  def parse(filter, %{"maxContains" => _}), do: filter
 
   def compile(filter = %__MODULE__{maximum: maximum}) do
     {[],

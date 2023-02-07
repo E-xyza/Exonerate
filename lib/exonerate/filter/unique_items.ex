@@ -5,24 +5,24 @@ defmodule Exonerate.Filter.UniqueItems do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Context
 
-  import Validator, only: [fun: 2]
+  import Context, only: [fun: 2]
 
   defstruct [:context]
 
-  def parse(artifact = %{context: context}, %{"uniqueItems" => true}) do
+  def parse(filter = %{context: context}, %{"uniqueItems" => true}) do
     %{
-      artifact
+      filter
       | needs_accumulator: true,
-        accumulator_pipeline: [fun(artifact, "uniqueItems") | artifact.accumulator_pipeline],
+        accumulator_pipeline: [fun(filter, "uniqueItems") | filter.accumulator_pipeline],
         accumulator_init:
-          Map.merge(artifact.accumulator_init, %{unique_set: MapSet.new(), index: 0}),
-        filters: [%__MODULE__{context: context} | artifact.filters]
+          Map.merge(filter.accumulator_init, %{unique_set: MapSet.new(), index: 0}),
+        filters: [%__MODULE__{context: context} | filter.filters]
     }
   end
 
-  def parse(artifact, _), do: artifact
+  def parse(filter, _), do: filter
 
   def compile(filter = %__MODULE__{}) do
     {[],
