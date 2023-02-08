@@ -8,7 +8,6 @@ defmodule Exonerate.Cache do
   # pointer.  Thus multiple entrypoints using the same schema can share
   # validation functions.
 
-  alias Exonerate.Tools
   alias Exonerate.Type
 
   @spec get_table() :: :ets.tid()
@@ -22,12 +21,20 @@ defmodule Exonerate.Cache do
     end
   end
 
-  @spec get(atom | {:file, Path.t()}) :: {:ok, Type.json()} | :error
-  def get(cache_id) do
+  @spec fetch(atom | {:file, Path.t()}) :: {:ok, Type.json()} | :error
+  def fetch(cache_id) do
     case :ets.lookup(get_table(), cache_id) do
       [] -> :error
-      [{:cached, id}] when is_atom(id) -> get(id)
+      [{:cached, id}] when is_atom(id) -> fetch(id)
       [{^cache_id, json}] -> {:ok, json}
+    end
+  end
+
+  @spec fetch!(atom | {:file, Path.t()}) :: Type.json()
+  def fetch!(cache_id) do
+    case fetch(cache_id) do
+      {:ok, json} -> json
+      :error -> raise KeyError, message: "key `#{cache_id}` not found in the exonerate cache"
     end
   end
 

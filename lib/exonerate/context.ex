@@ -8,35 +8,11 @@ defmodule Exonerate.Context do
   alias Exonerate.Type
 
   defmacro from_cached(name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-
-    Tools.maybe_dump(
-      case Cache.get(name) do
-        {:ok, true} ->
-          quote do
-            @compile {:inline, [{unquote(call), 2}]}
-            def unquote(call)(content, _path) do
-              :ok
-            end
-          end
-
-        {:ok, false} ->
-          quote do
-            @compile {:inline, [{unquote(call), 2}]}
-            def unquote(call)(content, path) do
-              require Exonerate.Tools
-              Exonerate.Tools.mismatch(content, path)
-            end
-          end
-
-        {:ok, schema} ->
-          quote do
-            unquote(type_filters(call, schema))
-            # unquote(type_parsing(schema))
-          end
-      end,
-      opts
-    )
+    name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(pointer)
+    |> to_quoted_function(name, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
   # don't normally use the brackted alias format but it makes sense here.
@@ -52,30 +28,65 @@ defmodule Exonerate.Context do
     "string" => String
   }
 
-  defp type_filters(call, schema = %{"type" => type_or_types}) do
-    passthroughs =
-      type_or_types
-      |> List.wrap()
-      |> Enum.map(&Type.module(&1).type_filter(call, schema))
+  defp to_quoted_function(true, name, pointer, _opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
-      unquote(passthroughs)
-
-      def unquote(call)(content, path) do
-        require Exonerate.Tools
-        Exonerate.Tools.mismatch(content, path, guard: "type")
-      end
-    end
-  end
-
-  defp type_filters(call, _) do
-    quote do
-      def unquote(call)(content, path) do
+      @compile {:inline, [{unquote(call), 2}]}
+      def unquote(call)(content, _path) do
         :ok
       end
     end
   end
 
-  defp type_filter(type, schema) do
+  defp to_quoted_function(false, name, pointer, _opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    schema_pointer = JsonPointer.to_uri(pointer)
+
+    quote do
+      @compile {:inline, [{unquote(call), 2}]}
+      def unquote(call)(content, path) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+      end
+    end
+  end
+
+  defp to_quoted_function(schema = %{"type" => type_or_types}, name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    type_filters =
+      type_or_types
+      |> List.wrap()
+      |> Enum.map(&Type.module(&1).filter(schema, name, pointer))
+
+    accessories =
+      type_or_types
+      |> List.wrap()
+      |> Enum.flat_map(&Type.module(&1).accessories(schema, name, pointer, opts))
+
+    schema_pointer = pointer
+    |> JsonPointer.traverse("type")
+    |> JsonPointer.to_uri
+
+    quote do
+      unquote(type_filters)
+
+      def unquote(call)(content, path) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+      end
+
+      unquote(accessories)
+    end
+  end
+
+  defp to_quoted_function(_, call) do
+    # assume "type" is a thing; but only filter when the type needs the filter.
+    quote do
+      def unquote(call)(content, path) do
+        :ok
+      end
+    end
   end
 end

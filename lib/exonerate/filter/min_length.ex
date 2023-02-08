@@ -1,54 +1,27 @@
 defmodule Exonerate.Filter.MinLength do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Cache
+  alias Exonerate.Tools
 
-  alias Exonerate.Context
+  defmacro filter_from_cached(name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    schema_pointer = JsonPointer.to_uri(pointer)
 
-  defstruct [:context, :length, :format_binary]
+    length = name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(pointer)
 
-  def parse(filter, %{"minLength" => length}) do
-    pipeline = List.wrap(unless filter.format_binary, do: "minLength")
-
-    %{
-      filter
-      | pipeline: pipeline ++ filter.pipeline,
-        filters: [
-          %__MODULE__{
-            context: filter.context,
-            length: length,
-            format_binary: filter.format_binary
-          }
-          | filter.filters
-        ]
-    }
-  end
-
-  def compile(filter = %__MODULE__{format_binary: true}) do
-    {[
-       quote do
-         defp unquote([])(string, path)
-              when is_binary(string) and byte_size(string) < unquote(filter.length) do
-           Exonerate.mismatch(string, path, guard: "minLength")
-         end
-       end
-     ], []}
-  end
-
-  def compile(filter = %__MODULE__{}) do
-    {[],
-     [
-       quote do
-         defp unquote("minLength")(string, path) do
-           if String.length(string) < unquote(filter.length) do
-             Exonerate.mismatch(string, path)
-           end
-
-           string
-         end
-       end
-     ]}
+    Tools.maybe_dump(quote do
+      def unquote(call)(string, path) do
+        case String.length(string) do
+          length when length >= unquote(length) ->
+            :ok
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(string, unquote(schema_pointer), path)
+        end
+      end
+    end, opts)
   end
 end

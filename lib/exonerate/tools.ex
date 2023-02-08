@@ -82,32 +82,13 @@ defmodule Exonerate.Tools do
   defp amend_path(path = "/" <> _), do: path
   defp amend_path(path), do: "/" <> path
 
-  # emits an error
   @doc false
-  defmacro mismatch(value, path, opts \\ []) do
-    schema_path! =
-      __CALLER__.function
-      |> elem(0)
-      |> fun_to_path
+  defmacro mismatch(error_value, schema_pointer, json_pointer, opts \\ []) do
+    primary = Keyword.take(binding(), ~w(error_value schema_pointer json_pointer)a)
+    extras = Keyword.take(opts, ~w(reason failures matches required)a)
 
-    schema_path! =
-      if guard = opts[:guard] do
-        quote do
-          Path.join(unquote(schema_path!), unquote(guard))
-        end
-      else
-        schema_path!
-      end
-
-    extras = Keyword.take(opts, [:reason, :failures, :matches, :required])
-
-    quote do
-      {:error,
-       [
-         schema_pointer: unquote(schema_path!),
-         error_value: unquote(value),
-         json_pointer: unquote(path)
-       ] ++ unquote(extras)}
+    quote bind_quoted: [error_params: primary ++ extras] do
+      {:error, error_params}
     end
   end
 end
