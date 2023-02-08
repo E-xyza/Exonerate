@@ -6,7 +6,8 @@ defmodule Exonerate.Type.String do
   @modules %{
     "minLength" => Exonerate.Filter.MinLength,
     "maxLength" => Exonerate.Filter.MaxLength,
-    "min-max-length" => Exonerate.Filter.MinMaxLength
+    "min-max-length" => Exonerate.Filter.MinMaxLength,
+    "pattern" => Exonerate.Filter.Pattern
   }
   @string_filters Map.keys(@modules)
 

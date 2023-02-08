@@ -34,7 +34,7 @@ defmodule Exonerate.Filter.MinMaxLength do
             Exonerate.Tools.mismatch(string, unquote(max_pointer), path)
 
           _ ->
-
+            :ok
         end
       end
     end, opts)

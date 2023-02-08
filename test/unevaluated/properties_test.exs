@@ -200,9 +200,7 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
           ],
           "unevaluatedProperties": false
       }
-      """,
-      dump: true
-    )
+      """)
 
     test "nested, outer false, inner true" do
       assert :ok = nested_outer_false_inner_true(%{"foo" => "foo", "bar" => "bar"})
