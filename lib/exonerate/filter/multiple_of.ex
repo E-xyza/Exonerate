@@ -1,32 +1,34 @@
 defmodule Exonerate.Filter.MultipleOf do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Cache
+  alias Exonerate.Tools
 
-  alias Exonerate.Type.Integer
-  alias Exonerate.Type.Number
-  alias Exonerate.Context
+  # TODO: figure out draft-4 stuff
 
-  defstruct [:context, :factor]
+  defmacro filter_from_cached(name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    schema_pointer = JsonPointer.to_uri(pointer)
 
-  def parse(filter = %type{}, %{"multipleOf" => factor})
-      when is_integer(factor) and type in [Number, Integer] do
-    %{
-      filter
-      | filters: [%__MODULE__{context: filter.context, factor: factor} | filter.filters]
-    }
-  end
+    divisor =
+      name
+      |> Cache.fetch!()
+      |> JsonPointer.resolve!(pointer)
 
-  def compile(filter = %__MODULE__{}) do
-    {[
-       quote do
-         defp unquote([])(integer, path)
-              when is_integer(integer) and rem(integer, unquote(filter.factor)) != 0 do
-           Exonerate.mismatch(integer, path, guard: "multipleOf")
-         end
-       end
-     ], []}
+    Tools.maybe_dump(
+      quote do
+        def unquote(call)(integer, path) do
+          case integer do
+            value when rem(value, unquote(divisor)) === 0 ->
+              :ok
+
+            _ ->
+              require Exonerate.Tools
+              Exonerate.Tools.mismatch(integer, unquote(schema_pointer), path)
+          end
+        end
+      end,
+      opts
+    )
   end
 end

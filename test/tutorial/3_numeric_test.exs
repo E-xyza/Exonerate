@@ -114,13 +114,17 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :number, """
-    {
-      "type": "number",
-      "minimum": 0,
-      "exclusiveMaximum": 100
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :number,
+      """
+      {
+        "type": "number",
+        "minimum": 0,
+        "exclusiveMaximum": 100
+      }
+      """
+    )
   end
 
   describe "basic ranging example" do

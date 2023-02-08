@@ -1,49 +1,34 @@
 defmodule Exonerate.Filter.ExclusiveMaximum do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Cache
+  alias Exonerate.Tools
 
-  alias Exonerate.Type.Integer
-  alias Exonerate.Type.Number
-  alias Exonerate.Context
+  # TODO: figure out draft-4 stuff
 
-  defstruct [:context, :maximum, :parent]
+  defmacro filter_from_cached(name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    schema_pointer = JsonPointer.to_uri(pointer)
 
-  # ignore version-4-type exclusiveMaximum specifiers.
-  def parse(filter, %{"exclusiveMaximum" => bool}) when is_boolean(bool), do: filter
+    maximum =
+      name
+      |> Cache.fetch!()
+      |> JsonPointer.resolve!(pointer)
 
-  def parse(filter = %type{}, %{"exclusiveMaximum" => maximum})
-      when type in [Integer, Number] do
-    %{
-      filter
-      | filters: [
-          %__MODULE__{context: filter.context, maximum: maximum, parent: type}
-          | filter.filters
-        ]
-    }
-  end
+    Tools.maybe_dump(
+      quote do
+        def unquote(call)(number, path) do
+          case number do
+            value when value < unquote(maximum) ->
+              :ok
 
-  def compile(filter = %__MODULE__{parent: Integer}) do
-    {[
-       quote do
-         defp unquote([])(integer, path)
-              when is_integer(integer) and integer >= unquote(filter.maximum) do
-           Exonerate.mismatch(integer, path, guard: "exclusiveMaximum")
-         end
-       end
-     ], []}
-  end
-
-  def compile(filter = %__MODULE__{parent: Number}) do
-    {[
-       quote do
-         defp unquote([])(number, path)
-              when is_number(number) and number >= unquote(filter.maximum) do
-           Exonerate.mismatch(number, path, guard: "exclusiveMaximum")
-         end
-       end
-     ], []}
+            _ ->
+              require Exonerate.Tools
+              Exonerate.Tools.mismatch(number, unquote(schema_pointer), path)
+          end
+        end
+      end,
+      opts
+    )
   end
 end

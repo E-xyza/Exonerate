@@ -1,56 +1,66 @@
 defmodule Exonerate.Type.Integer do
   @moduledoc false
 
-  # boilerplate!!
-  @behaviour Exonerate.Type
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
-
-  alias Exonerate.Filter
   alias Exonerate.Tools
-  alias Exonerate.Context
 
-  defstruct [:context, filters: []]
-  @type t :: %__MODULE__{}
+  @modules %{
+    "maximum" => Exonerate.Filter.Maximum,
+    "minimum" => Exonerate.Filter.Minimum,
+    "exclusiveMaximum" => Exonerate.Filter.ExclusiveMaximum,
+    "exclusiveMinimum" => Exonerate.Filter.ExclusiveMinimum,
+    "multipleOf" => Exonerate.Filter.MultipleOf
+  }
+  @filters Map.keys(@modules)
 
-  @context_filters ~w(multipleOf minimum maximum exclusiveMinimum exclusiveMaximum)
-  @context_modules Map.new(@context_filters, &{&1, Filter.from_string(&1)})
-
-  @impl true
-  @spec parse(Context.t(), Type.json()) :: t
-  # draft <= 7 refs inhibit type-based analysis
-  def parse(context = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
-    %__MODULE__{context: context}
-  end
-
-  def parse(context, schema) do
-    %__MODULE__{context: context}
-    |> Tools.collect(@context_filters, fn
-      filter, filter when is_map_key(schema, filter) ->
-        Filter.parse(filter, @context_modules[filter], schema)
-
-      filter, _ ->
-        filter
-    end)
-  end
-
-  @impl true
-  @spec compile(t) :: Macro.t()
-  def compile(filter) do
-    combining =
-      Context.combining(
-        filter.context,
-        quote do
-          integer
-        end,
-        quote do
-          path
-        end
-      )
+  def filter(schema, name, pointer) do
+    filters = filter_calls(schema, name, pointer)
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
-      defp unquote([])(integer, path) when is_integer(integer) do
-        (unquote_splicing(combining))
+      def unquote(call)(content, path) when is_integer(content) do
+        unquote(filters)
+      end
+    end
+  end
+
+  defp filter_calls(schema, name, pointer) do
+    case Map.take(schema, @filters) do
+      empty when empty === %{} ->
+        :ok
+
+      filters ->
+        build_filters(filters, name, pointer)
+    end
+  end
+
+  defp build_filters(filters, name, pointer) do
+    filter_clauses =
+      Enum.map(filters, fn {filter, _} ->
+        call =
+          pointer
+          |> JsonPointer.traverse(filter)
+          |> Tools.pointer_to_fun_name(authority: name)
+
+        quote do
+          :ok <- unquote(call)(content, path)
+        end
+      end)
+
+    quote do
+      with unquote_splicing(filter_clauses) do
+        :ok
+      end
+    end
+  end
+
+  def accessories(schema, name, pointer, opts) do
+    for filter_name <- @filters, schema[filter_name] do
+      module = @modules[filter_name]
+      pointer = JsonPointer.traverse(pointer, filter_name)
+
+      quote do
+        require unquote(module)
+        unquote(module).filter_from_cached(unquote(name), unquote(pointer), unquote(opts))
       end
     end
   end

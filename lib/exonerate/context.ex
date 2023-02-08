@@ -65,9 +65,10 @@ defmodule Exonerate.Context do
       |> List.wrap()
       |> Enum.flat_map(&Type.module(&1).accessories(schema, name, pointer, opts))
 
-    schema_pointer = pointer
-    |> JsonPointer.traverse("type")
-    |> JsonPointer.to_uri
+    schema_pointer =
+      pointer
+      |> JsonPointer.traverse("type")
+      |> JsonPointer.to_uri()
 
     quote do
       unquote(type_filters)
