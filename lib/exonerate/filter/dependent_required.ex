@@ -13,7 +13,7 @@ defmodule Exonerate.Filter.DependentRequired do
 
   defstruct [:context, :dependencies]
 
-  def parse(filter = %Object{context: context}, %{"dependentRequired" => deps}) do
+  def parse(filter = %{context: context}, %{"dependentRequired" => deps}) do
     deps =
       Map.new(deps, fn
         {k, list} when is_list(list) ->

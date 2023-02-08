@@ -10,7 +10,7 @@ defmodule Exonerate.Filter.Dependencies do
 
   defstruct [:context, :dependencies]
 
-  def parse(filter = %Object{context: context}, %{"dependencies" => deps}) do
+  def parse(filter = %{context: context}, %{"dependencies" => deps}) do
     deps =
       deps
       # as an optimization, just ignore {key, true}

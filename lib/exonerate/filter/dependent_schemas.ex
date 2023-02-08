@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.DependentSchemas do
   alias Exonerate.Context
   defstruct [:context, :dependencies]
 
-  def parse(filter = %Object{context: context}, %{"dependentSchemas" => deps}) do
+  def parse(filter = %{context: context}, %{"dependentSchemas" => deps}) do
     deps =
       deps
       # as an optimization, just ignore {key, true}

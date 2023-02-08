@@ -1,29 +1,34 @@
 defmodule Exonerate.Filter.MinProperties do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Cache
+  alias Exonerate.Tools
 
-  alias Exonerate.Context
+  # TODO: figure out draft-4 stuff
 
-  defstruct [:context, :count]
+  defmacro filter_from_cached(name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    schema_pointer = JsonPointer.to_uri(pointer)
 
-  def parse(filter, %{"minProperties" => count}) do
-    %{
-      filter
-      | filters: [%__MODULE__{context: filter.context, count: count} | filter.filters]
-    }
-  end
+    minimum =
+      name
+      |> Cache.fetch!()
+      |> JsonPointer.resolve!(pointer)
 
-  def compile(filter = %__MODULE__{count: count}) do
-    {[
-       quote do
-         defp unquote([])(object, path)
-              when is_map(object) and :erlang.map_size(object) < unquote(count) do
-           Exonerate.mismatch(object, path, guard: unquote("minProperties"))
-         end
-       end
-     ], []}
+    Tools.maybe_dump(
+      quote do
+        def unquote(call)(object, path) do
+          case object do
+            object when map_size(object) >= unquote(minimum) ->
+              :ok
+
+            _ ->
+              require Exonerate.Tools
+              Exonerate.Tools.mismatch(object, unquote(schema_pointer), path)
+          end
+        end
+      end,
+      opts
+    )
   end
 end

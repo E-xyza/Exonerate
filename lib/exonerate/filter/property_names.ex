@@ -22,7 +22,7 @@ defmodule Exonerate.Filter.PropertyNames do
     %{filter | iterate: false, filters: [%__MODULE__{context: context, schema: false}]}
   end
 
-  def parse(filter = %Object{context: context}, %{"propertyNames" => schema}) do
+  def parse(filter = %{context: context}, %{"propertyNames" => schema}) do
     schema =
       Exonerate.Type.String.parse(
         Context.jump_into(filter.context, "propertyNames", true),
