@@ -112,7 +112,17 @@ defmodule Exonerate.Type.Object do
       |> Tools.pointer_to_fun_name(authority: name)
 
     quote do
-      true -> unquote(call)(value, Path.join(path, key))
+      true ->
+        value
+        |> unquote(call)(Path.join(path, key))
+        |> case do
+          :ok -> :ok
+          {:error, list} ->
+            modified_errors = list
+            |> Keyword.update!(:error_value, &{key, &1})
+            |> Keyword.update!(:json_pointer, &Path.dirname(&1))
+            {:error, modified_errors}
+        end
     end
   end
 

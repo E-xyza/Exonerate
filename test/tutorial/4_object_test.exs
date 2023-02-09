@@ -106,7 +106,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "additionalProperties": false
     }
-    """)
+    """, dump: true)
 
     Exonerate.function_from_string(
       :def,
@@ -123,8 +123,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
         },
         "additionalProperties": { "type": "string" }
       }
-      """,
-      dump: true
+      """
     )
   end
 
