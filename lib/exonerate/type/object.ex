@@ -105,24 +105,38 @@ defmodule Exonerate.Type.Object do
     end)
   end
 
-  defp traversal({"additionalProperties", _}, name, pointer) do
+  defp traversal({"additionalProperties", selector}, name, pointer) when selector !== true do
     call =
       pointer
       |> JsonPointer.traverse("additionalProperties")
       |> Tools.pointer_to_fun_name(authority: name)
 
+    # NB this is probably going to change when we start having :ok payloads
+    ok_prong = quote do
+      :ok -> :ok
+    end
+
+    error_prong = case selector do
+      false ->
+        quote do
+          {:error, list} ->
+          modified_errors = list
+          |> Keyword.update!(:error_value, &{key, &1})
+          |> Keyword.update!(:json_pointer, &Path.dirname(&1))
+          {:error, modified_errors}
+        end
+      _ ->
+        quote do
+          error = {:error, _} -> error
+        end
+    end
+
+
     quote do
       true ->
         value
         |> unquote(call)(Path.join(path, key))
-        |> case do
-          :ok -> :ok
-          {:error, list} ->
-            modified_errors = list
-            |> Keyword.update!(:error_value, &{key, &1})
-            |> Keyword.update!(:json_pointer, &Path.dirname(&1))
-            {:error, modified_errors}
-        end
+        |> case do unquote(ok_prong ++ error_prong) end
     end
   end
 
