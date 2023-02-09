@@ -108,19 +108,24 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     }
     """)
 
-    Exonerate.function_from_string(:def, :address3, """
-    {
-      "type": "object",
-      "properties": {
-        "number":      { "type": "number" },
-        "street_name": { "type": "string" },
-        "street_type": { "type": "string",
-                         "enum": ["Street", "Avenue", "Boulevard"]
-                       }
-      },
-      "additionalProperties": { "type": "string" }
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :address3,
+      """
+      {
+        "type": "object",
+        "properties": {
+          "number":      { "type": "number" },
+          "street_name": { "type": "string" },
+          "street_type": { "type": "string",
+                           "enum": ["Street", "Avenue", "Boulevard"]
+                         }
+        },
+        "additionalProperties": { "type": "string" }
+      }
+      """,
+      dump: true
+    )
   end
 
   @addr1 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue" })

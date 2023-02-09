@@ -1,75 +1,53 @@
 defmodule Exonerate.Filter.Properties do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Cache
+  alias Exonerate.Tools
 
-  alias Exonerate.Context
+  # TODO: figure out draft-4 stuff
 
-  defstruct [:context, :children, :evaluated_tokens]
+  # TODO: figure out requireds
+  defmacro filter_from_cached(name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-  def parse(filter = %{context: context}, %{"properties" => properties}) do
-    children =
-      Map.new(
-        properties,
-        fn {k, _} ->
-          {k,
-           Context.parse(
-             context.schema,
-             JsonPointer.traverse(context.pointer, ["properties", k]),
-             authority: context.authority,
-             format: context.format,
-             draft: context.draft
-           )}
-        end
-      )
-
-    %{
-      filter
-      | iterate: true,
-        filters: [filter_from(filter, children) | filter.filters],
-        kv_pipeline: ["properties" | filter.kv_pipeline]
-    }
-  end
-
-  defp filter_from(filter = %{context: context}, children) do
-    %__MODULE__{
-      context: context,
-      children: children,
-      evaluated_tokens: filter.evaluated_tokens ++ context.evaluated_tokens
-    }
-  end
-
-  def compile(filter = %__MODULE__{children: children}) do
-    {guarded_clauses, tests} =
-      children
-      |> Enum.map(fn {k, v} ->
-        {quote do
-           defp unquote("properties")(_, {path, unquote(k), v}) do
-             unquote(["properties", k])(v, Path.join(path, unquote(k)))
-
-             require Exonerate.Filter.UnevaluatedHelper
-
-             Exonerate.Filter.UnevaluatedHelper.register_tokens(
-               unquote(filter.evaluated_tokens),
-               unquote(k)
-             )
-
-             true
-           end
-         end, Context.compile(v)}
-      end)
+    {filters, properties} =
+      name
+      |> Cache.fetch!()
+      |> JsonPointer.resolve!(pointer)
+      |> Enum.map(&to_with_filter(&1, name, pointer, opts))
       |> Enum.unzip()
 
-    {[],
-     guarded_clauses ++
-       [
-         quote do
-           defp unquote("properties")(seen, {_path, _key, _value}) do
-             seen
-           end
+    Tools.maybe_dump(
+      quote do
+        def unquote(call)(object, path) do
+          with unquote_splicing(filters) do
+            :ok
+          end
+        end
+
+        unquote(properties)
+      end,
+      opts
+    )
+  end
+
+  defp to_with_filter({key, _schema}, name, pointer, opts) do
+    pointer = JsonPointer.traverse(pointer, key)
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    {quote do
+       :ok <-
+         case Map.fetch(object, unquote(key)) do
+           :error ->
+             :ok
+
+           {:ok, value} ->
+             unquote(call)(value, Path.join(path, unquote(key)))
          end
-       ] ++ tests}
+     end,
+     quote do
+       require Exonerate.Context
+       Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+     end}
   end
 end
