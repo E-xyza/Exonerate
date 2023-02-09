@@ -1,36 +1,32 @@
 defmodule Exonerate.Filter.Required do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Cache
+  alias Exonerate.Tools
 
-  alias Exonerate.Context
+  defmacro filter_from_cached(name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    schema_pointer = JsonPointer.to_uri(pointer)
 
-  defstruct [:context, :props]
+    required_list = name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(pointer)
 
-  def parse(filter, %{"required" => prop}) do
-    %{
-      filter
-      | filters: [%__MODULE__{context: filter.context, props: prop} | filter.filters]
-    }
-  end
-
-  def compile(filter = %__MODULE__{props: props}) do
-    {props
-     |> Enum.with_index()
-     |> Enum.map(fn {prop, index} ->
-       quote do
-         defp unquote([])(object, path)
-              when is_map(object) and not is_map_key(object, unquote(prop)) do
-           required_path = Path.join(path, unquote(prop))
-
-           Exonerate.mismatch(object, path,
-             guard: unquote("required/#{index}"),
-             required: required_path
-           )
-         end
-       end
-     end), []}
+    Tools.maybe_dump(
+      quote do
+        def unquote(call)(object, path) do
+          unquote(required_list)
+          |> Enum.reduce_while({:ok, 0}, fn
+            required_field, {:ok, index} when is_map_key(object, required_field) ->
+              {:cont, {:ok, index + 1}}
+            required_field, {:ok, index} ->
+              require Exonerate.Tools
+              {:halt, {Exonerate.Tools.mismatch(object, Path.join(unquote(schema_pointer), "#{index}"), path), :discard}}
+          end)
+          |> elem(0)
+        end
+      end,
+      opts
+    )
   end
 end

@@ -234,7 +234,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       },
       "required": ["name", "email"]
     }
-    """)
+    """, dump: true)
   end
 
   @contact1 """
