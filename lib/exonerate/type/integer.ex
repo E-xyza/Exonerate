@@ -17,7 +17,7 @@ defmodule Exonerate.Type.Integer do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
-      def unquote(call)(content, path) when is_integer(content) do
+      defp unquote(call)(content, path) when is_integer(content) do
         unquote(filters)
       end
     end

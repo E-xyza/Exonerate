@@ -15,7 +15,7 @@ defmodule Exonerate.Filter.Pattern do
 
     Tools.maybe_dump(
       quote do
-        def unquote(call)(string, path) do
+        defp unquote(call)(string, path) do
           if Regex.match?(sigil_r(<<unquote(pattern)>>, []), string) do
             :ok
           else

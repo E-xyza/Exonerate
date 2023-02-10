@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.MultipleOf do
 
     Tools.maybe_dump(
       quote do
-        def unquote(call)(integer, path) do
+        defp unquote(call)(integer, path) do
           case integer do
             value when rem(value, unquote(divisor)) === 0 ->
               :ok

@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
 
     Tools.maybe_dump(
       quote do
-        def unquote(call)(number, path) do
+        defp unquote(call)(number, path) do
           case number do
             value when value < unquote(maximum) ->
               :ok

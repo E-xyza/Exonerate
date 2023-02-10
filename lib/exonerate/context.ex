@@ -33,7 +33,7 @@ defmodule Exonerate.Context do
 
     quote do
       @compile {:inline, [{unquote(call), 2}]}
-      def unquote(call)(content, _path) do
+      defp unquote(call)(content, _path) do
         :ok
       end
     end
@@ -45,7 +45,7 @@ defmodule Exonerate.Context do
 
     quote do
       @compile {:inline, [{unquote(call), 2}]}
-      def unquote(call)(content, path) do
+      defp unquote(call)(content, path) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
       end
@@ -73,7 +73,7 @@ defmodule Exonerate.Context do
     quote do
       unquote(type_filters)
 
-      def unquote(call)(content, path) do
+      defp unquote(call)(content, path) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
       end

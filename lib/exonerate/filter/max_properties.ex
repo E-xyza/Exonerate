@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.MaxProperties do
 
     Tools.maybe_dump(
       quote do
-        def unquote(call)(object, path) do
+        defp unquote(call)(object, path) do
           case object do
             object when map_size(object) <= unquote(maximum) ->
               :ok

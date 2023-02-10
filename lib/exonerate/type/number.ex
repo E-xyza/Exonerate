@@ -16,7 +16,7 @@ defmodule Exonerate.Type.Number do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
-      def unquote(call)(content, path) when is_number(content) do
+      defp unquote(call)(content, path) when is_number(content) do
         unquote(filters)
       end
     end

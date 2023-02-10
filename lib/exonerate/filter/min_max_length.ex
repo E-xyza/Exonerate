@@ -27,7 +27,7 @@ defmodule Exonerate.Filter.MinMaxLength do
 
     Tools.maybe_dump(
       quote do
-        def unquote(call)(string, path) do
+        defp unquote(call)(string, path) do
           case String.length(string) do
             length when length < unquote(min_length) ->
               require Exonerate.Tools

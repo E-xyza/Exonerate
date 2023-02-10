@@ -16,7 +16,7 @@ defmodule Exonerate.Type.String do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
-      def unquote(call)(content, path) when is_binary(content) do
+      defp unquote(call)(content, path) when is_binary(content) do
         unquote(filters)
       end
     end
@@ -32,7 +32,7 @@ defmodule Exonerate.Type.String do
       |> JsonPointer.to_uri()
 
     quote do
-      def unquote(call)(content, path) when is_binary(content) do
+      defp unquote(call)(content, path) when is_binary(content) do
         if String.valid?(content) do
           unquote(filters)
         else

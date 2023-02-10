@@ -10,7 +10,7 @@ defmodule Exonerate.Type.Object do
     "additionalProperties" => Exonerate.Filter.AdditionalProperties,
     "required" => Exonerate.Filter.Required,
     "propertyNames" => Exonerate.Filter.PropertyNames,
-    "patternProperties" => Exonerate.Filter.PatternProperties,
+    "patternProperties" => Exonerate.Filter.PatternProperties
   }
 
   @filters Map.keys(@modules)
@@ -23,12 +23,15 @@ defmodule Exonerate.Type.Object do
   end
 
   def filter(schema, name, pointer) do
-    schema = JsonPointer.resolve!(schema, pointer)
-    filters = filter_calls(schema, name, pointer)
+    filters =
+      schema
+      |> JsonPointer.resolve!(pointer)
+      |> filter_calls(name, pointer)
+
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
-      def unquote(call)(content, path) when is_map(content) do
+      defp unquote(call)(content, path) when is_map(content) do
         unquote(filters)
       end
     end
@@ -208,7 +211,10 @@ defmodule Exonerate.Type.Object do
   defp append_fallthrough(list, %{"additionalProperties" => what}) when what !== true, do: list
 
   defp append_fallthrough(list, _) do
-    list ++ quote do true -> :ok end
+    list ++
+      quote do
+        true -> :ok
+      end
   end
 
   def accessories(schema, name, pointer, opts) do

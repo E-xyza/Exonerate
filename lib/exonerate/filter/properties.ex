@@ -19,7 +19,7 @@ defmodule Exonerate.Filter.Properties do
 
     Tools.maybe_dump(
       quote do
-        def unquote(call)(object, path) do
+        defp unquote(call)(object, path) do
           with unquote_splicing(filters) do
             :ok
           end

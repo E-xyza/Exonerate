@@ -15,7 +15,7 @@ defmodule Exonerate.Filter.Required do
 
     Tools.maybe_dump(
       quote do
-        def unquote(call)(object, path) do
+        defp unquote(call)(object, path) do
           unquote(required_list)
           |> Enum.reduce_while({:ok, 0}, fn
             required_field, {:ok, index} when is_map_key(object, required_field) ->

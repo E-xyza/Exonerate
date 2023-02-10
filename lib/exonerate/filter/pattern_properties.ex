@@ -10,13 +10,14 @@ defmodule Exonerate.Filter.PatternProperties do
       |> Cache.fetch!()
       |> JsonPointer.resolve!(pointer)
       |> Enum.map(fn
-      {pattern, _} ->
-        pointer = JsonPointer.traverse(pointer, pattern)
-        quote do
-          require Exonerate.Context
-          Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
-        end
-    end)
+        {pattern, _} ->
+          pointer = JsonPointer.traverse(pointer, pattern)
+
+          quote do
+            require Exonerate.Context
+            Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+          end
+      end)
 
     Tools.maybe_dump(code, opts)
   end
