@@ -5,20 +5,19 @@ defmodule Exonerate.Filter.PatternProperties do
   alias Exonerate.Tools
 
   defmacro filter_from_cached(name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-    schema_pointer = JsonPointer.to_uri(pointer)
-
-    pattern =
+    code =
       name
       |> Cache.fetch!()
       |> JsonPointer.resolve!(pointer)
+      |> Enum.map(fn
+      {pattern, _} ->
+        pointer = JsonPointer.traverse(pointer, pattern)
+        quote do
+          require Exonerate.Context
+          Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+        end
+    end)
 
-    raise "foo"
-
-    Tools.maybe_dump(
-      quote do
-      end,
-      opts
-    )
+    Tools.maybe_dump(code, opts)
   end
 end

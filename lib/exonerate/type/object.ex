@@ -9,24 +9,11 @@ defmodule Exonerate.Type.Object do
     "properties" => Exonerate.Filter.Properties,
     "additionalProperties" => Exonerate.Filter.AdditionalProperties,
     "required" => Exonerate.Filter.Required,
-    "propertyNames" => Exonerate.Filter.PropertyNames
+    "propertyNames" => Exonerate.Filter.PropertyNames,
+    "patternProperties" => Exonerate.Filter.PatternProperties,
   }
 
   @filters Map.keys(@modules)
-
-  # in the case of propertyNames, it should also wipe additionalProperties
-  def filter(schema = %{"propertyNames" => _, "additionalProperties" => _}, name, pointer) do
-    schema
-    |> Map.delete("additionalProperties")
-    |> filter(name, pointer)
-  end
-
-  # propertyNames also clobbers unevaluatedProperties
-  def filter(schema = %{"propertyNames" => _, "unevaluatedProperties" => _}, name, pointer) do
-    schema
-    |> Map.delete("unevaluatedProperties")
-    |> filter(name, pointer)
-  end
 
   # additionalProperties also clobbers unevaluatedProperties
   def filter(schema = %{"additionalProperties" => _, "unevaluatedProperties" => _}, name, pointer) do
@@ -63,6 +50,7 @@ defmodule Exonerate.Type.Object do
     filter_clauses =
       filters
       |> Enum.reject(&select_traverse?(&1, should_traverse))
+      |> Enum.reject(&trivial?/1)
       |> Enum.map(fn {filter, _} ->
         call =
           pointer
@@ -81,15 +69,21 @@ defmodule Exonerate.Type.Object do
     end
   end
 
+  defp trivial?({"additionalProperties", true}), do: true
+  defp trivial?({"patternProperties", map}) when map_size(map) === 0, do: true
+  defp trivial?(_), do: false
+
   defp should_traverse?(%{"additionalProperties" => false}), do: true
   defp should_traverse?(%{"additionalProperties" => %{}}), do: true
   defp should_traverse?(%{"propertyNames" => _}), do: true
+  defp should_traverse?(%{"patternProperties" => map}) when map_size(map) > 0, do: true
   defp should_traverse?(_), do: false
 
   defp select_traverse?({"additionalProperties", false}, _), do: true
   defp select_traverse?({"additionalProperties", %{}}, _), do: true
   defp select_traverse?({"properties", _}, should_traverse), do: should_traverse
   defp select_traverse?({"propertyNames", _}, _), do: true
+  defp select_traverse?({"patternProperties", map}, _) when map_size(map) > 0, do: true
   defp select_traverse?(_, _), do: false
 
   # additionalProperties MUST come at the end
@@ -188,11 +182,25 @@ defmodule Exonerate.Type.Object do
 
     quote do
       (
-        result = unquote(call)(value, Path.join(path, key))
+        result = unquote(call)(key, Path.join(path, key))
         match?({:error, _}, result)
       ) ->
         result
     end
+  end
+
+  defp traversal({"patternProperties", patterns}, name, pointer) do
+    Enum.flat_map(patterns, fn {pattern, _} ->
+      call =
+        pointer
+        |> JsonPointer.traverse(["patternProperties", pattern])
+        |> Tools.pointer_to_fun_name(authority: name)
+
+      quote do
+        Regex.match?(sigil_r(<<unquote(pattern)>>, []), key) ->
+          unquote(call)(value, Path.join(path, key))
+      end
+    end)
   end
 
   defp traversal(_, _, _), do: []
