@@ -109,6 +109,7 @@ defmodule Exonerate.Type.Object do
       filters
       |> Enum.sort(&sort_filters/2)
       |> Enum.flat_map(&traversal(&1, name, pointer))
+      |> append_fallthrough(filters)
 
     quote do
       Enum.reduce_while(content, :ok, fn
@@ -195,6 +196,12 @@ defmodule Exonerate.Type.Object do
   end
 
   defp traversal(_, _, _), do: []
+
+  defp append_fallthrough(list, %{"additionalProperties" => what}) when what !== true, do: list
+
+  defp append_fallthrough(list, _) do
+    list ++ quote do true -> :ok end
+  end
 
   def accessories(schema, name, pointer, opts) do
     for filter_name <- @filters, Map.has_key?(schema, filter_name) do
