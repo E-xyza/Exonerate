@@ -82,12 +82,13 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(_, call) do
-    # assume "type" is a thing; but only filter when the type needs the filter.
-    quote do
-      def unquote(call)(content, path) do
-        :ok
-      end
-    end
+  @all_types ~w(string object array number integer boolean null)
+
+  defp to_quoted_function(schema, name, pointer, opts) when is_map(schema) do
+    type = Keyword.get(opts, :type, @all_types)
+
+    schema
+    |> Map.put("type", type)
+    |> to_quoted_function(name, pointer, Keyword.drop(opts, [:type]))
   end
 end

@@ -94,19 +94,23 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     }
     """)
 
-    Exonerate.function_from_string(:def, :address2, """
-    {
-      "type": "object",
-      "properties": {
-        "number":      { "type": "number" },
-        "street_name": { "type": "string" },
-        "street_type": { "type": "string",
-                         "enum": ["Street", "Avenue", "Boulevard"]
-                       }
-      },
-      "additionalProperties": false
-    }
-    """, dump: true)
+    Exonerate.function_from_string(
+      :def,
+      :address2,
+      """
+      {
+        "type": "object",
+        "properties": {
+          "number":      { "type": "number" },
+          "street_name": { "type": "string" },
+          "street_type": { "type": "string",
+                           "enum": ["Street", "Avenue", "Boulevard"]
+                         }
+        },
+        "additionalProperties": false
+      }
+      """
+    )
 
     Exonerate.function_from_string(
       :def,
@@ -223,18 +227,22 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :contactinfo, """
-    {
-      "type": "object",
-      "properties": {
-        "name":      { "type": "string" },
-        "email":     { "type": "string" },
-        "address":   { "type": "string" },
-        "telephone": { "type": "string" }
-      },
-      "required": ["name", "email"]
-    }
-    """, dump: true)
+    Exonerate.function_from_string(
+      :def,
+      :contactinfo,
+      """
+      {
+        "type": "object",
+        "properties": {
+          "name":      { "type": "string" },
+          "email":     { "type": "string" },
+          "address":   { "type": "string" },
+          "telephone": { "type": "string" }
+        },
+        "required": ["name", "email"]
+      }
+      """
+    )
   end
 
   @contact1 """
@@ -292,14 +300,18 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :token, """
-    {
-      "type": "object",
-      "propertyNames": {
-       "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    Exonerate.function_from_string(
+      :def,
+      :token,
+      """
+      {
+        "type": "object",
+        "propertyNames": {
+         "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        }
       }
-    }
-    """)
+      """
+    )
   end
 
   @token1 ~s({ "_a_proper_token_001": "value" })

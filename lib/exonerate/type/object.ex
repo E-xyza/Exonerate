@@ -8,10 +8,32 @@ defmodule Exonerate.Type.Object do
     "maxProperties" => Exonerate.Filter.MaxProperties,
     "properties" => Exonerate.Filter.Properties,
     "additionalProperties" => Exonerate.Filter.AdditionalProperties,
-    "required" => Exonerate.Filter.Required
+    "required" => Exonerate.Filter.Required,
+    "propertyNames" => Exonerate.Filter.PropertyNames
   }
 
   @filters Map.keys(@modules)
+
+  # in the case of propertyNames, it should also wipe additionalProperties
+  def filter(schema = %{"propertyNames" => _, "additionalProperties" => _}, name, pointer) do
+    schema
+    |> Map.delete("additionalProperties")
+    |> filter(name, pointer)
+  end
+
+  # propertyNames also clobbers unevaluatedProperties
+  def filter(schema = %{"propertyNames" => _, "unevaluatedProperties" => _}, name, pointer) do
+    schema
+    |> Map.delete("unevaluatedProperties")
+    |> filter(name, pointer)
+  end
+
+  # additionalProperties also clobbers unevaluatedProperties
+  def filter(schema = %{"additionalProperties" => _, "unevaluatedProperties" => _}, name, pointer) do
+    schema
+    |> Map.delete("unevaluatedProperties")
+    |> filter(name, pointer)
+  end
 
   def filter(schema, name, pointer) do
     schema = JsonPointer.resolve!(schema, pointer)
@@ -61,12 +83,22 @@ defmodule Exonerate.Type.Object do
 
   defp should_traverse?(%{"additionalProperties" => false}), do: true
   defp should_traverse?(%{"additionalProperties" => %{}}), do: true
+  defp should_traverse?(%{"propertyNames" => _}), do: true
   defp should_traverse?(_), do: false
 
   defp select_traverse?({"additionalProperties", false}, _), do: true
   defp select_traverse?({"additionalProperties", %{}}, _), do: true
   defp select_traverse?({"properties", _}, should_traverse), do: should_traverse
+  defp select_traverse?({"propertyNames", _}, _), do: true
   defp select_traverse?(_, _), do: false
+
+  # additionalProperties MUST come at the end
+  defp sort_filters({"additionalProperties", _}, _), do: false
+  defp sort_filters(_, {"additionalProperties", _}), do: true
+  # propertyNames MUST come at the start
+  defp sort_filters({"propertyNames", _}, _), do: true
+  defp sort_filters(_, {"propertyNames", _}), do: false
+  defp sort_filters(a, b), do: a <= b
 
   def traverse(_, _, _, false), do: :ok
 
@@ -113,39 +145,56 @@ defmodule Exonerate.Type.Object do
       |> Tools.pointer_to_fun_name(authority: name)
 
     # NB this is probably going to change when we start having :ok payloads
-    ok_prong = quote do
-      :ok -> :ok
-    end
+    ok_prong =
+      quote do
+        :ok -> :ok
+      end
 
-    error_prong = case selector do
-      false ->
-        quote do
-          {:error, list} ->
-          modified_errors = list
-          |> Keyword.update!(:error_value, &{key, &1})
-          |> Keyword.update!(:json_pointer, &Path.dirname(&1))
-          {:error, modified_errors}
-        end
-      _ ->
-        quote do
-          error = {:error, _} -> error
-        end
-    end
+    error_prong =
+      case selector do
+        false ->
+          quote do
+            {:error, list} ->
+              modified_errors =
+                list
+                |> Keyword.update!(:error_value, &{key, &1})
+                |> Keyword.update!(:json_pointer, &Path.dirname(&1))
 
+              {:error, modified_errors}
+          end
+
+        _ ->
+          quote do
+            error = {:error, _} -> error
+          end
+      end
 
     quote do
       true ->
         value
         |> unquote(call)(Path.join(path, key))
-        |> case do unquote(ok_prong ++ error_prong) end
+        |> case do
+          unquote(ok_prong ++ error_prong)
+        end
+    end
+  end
+
+  defp traversal({"propertyNames", _selector}, name, pointer) do
+    call =
+      pointer
+      |> JsonPointer.traverse("propertyNames")
+      |> Tools.pointer_to_fun_name(authority: name)
+
+    quote do
+      (
+        result = unquote(call)(value, Path.join(path, key))
+        match?({:error, _}, result)
+      ) ->
+        result
     end
   end
 
   defp traversal(_, _, _), do: []
-
-  defp sort_filters({"additionalProperties", _}, _), do: false
-  defp sort_filters(_, {"additionalProperties", _}), do: true
-  defp sort_filters(a, b), do: a <= b
 
   def accessories(schema, name, pointer, opts) do
     for filter_name <- @filters, Map.has_key?(schema, filter_name) do
@@ -157,9 +206,10 @@ defmodule Exonerate.Type.Object do
     if should_traverse?(schema) do
       schema
       |> Map.fetch!("properties")
-      |> Map.keys
+      |> Map.keys()
       |> Enum.map(fn key ->
         new_pointer = JsonPointer.traverse(pointer, ["properties", key])
+
         quote do
           require Exonerate.Context
           Exonerate.Context.from_cached(unquote(name), unquote(new_pointer), unquote(opts))
