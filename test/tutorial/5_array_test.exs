@@ -66,7 +66,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
           "type": "number"
         }
       }
-      """
+      """, dump: true
     )
 
     Exonerate.function_from_string(:def, :contains, """
@@ -137,73 +137,73 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     """
     require Exonerate
 
-    #    Exonerate.function_from_string(:def, :tuple, """
-    #    {
-    #      "type": "array",
-    #      "items": [
-    #        {
-    #          "type": "number"
-    #        },
-    #        {
-    #          "type": "string"
-    #        },
-    #        {
-    #          "type": "string",
-    #          "enum": ["Street", "Avenue", "Boulevard"]
-    #        },
-    #        {
-    #          "type": "string",
-    #          "enum": ["NW", "NE", "SW", "SE"]
-    #        }
-    #      ]
-    #    }
-    #    """)
-    #
-    #    Exonerate.function_from_string(:def, :tuple_noadditional, """
-    #    {
-    #      "type": "array",
-    #      "items": [
-    #        {
-    #          "type": "number"
-    #        },
-    #        {
-    #          "type": "string"
-    #        },
-    #        {
-    #          "type": "string",
-    #          "enum": ["Street", "Avenue", "Boulevard"]
-    #        },
-    #        {
-    #          "type": "string",
-    #          "enum": ["NW", "NE", "SW", "SE"]
-    #        }
-    #      ],
-    #      "additionalItems": false
-    #    }
-    #    """)
-    #
-    #    Exonerate.function_from_string(:def, :tuple_additional_with_property, """
-    #    {
-    #      "type": "array",
-    #      "items": [
-    #        {
-    #          "type": "number"
-    #        },
-    #        {
-    #          "type": "string"
-    #        },
-    #        {
-    #          "type": "string",
-    #          "enum": ["Street", "Avenue", "Boulevard"]
-    #        },
-    #        {
-    #          "type": "string",
-    #          "enum": ["NW", "NE", "SW", "SE"]
-    #        }
-    #      ],
-    #      "additionalItems": { "type": "string" }
-    #    }
-    #    """)
+    Exonerate.function_from_string(:def, :tuple, """
+    {
+      "type": "array",
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "string",
+          "enum": ["Street", "Avenue", "Boulevard"]
+        },
+        {
+          "type": "string",
+          "enum": ["NW", "NE", "SW", "SE"]
+        }
+      ]
+    }
+    """)
+
+    Exonerate.function_from_string(:def, :tuple_noadditional, """
+    {
+      "type": "array",
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "string",
+          "enum": ["Street", "Avenue", "Boulevard"]
+        },
+        {
+          "type": "string",
+          "enum": ["NW", "NE", "SW", "SE"]
+        }
+      ],
+      "additionalItems": false
+    }
+    """)
+
+    Exonerate.function_from_string(:def, :tuple_additional_with_property, """
+    {
+      "type": "array",
+      "items": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "string",
+          "enum": ["Street", "Avenue", "Boulevard"]
+        },
+        {
+          "type": "string",
+          "enum": ["NW", "NE", "SW", "SE"]
+        }
+      ],
+      "additionalItems": { "type": "string" }
+    }
+    """)
   end
 
   describe "tuple validation" do

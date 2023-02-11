@@ -10,36 +10,36 @@ defmodule Exonerate.Type.Array do
 
   # TODO: consider making a version where we don't bother indexing, if it's not necessary.
 
-  def filter(_schema = %{"items" => items}, name, pointer) when is_list(items) do
-    # TODO: rewrite this as prefix Items, conditionally on the version of the schema.
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-
-    quote do
-      defp unquote(call)(content, path) when is_list(content) do
-        :ok
-      end
-    end
-  end
-
   def filter(schema, name, pointer) do
     subschema = JsonPointer.resolve!(schema, pointer)
-    class = class_for(subschema)
-    filters = filter_calls(subschema, class, name, pointer)
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    quote do
-      defp unquote(call)(content, path) when is_list(content) do
-        content
-        |> Enum.reduce_while(unquote(initializer_for(class, pointer)), fn
-          item, unquote(accumulator_for(class)) ->
-            with unquote_splicing(filters) do
-              unquote(continuation_for(class))
-            else
-              error -> {:halt, {error, []}}
-            end
-        end)
-        |> elem(0)
-      end
+    case Map.take(subschema, @filters) do
+      empty when map_size(empty) === 0 ->
+        quote do
+          defp unquote(call)(content, _path) when is_list(content) do
+            :ok
+          end
+        end
+
+      _ ->
+        class = class_for(subschema)
+        filters = filter_calls(subschema, class, name, pointer)
+
+        quote do
+          defp unquote(call)(content, path) when is_list(content) do
+            content
+            |> Enum.reduce_while(unquote(initializer_for(class, pointer)), fn
+              item, unquote(accumulator_for(class)) ->
+                with unquote_splicing(filters) do
+                  unquote(continuation_for(class))
+                else
+                  halt -> {:halt, {halt, []}}
+                end
+            end)
+            |> elem(0)
+          end
+        end
     end
   end
 
@@ -59,9 +59,10 @@ defmodule Exonerate.Type.Array do
       # note that "contains" is inverted, we'll generate the error first
       # and then halt on :ok
       :contains ->
-        schema_pointer = pointer
-        |> JsonPointer.traverse("contains")
-        |> JsonPointer.to_uri()
+        schema_pointer =
+          pointer
+          |> JsonPointer.traverse("contains")
+          |> JsonPointer.to_uri()
 
         quote do
           require Exonerate.Tools
@@ -124,6 +125,17 @@ defmodule Exonerate.Type.Array do
 
   defp build_filters(filters, class, name, pointer) do
     Enum.map(filters, &filter_for(&1, class, name, pointer))
+  end
+
+  defp filter_for({"items", list}, _class, name, pointer) when is_list(list) do
+    call =
+      pointer
+      |> JsonPointer.traverse("items")
+      |> Tools.pointer_to_fun_name(authority: name)
+
+    quote do
+      :ok <- unquote(call)(item, index, Path.join(path, "#{index}"))
+    end
   end
 
   defp filter_for({"items", _}, _class, name, pointer) do
