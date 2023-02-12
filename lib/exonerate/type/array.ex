@@ -4,7 +4,9 @@ defmodule Exonerate.Type.Array do
   @modules %{
     "items" => Exonerate.Filter.Items,
     "contains" => Exonerate.Filter.Contains,
-    "uniqueItems" => Exonerate.Filter.UniqueItems
+    "uniqueItems" => Exonerate.Filter.UniqueItems,
+    "minItems" => Exonerate.Filter.MinItems,
+    "maxItems" => Exonerate.Filter.MaxItems
   }
 
   @filters Map.keys(@modules)
@@ -38,7 +40,7 @@ defmodule Exonerate.Type.Array do
                   halt -> {:halt, {halt, []}}
                 end
             end)
-            |> elem(0)
+            |> unquote(analysis_for(subschema, class, pointer))
           end
         end
     end
@@ -50,12 +52,13 @@ defmodule Exonerate.Type.Array do
     |> Map.keys()
     |> Enum.flat_map(&accumulators_for/1)
     |> Enum.uniq()
-    |> dbg
   end
 
   defp accumulators_for("contains"), do: [:contains]
   defp accumulators_for("items"), do: [:index]
   defp accumulators_for("uniqueItems"), do: [:so_far, :index]
+  defp accumulators_for("minItems"), do: [:index]
+  defp accumulators_for("maxItems"), do: [:index]
   defp accumulators_for(_), do: []
 
   defp initializer_for(class, pointer) do
@@ -150,7 +153,7 @@ defmodule Exonerate.Type.Array do
   end
 
   defp build_filters(filters, class, name, pointer) do
-    Enum.map(filters, &filter_for(&1, class, name, pointer))
+    Enum.flat_map(filters, &filter_for(&1, class, name, pointer))
   end
 
   defp filter_for({"items", list}, _class, name, pointer) when is_list(list) do
@@ -159,9 +162,9 @@ defmodule Exonerate.Type.Array do
       |> JsonPointer.traverse("items")
       |> Tools.pointer_to_fun_name(authority: name)
 
-    quote do
+    [quote do
       :ok <- unquote(call)(item, index, Path.join(path, "#{index}"))
-    end
+    end]
   end
 
   defp filter_for({"items", _}, _class, name, pointer) do
@@ -170,9 +173,9 @@ defmodule Exonerate.Type.Array do
       |> JsonPointer.traverse("items")
       |> Tools.pointer_to_fun_name(authority: name)
 
-    quote do
+    [quote do
       :ok <- unquote(call)(item, Path.join(path, "#{index}"))
-    end
+    end]
   end
 
   defp filter_for({"contains", _}, [:contains], name, pointer) do
@@ -181,24 +184,91 @@ defmodule Exonerate.Type.Array do
       |> JsonPointer.traverse("contains")
       |> Tools.pointer_to_fun_name(authority: name)
 
-    quote do
+    [quote do
       {:error, _} <- unquote(call)(item, Path.join(path, ":any"))
-    end
+    end]
   end
 
-  defp filter_for({"uniqueItems", true}, _, name, pointer) do
+  defp filter_for({"uniqueItems", true}, _, _name, pointer) do
     pointer =
       pointer
       |> JsonPointer.traverse("uniqueItems")
       |> JsonPointer.to_uri()
 
-    quote do
+    [quote do
       nil <-
         if item in acc.so_far do
           require Exonerate.Tools
           Exonerate.Tools.mismatch(item, unquote(pointer), Path.join(path, "#{acc.index}"))
         end
+    end]
+  end
+
+  defp filter_for({"minItems", _}, _, _name, _pointer), do: []
+
+  defp filter_for({"maxItems", count}, [:index], _name, pointer) do
+    pointer =
+      pointer
+      |> JsonPointer.traverse("maxItems")
+      |> JsonPointer.to_uri()
+
+    [quote do
+      nil <- if index >= unquote(count) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(content, unquote(pointer), path)
+      end
+    end]
+  end
+
+  defp filter_for({"maxItems", count}, _, _name, pointer) do
+    pointer =
+      pointer
+      |> JsonPointer.traverse("maxItems")
+      |> JsonPointer.to_uri()
+
+    [quote do
+      nil <- if acc.index >= unquote(count) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(content, unquote(pointer), path)
+      end
+    end]
+  end
+
+  defp analysis_for(%{"minItems" => count}, [:index], pointer) do
+    pointer =
+      pointer
+      |> JsonPointer.traverse("minItems")
+      |> JsonPointer.to_uri()
+
+    quote do
+      then(fn
+        {:ok, deficient} when deficient < unquote(count) - 1 ->
+          require Exonerate.Tools
+          Exonerate.Tools.mismatch(content, unquote(pointer), path)
+        {:ok, _} -> :ok
+        {error = {:error, _}, _} -> error
+      end)
     end
+  end
+
+  defp analysis_for(%{"minItems" => count}, _class, pointer) do
+    pointer =
+      pointer
+      |> JsonPointer.traverse("minItems")
+      |> JsonPointer.to_uri()
+
+    quote do
+      then(fn
+        {:ok, %{index: deficient}} when deficient < unquote(count) - 1 ->
+          require Exonerate.Tools
+          Exonerate.Tools.mismatch(content, unquote(pointer), path)
+        other -> other
+      end)
+    end
+  end
+
+  defp analysis_for(schema, _class, _pointer) do
+    quote do elem(0) end
   end
 
   def accessories(schema, name, pointer, opts) do
