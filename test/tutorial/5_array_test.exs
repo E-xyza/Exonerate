@@ -66,7 +66,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
           "type": "number"
         }
       }
-      """, dump: true
+      """
     )
 
     Exonerate.function_from_string(:def, :contains, """
@@ -346,12 +346,16 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :unique, """
-    {
-      "type": "array",
-      "uniqueItems": true
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :unique,
+      """
+      {
+        "type": "array",
+        "uniqueItems": true
+      }
+      """
+    )
   end
 
   describe "array uniqueness works" do

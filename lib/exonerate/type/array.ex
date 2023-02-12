@@ -3,7 +3,8 @@ defmodule Exonerate.Type.Array do
 
   @modules %{
     "items" => Exonerate.Filter.Items,
-    "contains" => Exonerate.Filter.Contains
+    "contains" => Exonerate.Filter.Contains,
+    "uniqueItems" => Exonerate.Filter.UniqueItems
   }
 
   @filters Map.keys(@modules)
@@ -47,18 +48,21 @@ defmodule Exonerate.Type.Array do
     schema
     |> Map.take(@filters)
     |> Map.keys()
-    |> case do
-      ["contains"] -> :contains
-      ["items"] -> :items
-      [] -> nil
-    end
+    |> Enum.flat_map(&accumulators_for/1)
+    |> Enum.uniq()
+    |> dbg
   end
+
+  defp accumulators_for("contains"), do: [:contains]
+  defp accumulators_for("items"), do: [:index]
+  defp accumulators_for("uniqueItems"), do: [:so_far, :index]
+  defp accumulators_for(_), do: []
 
   defp initializer_for(class, pointer) do
     case class do
       # note that "contains" is inverted, we'll generate the error first
       # and then halt on :ok
-      :contains ->
+      [:contains] ->
         schema_pointer =
           pointer
           |> JsonPointer.traverse("contains")
@@ -69,47 +73,69 @@ defmodule Exonerate.Type.Array do
           {Exonerate.Tools.mismatch(content, unquote(schema_pointer), path), []}
         end
 
-      :items ->
+      [:index] ->
         {:ok, 0}
 
-      nil ->
+      [] ->
         :ok
+
+      list ->
+        init =
+          list
+          |> Map.new(fn
+            :so_far -> {:so_far, MapSet.new()}
+            :index -> {:index, 0}
+          end)
+          |> Macro.escape()
+
+        {:ok, init}
     end
   end
 
   defp accumulator_for(class) do
     case class do
-      :contains ->
+      [:contains] ->
         quote do
           error
         end
 
-      :items ->
+      [:index] ->
         quote do
           {:ok, index}
         end
 
-      _ ->
+      [] ->
         quote do
           _
+        end
+
+      _ ->
+        quote do
+          {:ok, acc}
         end
     end
   end
 
   defp continuation_for(class) do
     case class do
-      :contains ->
+      [:contains] ->
         quote do
           {:cont, error}
         end
 
-      :items ->
+      [:index] ->
         quote do
           {:cont, {:ok, index + 1}}
         end
 
-      nil ->
+      [] ->
         {:cont, {:ok, []}}
+
+      [:so_far, :index] ->
+        # TODO: do better at generalizing this
+        quote do
+          {:cont, {:ok, %{acc | index: acc.index + 1, so_far: MapSet.put(acc.so_far, item)}}}
+        end
     end
   end
 
@@ -149,7 +175,7 @@ defmodule Exonerate.Type.Array do
     end
   end
 
-  defp filter_for({"contains", _}, :contains, name, pointer) do
+  defp filter_for({"contains", _}, [:contains], name, pointer) do
     call =
       pointer
       |> JsonPointer.traverse("contains")
@@ -157,6 +183,21 @@ defmodule Exonerate.Type.Array do
 
     quote do
       {:error, _} <- unquote(call)(item, Path.join(path, ":any"))
+    end
+  end
+
+  defp filter_for({"uniqueItems", true}, _, name, pointer) do
+    pointer =
+      pointer
+      |> JsonPointer.traverse("uniqueItems")
+      |> JsonPointer.to_uri()
+
+    quote do
+      nil <-
+        if item in acc.so_far do
+          require Exonerate.Tools
+          Exonerate.Tools.mismatch(item, unquote(pointer), Path.join(path, "#{acc.index}"))
+        end
     end
   end
 
