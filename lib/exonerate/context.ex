@@ -52,6 +52,63 @@ defmodule Exonerate.Context do
     end
   end
 
+  # metadata
+  defp to_quoted_function(schema = %{"title" => title}, name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    rest = schema
+    |> Map.delete("title")
+    |> to_quoted_function(name, pointer, opts)
+
+    quote do
+      defp unquote(call)(:title, _), do: unquote(title)
+
+      unquote(rest)
+    end
+  end
+
+  defp to_quoted_function(schema = %{"description" => title}, name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    rest = schema
+    |> Map.delete("description")
+    |> to_quoted_function(name, pointer, opts)
+
+    quote do
+      defp unquote(call)(:description, _), do: unquote(title)
+
+      unquote(rest)
+    end
+  end
+
+  defp to_quoted_function(schema = %{"examples" => title}, name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    rest = schema
+    |> Map.delete("examples")
+    |> to_quoted_function(name, pointer, opts)
+
+    quote do
+      defp unquote(call)(:examples, _), do: unquote(title)
+
+      unquote(rest)
+    end
+  end
+
+  defp to_quoted_function(schema = %{"default" => title}, name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    rest = schema
+    |> Map.delete("default")
+    |> to_quoted_function(name, pointer, opts)
+
+    quote do
+      defp unquote(call)(:default, _), do: unquote(title)
+
+      unquote(rest)
+    end
+  end
+
   # intercept consts
   defp to_quoted_function(schema = %{"const" => const}, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
@@ -153,7 +210,6 @@ defmodule Exonerate.Context do
     |> MapSet.new()
     |> MapSet.intersection(internal_types)
     |> Enum.to_list
-    |> dbg
 
     schema
     |> Map.put("type", type)
