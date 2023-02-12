@@ -315,7 +315,7 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       "minItems": 2,
       "maxItems": 3
     }
-    """, dump: true)
+    """)
   end
 
   describe "array length works" do
