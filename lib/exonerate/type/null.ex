@@ -1,7 +1,6 @@
 defmodule Exonerate.Type.Null do
   @moduledoc false
 
-
   alias Exonerate.Tools
 
   def filter(_schema, name, pointer) do

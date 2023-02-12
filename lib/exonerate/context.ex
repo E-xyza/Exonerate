@@ -52,6 +52,63 @@ defmodule Exonerate.Context do
     end
   end
 
+  # intercept consts
+  defp to_quoted_function(schema = %{"const" => const}, name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    const_pointer =
+      pointer
+      |> JsonPointer.traverse("const")
+      |> JsonPointer.to_uri()
+
+    rest_filter =
+      schema
+      |> Map.delete("const")
+      |> to_quoted_function(name, pointer, Keyword.merge(opts, type: typeof(const)))
+
+    value = Macro.escape(const)
+
+    quote do
+      defp unquote(call)(content, path) when content !== unquote(value) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(content, unquote(const_pointer), path)
+      end
+
+      unquote(rest_filter)
+    end
+  end
+
+  # intercept enums
+  defp to_quoted_function(schema = %{"enum" => enum}, name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    enum_pointer =
+      pointer
+      |> JsonPointer.traverse("enum")
+      |> JsonPointer.to_uri()
+
+    types =
+      enum
+      |> Enum.map(&typeof/1)
+      |> Enum.uniq()
+
+    rest_filter =
+      schema
+      |> Map.delete("enum")
+      |> to_quoted_function(name, pointer, Keyword.merge(opts, type: types))
+
+    values = Macro.escape(enum)
+
+    quote do
+      defp unquote(call)(content, path) when content not in unquote(values) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(content, unquote(enum_pointer), path)
+      end
+
+      unquote(rest_filter)
+    end
+  end
+
   defp to_quoted_function(schema = %{"type" => type_or_types}, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
@@ -85,10 +142,29 @@ defmodule Exonerate.Context do
   @all_types ~w(string object array number integer boolean null)
 
   defp to_quoted_function(schema, name, pointer, opts) when is_map(schema) do
-    type = Keyword.get(opts, :type, @all_types)
+    internal_types = schema
+    |> Map.get(:type, @all_types)
+    |> List.wrap
+    |> MapSet.new
+
+    type = opts
+    |> Keyword.get(:type, @all_types)
+    |> List.wrap
+    |> MapSet.new()
+    |> MapSet.intersection(internal_types)
+    |> Enum.to_list
+    |> dbg
 
     schema
     |> Map.put("type", type)
     |> to_quoted_function(name, pointer, Keyword.drop(opts, [:type]))
   end
+
+  defp typeof(value) when is_binary(value), do: "string"
+  defp typeof(value) when is_map(value), do: "object"
+  defp typeof(value) when is_list(value), do: "array"
+  defp typeof(value) when is_integer(value), do: "integer"
+  defp typeof(value) when is_number(value), do: "number"
+  defp typeof(value) when is_boolean(value), do: "boolean"
+  defp typeof(value) when is_nil(value), do: "null"
 end

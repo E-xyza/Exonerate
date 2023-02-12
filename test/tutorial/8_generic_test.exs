@@ -80,7 +80,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
       "type": "string",
       "enum": ["red", "amber", "green", null]
     }
-    """)
+    """, dump: true)
   end
 
   @moduletag :one
@@ -120,10 +120,10 @@ defmodule ExonerateTest.Tutorial.GenericTest do
       assert :ok == EnumeratedValues.enum3("red")
     end
 
-    test "unenumerated values don't match" do
+    test "enumerated values that fail still fail" do
       assert {:error, list} = EnumeratedValues.enum3(nil)
 
-      assert list[:schema_pointer] == "/enum"
+      assert list[:schema_pointer] == "/type"
       assert list[:error_value] == nil
       assert list[:json_pointer] == "/"
     end
