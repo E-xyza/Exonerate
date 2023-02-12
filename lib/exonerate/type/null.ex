@@ -1,40 +1,18 @@
 defmodule Exonerate.Type.Null do
   @moduledoc false
 
-  # boilerplate!!
-  @behaviour Exonerate.Type
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
 
-  defstruct [:context, filters: []]
-  @type t :: %__MODULE__{}
+  alias Exonerate.Tools
 
-  alias Exonerate.Context
-
-  @impl true
-  @spec parse(Context.t(), Type.json()) :: t
-  def parse(context, _schema) do
-    %__MODULE__{context: context}
-  end
-
-  @impl true
-  @spec compile(t) :: Macro.t()
-  def compile(filter) do
-    combining =
-      Context.combining(
-        filter.context,
-        quote do
-          null
-        end,
-        quote do
-          path
-        end
-      )
+  def filter(_schema, name, pointer) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
-      defp unquote(Context.fun(filter))(null, path) when is_nil(null) do
-        (unquote_splicing(combining))
+      defp unquote(call)(content, path) when is_nil(content) do
+        :ok
       end
     end
   end
+
+  def accessories(_, _, _, _), do: []
 end
