@@ -2,13 +2,14 @@ defmodule Exonerate.Type.String do
   @moduledoc false
 
   alias Exonerate.Tools
+  alias Exonerate.Combining
 
-  @modules %{
-    "minLength" => Exonerate.Filter.MinLength,
-    "maxLength" => Exonerate.Filter.MaxLength,
-    "min-max-length" => Exonerate.Filter.MinMaxLength,
-    "pattern" => Exonerate.Filter.Pattern
-  }
+  @modules Combining.merge(%{
+             "minLength" => Exonerate.Filter.MinLength,
+             "maxLength" => Exonerate.Filter.MaxLength,
+             "min-max-length" => Exonerate.Filter.MinMaxLength,
+             "pattern" => Exonerate.Filter.Pattern
+           })
   @filters Map.keys(@modules)
 
   def filter(schema = %{"format" => "binary"}, name, pointer) do
@@ -92,7 +93,7 @@ defmodule Exonerate.Type.String do
   def accessories(schema, name, pointer, opts) do
     schema = combine_min_max(schema)
 
-    for filter_name <- @filters, schema[filter_name] do
+    for filter_name <- @filters, schema[filter_name], not Combining.filter?(filter_name) do
       module = @modules[filter_name]
       pointer = traverse(pointer, filter_name)
 

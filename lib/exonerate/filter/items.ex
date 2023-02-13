@@ -27,10 +27,11 @@ defmodule Exonerate.Filter.Items do
             |> Enum.with_index(&item_to_filter(&1, &2, name, pointer, opts))
             |> Enum.unzip()
 
+          additional_items = additional_items_for(name, pointer, opts)
+
           quote do
             unquote(calls)
-            # items beyond the index items index, will support additionalItems later.
-            defp unquote(call)(_item, _index, _pointer), do: :ok
+            defp unquote(call)(item, _index, path), do: unquote(additional_items)
             unquote(filters)
           end
       end,
@@ -55,5 +56,26 @@ defmodule Exonerate.Filter.Items do
         Exonerate.Context.from_cached(unquote(name), unquote(item_pointer), unquote(opts))
       end
     }
+  end
+
+  defp additional_items_for(name, pointer, _opts) do
+    name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
+    |> case do
+      %{"additionalItems" => _} ->
+        additional_call =
+          pointer
+          |> JsonPointer.backtrack!
+          |> JsonPointer.traverse("additionalItems")
+          |> Tools.pointer_to_fun_name(authority: name)
+
+        quote do
+          unquote(additional_call)(item, path)
+        end
+
+      _ ->
+        :ok
+    end
   end
 end

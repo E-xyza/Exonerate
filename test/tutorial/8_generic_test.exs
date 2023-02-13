@@ -75,12 +75,16 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     }
     """)
 
-    Exonerate.function_from_string(:def, :enum3, """
-    {
-      "type": "string",
-      "enum": ["red", "amber", "green", null]
-    }
-    """, dump: true)
+    Exonerate.function_from_string(
+      :def,
+      :enum3,
+      """
+      {
+        "type": "string",
+        "enum": ["red", "amber", "green", null]
+      }
+      """
+    )
   end
 
   @moduletag :one

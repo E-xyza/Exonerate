@@ -180,30 +180,35 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       ],
       "additionalItems": false
     }
-    """)
+    """,
+    dump: true)
 
-    Exonerate.function_from_string(:def, :tuple_additional_with_property, """
-    {
-      "type": "array",
-      "items": [
-        {
-          "type": "number"
-        },
-        {
-          "type": "string"
-        },
-        {
-          "type": "string",
-          "enum": ["Street", "Avenue", "Boulevard"]
-        },
-        {
-          "type": "string",
-          "enum": ["NW", "NE", "SW", "SE"]
-        }
-      ],
-      "additionalItems": { "type": "string" }
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :tuple_additional_with_property,
+      """
+      {
+        "type": "array",
+        "items": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "string",
+            "enum": ["Street", "Avenue", "Boulevard"]
+          },
+          {
+            "type": "string",
+            "enum": ["NW", "NE", "SW", "SE"]
+          }
+        ],
+        "additionalItems": { "type": "string" }
+      }
+      """
+    )
   end
 
   describe "tuple validation" do

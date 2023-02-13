@@ -19,14 +19,18 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :combining, """
-    {
-      "anyOf": [
-        { "type": "string", "maxLength": 5 },
-        { "type": "number", "minimum": 0 }
-      ]
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :combining,
+      """
+      {
+        "anyOf": [
+          { "type": "string", "maxLength": 5 },
+          { "type": "number", "minimum": 0 }
+        ]
+      }
+      """
+    )
   end
 
   describe "combining schemas is possible" do

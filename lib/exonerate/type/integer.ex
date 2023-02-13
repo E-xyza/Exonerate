@@ -1,15 +1,17 @@
 defmodule Exonerate.Type.Integer do
   @moduledoc false
 
+  alias Exonerate.Combining
   alias Exonerate.Tools
 
-  @modules %{
-    "maximum" => Exonerate.Filter.Maximum,
-    "minimum" => Exonerate.Filter.Minimum,
-    "exclusiveMaximum" => Exonerate.Filter.ExclusiveMaximum,
-    "exclusiveMinimum" => Exonerate.Filter.ExclusiveMinimum,
-    "multipleOf" => Exonerate.Filter.MultipleOf
-  }
+  @modules Combining.merge(%{
+             "maximum" => Exonerate.Filter.Maximum,
+             "minimum" => Exonerate.Filter.Minimum,
+             "exclusiveMaximum" => Exonerate.Filter.ExclusiveMaximum,
+             "exclusiveMinimum" => Exonerate.Filter.ExclusiveMinimum,
+             "multipleOf" => Exonerate.Filter.MultipleOf
+           })
+
   @filters Map.keys(@modules)
 
   def filter(schema, name, pointer) do
@@ -54,7 +56,7 @@ defmodule Exonerate.Type.Integer do
   end
 
   def accessories(schema, name, pointer, opts) do
-    for filter_name <- @filters, schema[filter_name] do
+    for filter_name <- @filters, schema[filter_name], not Combining.filter?(filter_name) do
       module = @modules[filter_name]
       pointer = JsonPointer.traverse(pointer, filter_name)
 

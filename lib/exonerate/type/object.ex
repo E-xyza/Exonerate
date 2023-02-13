@@ -2,16 +2,17 @@ defmodule Exonerate.Type.Object do
   @moduledoc false
 
   alias Exonerate.Tools
+  alias Exonerate.Combining
 
-  @modules %{
-    "minProperties" => Exonerate.Filter.MinProperties,
-    "maxProperties" => Exonerate.Filter.MaxProperties,
-    "properties" => Exonerate.Filter.Properties,
-    "additionalProperties" => Exonerate.Filter.AdditionalProperties,
-    "required" => Exonerate.Filter.Required,
-    "propertyNames" => Exonerate.Filter.PropertyNames,
-    "patternProperties" => Exonerate.Filter.PatternProperties
-  }
+  @modules Combining.merge(%{
+             "minProperties" => Exonerate.Filter.MinProperties,
+             "maxProperties" => Exonerate.Filter.MaxProperties,
+             "properties" => Exonerate.Filter.Properties,
+             "additionalProperties" => Exonerate.Filter.AdditionalProperties,
+             "required" => Exonerate.Filter.Required,
+             "propertyNames" => Exonerate.Filter.PropertyNames,
+             "patternProperties" => Exonerate.Filter.PatternProperties
+           })
 
   @filters Map.keys(@modules)
 
@@ -218,7 +219,9 @@ defmodule Exonerate.Type.Object do
   end
 
   def accessories(schema, name, pointer, opts) do
-    for filter_name <- @filters, Map.has_key?(schema, filter_name) do
+    for filter_name <- @filters,
+        Map.has_key?(schema, filter_name),
+        not Combining.filter?(filter_name) do
       object_accessory(filter_name, schema, name, pointer, opts)
     end
   end

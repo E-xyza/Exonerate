@@ -35,7 +35,7 @@ defmodule Exonerate.MixProject do
     [
       {:ex_doc, "~> 0.24", only: :dev},
       {:yaml_elixir, "~> 2.7", only: :test},
-      {:json_ptr, "~> 0.2"},
+      {:json_ptr, "~> 0.3"},
       {:jason, "~> 1.4.0"},
       {:dialyxir, "~> 1.2.0", only: :dev}
     ]

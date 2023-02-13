@@ -15,17 +15,18 @@ defmodule Exonerate.Context do
     |> Tools.maybe_dump(opts)
   end
 
-  # don't normally use the brackted alias format but it makes sense here.
-  alias Exonerate.Type.{Array, Boolean, Integer, Null, Number, Object, String}
-
   @filter_map %{
-    "array" => Array,
-    "boolean" => Boolean,
-    "integer" => Integer,
-    "null" => Null,
-    "number" => Number,
-    "object" => Object,
-    "string" => String
+    "array" => Exonerate.Type.Array,
+    "boolean" => Exonerate.Type.Boolean,
+    "integer" => Exonerate.Type.Integer,
+    "null" => Exonerate.Type.Null,
+    "number" => Exonerate.Type.Number,
+    "object" => Exonerate.Type.Object,
+    "string" => Exonerate.Type.String
+  }
+
+  @combining_map %{
+    "anyOf" => Exonerate.Combining.AnyOf
   }
 
   defp to_quoted_function(true, name, pointer, _opts) do
@@ -56,9 +57,10 @@ defmodule Exonerate.Context do
   defp to_quoted_function(schema = %{"title" => title}, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    rest = schema
-    |> Map.delete("title")
-    |> to_quoted_function(name, pointer, opts)
+    rest =
+      schema
+      |> Map.delete("title")
+      |> to_quoted_function(name, pointer, opts)
 
     quote do
       defp unquote(call)(:title, _), do: unquote(title)
@@ -70,9 +72,10 @@ defmodule Exonerate.Context do
   defp to_quoted_function(schema = %{"description" => title}, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    rest = schema
-    |> Map.delete("description")
-    |> to_quoted_function(name, pointer, opts)
+    rest =
+      schema
+      |> Map.delete("description")
+      |> to_quoted_function(name, pointer, opts)
 
     quote do
       defp unquote(call)(:description, _), do: unquote(title)
@@ -84,9 +87,10 @@ defmodule Exonerate.Context do
   defp to_quoted_function(schema = %{"examples" => title}, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    rest = schema
-    |> Map.delete("examples")
-    |> to_quoted_function(name, pointer, opts)
+    rest =
+      schema
+      |> Map.delete("examples")
+      |> to_quoted_function(name, pointer, opts)
 
     quote do
       defp unquote(call)(:examples, _), do: unquote(title)
@@ -98,9 +102,10 @@ defmodule Exonerate.Context do
   defp to_quoted_function(schema = %{"default" => title}, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    rest = schema
-    |> Map.delete("default")
-    |> to_quoted_function(name, pointer, opts)
+    rest =
+      schema
+      |> Map.delete("default")
+      |> to_quoted_function(name, pointer, opts)
 
     quote do
       defp unquote(call)(:default, _), do: unquote(title)
@@ -179,6 +184,24 @@ defmodule Exonerate.Context do
       |> List.wrap()
       |> Enum.flat_map(&Type.module(&1).accessories(schema, name, pointer, opts))
 
+    combiners =
+      @combining_map
+      |> Map.keys()
+      |> Enum.flat_map(fn
+        combiner ->
+          List.wrap(
+            if is_map_key(schema, combiner) do
+              module = @combining_map[combiner]
+              pointer = JsonPointer.traverse(pointer, combiner)
+
+              quote do
+                require unquote(module)
+                unquote(module).filter_from_cached(unquote(name), unquote(pointer), unquote(opts))
+              end
+            end
+          )
+      end)
+
     schema_pointer =
       pointer
       |> JsonPointer.traverse("type")
@@ -192,6 +215,8 @@ defmodule Exonerate.Context do
         Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
       end
 
+      unquote(combiners)
+
       unquote(accessories)
     end
   end
@@ -199,17 +224,19 @@ defmodule Exonerate.Context do
   @all_types ~w(string object array number integer boolean null)
 
   defp to_quoted_function(schema, name, pointer, opts) when is_map(schema) do
-    internal_types = schema
-    |> Map.get(:type, @all_types)
-    |> List.wrap
-    |> MapSet.new
+    internal_types =
+      schema
+      |> Map.get(:type, @all_types)
+      |> List.wrap()
+      |> MapSet.new()
 
-    type = opts
-    |> Keyword.get(:type, @all_types)
-    |> List.wrap
-    |> MapSet.new()
-    |> MapSet.intersection(internal_types)
-    |> Enum.to_list
+    type =
+      opts
+      |> Keyword.get(:type, @all_types)
+      |> List.wrap()
+      |> MapSet.new()
+      |> MapSet.intersection(internal_types)
+      |> Enum.to_list()
 
     schema
     |> Map.put("type", type)
