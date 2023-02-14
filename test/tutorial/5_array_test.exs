@@ -69,14 +69,18 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       """
     )
 
-    Exonerate.function_from_string(:def, :contains, """
-    {
-      "type": "array",
-      "contains": {
-        "type": "number"
+    Exonerate.function_from_string(
+      :def,
+      :contains,
+      """
+      {
+        "type": "array",
+        "contains": {
+          "type": "number"
+        }
       }
-    }
-    """)
+      """
+    )
   end
 
   describe "basic array items matching" do
@@ -159,29 +163,32 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     }
     """)
 
-    Exonerate.function_from_string(:def, :tuple_noadditional, """
-    {
-      "type": "array",
-      "items": [
-        {
-          "type": "number"
-        },
-        {
-          "type": "string"
-        },
-        {
-          "type": "string",
-          "enum": ["Street", "Avenue", "Boulevard"]
-        },
-        {
-          "type": "string",
-          "enum": ["NW", "NE", "SW", "SE"]
-        }
-      ],
-      "additionalItems": false
-    }
-    """,
-    dump: true)
+    Exonerate.function_from_string(
+      :def,
+      :tuple_noadditional,
+      """
+      {
+        "type": "array",
+        "items": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "string",
+            "enum": ["Street", "Avenue", "Boulevard"]
+          },
+          {
+            "type": "string",
+            "enum": ["NW", "NE", "SW", "SE"]
+          }
+        ],
+        "additionalItems": false
+      }
+      """
+    )
 
     Exonerate.function_from_string(
       :def,

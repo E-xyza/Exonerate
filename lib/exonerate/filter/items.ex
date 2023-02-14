@@ -66,7 +66,7 @@ defmodule Exonerate.Filter.Items do
       %{"additionalItems" => _} ->
         additional_call =
           pointer
-          |> JsonPointer.backtrack!
+          |> JsonPointer.backtrack!()
           |> JsonPointer.traverse("additionalItems")
           |> Tools.pointer_to_fun_name(authority: name)
 
