@@ -10,7 +10,7 @@ defmodule Exonerate.Type.Array do
 
   def filter(subschema, name, pointer) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
-    
+
     combining_filters =
       subschema
       |> Map.take(@combining_filters)
@@ -42,7 +42,7 @@ defmodule Exonerate.Type.Array do
   defp filter_for({filter, _}, name, pointer) do
     call =
       pointer
-      |> JsonPointer.traverse(filter)
+      |> JsonPointer.traverse(Combining.adjust(filter))
       |> Tools.pointer_to_fun_name(authority: name)
 
     quote do

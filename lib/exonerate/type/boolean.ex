@@ -26,7 +26,7 @@ defmodule Exonerate.Type.Boolean do
   defp filter_for({filter, _}, name, pointer) do
     call =
       pointer
-      |> JsonPointer.traverse(filter)
+      |> JsonPointer.traverse(Combining.adjust(filter))
       |> Tools.pointer_to_fun_name(authority: name)
 
     quote do

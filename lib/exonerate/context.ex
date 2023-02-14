@@ -175,16 +175,11 @@ defmodule Exonerate.Context do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema = Cache.fetch!(name)
     subschema = JsonPointer.resolve!(schema, pointer)
+    types = resolve_types(type_or_types)
 
-    type_filters =
-      type_or_types
-      |> List.wrap()
-      |> Enum.map(&Type.module(&1).filter(subschema, name, pointer))
+    type_filters = Enum.map(types, &Type.module(&1).filter(subschema, name, pointer))
 
-    accessories =
-      type_or_types
-      |> List.wrap()
-      |> Enum.flat_map(&Type.module(&1).accessories(subschema, name, pointer, opts))
+    accessories = Enum.flat_map(types, &Type.module(&1).accessories(subschema, name, pointer, opts))
 
     combiners =
       @combining_filters
@@ -225,9 +220,9 @@ defmodule Exonerate.Context do
   @all_types ~w(string object array number integer boolean null)
 
   defp to_quoted_function(schema, name, pointer, opts) when is_map(schema) do
-    internal_types =
+    schema_types =
       schema
-      |> Map.get(:type, @all_types)
+      |> Map.get("type", @all_types)
       |> List.wrap()
       |> MapSet.new()
 
@@ -236,7 +231,7 @@ defmodule Exonerate.Context do
       |> Keyword.get(:type, @all_types)
       |> List.wrap()
       |> MapSet.new()
-      |> MapSet.intersection(internal_types)
+      |> MapSet.intersection(schema_types)
       |> Enum.to_list()
 
     schema
@@ -248,7 +243,18 @@ defmodule Exonerate.Context do
   defp typeof(value) when is_map(value), do: "object"
   defp typeof(value) when is_list(value), do: "array"
   defp typeof(value) when is_integer(value), do: "integer"
-  defp typeof(value) when is_number(value), do: "number"
+  defp typeof(value) when is_float(value), do: "number"
   defp typeof(value) when is_boolean(value), do: "boolean"
   defp typeof(value) when is_nil(value), do: "null"
+
+  defp resolve_types(type) do
+    # make sure that "number" implements integer, always
+    type
+    |> List.wrap()
+    |> Enum.flat_map(fn
+      "number" -> ["number", "integer"]
+      other -> List.wrap(other)
+    end)
+    |> Enum.uniq
+  end
 end

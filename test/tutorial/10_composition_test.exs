@@ -45,14 +45,12 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
       assert list[:schema_pointer] == "/anyOf"
       assert list[:error_value] == "too long"
       assert list[:json_pointer] == "/"
-      list |> dbg
 
       assert {:error, list} = Combining.combining(-5)
 
       assert list[:schema_pointer] == "/anyOf"
       assert list[:error_value] == -5
       assert list[:json_pointer] == "/"
-      list |> dbg
     end
   end
 
@@ -117,7 +115,6 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     end
   end
 
-  #
   defmodule AnyOf do
     @moduledoc """
     tests from:

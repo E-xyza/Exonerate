@@ -15,43 +15,30 @@ defmodule Exonerate.Type.Integer do
   @filters Map.keys(@modules)
 
   def filter(schema, name, pointer) do
-    filters = filter_calls(schema, name, pointer)
+    filters =
+      schema
+      |> Map.take(@filters)
+      |> Enum.map(&filter_for(&1, name, pointer))
+
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
       defp unquote(call)(content, path) when is_integer(content) do
-        unquote(filters)
+        with unquote_splicing(filters) do
+          :ok
+        end
       end
     end
   end
 
-  defp filter_calls(schema, name, pointer) do
-    case Map.take(schema, @filters) do
-      empty when empty === %{} ->
-        :ok
-
-      filters ->
-        build_filters(filters, name, pointer)
-    end
-  end
-
-  defp build_filters(filters, name, pointer) do
-    filter_clauses =
-      Enum.map(filters, fn {filter, _} ->
-        call =
-          pointer
-          |> JsonPointer.traverse(filter)
-          |> Tools.pointer_to_fun_name(authority: name)
-
-        quote do
-          :ok <- unquote(call)(content, path)
-        end
-      end)
+  defp filter_for({filter, _}, name, pointer) do
+    call =
+      pointer
+      |> JsonPointer.traverse(Combining.adjust(filter))
+      |> Tools.pointer_to_fun_name(authority: name)
 
     quote do
-      with unquote_splicing(filter_clauses) do
-        :ok
-      end
+      :ok <- unquote(call)(content, path)
     end
   end
 

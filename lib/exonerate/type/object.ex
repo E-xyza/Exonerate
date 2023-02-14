@@ -48,6 +48,8 @@ defmodule Exonerate.Type.Object do
   defp build_filters(filters, name, pointer) do
     should_traverse = should_traverse?(filters)
 
+    # TODO: refactor and clean this up
+
     filter_clauses =
       filters
       |> Enum.reject(&select_traverse?(&1, should_traverse))
@@ -55,7 +57,7 @@ defmodule Exonerate.Type.Object do
       |> Enum.map(fn {filter, _} ->
         call =
           pointer
-          |> JsonPointer.traverse(filter)
+          |> JsonPointer.traverse(Combining.adjust(filter))
           |> Tools.pointer_to_fun_name(authority: name)
 
         quote do

@@ -1,4 +1,6 @@
-defmodule Exonerate.Combining.AnyOf do
+defmodule Exonerate.Combining.OneOf do
+  @moduledoc false
+
   alias Exonerate.Cache
   alias Exonerate.Tools
 
@@ -18,7 +20,7 @@ defmodule Exonerate.Combining.AnyOf do
         call = Tools.pointer_to_fun_name(pointer, authority: name)
 
         {quote do
-           &(unquote({call, [], Elixir}) / 2)
+           {&(unquote({call, [], Elixir}) / 2), unquote(index)}
          end,
          quote do
            require Exonerate.Context
@@ -32,20 +34,30 @@ defmodule Exonerate.Combining.AnyOf do
         defp unquote(call)(value, path) do
           require Exonerate.Tools
 
-          Enum.reduce_while(
-            unquote(calls),
-            Exonerate.Tools.mismatch(value, unquote(schema_pointer), path),
+
+          unquote(calls)
+          |> Enum.reduce_while(
+            {Exonerate.Tools.mismatch(value, unquote(schema_pointer), path), []},
             fn
-              fun, {:error, opts} ->
+              {fun, index}, {{:error, opts}, []} ->
                 case fun.(value, path) do
                   :ok ->
-                    {:halt, :ok}
+                    {:cont, {:ok, index}}
 
                   error ->
-                    {:cont, {:error, Keyword.update(opts, :failures, [error], &[error | &1])}}
+                    {:cont, {{:error, Keyword.update(opts, :failures, [error], &[error | &1])}, []}}
+                end
+              {fun, index}, {:ok, previous} ->
+                case fun.(value, path) do
+                  :ok ->
+                    {:halt, {Exonerate.Tools.mismatch(value, unquote(schema_pointer), path, matches: [previous, index])}}
+
+                  _error ->
+                    {:cont, {:ok, index}}
                 end
             end
           )
+          |> elem(0)
         end
 
         unquote(contexts)

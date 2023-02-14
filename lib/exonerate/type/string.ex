@@ -75,7 +75,7 @@ defmodule Exonerate.Type.String do
       Enum.map(filters, fn {filter, _} ->
         call =
           pointer
-          |> JsonPointer.traverse(filter)
+          |> JsonPointer.traverse(Combining.adjust(filter))
           |> Tools.pointer_to_fun_name(authority: name)
 
         quote do
