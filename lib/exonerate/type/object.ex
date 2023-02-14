@@ -17,17 +17,14 @@ defmodule Exonerate.Type.Object do
   @filters Map.keys(@modules)
 
   # additionalProperties also clobbers unevaluatedProperties
-  def filter(schema = %{"additionalProperties" => _, "unevaluatedProperties" => _}, name, pointer) do
-    schema
+  def filter(subschema = %{"additionalProperties" => _, "unevaluatedProperties" => _}, name, pointer) do
+    subschema
     |> Map.delete("unevaluatedProperties")
     |> filter(name, pointer)
   end
 
-  def filter(schema, name, pointer) do
-    filters =
-      schema
-      |> JsonPointer.resolve!(pointer)
-      |> filter_calls(name, pointer)
+  def filter(subschema, name, pointer) do
+    filters = filter_calls(subschema, name, pointer)
 
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 

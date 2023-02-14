@@ -1,13 +1,20 @@
 defmodule Exonerate.Type.Array do
+  alias Exonerate.Combining
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
   @modules Iterator.filter_modules()
-  @filters Iterator.filters()
+  @iterator_filters Iterator.filters()
 
-  def filter(schema, name, pointer) do
-    subschema = JsonPointer.resolve!(schema, pointer)
+  @combining_filters Combining.filters()
+
+  def filter(subschema, name, pointer) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
+    
+    combining_filters =
+      subschema
+      |> Map.take(@combining_filters)
+      |> Enum.map(&filter_for(&1, name, pointer))
 
     iterator_filter =
       List.wrap(
@@ -25,16 +32,27 @@ defmodule Exonerate.Type.Array do
 
     quote do
       defp unquote(call)(content, path) when is_list(content) do
-        with unquote_splicing(iterator_filter) do
+        with unquote_splicing(combining_filters ++ iterator_filter) do
           :ok
         end
       end
     end
   end
 
+  defp filter_for({filter, _}, name, pointer) do
+    call =
+      pointer
+      |> JsonPointer.traverse(filter)
+      |> Tools.pointer_to_fun_name(authority: name)
+
+    quote do
+      :ok <- unquote(call)(content, path)
+    end
+  end
+
   def accessories(schema, name, pointer, opts) do
     Iterator.accessories(schema, name, pointer, opts) ++
-      for filter_name <- @filters, Map.has_key?(schema, filter_name) do
+      for filter_name <- @iterator_filters, Map.has_key?(schema, filter_name) do
         list_accessory(filter_name, schema, name, pointer, opts)
       end
   end

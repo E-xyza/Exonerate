@@ -341,7 +341,8 @@ defmodule Exonerate.Type.Array.Iterator do
 
         content
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(JsonPointer.to_uri(contains_pointer)), path), 0},
+          {Exonerate.Tools.mismatch(content, unquote(JsonPointer.to_uri(contains_pointer)), path),
+           0},
           fn
             _item, {:ok, index} when index >= unquote(length) ->
               {:halt, {:ok, index}}
@@ -386,7 +387,8 @@ defmodule Exonerate.Type.Array.Iterator do
 
         content
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(JsonPointer.to_uri(contains_pointer)), path), 0},
+          {Exonerate.Tools.mismatch(content, unquote(JsonPointer.to_uri(contains_pointer)), path),
+           0},
           fn
             item, {{:error, params}, index} ->
               with error = {:error, _} <- unquote(contains_call)(item, path) do

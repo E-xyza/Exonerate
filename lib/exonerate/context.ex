@@ -4,6 +4,7 @@ defmodule Exonerate.Context do
   # a context is the representation of "parsing json at a given location"
 
   alias Exonerate.Cache
+  alias Exonerate.Combining
   alias Exonerate.Tools
   alias Exonerate.Type
 
@@ -25,9 +26,8 @@ defmodule Exonerate.Context do
     "string" => Exonerate.Type.String
   }
 
-  @combining_map %{
-    "anyOf" => Exonerate.Combining.AnyOf
-  }
+  @combining_modules Combining.modules()
+  @combining_filters Combining.filters()
 
   defp to_quoted_function(true, name, pointer, _opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
@@ -171,27 +171,28 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(schema = %{"type" => type_or_types}, name, pointer, opts) do
+  defp to_quoted_function(%{"type" => type_or_types}, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
+    schema = Cache.fetch!(name)
+    subschema = JsonPointer.resolve!(schema, pointer)
 
     type_filters =
       type_or_types
       |> List.wrap()
-      |> Enum.map(&Type.module(&1).filter(schema, name, pointer))
+      |> Enum.map(&Type.module(&1).filter(subschema, name, pointer))
 
     accessories =
       type_or_types
       |> List.wrap()
-      |> Enum.flat_map(&Type.module(&1).accessories(schema, name, pointer, opts))
+      |> Enum.flat_map(&Type.module(&1).accessories(subschema, name, pointer, opts))
 
     combiners =
-      @combining_map
-      |> Map.keys()
+      @combining_filters
       |> Enum.flat_map(fn
         combiner ->
           List.wrap(
-            if is_map_key(schema, combiner) do
-              module = @combining_map[combiner]
+            if is_map_key(subschema, combiner) do
+              module = @combining_modules[combiner]
               pointer = JsonPointer.traverse(pointer, combiner)
 
               quote do

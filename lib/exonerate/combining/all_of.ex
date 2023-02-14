@@ -1,4 +1,6 @@
-defmodule Exonerate.Combining.AnyOf do
+defmodule Exonerate.Combining.AllOf do
+  @moduledoc false
+
   alias Exonerate.Cache
   alias Exonerate.Tools
 
@@ -31,19 +33,18 @@ defmodule Exonerate.Combining.AnyOf do
       quote do
         defp unquote(call)(value, path) do
           require Exonerate.Tools
-          :ok
 
           Enum.reduce_while(
             unquote(calls),
-            Exonerate.Tools.mismatch(value, unquote(schema_pointer), path),
+            :ok,
             fn
-              fun, {:error, opts} ->
+              fun, :ok ->
                 case fun.(value, path) do
                   :ok ->
-                    {:halt, :ok}
+                    {:cont, :ok}
 
-                  error ->
-                    {:cont, {:error, Keyword.update(opts, :failures, [error], &[error | &1])}}
+                  error = {:error, _} ->
+                    {:halt, error}
                 end
             end
           )

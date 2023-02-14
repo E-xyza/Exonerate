@@ -1,11 +1,16 @@
 defmodule Exonerate.Combining do
-  @combiners %{
-    "anyOf" => Exonerate.Combining.AnyOf
+  @modules %{
+    "anyOf" => Exonerate.Combining.AnyOf,
+    "allOf" => Exonerate.Combining.AllOf
   }
 
-  def merge(map), do: Map.merge(map, @combiners)
+  @filters Map.keys(@modules)
 
-  def filters, do: @combiners
+  def merge(map), do: Map.merge(map, @modules)
 
-  def filter?(filter), do: is_map_key(@combiners, filter)
+  def modules, do: @modules
+
+  def filters, do: @filters
+
+  def filter?(filter), do: is_map_key(@modules, filter)
 end
