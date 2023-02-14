@@ -67,7 +67,7 @@ defmodule Exonerate.Filter.Dependencies do
     end
   end
 
-  defp accessory(call, key, schema, name, pointer, opts) when is_map(schema) do
+  defp accessory(call, key, schema, name, pointer, opts) when is_map(schema) or is_boolean(schema) do
     pointer = JsonPointer.traverse(pointer, key)
     inner_call = Tools.pointer_to_fun_name(pointer, authority: name)
 
