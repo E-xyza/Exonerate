@@ -34,7 +34,6 @@ defmodule Exonerate.Combining.OneOf do
         defp unquote(call)(value, path) do
           require Exonerate.Tools
 
-
           unquote(calls)
           |> Enum.reduce_while(
             {Exonerate.Tools.mismatch(value, unquote(schema_pointer), path), []},
@@ -45,12 +44,17 @@ defmodule Exonerate.Combining.OneOf do
                     {:cont, {:ok, index}}
 
                   error ->
-                    {:cont, {{:error, Keyword.update(opts, :failures, [error], &[error | &1])}, []}}
+                    {:cont,
+                     {{:error, Keyword.update(opts, :failures, [error], &[error | &1])}, []}}
                 end
+
               {fun, index}, {:ok, previous} ->
                 case fun.(value, path) do
                   :ok ->
-                    {:halt, {Exonerate.Tools.mismatch(value, unquote(schema_pointer), path, matches: [previous, index])}}
+                    {:halt,
+                     {Exonerate.Tools.mismatch(value, unquote(schema_pointer), path,
+                        matches: [previous, index]
+                      )}}
 
                   _error ->
                     {:cont, {:ok, index}}

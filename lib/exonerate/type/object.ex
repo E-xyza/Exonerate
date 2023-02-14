@@ -11,13 +11,18 @@ defmodule Exonerate.Type.Object do
              "additionalProperties" => Exonerate.Filter.AdditionalProperties,
              "required" => Exonerate.Filter.Required,
              "propertyNames" => Exonerate.Filter.PropertyNames,
-             "patternProperties" => Exonerate.Filter.PatternProperties
+             "patternProperties" => Exonerate.Filter.PatternProperties,
+             "dependencies" => Exonerate.Filter.Dependencies
            })
 
   @filters Map.keys(@modules)
 
   # additionalProperties also clobbers unevaluatedProperties
-  def filter(subschema = %{"additionalProperties" => _, "unevaluatedProperties" => _}, name, pointer) do
+  def filter(
+        subschema = %{"additionalProperties" => _, "unevaluatedProperties" => _},
+        name,
+        pointer
+      ) do
     subschema
     |> Map.delete("unevaluatedProperties")
     |> filter(name, pointer)

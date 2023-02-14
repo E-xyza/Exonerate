@@ -179,7 +179,8 @@ defmodule Exonerate.Context do
 
     type_filters = Enum.map(types, &Type.module(&1).filter(subschema, name, pointer))
 
-    accessories = Enum.flat_map(types, &Type.module(&1).accessories(subschema, name, pointer, opts))
+    accessories =
+      Enum.flat_map(types, &Type.module(&1).accessories(subschema, name, pointer, opts))
 
     combiners =
       @combining_filters
@@ -255,6 +256,6 @@ defmodule Exonerate.Context do
       "number" -> ["number", "integer"]
       other -> List.wrap(other)
     end)
-    |> Enum.uniq
+    |> Enum.uniq()
   end
 end

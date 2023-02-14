@@ -5,8 +5,6 @@ defmodule Exonerate.Filter.MinContains do
   @derive Exonerate.Compiler
   @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Context
-
   defstruct [:context, :minimum]
 
   def parse(filter = %{context: context}, %{"contains" => _, "minContains" => minimum})

@@ -13,23 +13,27 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :dependency1, """
-    {
-      "type": "object",
+    Exonerate.function_from_string(
+      :def,
+      :dependency1,
+      """
+      {
+        "type": "object",
 
-      "properties": {
-        "name": { "type": "string" },
-        "credit_card": { "type": "number" },
-        "billing_address": { "type": "string" }
-      },
+        "properties": {
+          "name": { "type": "string" },
+          "credit_card": { "type": "number" },
+          "billing_address": { "type": "string" }
+        },
 
-      "required": ["name"],
+        "required": ["name"],
 
-      "dependencies": {
-        "credit_card": ["billing_address"]
+        "dependencies": {
+          "credit_card": ["billing_address"]
+        }
       }
-    }
-    """)
+      """
+    )
 
     Exonerate.function_from_string(:def, :dependency2, """
     {
@@ -133,27 +137,31 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :schemadependency, """
-    {
-      "type": "object",
+    Exonerate.function_from_string(
+      :def,
+      :schemadependency,
+      """
+      {
+        "type": "object",
 
-      "properties": {
-        "name": { "type": "string" },
-        "credit_card": { "type": "number" }
-      },
+        "properties": {
+          "name": { "type": "string" },
+          "credit_card": { "type": "number" }
+        },
 
-      "required": ["name"],
+        "required": ["name"],
 
-      "dependencies": {
-        "credit_card": {
-          "properties": {
-            "billing_address": { "type": "string" }
-          },
-          "required": ["billing_address"]
+        "dependencies": {
+          "credit_card": {
+            "properties": {
+              "billing_address": { "type": "string" }
+            },
+            "required": ["billing_address"]
+          }
         }
       }
-    }
-    """)
+      """
+    )
   end
 
   @schemadependency1 """

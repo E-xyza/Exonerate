@@ -29,8 +29,6 @@ defmodule ExonerateTest.Automate do
   end
 
   defp to_test_module(test_list, modulename, path, opts) do
-    Exonerate.Registry.sweep()
-
     module = Module.concat([ExonerateTest, opts[:prefix], String.capitalize(modulename), Test])
 
     describe_blocks =
