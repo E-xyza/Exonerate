@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.Items do
 
     Tools.maybe_dump(
       case items do
-        items when is_map(items) ->
+        items when is_map(items) or is_boolean(items) ->
           quote do
             require Exonerate.Context
             Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))

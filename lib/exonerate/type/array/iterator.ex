@@ -172,11 +172,38 @@ defmodule Exonerate.Type.Array.Iterator do
       [] ->
         {:cont, {:ok, []}}
 
-      [:index, :so_far] ->
+      list ->
+        build_continuation(list)
+
         # TODO: do better at generalizing this
         quote do
           {:cont, {:ok, %{acc | index: acc.index + 1, so_far: MapSet.put(acc.so_far, item)}}}
         end
+    end
+  end
+
+  defp build_continuation(keys) do
+    accumulator_chain = Enum.reduce(keys, quote do acc end, fn
+      :index, so_far ->
+        quote do
+          unquote(so_far)
+          |> Map.replace!(:index, acc.index + 1)
+        end
+      :so_far, so_far ->
+        quote do
+          unquote(so_far)
+          |> Map.replace!(:so_far, MapSet.put(acc.so_far, item))
+        end
+      :contains, so_far ->
+        quote do
+          unquote(so_far)
+          |> Map.replace!(:contains, false)
+        end
+    end)
+
+    quote do
+      result = unquote(accumulator_chain)
+      {:cont, {:ok, result}}
     end
   end
 
