@@ -102,7 +102,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp accumulators_for("contains"), do: [:contains]
   defp accumulators_for("items"), do: [:index]
-  defp accumulators_for("uniqueItems"), do: [:so_far, :index]
+  defp accumulators_for("uniqueItems"), do: [:index, :so_far]
   defp accumulators_for("minItems"), do: [:index]
   defp accumulators_for("maxItems"), do: [:index]
   defp accumulators_for(_), do: []
@@ -163,7 +163,7 @@ defmodule Exonerate.Type.Array.Iterator do
   end
 
   defp filter_continuation_for(acc) do
-    case acc do
+    case Enum.sort(acc) do
       [:index] ->
         quote do
           {:cont, {:ok, index + 1}}
@@ -172,7 +172,7 @@ defmodule Exonerate.Type.Array.Iterator do
       [] ->
         {:cont, {:ok, []}}
 
-      [:so_far, :index] ->
+      [:index, :so_far] ->
         # TODO: do better at generalizing this
         quote do
           {:cont, {:ok, %{acc | index: acc.index + 1, so_far: MapSet.put(acc.so_far, item)}}}
@@ -180,7 +180,7 @@ defmodule Exonerate.Type.Array.Iterator do
     end
   end
 
-  defp filter_for({"items", list}, _acc, name, pointer) when is_list(list) do
+  defp filter_for({"items", list}, acc, name, pointer) when is_list(list) do
     call =
       pointer
       |> JsonPointer.traverse("items")
@@ -188,12 +188,17 @@ defmodule Exonerate.Type.Array.Iterator do
 
     [
       quote do
-        :ok <- unquote(call)(item, index, Path.join(path, "#{index}"))
+        :ok <-
+          unquote(call)(
+            item,
+            unquote(index_for(acc)),
+            Path.join(path, "#{unquote(index_for(acc))}")
+          )
       end
     ]
   end
 
-  defp filter_for({"items", _}, _acc, name, pointer) do
+  defp filter_for({"items", _}, acc, name, pointer) do
     call =
       pointer
       |> JsonPointer.traverse("items")
@@ -201,7 +206,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
     [
       quote do
-        :ok <- unquote(call)(item, Path.join(path, "#{index}"))
+        :ok <- unquote(call)(item, Path.join(path, "#{unquote(index_for(acc))}"))
       end
     ]
   end
@@ -271,6 +276,18 @@ defmodule Exonerate.Type.Array.Iterator do
   end
 
   defp filter_for(_, _, _name, _pointer), do: []
+
+  defp index_for([:index]) do
+    quote do
+      index
+    end
+  end
+
+  defp index_for([_ | _]) do
+    quote do
+      acc.index
+    end
+  end
 
   defp filter_analysis_for(%{"minItems" => count}, [:index], pointer) do
     pointer =

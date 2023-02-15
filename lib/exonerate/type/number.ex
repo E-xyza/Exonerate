@@ -45,7 +45,9 @@ defmodule Exonerate.Type.Number do
   end
 
   def accessories(schema, name, pointer, opts) do
-    for filter_name <- @filters, is_map_key(schema, filter_name), not Combining.filter?(filter_name) do
+    for filter_name <- @filters,
+        is_map_key(schema, filter_name),
+        not Combining.filter?(filter_name) do
       module = @modules[filter_name]
       pointer = JsonPointer.traverse(pointer, filter_name)
 

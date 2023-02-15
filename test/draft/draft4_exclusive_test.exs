@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Draft.Draft4Test do
+defmodule ExonerateTest.Draft.Draft4ExclusiveTest do
   use ExUnit.Case, async: true
 
   require Exonerate
@@ -6,7 +6,7 @@ defmodule ExonerateTest.Draft.Draft4Test do
   Exonerate.function_from_string(
     :def,
     :min_excl_false,
-    ~s({"minimum": 1, "exclusiveMinimum": false}), dump: true
+    ~s({"minimum": 1, "exclusiveMinimum": false})
   )
 
   Exonerate.function_from_string(

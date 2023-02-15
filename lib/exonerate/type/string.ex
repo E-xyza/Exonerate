@@ -93,7 +93,9 @@ defmodule Exonerate.Type.String do
   def accessories(schema, name, pointer, opts) do
     schema = combine_min_max(schema)
 
-    for filter_name <- @filters, is_map_key(schema, filter_name), not Combining.filter?(filter_name) do
+    for filter_name <- @filters,
+        is_map_key(schema, filter_name),
+        not Combining.filter?(filter_name) do
       module = @modules[filter_name]
       pointer = traverse(pointer, filter_name)
 
