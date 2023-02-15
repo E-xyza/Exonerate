@@ -10,25 +10,25 @@ defmodule Exonerate.Filter.Maximum do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
 
-    maximum =
-      name
-      |> Cache.fetch!()
-      |> JsonPointer.resolve!(pointer)
+    name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(pointer)
+    |> build_code(call, schema_pointer)
+    |> Tools.maybe_dump(opts)
+  end
 
-    Tools.maybe_dump(
-      quote do
-        defp unquote(call)(number, path) do
-          case number do
-            value when value <= unquote(maximum) ->
-              :ok
+  defp build_code(maximum, call, schema_pointer) do
+    quote do
+      defp unquote(call)(number, path) do
+        case number do
+          value when value <= unquote(maximum) ->
+            :ok
 
-            _ ->
-              require Exonerate.Tools
-              Exonerate.Tools.mismatch(number, unquote(schema_pointer), path)
-          end
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(number, unquote(schema_pointer), path)
         end
-      end,
-      opts
-    )
+      end
+    end
   end
 end

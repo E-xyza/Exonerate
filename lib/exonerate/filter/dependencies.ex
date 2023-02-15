@@ -40,21 +40,24 @@ defmodule Exonerate.Filter.Dependencies do
   end
 
   defp accessory(call, key, schema, _name, pointer, _opts) when is_list(schema) do
-    prongs = Enum.with_index(schema, fn
-      dependent_key, index ->
-        schema_pointer = pointer
-        |> JsonPointer.traverse([key, "#{index}"])
-        |> JsonPointer.to_uri
+    prongs =
+      Enum.with_index(schema, fn
+        dependent_key, index ->
+          schema_pointer =
+            pointer
+            |> JsonPointer.traverse([key, "#{index}"])
+            |> JsonPointer.to_uri()
 
-        quote do
-          :ok <- if is_map_key(content, unquote(dependent_key)) do
-            :ok
-          else
-            require Exonerate.Tools
-            Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+          quote do
+            :ok <-
+              if is_map_key(content, unquote(dependent_key)) do
+                :ok
+              else
+                require Exonerate.Tools
+                Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+              end
           end
-        end
-    end)
+      end)
 
     quote do
       defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do
@@ -67,7 +70,8 @@ defmodule Exonerate.Filter.Dependencies do
     end
   end
 
-  defp accessory(call, key, schema, name, pointer, opts) when is_map(schema) or is_boolean(schema) do
+  defp accessory(call, key, schema, name, pointer, opts)
+       when is_map(schema) or is_boolean(schema) do
     pointer = JsonPointer.traverse(pointer, key)
     inner_call = Tools.pointer_to_fun_name(pointer, authority: name)
 

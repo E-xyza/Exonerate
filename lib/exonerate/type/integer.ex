@@ -15,6 +15,9 @@ defmodule Exonerate.Type.Integer do
   @filters Map.keys(@modules)
 
   def filter(schema, name, pointer) do
+    # TODO: make sure that this actually detects the draft version before
+    # attempting to adjust the draft
+
     filters =
       schema
       |> Map.take(@filters)
@@ -43,7 +46,9 @@ defmodule Exonerate.Type.Integer do
   end
 
   def accessories(schema, name, pointer, opts) do
-    for filter_name <- @filters, schema[filter_name], not Combining.filter?(filter_name) do
+    schema |> dbg
+    for filter_name <- @filters, is_map_key(schema, filter_name), not Combining.filter?(filter_name) do
+      filter_name |> dbg
       module = @modules[filter_name]
       pointer = JsonPointer.traverse(pointer, filter_name)
 

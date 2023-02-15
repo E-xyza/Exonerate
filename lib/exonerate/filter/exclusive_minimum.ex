@@ -5,30 +5,65 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
   alias Exonerate.Tools
 
   # TODO: figure out draft-4 stuff
-
   defmacro filter_from_cached(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
 
-    minimum =
-      name
-      |> Cache.fetch!()
-      |> JsonPointer.resolve!(pointer)
+    name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(pointer)
+    |> case do
+      bool when is_boolean(bool) ->
+        # TODO: figure out a draft-4 warning here
+        filter_boolean(bool, call, fetch_minimum!(name, pointer), schema_pointer)
 
-    Tools.maybe_dump(
-      quote do
-        defp unquote(call)(number, path) do
-          case number do
-            value when value > unquote(minimum) ->
-              :ok
+      value ->
+        filter_value(value, call, schema_pointer)
+    end
+    |> Tools.maybe_dump(opts)
+  end
 
-            _ ->
-              require Exonerate.Tools
-              Exonerate.Tools.mismatch(number, unquote(schema_pointer), path)
-          end
+  defp fetch_minimum!(name, pointer) do
+    minimum_pointer =
+      pointer
+      |> JsonPointer.backtrack!()
+      |> JsonPointer.traverse("minimum")
+
+    name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(minimum_pointer)
+  end
+
+  defp filter_boolean(false, call, _, _schema_pointer) do
+    quote do
+      @compile {:inline, [{unquote(call), 2}]}
+      defp unquote(call)(_number, _path), do: :ok
+    end
+  end
+
+  defp filter_boolean(true, call, maximum, schema_pointer) do
+    quote do
+      defp unquote(call)(number = unquote(maximum), path) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(number, unquote(schema_pointer), path)
+      end
+
+      defp unquote(call)(_, _), do: :ok
+    end
+  end
+
+  defp filter_value(maximum, call, schema_pointer) do
+    quote do
+      defp unquote(call)(number, path) do
+        case number do
+          value when value > unquote(maximum) ->
+            :ok
+
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(number, unquote(schema_pointer), path)
         end
-      end,
-      opts
-    )
+      end
+    end
   end
 end
