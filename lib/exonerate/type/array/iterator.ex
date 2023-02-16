@@ -183,23 +183,32 @@ defmodule Exonerate.Type.Array.Iterator do
   end
 
   defp build_continuation(keys) do
-    accumulator_chain = Enum.reduce(keys, quote do acc end, fn
-      :index, so_far ->
+    accumulator_chain =
+      Enum.reduce(
+        keys,
         quote do
-          unquote(so_far)
-          |> Map.replace!(:index, acc.index + 1)
+          acc
+        end,
+        fn
+          :index, so_far ->
+            quote do
+              unquote(so_far)
+              |> Map.replace!(:index, acc.index + 1)
+            end
+
+          :so_far, so_far ->
+            quote do
+              unquote(so_far)
+              |> Map.replace!(:so_far, MapSet.put(acc.so_far, item))
+            end
+
+          :contains, so_far ->
+            quote do
+              unquote(so_far)
+              |> Map.replace!(:contains, false)
+            end
         end
-      :so_far, so_far ->
-        quote do
-          unquote(so_far)
-          |> Map.replace!(:so_far, MapSet.put(acc.so_far, item))
-        end
-      :contains, so_far ->
-        quote do
-          unquote(so_far)
-          |> Map.replace!(:contains, false)
-        end
-    end)
+      )
 
     quote do
       result = unquote(accumulator_chain)

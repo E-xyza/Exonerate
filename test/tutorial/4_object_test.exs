@@ -81,18 +81,22 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :address1, """
-    {
-      "type": "object",
-      "properties": {
-        "number":      { "type": "number" },
-        "street_name": { "type": "string" },
-        "street_type": { "type": "string",
-                         "enum": ["Street", "Avenue", "Boulevard"]
-                       }
+    Exonerate.function_from_string(
+      :def,
+      :address1,
+      """
+      {
+        "type": "object",
+        "properties": {
+          "number":      { "type": "number" },
+          "street_name": { "type": "string" },
+          "street_type": { "type": "string",
+                           "enum": ["Street", "Avenue", "Boulevard"]
+                         }
+        }
       }
-    }
-    """)
+      """
+    )
 
     Exonerate.function_from_string(
       :def,
@@ -109,7 +113,8 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
         },
         "additionalProperties": false
       }
-      """
+      """,
+      dump: true
     )
 
     Exonerate.function_from_string(

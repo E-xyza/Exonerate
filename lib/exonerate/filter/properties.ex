@@ -10,44 +10,65 @@ defmodule Exonerate.Filter.Properties do
   defmacro filter_from_cached(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    {filters, properties} =
-      name
-      |> Cache.fetch!()
-      |> JsonPointer.resolve!(pointer)
-      |> Enum.map(&to_with_filter(&1, name, pointer, opts))
-      |> Enum.unzip()
+    tracker = Keyword.fetch!(opts, :tracker)
 
-    Tools.maybe_dump(
-      quote do
-        defp unquote(call)(object, path) do
-          with unquote_splicing(filters) do
-            :ok
-          end
-        end
-
-        unquote(properties)
-      end,
-      opts
-    )
+    name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(pointer)
+    |> Enum.map(&filter_for(&1, call, name, pointer, tracker, opts))
+    |> Enum.unzip()
+    |> build_code(call, tracker)
+    |> Tools.maybe_dump(opts)
   end
 
-  defp to_with_filter({key, _schema}, name, pointer, opts) do
-    pointer = JsonPointer.traverse(pointer, key)
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+  defp filter_for({key, _schema}, call, name, pointer, tracker, opts) do
+    key_pointer = JsonPointer.traverse(pointer, key)
+    key_call = Tools.pointer_to_fun_name(key_pointer, authority: name)
 
-    {quote do
-       :ok <-
-         case Map.fetch(object, unquote(key)) do
-           :error ->
-             :ok
+    filter =
+      case tracker do
+        :tracked ->
+          quote do
+            defp unquote(call)({unquote(key), value}, path, _seen) do
+              case unquote(key_call)(value, Path.join(path, unquote(key))) do
+                :ok -> {:ok, true}
+                error -> error
+              end
+            end
+          end
 
-           {:ok, value} ->
-             unquote(call)(value, Path.join(path, unquote(key)))
-         end
-     end,
+        :untracked ->
+          quote do
+            defp unquote(call)({unquote(key), value}, path) do
+              unquote(key_call)(value, Path.join(path, unquote(key)))
+            end
+          end
+      end
+
+    {filter,
      quote do
        require Exonerate.Context
-       Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+       Exonerate.Context.from_cached(unquote(name), unquote(key_pointer), unquote(opts))
      end}
+  end
+
+  defp build_code({filters, accessories}, call, :tracked) do
+    quote do
+      unquote(filters)
+
+      defp unquote(call)(_kv, _path, seen), do: {:ok, seen}
+
+      unquote(accessories)
+    end
+  end
+
+  defp build_code({filters, accessories}, call, :untracked) do
+    quote do
+      unquote(filters)
+
+      defp unquote(call)(_kv, _path), do: :ok
+
+      unquote(accessories)
+    end
   end
 end
