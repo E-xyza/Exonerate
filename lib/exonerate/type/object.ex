@@ -5,12 +5,12 @@ defmodule Exonerate.Type.Object do
   alias Exonerate.Type.Object.Iterator
   alias Exonerate.Combining
 
-  @modules Combining.merge(%{
+  @modules %{
              "minProperties" => Exonerate.Filter.MinProperties,
              "maxProperties" => Exonerate.Filter.MaxProperties,
              "required" => Exonerate.Filter.Required,
              "dependencies" => Exonerate.Filter.Dependencies
-           })
+           }
 
   @filters Map.keys(@modules)
 
@@ -41,7 +41,15 @@ defmodule Exonerate.Type.Object do
   end
 
   defp outer_filters(subschema, name, pointer) do
-    []
+    for filter <- @filters, is_map_key(subschema, filter) do
+      call = pointer
+      |> JsonPointer.traverse(filter)
+      |> Tools.pointer_to_fun_name(authority: name)
+
+      quote do
+        :ok <- unquote(call)(content, path)
+      end
+    end
   end
 
   defp iterator_filter(subschema, name, pointer) do
@@ -59,9 +67,9 @@ defmodule Exonerate.Type.Object do
     )
   end
 
-  def accessories(schema, name, pointer, opts) do
+  def accessories(subschema, name, pointer, opts) do
     List.wrap(
-      if Iterator.needs_iterator?(schema) do
+      if Iterator.needs_iterator?(subschema) do
         quote do
           require Exonerate.Type.Object.Iterator
 
@@ -72,6 +80,13 @@ defmodule Exonerate.Type.Object do
           )
         end
       end
-    )
+    ) ++ for filter <- @filters, is_map_key(subschema, filter) do
+      module = @modules[filter]
+      pointer = JsonPointer.traverse(pointer, filter)
+      quote do
+        require unquote(module)
+        unquote(module).filter_from_cached(unquote(name), unquote(pointer), unquote(opts))
+      end
+    end
   end
 end

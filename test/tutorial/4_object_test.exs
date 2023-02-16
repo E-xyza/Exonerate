@@ -113,8 +113,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
         },
         "additionalProperties": false
       }
-      """,
-      dump: true
+      """
     )
 
     Exonerate.function_from_string(
@@ -193,8 +192,8 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       assert {:error, list} = Properties.address2(addr4)
 
       assert list[:schema_pointer] == "/additionalProperties"
-      assert list[:error_value] == {"direction", "NW"}
-      assert list[:json_pointer] == "/"
+      assert list[:error_value] == "NW"
+      assert list[:json_pointer] == "/direction"
     end
   end
 
@@ -246,7 +245,8 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
         },
         "required": ["name", "email"]
       }
-      """
+      """,
+      dump: true
     )
   end
 

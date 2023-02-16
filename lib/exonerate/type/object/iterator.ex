@@ -105,7 +105,7 @@ defmodule Exonerate.Type.Object.Iterator do
               if seen do
                 {:cont, :ok}
               else
-                {:cont, unquote(final_call)({k, v}, path)}
+                {:cont, unquote(final_call)(v, Path.join(path, k))}
               end
             else
               error -> {:halt, error}
