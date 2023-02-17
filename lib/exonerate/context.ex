@@ -131,7 +131,7 @@ defmodule Exonerate.Context do
     value = Macro.escape(const)
 
     quote do
-      defp unquote(call)(content, path) when content !== unquote(value) do
+      defp unquote(call)(content, path) when content != unquote(value) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(const_pointer), path)
       end
