@@ -1,80 +1,75 @@
 defmodule Exonerate.Filter.DependentRequired do
+  # note that dependentRequired is a repackaging of the legacy "dependencies" but only
+  # permitting the array form, which is deprecated in later drafts of JsonSchema
+
   @moduledoc false
 
-  # NB "dependentRequired" is just a repackaging of "dependencies" except only permitting the
-  # array form ("other keys")
+  alias Exonerate.Cache
+  alias Exonerate.Tools
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
-
-  alias Exonerate.Type.Object
-  alias Exonerate.Context
-
-  defstruct [:context, :dependencies]
-
-  def parse(filter = %{context: context}, %{"dependentRequired" => deps}) do
-    deps =
-      Map.new(deps, fn
-        {k, list} when is_list(list) ->
-          {k, list}
-      end)
-
-    %{
-      filter
-      | pipeline: ["dependentRequired" | filter.pipeline],
-        filters: [%__MODULE__{context: context, dependencies: deps} | filter.filters]
-    }
+  defmacro filter_from_cached(name, pointer, opts) do
+    name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(pointer)
+    |> Enum.map(&make_dependencies(&1, name, pointer, opts))
+    |> Enum.unzip()
+    |> build_code(name, pointer)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{dependencies: deps}) do
-    {pipeline, children} =
-      deps
-      |> Enum.map(fn
-        # one item optimization
-        {key, [dependent_key]} ->
-          {["dependentRequired", key],
-           quote do
-             defp unquote(["dependentRequired", key])(value, path)
-                  when is_map_key(value, unquote(key)) do
-               unless is_map_key(value, unquote(dependent_key)) do
-                 Exonerate.mismatch(value, path, guard: "0")
-               end
+  defp make_dependencies({key, schema}, name, pointer, opts) do
+    call =
+      pointer
+      |> JsonPointer.traverse([key, ":entrypoint"])
+      |> Tools.pointer_to_fun_name(authority: name)
 
-               value
-             end
+    {quote do
+       :ok <- unquote(call)(content, path)
+     end, accessory(call, key, schema, name, pointer, opts)}
+  end
 
-             defp unquote(["dependentRequired", key])(value, _), do: value
-           end}
+  defp build_code({prongs, accessories}, name, pointer) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-        {key, dependent_keys} when is_list(dependent_keys) ->
-          {["dependentRequired", key],
-           quote do
-             defp unquote(["dependentRequired", key])(value, path)
-                  when is_map_key(value, unquote(key)) do
-               unquote(dependent_keys)
-               |> Enum.with_index()
-               |> Enum.each(fn {key, index} ->
-                 unless is_map_key(value, key),
-                   do: Exonerate.mismatch(value, path, guard: to_string(index))
-               end)
+    quote do
+      defp unquote(call)(content, path) do
+        with unquote_splicing(prongs) do
+          :ok
+        end
+      end
 
-               value
-             end
+      unquote(accessories)
+    end
+  end
 
-             defp unquote(["dependentRequired", key])(value, _), do: value
-           end}
+  defp accessory(call, key, schema, _name, pointer, _opts) when is_list(schema) do
+    prongs =
+      Enum.with_index(schema, fn
+        dependent_key, index ->
+          schema_pointer =
+            pointer
+            |> JsonPointer.traverse([key, "#{index}"])
+            |> JsonPointer.to_uri()
+
+          quote do
+            :ok <-
+              if is_map_key(content, unquote(dependent_key)) do
+                :ok
+              else
+                require Exonerate.Tools
+                Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+              end
+          end
       end)
-      |> Enum.unzip()
 
-    {[],
-     [
-       quote do
-         defp unquote("dependentRequired")(value, path) do
-           Exonerate.pipeline(value, path, unquote(pipeline))
-           :ok
-         end
-       end
-     ] ++ children}
+    quote do
+      defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do
+        with unquote_splicing(prongs) do
+          :ok
+        end
+      end
+
+      defp unquote(call)(content, path), do: :ok
+    end
   end
 end

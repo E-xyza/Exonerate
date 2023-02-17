@@ -7,3 +7,5 @@ deps
 # don't get the automated tests
 
 automated
+
+/test/one_test.exs
