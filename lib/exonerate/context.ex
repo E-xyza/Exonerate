@@ -151,7 +151,7 @@ defmodule Exonerate.Context do
 
     types =
       enum
-      |> Enum.map(&typeof/1)
+      |> Enum.flat_map(&List.wrap(typeof(&1)))
       |> Enum.uniq()
 
     rest_filter =
@@ -243,7 +243,7 @@ defmodule Exonerate.Context do
   defp typeof(value) when is_binary(value), do: "string"
   defp typeof(value) when is_map(value), do: "object"
   defp typeof(value) when is_list(value), do: "array"
-  defp typeof(value) when is_integer(value), do: "integer"
+  defp typeof(value) when is_integer(value), do: ["integer", "number"]
   defp typeof(value) when is_float(value), do: "number"
   defp typeof(value) when is_boolean(value), do: "boolean"
   defp typeof(value) when is_nil(value), do: "null"
