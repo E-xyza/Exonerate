@@ -245,9 +245,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
         },
         "required": ["name", "email"]
       }
-      """,
-      dump: true
-    )
+      """)
   end
 
   @contact1 """
@@ -472,8 +470,8 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       assert {:error, list} = PatternProperties.patternprop1(patternmatch5)
 
       assert list[:schema_pointer] == "/additionalProperties"
-      assert list[:error_value] == {"keyword", "value"}
-      assert list[:json_pointer] == "/"
+      assert list[:error_value] == "value"
+      assert list[:json_pointer] == "/keyword"
     end
   end
 end

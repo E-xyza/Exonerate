@@ -23,6 +23,13 @@ defmodule Exonerate.Type.Object.Iterator do
     |> Tools.maybe_dump(opts)
   end
 
+  # as an optimization, remove filters that are impossible given other filters.
+  defp build_code(schema = %{"propertyNames" => _}, name, pointer, opts) when is_map_key(schema, "additionalProperties") or is_map_key(schema, "unevaluatedProperties") do
+    schema
+    |> Map.drop(["additionalProperties", "unevaluatedProperties"])
+    |> build_code(name, pointer, opts)
+  end
+
   defp build_code(schema, name, pointer, opts) do
     call =
       pointer
@@ -153,6 +160,65 @@ defmodule Exonerate.Type.Object.Iterator do
          require Exonerate.Filter.Properties
 
          Exonerate.Filter.Properties.filter_from_cached(
+           unquote(name),
+           unquote(pointer),
+           unquote(opts)
+         )
+       end}
+    ]
+  end
+
+  defp filter_for({"patternProperties", _}, name, pointer, opts) do
+    pointer = JsonPointer.traverse(pointer, "patternProperties")
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    filter =
+      case opts[:tracker] do
+        :tracked ->
+          quote do
+            {:ok, seen} <- unquote(call)({k, v}, path, seen)
+          end
+
+        :untracked ->
+          quote do
+            :ok <- unquote(call)({k, v}, path)
+          end
+      end
+
+    [
+      {filter,
+       quote do
+         require Exonerate.Filter.PatternProperties
+
+         Exonerate.Filter.PatternProperties.filter_from_cached(
+           unquote(name),
+           unquote(pointer),
+           unquote(opts)
+         )
+       end}
+    ]
+  end
+
+  # note that having propertyNames is incompatible with any tracked
+  # parameters.
+  defp filter_for({"propertyNames", _}, name, pointer, opts) do
+    pointer = JsonPointer.traverse(pointer, "propertyNames")
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    filter =
+      case opts[:tracker] do
+        :untracked ->
+          quote do
+            :ok <- unquote(call)(k, Path.join(path, k))
+          end
+      end
+
+    [
+      {filter,
+       quote do
+         require Exonerate.Filter.PropertyNames
+
+         Exonerate.Filter.PropertyNames.filter_from_cached(
            unquote(name),
            unquote(pointer),
            unquote(opts)

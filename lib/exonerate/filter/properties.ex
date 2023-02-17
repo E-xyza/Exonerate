@@ -4,13 +4,9 @@ defmodule Exonerate.Filter.Properties do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  # TODO: figure out draft-4 stuff
-
-  # TODO: figure out requireds
   defmacro filter_from_cached(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
-
-    tracker = Keyword.fetch!(opts, :tracker)
+    {tracker, opts} = Keyword.pop!(opts, :tracker)
 
     name
     |> Cache.fetch!()
