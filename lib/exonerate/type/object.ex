@@ -47,7 +47,7 @@ defmodule Exonerate.Type.Object do
     for filter <- filters, is_map_key(subschema, filter) do
       call =
         pointer
-        |> JsonPointer.traverse(filter)
+        |> JsonPointer.traverse(entrypoint(filter))
         |> Tools.pointer_to_fun_name(authority: name)
 
       quote do
@@ -55,6 +55,10 @@ defmodule Exonerate.Type.Object do
       end
     end
   end
+
+  #TODO: figure out how to generalize this
+  defp entrypoint("not"), do: ["not", ":entrypoint"]
+  defp entrypoint(filter), do: filter
 
   defp iterator_filter(subschema, name, pointer) do
     call =
