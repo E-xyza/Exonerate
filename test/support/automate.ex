@@ -70,7 +70,7 @@ defmodule ExonerateTest.Automate do
       tests
       |> Enum.with_index()
       |> Enum.reject(fn {_test, inner_index} ->
-        {path, index, inner_index} in opts[:omit_tests]
+        {path, {index, inner_index}} in opts[:omit_tests]
       end)
       |> Enum.map(&elem(&1, 0))
       |> Enum.map(&to_test_block(&1, schema_name))

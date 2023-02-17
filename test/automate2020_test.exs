@@ -28,9 +28,9 @@ omit_describes = [
 
 omit_tests = [
   # integer filters do not match float values:
-  {"type.json", 0, 1},
-  {"enum.json", 7, 2},
-  {"enum.json", 8, 2}
+  {"type.json", {0, 1}},
+  {"enum.json", {7, 2}},
+  {"enum.json", {8, 2}}
 ]
 
 ExonerateTest.Automate.directory(

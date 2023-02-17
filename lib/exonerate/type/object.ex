@@ -12,7 +12,9 @@ defmodule Exonerate.Type.Object do
     "dependencies" => Exonerate.Filter.Dependencies
   }
 
-  @filters Map.keys(@modules)
+  @outer_filters Map.keys(@modules)
+
+  @combining_filters Combining.filters()
 
   # additionalProperties clobbers unevaluatedProperties
   def filter(
@@ -26,22 +28,22 @@ defmodule Exonerate.Type.Object do
   end
 
   def filter(subschema, name, pointer) do
-    outer_filters = outer_filters(subschema, name, pointer)
+    combining_filters = make_filters(@combining_filters, subschema, name, pointer)
+    outer_filters = make_filters(@outer_filters, subschema, name, pointer)
     iterator_filter = iterator_filter(subschema, name, pointer)
-
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
       defp unquote(call)(content, path) when is_map(content) do
-        with unquote_splicing(outer_filters ++ iterator_filter) do
+        with unquote_splicing(combining_filters ++ outer_filters ++ iterator_filter) do
           :ok
         end
       end
     end
   end
 
-  defp outer_filters(subschema, name, pointer) do
-    for filter <- @filters, is_map_key(subschema, filter) do
+  defp make_filters(filters, subschema, name, pointer) do
+    for filter <- filters, is_map_key(subschema, filter) do
       call =
         pointer
         |> JsonPointer.traverse(filter)
@@ -82,7 +84,7 @@ defmodule Exonerate.Type.Object do
         end
       end
     ) ++
-      for filter <- @filters, is_map_key(subschema, filter) do
+      for filter <- @outer_filters, is_map_key(subschema, filter) do
         module = @modules[filter]
         pointer = JsonPointer.traverse(pointer, filter)
 

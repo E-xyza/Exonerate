@@ -24,7 +24,9 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   # as an optimization, remove filters that are impossible given other filters.
-  defp build_code(schema = %{"propertyNames" => _}, name, pointer, opts) when is_map_key(schema, "additionalProperties") or is_map_key(schema, "unevaluatedProperties") do
+  defp build_code(schema = %{"propertyNames" => _}, name, pointer, opts)
+       when is_map_key(schema, "additionalProperties") or
+              is_map_key(schema, "unevaluatedProperties") do
     schema
     |> Map.drop(["additionalProperties", "unevaluatedProperties"])
     |> build_code(name, pointer, opts)
