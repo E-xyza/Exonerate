@@ -9,7 +9,8 @@ defmodule Exonerate.Type.Object do
     "minProperties" => Exonerate.Filter.MinProperties,
     "maxProperties" => Exonerate.Filter.MaxProperties,
     "required" => Exonerate.Filter.Required,
-    "dependencies" => Exonerate.Filter.Dependencies
+    "dependencies" => Exonerate.Filter.Dependencies,
+    "dependentRequired" => Exonerate.Filter.DependentRequired
   }
 
   @outer_filters Map.keys(@modules)
