@@ -4,79 +4,57 @@ defmodule Exonerate.Filter.DependentSchemas do
   # NB "dependentSchemas" is just a repackaging of "dependencies" except only permitting the
   # maps (specification of full schema to be applied to the object)
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Cache
+  alias Exonerate.Tools
 
-  alias Exonerate.Type.Object
-  alias Exonerate.Context
-  defstruct [:context, :dependencies]
-
-  def parse(filter = %{context: context}, %{"dependentSchemas" => deps}) do
-    deps =
-      deps
-      # as an optimization, just ignore {key, true}
-      |> Enum.reject(&(elem(&1, 1) == true))
-      |> Map.new(fn
-        # might be optimizable as a filter.  Not done here.
-        {k, false} ->
-          {k, false}
-
-        {k, schema} when is_map(schema) ->
-          {k,
-           Context.parse(
-             context.schema,
-             JsonPointer.traverse(context.pointer, ["dependentSchemas", k]),
-             authority: context.authority,
-             format: context.format,
-             draft: context.draft
-           )}
-      end)
-
-    %{
-      filter
-      | pipeline: ["dependentSchemas" | filter.pipeline],
-        filters: [%__MODULE__{context: context, dependencies: deps} | filter.filters]
-    }
+  defmacro filter_from_cached(name, pointer, opts) do
+    name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(pointer)
+    |> Enum.map(&make_dependencies(&1, name, pointer, opts))
+    |> Enum.unzip()
+    |> build_code(name, pointer)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{dependencies: deps}) do
-    {pipeline, children} =
-      deps
-      |> Enum.map(fn
-        {key, false} ->
-          {["dependentSchemas", key],
-           quote do
-             defp unquote(["dependentSchemas", key])(value, path)
-                  when is_map_key(value, unquote(key)) do
-               Exonerate.mismatch(value, Path.join(path, unquote(key)))
-             end
+  defp make_dependencies({key, schema}, name, pointer, opts) do
+    call =
+      pointer
+      |> JsonPointer.traverse([key, ":entrypoint"])
+      |> Tools.pointer_to_fun_name(authority: name)
 
-             defp unquote(["dependentSchemas", key])(value, _), do: value
-           end}
+    {quote do
+       :ok <- unquote(call)(content, path)
+     end, accessory(call, key, schema, name, pointer, opts)}
+  end
 
-        {key, schema} ->
-          {["dependentSchemas", ":" <> key],
-           quote do
-             defp unquote(["dependentSchemas", ":" <> key])(value, path)
-                  when is_map_key(value, unquote(key)) do
-               unquote(["dependentSchemas", key])(value, path)
-             end
+  defp build_code({prongs, accessories}, name, pointer) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-             defp unquote(["dependentSchemas", ":" <> key])(value, _), do: value
-             unquote(Context.compile(schema))
-           end}
-      end)
-      |> Enum.unzip()
+    quote do
+      defp unquote(call)(content, path) do
+        with unquote_splicing(prongs) do
+          :ok
+        end
+      end
 
-    {[],
-     [
-       quote do
-         defp unquote("dependentSchemas")(value, path) do
-           Exonerate.pipeline(value, path, unquote(pipeline))
-           :ok
-         end
-       end
-     ] ++ children}
+      unquote(accessories)
+    end
+  end
+
+  defp accessory(call, key, schema, name, pointer, opts) do
+    pointer = JsonPointer.traverse(pointer, key)
+    inner_call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    quote do
+      defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do
+        unquote(inner_call)(content, path)
+      end
+
+      defp unquote(call)(content, path), do: :ok
+
+      require Exonerate.Context
+      Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+    end
   end
 end
