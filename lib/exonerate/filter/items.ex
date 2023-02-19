@@ -5,15 +5,35 @@ defmodule Exonerate.Filter.Items do
   alias Exonerate.Tools
 
   defmacro filter_from_cached(name, pointer, opts) do
-    items =
-      name
-      |> Cache.fetch!()
-      |> JsonPointer.resolve!(pointer)
+    subschema = Cache.fetch!(name)
+    items = JsonPointer.resolve!(subschema, pointer)
+
+    prefix_items =
+      subschema
+      |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
+      |> Map.get("prefixItems")
+      |> List.wrap()
+      |> length
 
     Tools.maybe_dump(
       case items do
-        items when is_map(items) or is_boolean(items) ->
+        items when (is_map(items) or is_boolean(items)) and prefix_items == 0 ->
           quote do
+            require Exonerate.Context
+            Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+          end
+
+        items when is_map(items) or is_boolean(items) ->
+          call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+          quote do
+            defp unquote(call)(item, index, path) when index < unquote(prefix_items),
+              do: :ok
+
+            defp unquote(call)(item, _index, path) do
+              unquote(call)(item, path)
+            end
+
             require Exonerate.Context
             Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
           end

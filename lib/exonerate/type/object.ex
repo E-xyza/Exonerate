@@ -56,7 +56,7 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  #TODO: figure out how to generalize this
+  # TODO: figure out how to generalize this
   defp entrypoint("not"), do: ["not", ":entrypoint"]
   defp entrypoint(filter), do: filter
 

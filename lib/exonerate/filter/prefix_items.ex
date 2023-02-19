@@ -1,75 +1,71 @@
 defmodule Exonerate.Filter.PrefixItems do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Cache
+  alias Exonerate.Tools
 
-  alias Exonerate.Context
+  defmacro filter_from_cached(name, pointer, opts) do
+    items =
+      name
+      |> Cache.fetch!()
+      |> JsonPointer.resolve!(pointer)
 
-  defstruct [:context, :schema, :additional_items]
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-  def parse(filter = %{context: context}, %{"prefixItems" => s}) when is_list(s) do
-    schemas =
-      Enum.map(
-        0..(length(s) - 1),
-        &Context.parse(
-          context.schema,
-          JsonPointer.traverse(context.pointer, ["prefixItems", "#{&1}"]),
-          authority: context.authority,
-          format: context.format,
-          draft: context.draft
-        )
-      )
+    {calls, filters} =
+      items
+      |> Enum.with_index(&item_to_filter(&1, &2, name, pointer, opts))
+      |> Enum.unzip()
 
-    %{
-      filter
-      | needs_accumulator: true,
-        accumulator_pipeline: ["prefixItems" | filter.accumulator_pipeline],
-        accumulator_init: Map.put(filter.accumulator_init, :index, 0),
-        filters: [
-          %__MODULE__{
-            context: filter.context,
-            schema: schemas,
-            additional_items: filter.additional_items
-          }
-          | filter.filters
-        ]
+    additional_items = additional_items_for(name, pointer, opts)
+
+    code =
+      quote do
+        unquote(calls)
+        defp unquote(call)(item, _index, path), do: unquote(additional_items)
+        unquote(filters)
+      end
+
+    Tools.maybe_dump(code, opts)
+  end
+
+  defp item_to_filter(_, index, name, pointer, opts) do
+    call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    item_pointer = JsonPointer.traverse(pointer, "#{index}")
+    item_call = Tools.pointer_to_fun_name(item_pointer, authority: name)
+
+    {
+      quote do
+        defp unquote(call)(item, unquote(index), path) do
+          unquote(item_call)(item, path)
+        end
+      end,
+      quote do
+        require Exonerate.Context
+        Exonerate.Context.from_cached(unquote(name), unquote(item_pointer), unquote(opts))
+      end
     }
   end
 
-  def compile(filter = %__MODULE__{schema: schemas}) when is_list(schemas) do
-    {trampolines, children} =
-      schemas
-      |> Enum.with_index()
-      |> Enum.map(fn {schema, index} ->
-        {quote do
-           defp unquote("prefixItems")(acc = %{index: unquote(index)}, {path, item}) do
-             unquote(["prefixItems", to_string(index)])(
-               item,
-               Path.join(path, unquote("#{index}"))
-             )
+  defp additional_items_for(name, pointer, _opts) do
+    name
+    |> Cache.fetch!()
+    |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
+    |> case do
+      %{"additionalItems" => _} ->
+        additional_call =
+          pointer
+          |> JsonPointer.backtrack!()
+          |> JsonPointer.traverse("additionalItems")
+          |> Tools.pointer_to_fun_name(authority: name)
 
-             acc
-           end
-         end, Context.compile(schema)}
-      end)
-      |> Enum.unzip()
-
-    additional_item_filter =
-      if filter.additional_items do
         quote do
-          defp unquote("prefixItems")(acc = %{index: index}, {path, item}) do
-            unquote("additionalItems")(item, Path.join(path, to_string(index)))
-            acc
-          end
+          unquote(additional_call)(item, path)
         end
-      else
-        quote do
-          defp unquote("prefixItems")(acc = %{index: _}, {_item, _path}), do: acc
-        end
-      end
 
-    {[], trampolines ++ [additional_item_filter] ++ children}
+      _ ->
+        :ok
+    end
   end
 end

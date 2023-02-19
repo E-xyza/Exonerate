@@ -18,7 +18,8 @@ defmodule Exonerate.Type.Array.Iterator do
     "uniqueItems" => Exonerate.Filter.UniqueItems,
     "minItems" => Exonerate.Filter.MinItems,
     "maxItems" => Exonerate.Filter.MaxItems,
-    "additionalItems" => Exonerate.Filter.AdditionalItems
+    "additionalItems" => Exonerate.Filter.AdditionalItems,
+    "prefixItems" => Exonerate.Filter.PrefixItems
   }
 
   @filters Map.keys(@modules)
@@ -58,7 +59,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
     acc = accumulator(subschema)
 
-    filters = Enum.flat_map(subschema, &filter_for(&1, acc, name, pointer))
+    filters = Enum.flat_map(subschema, &filter_for(&1, acc, name, pointer, subschema))
 
     Tools.maybe_dump(
       quote do
@@ -101,6 +102,7 @@ defmodule Exonerate.Type.Array.Iterator do
   end
 
   defp accumulators_for("contains"), do: [:contains]
+  defp accumulators_for("prefixItems"), do: [:index]
   defp accumulators_for("items"), do: [:index]
   defp accumulators_for("uniqueItems"), do: [:index, :so_far]
   defp accumulators_for("minItems"), do: [:index]
@@ -216,7 +218,7 @@ defmodule Exonerate.Type.Array.Iterator do
     end
   end
 
-  defp filter_for({"items", list}, acc, name, pointer) when is_list(list) do
+  defp filter_for({"items", list}, acc, name, pointer, _subschema) when is_list(list) do
     call =
       pointer
       |> JsonPointer.traverse("items")
@@ -234,7 +236,25 @@ defmodule Exonerate.Type.Array.Iterator do
     ]
   end
 
-  defp filter_for({"items", _}, acc, name, pointer) do
+  defp filter_for({"items", _}, acc, name, pointer, %{"prefixItems" => _}) do
+    call =
+      pointer
+      |> JsonPointer.traverse("items")
+      |> Tools.pointer_to_fun_name(authority: name)
+
+    [
+      quote do
+        :ok <-
+          unquote(call)(
+            item,
+            unquote(index_for(acc)),
+            Path.join(path, "#{unquote(index_for(acc))}")
+          )
+      end
+    ]
+  end
+
+  defp filter_for({"items", _}, acc, name, pointer, _subschema) do
     call =
       pointer
       |> JsonPointer.traverse("items")
@@ -247,7 +267,25 @@ defmodule Exonerate.Type.Array.Iterator do
     ]
   end
 
-  defp filter_for({"contains", _}, [:contains], name, pointer) do
+  defp filter_for({"prefixItems", list}, acc, name, pointer, _subschema) when is_list(list) do
+    call =
+      pointer
+      |> JsonPointer.traverse("prefixItems")
+      |> Tools.pointer_to_fun_name(authority: name)
+
+    [
+      quote do
+        :ok <-
+          unquote(call)(
+            item,
+            unquote(index_for(acc)),
+            Path.join(path, "#{unquote(index_for(acc))}")
+          )
+      end
+    ]
+  end
+
+  defp filter_for({"contains", _}, [:contains], name, pointer, _subschema) do
     call =
       pointer
       |> JsonPointer.traverse("contains")
@@ -260,7 +298,7 @@ defmodule Exonerate.Type.Array.Iterator do
     ]
   end
 
-  defp filter_for({"uniqueItems", true}, _, _name, pointer) do
+  defp filter_for({"uniqueItems", true}, _, _name, pointer, _subschema) do
     pointer =
       pointer
       |> JsonPointer.traverse("uniqueItems")
@@ -277,7 +315,7 @@ defmodule Exonerate.Type.Array.Iterator do
     ]
   end
 
-  defp filter_for({"maxItems", count}, [:index], _name, pointer) do
+  defp filter_for({"maxItems", count}, [:index], _name, pointer, _subschema) do
     pointer =
       pointer
       |> JsonPointer.traverse("maxItems")
@@ -294,7 +332,7 @@ defmodule Exonerate.Type.Array.Iterator do
     ]
   end
 
-  defp filter_for({"maxItems", count}, _, _name, pointer) do
+  defp filter_for({"maxItems", count}, _, _name, pointer, _subschema) do
     pointer =
       pointer
       |> JsonPointer.traverse("maxItems")
@@ -311,7 +349,7 @@ defmodule Exonerate.Type.Array.Iterator do
     ]
   end
 
-  defp filter_for(_, _, _name, _pointer), do: []
+  defp filter_for(_, _, _name, _pointer, _subschema), do: []
 
   defp index_for([:index]) do
     quote do
