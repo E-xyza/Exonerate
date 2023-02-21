@@ -235,7 +235,7 @@ defmodule Exonerate.Type.Array.Iterator do
           :contains, so_far ->
             quote do
               unquote(so_far)
-              |> Map.replace!(:contains, acc.contains + 1)
+              |> Map.replace!(:contains, contains)
             end
         end
       )
@@ -339,6 +339,32 @@ defmodule Exonerate.Type.Array.Iterator do
     ]
   end
 
+  defp filter_for({"maxContains", _}, [:contains], name, pointer, _subschema) do
+    call =
+      pointer
+      |> JsonPointer.traverse(["maxContains"])
+      |> Tools.pointer_to_fun_name(authority: name)
+
+    [
+      quote do
+        :ok <- unquote(call)(contains, content, path)
+      end
+    ]
+  end
+
+  defp filter_for({"maxContains", _}, [:contains], name, pointer, _subschema) do
+    call =
+      pointer
+      |> JsonPointer.traverse(["maxContains"])
+      |> Tools.pointer_to_fun_name(authority: name)
+
+    [
+      quote do
+        :ok <- unquote(call)(acc.contains, content, path)
+      end
+    ]
+  end
+
   defp filter_for({"uniqueItems", true}, _, _name, pointer, _subschema) do
     pointer =
       pointer
@@ -432,14 +458,50 @@ defmodule Exonerate.Type.Array.Iterator do
       |> JsonPointer.to_uri()
 
     quote do
-      then(fn
+      case do
         {:ok, %{index: deficient}} when deficient < unquote(count) - 1 ->
           require Exonerate.Tools
           Exonerate.Tools.mismatch(content, unquote(pointer), path)
 
         other ->
           other
-      end)
+      end
+    end
+  end
+
+  defp filter_analysis_for(schema = %{"contains" => _}, [:contains], pointer) do
+    minimum = Map.get(schema, "minContains", 1)
+
+    quote do
+      case do
+        {:ok, amount} when amount < unquote(minimum) ->
+          require Exonerate.Tools
+          Exonerate.Tools.mismatch(content, unquote(pointer), Path.join(path, "contains"))
+
+        {:ok, _} ->
+          :ok
+
+        {error = {:error, _}, _} ->
+          error
+      end
+    end
+  end
+
+  defp filter_analysis_for(schema = %{"contains" => _}, _, pointer) do
+    minimum = Map.get(schema, "minContains", 1)
+
+    quote do
+      case do
+        {:ok, acc} when acc.contains < unquote(minimum) ->
+          require Exonerate.Tools
+          Exonerate.Tools.mismatch(content, unquote(pointer), Path.join(path, "contains"))
+
+        {:ok, _} ->
+          :ok
+
+        {error = {:error, _}, _} ->
+          error
+      end
     end
   end
 
