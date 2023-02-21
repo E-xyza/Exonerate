@@ -11,7 +11,7 @@ defmodule Exonerate.Type.Ref do
     ref = name
     |> Cache.fetch!
     |> JsonPointer.resolve!(JsonPointer.traverse(pointer, "$ref"))
-    |> String.replace_leading("#", "")
+    |> normalize
     |> JsonPointer.from_uri
     |> Tools.pointer_to_fun_name(authority: name)
 
@@ -28,4 +28,8 @@ defmodule Exonerate.Type.Ref do
       end
     end
   end
+
+  defp normalize("#" <> string), do: normalize(string)
+  defp normalize(""), do: "/"
+  defp normalize(string), do: string
 end
