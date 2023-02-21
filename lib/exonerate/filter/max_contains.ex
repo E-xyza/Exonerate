@@ -1,38 +1,7 @@
 defmodule Exonerate.Filter.MaxContains do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Tools
 
-  alias Exonerate.Context
-
-  defstruct [:context, :maximum]
-
-  def parse(filter = %{context: context}, %{"contains" => _, "maxContains" => maximum}) do
-    %{
-      filter
-      | needs_accumulator: true,
-        accumulator_pipeline: ["maxContains" | filter.accumulator_pipeline],
-        accumulator_init: Map.put_new(filter.accumulator_init, :contains, 0),
-        filters: [%__MODULE__{context: context, maximum: maximum} | filter.filters]
-    }
-  end
-
-  # ignore when there is no "contains"
-  def parse(filter, %{"maxContains" => _}), do: filter
-
-  def compile(filter = %__MODULE__{maximum: maximum}) do
-    {[],
-     [
-       quote do
-         defp unquote("maxContains")(%{contains: contains}, {path, array})
-              when contains > unquote(maximum) do
-           Exonerate.mismatch(array, path)
-         end
-
-         defp unquote("maxContains")(acc, {_path, _array}), do: acc
-       end
-     ]}
-  end
+  defmacro filter_from_cached(name, pointer, opts), do: []
 end

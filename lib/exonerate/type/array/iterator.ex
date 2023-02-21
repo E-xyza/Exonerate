@@ -19,7 +19,9 @@ defmodule Exonerate.Type.Array.Iterator do
     "minItems" => Exonerate.Filter.MinItems,
     "maxItems" => Exonerate.Filter.MaxItems,
     "additionalItems" => Exonerate.Filter.AdditionalItems,
-    "prefixItems" => Exonerate.Filter.PrefixItems
+    "prefixItems" => Exonerate.Filter.PrefixItems,
+    "maxContains" => Exonerate.Filter.MaxContains,
+    "minContains" => Exonerate.Filter.MinContains
   }
 
   @filters Map.keys(@modules)
@@ -31,17 +33,24 @@ defmodule Exonerate.Type.Array.Iterator do
     Enum.any?(@filters, &is_map_key(schema, &1))
   end
 
+  @find_keys [
+    ["contains"],
+    ["minItems"],
+    ["contains", "minItems"],
+    ["contains", "minContains"],
+    ["contains", "minContains", "minItems"]
+  ]
+
   @spec mode(Type.json()) :: :find | :filter | nil
   def mode(schema) do
     schema
     |> Map.take(@filters)
+    |> adjust_subschema
     |> Map.keys()
     |> Enum.sort()
     |> case do
       [] -> nil
-      ["contains"] -> :find
-      ["minItems"] -> :find
-      ["contains", "minItems"] -> :find
+      keys when keys in @find_keys -> :find
       _ -> :filter
     end
   end
@@ -51,6 +60,7 @@ defmodule Exonerate.Type.Array.Iterator do
       name
       |> Cache.fetch!()
       |> JsonPointer.resolve!(pointer)
+      |> adjust_subschema
 
     call =
       pointer
@@ -91,7 +101,15 @@ defmodule Exonerate.Type.Array.Iterator do
     |> Tools.maybe_dump(opts)
   end
 
+  defmacro from_cached(_name, _pointer, nil, _opts), do: []
+
   # COMMON FUNCTIONS
+
+  defp adjust_subschema(subschema) when not is_map_key(subschema, "contains") do
+    Map.drop(subschema, ["maxContains", "minContains"])
+  end
+
+  defp adjust_subschema(subschema), do: subschema
 
   defp accumulator(schema) do
     schema
@@ -113,6 +131,11 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp filter_initializer_for(acc) do
     case acc do
+      [:contains] ->
+        quote do
+          {:ok, 0}
+        end
+
       [:index] ->
         {:ok, 0}
 
@@ -129,7 +152,7 @@ defmodule Exonerate.Type.Array.Iterator do
         init =
           Enum.map(list, fn
             :contains ->
-              {:contains, false}
+              {:contains, 0}
 
             :so_far ->
               {:so_far,
@@ -152,6 +175,11 @@ defmodule Exonerate.Type.Array.Iterator do
           {:ok, index}
         end
 
+      [:contains] ->
+        quote do
+          {:ok, contains}
+        end
+
       [] ->
         quote do
           _
@@ -166,6 +194,11 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp filter_continuation_for(acc) do
     case Enum.sort(acc) do
+      [:contains] ->
+        quote do
+          {:cont, {:ok, contains}}
+        end
+
       [:index] ->
         quote do
           {:cont, {:ok, index + 1}}
@@ -176,11 +209,6 @@ defmodule Exonerate.Type.Array.Iterator do
 
       list ->
         build_continuation(list)
-
-        # TODO: do better at generalizing this
-        quote do
-          {:cont, {:ok, %{acc | index: acc.index + 1, so_far: MapSet.put(acc.so_far, item)}}}
-        end
     end
   end
 
@@ -207,7 +235,7 @@ defmodule Exonerate.Type.Array.Iterator do
           :contains, so_far ->
             quote do
               unquote(so_far)
-              |> Map.replace!(:contains, false)
+              |> Map.replace!(:contains, acc.contains + 1)
             end
         end
       )
@@ -288,12 +316,25 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"contains", _}, [:contains], name, pointer, _subschema) do
     call =
       pointer
-      |> JsonPointer.traverse("contains")
+      |> JsonPointer.traverse(["contains", ":entrypoint"])
       |> Tools.pointer_to_fun_name(authority: name)
 
     [
       quote do
-        {:error, _} <- unquote(call)(item, Path.join(path, ":any"))
+        contains = unquote(call)(item, path, contains)
+      end
+    ]
+  end
+
+  defp filter_for({"contains", _}, _, name, pointer, _subschema) do
+    call =
+      pointer
+      |> JsonPointer.traverse(["contains", ":entrypoint"])
+      |> Tools.pointer_to_fun_name(authority: name)
+
+    [
+      quote do
+        contains = unquote(call)(item, path, acc.contains)
       end
     ]
   end
@@ -462,7 +503,7 @@ defmodule Exonerate.Type.Array.Iterator do
     end
   end
 
-  defp find_code_for(%{"contains" => _}, name, pointer) do
+  defp find_code_for(schema = %{"contains" => _}, name, pointer) do
     call =
       pointer
       |> JsonPointer.traverse(":iterator")
@@ -472,6 +513,8 @@ defmodule Exonerate.Type.Array.Iterator do
 
     contains_call = Tools.pointer_to_fun_name(contains_pointer, authority: name)
 
+    needed = Map.get(schema, "minContains", 1)
+
     quote do
       def unquote(call)(content, path) do
         require Exonerate.Tools
@@ -479,13 +522,17 @@ defmodule Exonerate.Type.Array.Iterator do
         content
         |> Enum.reduce_while(
           {Exonerate.Tools.mismatch(content, unquote(JsonPointer.to_uri(contains_pointer)), path),
-           0},
+           0, 0},
           fn
-            item, {{:error, params}, index} ->
-              with error = {:error, _} <- unquote(contains_call)(item, path) do
-                new_params = Keyword.update(params, :failures, [error], &[error | &1])
-                {:cont, {{:error, params}, index + 1}}
-              else
+            item, {{:error, params}, index, count} ->
+              case unquote(contains_call)(item, path) do
+                error = {:error, _} ->
+                  new_params = Keyword.update(params, :failures, [error], &[error | &1])
+                  {:cont, {{:error, params}, index + 1, count}}
+
+                :ok when count < unquote(needed - 1) ->
+                  {:cont, {{:error, params}, index, count + 1}}
+
                 :ok ->
                   {:halt, {:ok, []}}
               end
