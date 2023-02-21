@@ -53,6 +53,13 @@ defmodule Exonerate.Context do
     end
   end
 
+  defp to_quoted_function(%{"$ref" => _ref_pointer}, name, pointer, opts) do
+    quote do
+      require Exonerate.Type.Ref
+      Exonerate.Type.Ref.from_cached(unquote(name), unquote(pointer), unquote(opts))
+    end
+  end
+
   # metadata
   defp to_quoted_function(schema = %{"title" => title}, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)

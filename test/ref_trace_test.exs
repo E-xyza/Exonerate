@@ -12,13 +12,13 @@ defmodule ExonerateTest.RefTraceTest do
   """)
 
   test "ref tracing works through one hop" do
-    assert {:error,
-            [
-              ref_trace: ["/properties/bar"],
-              schema_pointer: "/properties/foo/type",
-              error_value: "baz",
-              json_pointer: "/bar"
-            ]} = ref1(%{"bar" => "baz"})
+    assert {:error, error} = ref1(%{"bar" => "baz"})
+    assert [
+      error_value: "baz",
+      json_pointer: "/bar",
+      ref_trace: ["/properties/bar"],
+      schema_pointer: "/properties/foo/type",
+    ] = Enum.sort(error)
   end
 
   Exonerate.function_from_string(:defp, :ref2, """
@@ -32,12 +32,12 @@ defmodule ExonerateTest.RefTraceTest do
   """)
 
   test "ref tracing works through two hops" do
-    assert {:error,
-            [
-              ref_trace: ["/properties/baz", "/properties/bar"],
-              schema_pointer: "/properties/foo/type",
-              error_value: "quux",
-              json_pointer: "/baz"
-            ]} = ref2(%{"baz" => "quux"})
+    assert {:error, error} = ref2(%{"baz" => "quux"})
+    assert [
+      error_value: "quux",
+      json_pointer: "/baz",
+      ref_trace: ["/properties/baz", "/properties/bar"],
+      schema_pointer: "/properties/foo/type",
+    ] = Enum.sort(error)
   end
 end
