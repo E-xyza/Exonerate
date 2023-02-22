@@ -9,6 +9,7 @@ defmodule Exonerate.Cache do
   # validation functions.
 
   alias Exonerate.Type
+  use MatchSpec
 
   @spec get_table() :: :ets.tid()
   def get_table do
@@ -52,6 +53,37 @@ defmodule Exonerate.Cache do
   def put(authority, content) when is_atom(authority) do
     :ets.insert(get_table(), {authority, content})
     :ok
+  end
+
+  def register_context(authority, pointer) when is_atom(authority) do
+    if has_context?(authority, pointer) do
+      false
+    else
+      :ets.insert(get_table(), {{:context, authority, pointer}})
+      true
+    end
+  end
+
+  def has_context?(authority, pointer) when is_atom(authority) do
+    case :ets.lookup(get_table(), {:context, authority, pointer}) do
+      [] -> false
+      [_] -> true
+    end
+  end
+
+  def register_id(id, pointer) do
+    :ets.insert(get_table(), {{:id, id}, pointer})
+  end
+
+  defmatchspecp get_id_ms(id) do
+    {{:id, ^id}, pointer} -> pointer
+  end
+
+  def get_id(id) do
+    case :ets.select(get_table(), get_id_ms(id)) do
+      [] -> nil
+      [pointer] -> pointer
+    end
   end
 
   @doc false

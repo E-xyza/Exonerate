@@ -9,11 +9,15 @@ defmodule Exonerate.Context do
   alias Exonerate.Type
 
   defmacro from_cached(name, pointer, opts) do
-    name
-    |> Cache.fetch!()
-    |> JsonPointer.resolve!(pointer)
-    |> to_quoted_function(name, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    if Cache.register_context(name, pointer) do
+      name
+      |> Cache.fetch!()
+      |> JsonPointer.resolve!(pointer)
+      |> to_quoted_function(name, pointer, opts)
+      |> Tools.maybe_dump(opts)
+    else
+      []
+    end
   end
 
   @filter_map %{
@@ -53,7 +57,13 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(%{"$ref" => _ref_pointer}, name, pointer, opts) do
+  defp to_quoted_function(subschema = %{"id" => id}, name, pointer, opts) do
+    subschema
+    |> Map.delete("id")
+    |> to_quoted_function(name, pointer, Keyword.put(opts, :id, id))
+  end
+
+  defp to_quoted_function(subschema = %{"$ref" => _ref_pointer}, name, pointer, opts) do
     quote do
       require Exonerate.Type.Ref
       Exonerate.Type.Ref.from_cached(unquote(name), unquote(pointer), unquote(opts))

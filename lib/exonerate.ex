@@ -95,6 +95,7 @@ defmodule Exonerate do
   """
 
   alias Exonerate.Cache
+  alias Exonerate.Id
   alias Exonerate.Tools
 
   @common_defaults [
@@ -116,6 +117,7 @@ defmodule Exonerate do
       schema_ast
       |> Macro.expand(__CALLER__)
       |> Jason.decode!()
+      |> Id.prescan()
 
     Cache.put(name, schema)
 
