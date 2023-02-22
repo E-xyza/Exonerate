@@ -3,7 +3,8 @@ defmodule Exonerate.Combining do
     "anyOf" => Exonerate.Combining.AnyOf,
     "allOf" => Exonerate.Combining.AllOf,
     "oneOf" => Exonerate.Combining.OneOf,
-    "not" => Exonerate.Combining.Not
+    "not" => Exonerate.Combining.Not,
+    "$ref" => Exonerate.Combining.Ref
   }
 
   @filters Map.keys(@modules)

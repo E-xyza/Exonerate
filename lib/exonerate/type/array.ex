@@ -9,6 +9,7 @@ defmodule Exonerate.Type.Array do
   @combining_filters Combining.filters()
 
   def filter(subschema, name, pointer) do
+    subschema = adjust(subschema)
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     combining_filters =
@@ -39,6 +40,14 @@ defmodule Exonerate.Type.Array do
     end
   end
 
+  defp adjust(subschema = %{"minContains" => 0}) do
+    subschema
+    |> Map.drop(["minContains", "contains"])
+    |> adjust
+  end
+
+  defp adjust(subschema), do: subschema
+
   defp filter_for({filter, _}, name, pointer) do
     call =
       pointer
@@ -51,10 +60,13 @@ defmodule Exonerate.Type.Array do
   end
 
   def accessories(schema, name, pointer, opts) do
-    Iterator.accessories(schema, name, pointer, opts) ++
+    schema
+    |> adjust
+    |> Iterator.accessories(name, pointer, opts)
+    |> Kernel.++(
       for filter_name <- @iterator_filters, Map.has_key?(schema, filter_name) do
         list_accessory(filter_name, schema, name, pointer, opts)
-      end
+      end)
   end
 
   defp list_accessory(filter_name, _schema, name, pointer, opts) do

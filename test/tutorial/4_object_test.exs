@@ -314,7 +314,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
         }
       }
-      """
+      """, dump: true
     )
   end
 

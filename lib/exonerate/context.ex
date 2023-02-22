@@ -65,13 +65,6 @@ defmodule Exonerate.Context do
     |> to_quoted_function(module, name, pointer, Keyword.put(opts, :id, id))
   end
 
-  defp to_quoted_function(%{"$ref" => _ref_pointer}, _module, name, pointer, opts) do
-    quote do
-      require Exonerate.Type.Ref
-      Exonerate.Type.Ref.from_cached(unquote(name), unquote(pointer), unquote(opts))
-    end
-  end
-
   # metadata
   defp to_quoted_function(schema = %{"title" => title}, module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)

@@ -1,7 +1,5 @@
 defmodule Exonerate.Filter.MinContains do
   @moduledoc false
 
-  alias Exonerate.Tools
-
-  defmacro filter_from_cached(name, pointer, opts), do: []
+  defmacro filter_from_cached(_name, _pointer, _opts), do: []
 end
