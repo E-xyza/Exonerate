@@ -112,14 +112,15 @@ defmodule Exonerate do
     # prewalk the schema text
 
     root_pointer = JsonPointer.from_uri("/")
+    module = __CALLER__.module
 
     schema =
       schema_ast
       |> Macro.expand(__CALLER__)
       |> Jason.decode!()
-      |> Id.prescan()
+      |> Id.prescan(module)
 
-    Cache.put(name, schema)
+    Cache.put(module, name, schema)
 
     call = Tools.pointer_to_fun_name(root_pointer, authority: name)
     {schema_str, id} = if is_map(schema), do: {schema["$schema"], schema["$id"]}, else: {nil, nil}

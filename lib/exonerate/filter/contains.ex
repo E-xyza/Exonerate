@@ -6,8 +6,8 @@ defmodule Exonerate.Filter.Contains do
   alias Exonerate.Type.Array.Iterator
 
   defmacro filter_from_cached(name, pointer, opts) do
-    name
-    |> Cache.fetch!()
+    __CALLER__.module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
     |> Iterator.mode()
     |> case do

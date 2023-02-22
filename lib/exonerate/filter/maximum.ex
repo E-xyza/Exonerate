@@ -10,8 +10,8 @@ defmodule Exonerate.Filter.Maximum do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
 
-    name
-    |> Cache.fetch!()
+    __CALLER__.module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> build_code(call, schema_pointer)
     |> Tools.maybe_dump(opts)

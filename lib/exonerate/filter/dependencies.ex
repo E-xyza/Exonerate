@@ -5,8 +5,8 @@ defmodule Exonerate.Filter.Dependencies do
   alias Exonerate.Tools
 
   defmacro filter_from_cached(name, pointer, opts) do
-    name
-    |> Cache.fetch!()
+    __CALLER__.module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> Enum.map(&make_dependencies(&1, name, pointer, opts))
     |> Enum.unzip()

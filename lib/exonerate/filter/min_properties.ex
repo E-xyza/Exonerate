@@ -11,8 +11,8 @@ defmodule Exonerate.Filter.MinProperties do
     schema_pointer = JsonPointer.to_uri(pointer)
 
     minimum =
-      name
-      |> Cache.fetch!()
+      __CALLER__.module
+      |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
 
     Tools.maybe_dump(

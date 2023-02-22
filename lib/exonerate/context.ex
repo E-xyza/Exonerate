@@ -9,11 +9,12 @@ defmodule Exonerate.Context do
   alias Exonerate.Type
 
   defmacro from_cached(name, pointer, opts) do
-    if Cache.register_context(name, pointer) do
-      name
-      |> Cache.fetch!()
+    module = __CALLER__.module
+    if Cache.register_context(module, name, pointer) do
+      module
+      |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
-      |> to_quoted_function(name, pointer, opts)
+      |> to_quoted_function(module, name, pointer, opts)
       |> Tools.maybe_dump(opts)
     else
       []
@@ -33,7 +34,7 @@ defmodule Exonerate.Context do
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
 
-  defp to_quoted_function(true, name, pointer, _opts) do
+  defp to_quoted_function(true, _module, name, pointer, _opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
@@ -44,7 +45,7 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(false, name, pointer, _opts) do
+  defp to_quoted_function(false, _module, name, pointer, _opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
 
@@ -57,13 +58,13 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(subschema = %{"id" => id}, name, pointer, opts) do
+  defp to_quoted_function(subschema = %{"id" => id}, module, name, pointer, opts) do
     subschema
     |> Map.delete("id")
-    |> to_quoted_function(name, pointer, Keyword.put(opts, :id, id))
+    |> to_quoted_function(module, name, pointer, Keyword.put(opts, :id, id))
   end
 
-  defp to_quoted_function(subschema = %{"$ref" => _ref_pointer}, name, pointer, opts) do
+  defp to_quoted_function(%{"$ref" => _ref_pointer}, _module, name, pointer, opts) do
     quote do
       require Exonerate.Type.Ref
       Exonerate.Type.Ref.from_cached(unquote(name), unquote(pointer), unquote(opts))
@@ -71,13 +72,13 @@ defmodule Exonerate.Context do
   end
 
   # metadata
-  defp to_quoted_function(schema = %{"title" => title}, name, pointer, opts) do
+  defp to_quoted_function(schema = %{"title" => title}, module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     rest =
       schema
       |> Map.delete("title")
-      |> to_quoted_function(name, pointer, opts)
+      |> to_quoted_function(module, name, pointer, opts)
 
     quote do
       defp unquote(call)(:title, _), do: unquote(title)
@@ -86,13 +87,13 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(schema = %{"description" => title}, name, pointer, opts) do
+  defp to_quoted_function(schema = %{"description" => title}, module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     rest =
       schema
       |> Map.delete("description")
-      |> to_quoted_function(name, pointer, opts)
+      |> to_quoted_function(module, name, pointer, opts)
 
     quote do
       defp unquote(call)(:description, _), do: unquote(title)
@@ -101,13 +102,13 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(schema = %{"examples" => title}, name, pointer, opts) do
+  defp to_quoted_function(schema = %{"examples" => title}, module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     rest =
       schema
       |> Map.delete("examples")
-      |> to_quoted_function(name, pointer, opts)
+      |> to_quoted_function(module, name, pointer, opts)
 
     quote do
       defp unquote(call)(:examples, _), do: unquote(title)
@@ -116,13 +117,13 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(schema = %{"default" => title}, name, pointer, opts) do
+  defp to_quoted_function(schema = %{"default" => title}, module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     rest =
       schema
       |> Map.delete("default")
-      |> to_quoted_function(name, pointer, opts)
+      |> to_quoted_function(module, name, pointer, opts)
 
     quote do
       defp unquote(call)(:default, _), do: unquote(title)
@@ -132,7 +133,7 @@ defmodule Exonerate.Context do
   end
 
   # intercept consts
-  defp to_quoted_function(schema = %{"const" => const}, name, pointer, opts) do
+  defp to_quoted_function(schema = %{"const" => const}, module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     const_pointer =
@@ -143,7 +144,7 @@ defmodule Exonerate.Context do
     rest_filter =
       schema
       |> Map.delete("const")
-      |> to_quoted_function(name, pointer, Keyword.merge(opts, type: typeof(const)))
+      |> to_quoted_function(module, name, pointer, Keyword.merge(opts, type: typeof(const)))
 
     value = Macro.escape(const)
 
@@ -158,7 +159,7 @@ defmodule Exonerate.Context do
   end
 
   # intercept enums
-  defp to_quoted_function(schema = %{"enum" => enum}, name, pointer, opts) do
+  defp to_quoted_function(schema = %{"enum" => enum}, module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     enum_pointer =
@@ -174,7 +175,7 @@ defmodule Exonerate.Context do
     rest_filter =
       schema
       |> Map.delete("enum")
-      |> to_quoted_function(name, pointer, Keyword.merge(opts, type: types))
+      |> to_quoted_function(module, name, pointer, Keyword.merge(opts, type: types))
 
     values = Macro.escape(enum)
 
@@ -188,9 +189,9 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(%{"type" => type_or_types}, name, pointer, opts) do
+  defp to_quoted_function(%{"type" => type_or_types}, module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
-    schema = Cache.fetch!(name)
+    schema = Cache.fetch!(module, name)
     subschema = JsonPointer.resolve!(schema, pointer)
     types = resolve_types(type_or_types)
 
@@ -237,7 +238,7 @@ defmodule Exonerate.Context do
 
   @all_types ~w(string object array number integer boolean null)
 
-  defp to_quoted_function(schema, name, pointer, opts) when is_map(schema) do
+  defp to_quoted_function(schema, module, name, pointer, opts) when is_map(schema) do
     schema_types =
       schema
       |> Map.get("type", @all_types)
@@ -254,7 +255,7 @@ defmodule Exonerate.Context do
 
     schema
     |> Map.put("type", type)
-    |> to_quoted_function(name, pointer, Keyword.drop(opts, [:type]))
+    |> to_quoted_function(module, name, pointer, Keyword.drop(opts, [:type]))
   end
 
   defp typeof(value) when is_binary(value), do: "string"

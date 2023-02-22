@@ -7,14 +7,15 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
   defmacro filter_from_cached(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
+    module = __CALLER__.module
 
-    name
-    |> Cache.fetch!()
+    module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> case do
       bool when is_boolean(bool) ->
         # TODO: figure out a draft-4 warning here
-        filter_boolean(bool, call, fetch_maximum!(name, pointer), schema_pointer)
+        filter_boolean(bool, call, fetch_maximum!(module, name, pointer), schema_pointer)
 
       value ->
         filter_value(value, call, schema_pointer)
@@ -22,14 +23,14 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
     |> Tools.maybe_dump(opts)
   end
 
-  defp fetch_maximum!(name, pointer) do
+  defp fetch_maximum!(module, name, pointer) do
     maximum_pointer =
       pointer
       |> JsonPointer.backtrack!()
       |> JsonPointer.traverse("maximum")
 
-    name
-    |> Cache.fetch!()
+    module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(maximum_pointer)
   end
 

@@ -9,8 +9,8 @@ defmodule Exonerate.Filter.Required do
     schema_pointer = JsonPointer.to_uri(pointer)
 
     required_list =
-      name
-      |> Cache.fetch!()
+      __CALLER__.module
+      |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
 
     Tools.maybe_dump(

@@ -57,8 +57,8 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defmacro from_cached(name, pointer, :filter, opts) do
     subschema =
-      name
-      |> Cache.fetch!()
+      __CALLER__.module
+      |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
       |> adjust_subschema
 
@@ -92,8 +92,8 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defmacro from_cached(name, pointer, :find, opts) do
     subschema =
-      name
-      |> Cache.fetch!()
+      __CALLER__.module
+      |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
 
     subschema

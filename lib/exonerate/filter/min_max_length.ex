@@ -20,7 +20,7 @@ defmodule Exonerate.Filter.MinMaxLength do
       |> JsonPointer.traverse("maxLength")
       |> JsonPointer.to_uri()
 
-    schema = Cache.fetch!(name)
+    schema = Cache.fetch!(__CALLER__.module, name)
 
     max_length = JsonPointer.resolve!(schema, JsonPointer.traverse(pointer, "maxLength"))
     min_length = JsonPointer.resolve!(schema, JsonPointer.traverse(pointer, "minLength"))

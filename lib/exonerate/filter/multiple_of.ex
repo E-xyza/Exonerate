@@ -11,8 +11,8 @@ defmodule Exonerate.Filter.MultipleOf do
     schema_pointer = JsonPointer.to_uri(pointer)
 
     divisor =
-      name
-      |> Cache.fetch!()
+      __CALLER__.module
+      |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
 
     Tools.maybe_dump(

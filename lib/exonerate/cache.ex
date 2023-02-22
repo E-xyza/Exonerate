@@ -22,76 +22,59 @@ defmodule Exonerate.Cache do
     end
   end
 
-  @spec fetch(atom | {:file, Path.t()}) :: {:ok, Type.json()} | :error
-  def fetch(cache_id) do
-    case :ets.lookup(get_table(), cache_id) do
+  @type cache_id :: atom | {:file, Path.t()}
+
+  @spec fetch(module, cache_id) :: {:ok, Type.json()} | :error
+  def fetch(module, cache_id) do
+    case :ets.lookup(get_table(), {module, cache_id}) do
       [] -> :error
-      [{:cached, id}] when is_atom(id) -> fetch(id)
-      [{^cache_id, json}] -> {:ok, json}
+      [{{^module, ^cache_id}, {:cached, id}}] when is_atom(id) -> fetch(module, id)
+      [{{^module, ^cache_id}, json}] -> {:ok, json}
     end
   end
 
-  @spec fetch!(atom | {:file, Path.t()}) :: Type.json()
-  def fetch!(cache_id) do
-    case fetch(cache_id) do
+  @spec fetch!(module, cache_id) :: Type.json()
+  def fetch!(module, cache_id) do
+    case fetch(module, cache_id) do
       {:ok, json} -> json
-      :error -> raise KeyError, message: "key `#{cache_id}` not found in the exonerate cache"
+      :error -> raise KeyError, message: "key `#{cache_id}` not found in the exonerate cache for the module #{inspect(module)}"
     end
   end
 
-  @spec put(atom | {:file, Path.t(), atom}, Type.json()) :: :ok
-  def put({:file, path, authority}, content) do
-    info = [
-      {{:file, path}, {:cached, authority}},
-      {authority, content}
-    ]
-
-    :ets.insert(get_table(), info)
+  @spec put(module, atom, Type.json()) :: :ok
+  def put(module, authority, content) when is_atom(authority) do
+    :ets.insert(get_table(), {{module, authority}, content})
     :ok
   end
 
-  def put(authority, content) when is_atom(authority) do
-    :ets.insert(get_table(), {authority, content})
-    :ok
-  end
-
-  def register_context(authority, pointer) when is_atom(authority) do
-    if has_context?(authority, pointer) do
+  def register_context(module, authority, pointer) when is_atom(authority) do
+    if has_context?(module, authority, pointer) do
       false
     else
-      :ets.insert(get_table(), {{:context, authority, pointer}})
+      :ets.insert(get_table(), {{:context, module, authority, pointer}})
       true
     end
   end
 
-  def has_context?(authority, pointer) when is_atom(authority) do
-    case :ets.lookup(get_table(), {:context, authority, pointer}) do
+  def has_context?(module, authority, pointer) when is_atom(authority) do
+    case :ets.lookup(get_table(), {:context, module, authority, pointer}) do
       [] -> false
       [_] -> true
     end
   end
 
-  def register_id(id, pointer) do
-    :ets.insert(get_table(), {{:id, id}, pointer})
+  def register_id(id, module, pointer) do
+    :ets.insert(get_table(), {{:id, id, module}, pointer})
   end
 
-  defmatchspecp get_id_ms(id) do
-    {{:id, ^id}, pointer} -> pointer
+  defmatchspecp get_id_ms(id, module) do
+    {{:id, ^id, ^module}, pointer} -> pointer
   end
 
-  def get_id(id) do
-    case :ets.select(get_table(), get_id_ms(id)) do
+  def get_id(id, module) do
+    case :ets.select(get_table(), get_id_ms(id, module)) do
       [] -> nil
       [pointer] -> pointer
-    end
-  end
-
-  @doc false
-  # if you are doing something single-threaded (like compiling multiple modules in a test), you might need to do this.
-  def sweep do
-    if table = Process.get(__MODULE__) do
-      :ets.delete(table)
-      Process.delete(__MODULE__)
     end
   end
 end

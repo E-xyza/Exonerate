@@ -14,19 +14,21 @@ defmodule Exonerate.Type.Ref do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     call_path = JsonPointer.to_uri(pointer)
 
-    name
-    |> Cache.fetch!()
+    module = __CALLER__.module
+
+    module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> Map.get("$ref")
     |> URI.parse()
-    |> build_code(name, call, call_path, opts)
+    |> build_code(module, name, call, call_path, opts)
     |> Tools.maybe_dump(opts)
   end
 
   defp normalize(fragment = "/" <> _), do: fragment
   defp normalize(fragment), do: "/" <> fragment
 
-  defp build_code(a = %{host: nil, path: nil, fragment: fragment}, name, call, call_path, opts) do
+  defp build_code(a = %{host: nil, path: nil, fragment: fragment}, _module, name, call, call_path, opts) do
     pointer = fragment
     |> normalize
     |> JsonPointer.from_uri()
@@ -54,14 +56,14 @@ defmodule Exonerate.Type.Ref do
     end
   end
 
-  defp build_code(%{host: nil, path: path}, name, call, call_path, opts) do
+  defp build_code(%{host: nil, path: path}, module, name, call, call_path, opts) do
     pointer =
       opts
       |> Keyword.fetch!(:id)
       |> URI.parse()
       |> Map.replace!(:path, "/" <> path)
       |> to_string()
-      |> Cache.get_id()
+      |> Cache.get_id(module)
 
     opts = Keyword.delete(opts, :id)
 

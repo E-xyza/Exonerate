@@ -9,8 +9,8 @@ defmodule Exonerate.Filter.MaxLength do
     schema_pointer = JsonPointer.to_uri(pointer)
 
     length =
-      name
-      |> Cache.fetch!()
+      __CALLER__.module
+      |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
 
     Tools.maybe_dump(

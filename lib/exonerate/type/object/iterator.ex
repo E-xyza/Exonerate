@@ -16,8 +16,8 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defmacro from_cached(name, pointer, opts) do
-    name
-    |> Cache.fetch!()
+    __CALLER__.module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> build_code(name, pointer, opts)
     |> Tools.maybe_dump(opts)

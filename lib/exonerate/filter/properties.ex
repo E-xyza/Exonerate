@@ -8,8 +8,8 @@ defmodule Exonerate.Filter.Properties do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     {tracker, opts} = Keyword.pop!(opts, :tracker)
 
-    name
-    |> Cache.fetch!()
+    __CALLER__.module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> Enum.map(&filter_for(&1, call, name, pointer, tracker, opts))
     |> Enum.unzip()

@@ -5,8 +5,8 @@ defmodule Exonerate.Filter.MaxContains do
   alias Exonerate.Tools
 
   defmacro filter_from_cached(name, pointer, opts) do
-    name
-    |> Cache.fetch!()
+    __CALLER__.module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> build_code(name, pointer)
     |> Tools.maybe_dump(opts)

@@ -55,7 +55,7 @@ defmodule ExonerateTest.Tutorial.StringTest do
       "minLength": 2,
       "maxLength": 3
     }
-    """)
+    """, dump: true)
   end
 
   describe "strings length example" do

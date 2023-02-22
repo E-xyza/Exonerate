@@ -8,14 +8,15 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
   defmacro filter_from_cached(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
+    module = __CALLER__.module
 
-    name
-    |> Cache.fetch!()
+    module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> case do
       bool when is_boolean(bool) ->
         # TODO: figure out a draft-4 warning here
-        filter_boolean(bool, call, fetch_minimum!(name, pointer), schema_pointer)
+        filter_boolean(bool, call, fetch_minimum!(module, name, pointer), schema_pointer)
 
       value ->
         filter_value(value, call, schema_pointer)
@@ -23,14 +24,14 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
     |> Tools.maybe_dump(opts)
   end
 
-  defp fetch_minimum!(name, pointer) do
+  defp fetch_minimum!(module, name, pointer) do
     minimum_pointer =
       pointer
       |> JsonPointer.backtrack!()
       |> JsonPointer.traverse("minimum")
 
-    name
-    |> Cache.fetch!()
+    module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(minimum_pointer)
   end
 

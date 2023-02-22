@@ -5,7 +5,8 @@ defmodule Exonerate.Filter.Items do
   alias Exonerate.Tools
 
   defmacro filter_from_cached(name, pointer, opts) do
-    subschema = Cache.fetch!(name)
+    module = __CALLER__.module
+    subschema = Cache.fetch!(module, name)
     items = JsonPointer.resolve!(subschema, pointer)
 
     prefix_items =
@@ -47,7 +48,7 @@ defmodule Exonerate.Filter.Items do
             |> Enum.with_index(&item_to_filter(&1, &2, name, pointer, opts))
             |> Enum.unzip()
 
-          additional_items = additional_items_for(name, pointer, opts)
+          additional_items = additional_items_for(module, name, pointer, opts)
 
           quote do
             unquote(calls)
@@ -78,9 +79,9 @@ defmodule Exonerate.Filter.Items do
     }
   end
 
-  defp additional_items_for(name, pointer, _opts) do
-    name
-    |> Cache.fetch!()
+  defp additional_items_for(module, name, pointer, _opts) do
+    module
+    |> Cache.fetch!(name)
     |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
     |> case do
       %{"additionalItems" => _} ->

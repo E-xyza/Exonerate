@@ -9,8 +9,8 @@ defmodule Exonerate.Filter.Pattern do
     schema_pointer = JsonPointer.to_uri(pointer)
 
     pattern =
-      name
-      |> Cache.fetch!()
+      __CALLER__.module
+      |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
 
     Tools.maybe_dump(

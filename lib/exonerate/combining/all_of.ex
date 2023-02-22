@@ -12,8 +12,8 @@ defmodule Exonerate.Combining.AllOf do
     schema_pointer = JsonPointer.to_uri(pointer)
 
     {calls, contexts} =
-      name
-      |> Cache.fetch!()
+      __CALLER__.module
+      |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
       |> Enum.with_index(fn _, index ->
         pointer = JsonPointer.traverse(pointer, "#{index}")
