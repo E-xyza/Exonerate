@@ -28,10 +28,18 @@ defmodule Exonerate.Type.Ref do
   defp normalize(fragment = "/" <> _), do: fragment
   defp normalize(fragment), do: "/" <> fragment
 
-  defp build_code(a = %{host: nil, path: nil, fragment: fragment}, _module, name, call, call_path, opts) do
-    pointer = fragment
-    |> normalize
-    |> JsonPointer.from_uri()
+  defp build_code(
+         a = %{host: nil, path: nil, fragment: fragment},
+         _module,
+         name,
+         call,
+         call_path,
+         opts
+       ) do
+    pointer =
+      fragment
+      |> normalize
+      |> JsonPointer.from_uri()
 
     opts = Keyword.delete(opts, :id)
 

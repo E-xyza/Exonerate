@@ -2,14 +2,19 @@ defmodule ExonerateTest.RefTraceTest do
   use ExUnit.Case, async: true
   require Exonerate
 
-  Exonerate.function_from_string(:defp, :ref1, """
-  {
-    "properties": {
-        "foo": {"type": "integer"},
-        "bar": {"$ref": "#/properties/foo"}
+  Exonerate.function_from_string(
+    :defp,
+    :ref1,
+    """
+    {
+      "properties": {
+          "foo": {"type": "integer"},
+          "bar": {"$ref": "#/properties/foo"}
+      }
     }
-  }
-  """, dump: true)
+    """,
+    dump: true
+  )
 
   test "ref tracing works through one hop" do
     assert {:error, error} = ref1(%{"bar" => "baz"})

@@ -10,6 +10,7 @@ defmodule Exonerate.Context do
 
   defmacro from_cached(name, pointer, opts) do
     module = __CALLER__.module
+
     if Cache.register_context(module, name, pointer) do
       module
       |> Cache.fetch!(name)

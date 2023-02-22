@@ -6,6 +6,7 @@ defmodule Exonerate.Filter.PrefixItems do
 
   defmacro filter_from_cached(name, pointer, opts) do
     module = __CALLER__.module
+
     items =
       module
       |> Cache.fetch!(name)

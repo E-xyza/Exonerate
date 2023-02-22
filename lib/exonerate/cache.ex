@@ -36,8 +36,13 @@ defmodule Exonerate.Cache do
   @spec fetch!(module, cache_id) :: Type.json()
   def fetch!(module, cache_id) do
     case fetch(module, cache_id) do
-      {:ok, json} -> json
-      :error -> raise KeyError, message: "key `#{cache_id}` not found in the exonerate cache for the module #{inspect(module)}"
+      {:ok, json} ->
+        json
+
+      :error ->
+        raise KeyError,
+          message:
+            "key `#{cache_id}` not found in the exonerate cache for the module #{inspect(module)}"
     end
   end
 

@@ -49,13 +49,18 @@ defmodule ExonerateTest.Tutorial.StringTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :string, """
-    {
-      "type": "string",
-      "minLength": 2,
-      "maxLength": 3
-    }
-    """, dump: true)
+    Exonerate.function_from_string(
+      :def,
+      :string,
+      """
+      {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 3
+      }
+      """,
+      dump: true
+    )
   end
 
   describe "strings length example" do
