@@ -211,7 +211,7 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(%{"type" => type_or_types}, module, name, pointer, opts) do
+  defp to_quoted_function(schema = %{"type" => type_or_types}, module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema = Cache.fetch!(module, name)
     subschema = JsonPointer.resolve!(schema, pointer)
@@ -244,17 +244,25 @@ defmodule Exonerate.Context do
       |> JsonPointer.traverse("type")
       |> JsonPointer.to_uri()
 
-    quote do
-      unquote(type_filters)
+    case Tools.determined(schema) do
+      :ok ->
+        quote do
+          defp unquote(call)(content, path), do: :ok
+        end
 
-      defp unquote(call)(content, path) do
-        require Exonerate.Tools
-        Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
-      end
+      _ ->
+        quote do
+          unquote(type_filters)
 
-      unquote(combiners)
+          defp unquote(call)(content, path) do
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+          end
 
-      unquote(accessories)
+          unquote(combiners)
+
+          unquote(accessories)
+        end
     end
   end
 

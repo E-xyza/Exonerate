@@ -20,21 +20,21 @@ defmodule ExonerateTest.CompositionTest do
       assert [
                {:error,
                 [
-                  schema_pointer: "/oneOf/2/type",
                   error_value: "foobarbaz",
-                  json_pointer: "/"
+                  json_pointer: "/",
+                  schema_pointer: "/oneOf/2/type"
                 ]},
                {:error,
                 [
-                  schema_pointer: "/oneOf/1/type",
                   error_value: "foobarbaz",
-                  json_pointer: "/"
+                  json_pointer: "/",
+                  schema_pointer: "/oneOf/1/type"
                 ]},
                {:error,
                 [
-                  schema_pointer: "/oneOf/0/type",
                   error_value: "foobarbaz",
-                  json_pointer: "/"
+                  json_pointer: "/",
+                  schema_pointer: "/oneOf/0/type"
                 ]}
              ] = list[:failures]
 
@@ -76,15 +76,15 @@ defmodule ExonerateTest.CompositionTest do
       assert [
                {:error,
                 [
-                  schema_pointer: "/anyOf/1/maxLength",
                   error_value: "foobarbaz",
-                  json_pointer: "/"
+                  json_pointer: "/",
+                  schema_pointer: "/anyOf/1/maxLength"
                 ]},
                {:error,
                 [
-                  schema_pointer: "/anyOf/0/type",
                   error_value: "foobarbaz",
-                  json_pointer: "/"
+                  json_pointer: "/",
+                  schema_pointer: "/anyOf/0/type"
                 ]}
              ] = list[:failures]
     end

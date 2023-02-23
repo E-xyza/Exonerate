@@ -123,6 +123,7 @@ defmodule Exonerate.Type.Object.Iterator do
   defp tracked_with(final_call, filters) do
     quote do
       seen = false
+
       with unquote_splicing(filters) do
         if seen do
           {:cont, :ok}
