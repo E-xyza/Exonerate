@@ -1,6 +1,7 @@
 defmodule Exonerate.Type.String do
   @moduledoc false
 
+  alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Combining
 
@@ -10,10 +11,19 @@ defmodule Exonerate.Type.String do
              "min-max-length" => Exonerate.Filter.MinMaxLength,
              "pattern" => Exonerate.Filter.Pattern
            })
-  @filters Map.keys(@modules)
 
-  def filter(schema = %{"format" => "binary"}, name, pointer) do
-    filters = filter_calls(schema, name, pointer)
+  @module_keys Map.keys(@modules)
+
+  defp filters(opts) do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"),  "2019-09") do
+      @module_keys -- ["$ref"]
+    else
+      @module_keys
+    end
+  end
+
+  def filter(schema = %{"format" => "binary"}, name, pointer, opts) do
+    filters = filter_calls(schema, name, pointer, opts)
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do
@@ -23,8 +33,8 @@ defmodule Exonerate.Type.String do
     end
   end
 
-  def filter(schema, name, pointer) do
-    filters = filter_calls(schema, name, pointer)
+  def filter(schema, name, pointer, opts) do
+    filters = filter_calls(schema, name, pointer, opts)
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     error_schema_pointer =
@@ -57,10 +67,10 @@ defmodule Exonerate.Type.String do
     end
   end
 
-  defp filter_calls(schema, name, pointer) do
+  defp filter_calls(schema, name, pointer, opts) do
     schema
     |> combine_min_max
-    |> Map.take(@filters)
+    |> Map.take(filters(opts))
     |> case do
       empty when empty === %{} ->
         :ok
@@ -93,7 +103,7 @@ defmodule Exonerate.Type.String do
   def accessories(schema, name, pointer, opts) do
     schema = combine_min_max(schema)
 
-    for filter_name <- @filters,
+    for filter_name <- filters(opts),
         is_map_key(schema, filter_name),
         not Combining.filter?(filter_name) do
       module = @modules[filter_name]

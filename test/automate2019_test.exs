@@ -1,4 +1,4 @@
-directory2020 =
+directory2019 =
   __DIR__
   |> Path.join("_draft2019-09")
   |> Path.expand()
@@ -26,9 +26,10 @@ omit_describes = [
 omit_tests = []
 
 ExonerateTest.Automate.directory(
-  directory2020,
+  directory2019,
   prefix: D2019,
   omit_modules: omit_modules,
   omit_describes: omit_describes,
-  omit_tests: omit_tests
+  omit_tests: omit_tests,
+  draft: "2019-09"
 )

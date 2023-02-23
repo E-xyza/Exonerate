@@ -1,6 +1,7 @@
 defmodule Exonerate.Type.Object do
   @moduledoc false
 
+  alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Type.Object.Iterator
   alias Exonerate.Combining
@@ -18,19 +19,28 @@ defmodule Exonerate.Type.Object do
 
   @combining_filters Combining.filters()
 
+  defp combining_filters(opts) do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"),  "2019-09") do
+      @combining_filters -- ["$ref"]
+    else
+      @combining_filters
+    end
+  end
+
   # additionalProperties clobbers unevaluatedProperties
   def filter(
         subschema = %{"additionalProperties" => _, "unevaluatedProperties" => _},
         name,
-        pointer
+        pointer,
+        opts
       ) do
     subschema
     |> Map.delete("unevaluatedProperties")
-    |> filter(name, pointer)
+    |> filter(name, pointer, opts)
   end
 
-  def filter(subschema, name, pointer) do
-    combining_filters = make_filters(@combining_filters, subschema, name, pointer)
+  def filter(subschema, name, pointer, opts) do
+    combining_filters = make_filters(combining_filters(opts), subschema, name, pointer)
     outer_filters = make_filters(@outer_filters, subschema, name, pointer)
     iterator_filter = iterator_filter(subschema, name, pointer)
     call = Tools.pointer_to_fun_name(pointer, authority: name)

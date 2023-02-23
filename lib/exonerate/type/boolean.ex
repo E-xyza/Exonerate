@@ -2,14 +2,23 @@ defmodule Exonerate.Type.Boolean do
   @moduledoc false
 
   alias Exonerate.Combining
+  alias Exonerate.Draft
   alias Exonerate.Tools
 
-  @filters Combining.filters()
+  @module_keys Combining.filters()
 
-  def filter(schema, name, pointer) do
+  defp filters(opts) do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"),  "2019-09") do
+      @module_keys -- ["$ref"]
+    else
+      @module_keys
+    end
+  end
+
+  def filter(schema, name, pointer, opts) do
     filters =
       schema
-      |> Map.take(@filters)
+      |> Map.take(filters(opts))
       |> Enum.map(&filter_for(&1, name, pointer))
 
     call = Tools.pointer_to_fun_name(pointer, authority: name)

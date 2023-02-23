@@ -5,6 +5,7 @@ defmodule Exonerate.Context do
 
   alias Exonerate.Cache
   alias Exonerate.Combining
+  alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Type
 
@@ -63,6 +64,33 @@ defmodule Exonerate.Context do
     subschema
     |> Map.delete("id")
     |> to_quoted_function(module, name, pointer, Keyword.put(opts, :id, id))
+  end
+
+  defp to_quoted_function(subschema = %{"$ref" => _}, module, name, pointer, opts) do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
+      call = Tools.pointer_to_fun_name(pointer, authority: name)
+      ref_pointer = JsonPointer.traverse(pointer, "$ref")
+      ref_call = Tools.pointer_to_fun_name(ref_pointer, authority: name)
+
+      quote do
+        @compile {:inline, [{unquote(call), 2}]}
+        defp unquote(call)(content, path) do
+          unquote(ref_call)(content, path)
+        end
+
+        require Exonerate.Combining.Ref
+
+        Exonerate.Combining.Ref.filter_from_cached(
+          unquote(name),
+          unquote(ref_pointer),
+          unquote(opts)
+        )
+      end
+    else
+      subschema
+      |> Map.delete("$ref")
+      |> to_quoted_function(module, name, pointer, opts)
+    end
   end
 
   # metadata
@@ -189,7 +217,7 @@ defmodule Exonerate.Context do
     subschema = JsonPointer.resolve!(schema, pointer)
     types = resolve_types(type_or_types)
 
-    type_filters = Enum.map(types, &Type.module(&1).filter(subschema, name, pointer))
+    type_filters = Enum.map(types, &Type.module(&1).filter(subschema, name, pointer, opts))
 
     accessories =
       Enum.flat_map(types, &Type.module(&1).accessories(subschema, name, pointer, opts))

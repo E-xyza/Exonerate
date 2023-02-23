@@ -5,6 +5,7 @@ defmodule Exonerate.Type.Number do
   # it will implement both Number and Integer, this is handled at the Context level.
 
   alias Exonerate.Combining
+  alias Exonerate.Draft
   alias Exonerate.Tools
 
   @modules Combining.merge(%{
@@ -14,12 +15,20 @@ defmodule Exonerate.Type.Number do
              "exclusiveMinimum" => Exonerate.Filter.ExclusiveMinimum
            })
 
-  @filters Map.keys(@modules)
+  @module_keys Map.keys(@modules)
 
-  def filter(schema, name, pointer) do
+  defp filters(opts) do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"),  "2019-09") do
+      @module_keys -- ["$ref"]
+    else
+      @module_keys
+    end
+  end
+
+  def filter(schema, name, pointer, opts) do
     filters =
       schema
-      |> Map.take(@filters)
+      |> Map.take(filters(opts))
       |> Enum.map(&filter_for(&1, name, pointer))
 
     call = Tools.pointer_to_fun_name(pointer, authority: name)
@@ -45,7 +54,7 @@ defmodule Exonerate.Type.Number do
   end
 
   def accessories(schema, name, pointer, opts) do
-    for filter_name <- @filters,
+    for filter_name <- filters(opts),
         is_map_key(schema, filter_name),
         not Combining.filter?(filter_name) do
       module = @modules[filter_name]

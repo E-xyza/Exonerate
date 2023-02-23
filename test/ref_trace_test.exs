@@ -12,8 +12,7 @@ defmodule ExonerateTest.RefTraceTest do
           "bar": {"$ref": "#/properties/foo"}
       }
     }
-    """,
-    dump: true
+    """
   )
 
   test "ref tracing works through one hop" do
@@ -22,7 +21,7 @@ defmodule ExonerateTest.RefTraceTest do
     assert [
              error_value: "baz",
              json_pointer: "/bar",
-             ref_trace: ["/properties/bar"],
+             ref_trace: ["/properties/bar/$ref"],
              schema_pointer: "/properties/foo/type"
            ] = Enum.sort(error)
   end
@@ -43,7 +42,7 @@ defmodule ExonerateTest.RefTraceTest do
     assert [
              error_value: "quux",
              json_pointer: "/baz",
-             ref_trace: ["/properties/baz", "/properties/bar"],
+             ref_trace: ["/properties/baz/$ref", "/properties/bar/$ref"],
              schema_pointer: "/properties/foo/type"
            ] = Enum.sort(error)
   end

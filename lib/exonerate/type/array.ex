@@ -1,20 +1,29 @@
 defmodule Exonerate.Type.Array do
   alias Exonerate.Combining
+  alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
   @modules Iterator.filter_modules()
   @iterator_filters Iterator.filters()
 
-  @combining_filters Combining.filters()
+  @module_keys Combining.filters()
 
-  def filter(subschema, name, pointer) do
+  defp combining_filters(opts) do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
+      @module_keys -- ["$ref"]
+    else
+      @module_keys
+    end
+  end
+
+  def filter(subschema, name, pointer, opts) do
     subschema = adjust(subschema)
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     combining_filters =
       subschema
-      |> Map.take(@combining_filters)
+      |> Map.take(combining_filters(opts))
       |> Enum.map(&filter_for(&1, name, pointer))
 
     iterator_filter =
@@ -66,7 +75,8 @@ defmodule Exonerate.Type.Array do
     |> Kernel.++(
       for filter_name <- @iterator_filters, Map.has_key?(schema, filter_name) do
         list_accessory(filter_name, schema, name, pointer, opts)
-      end)
+      end
+    )
   end
 
   defp list_accessory(filter_name, _schema, name, pointer, opts) do
