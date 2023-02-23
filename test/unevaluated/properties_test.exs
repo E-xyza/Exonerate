@@ -69,7 +69,7 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
         "additionalProperties": {"type": "string"},
         "unevaluatedProperties": {"type": "number"}
       }
-      """
+      """, dump: true
     )
 
     # note that unevaluatedProperties will never trigger.

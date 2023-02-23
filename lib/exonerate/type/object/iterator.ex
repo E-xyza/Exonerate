@@ -108,18 +108,29 @@ defmodule Exonerate.Type.Object.Iterator do
             {:halt, error}
 
           {k, v}, :ok ->
-            seen = false
-
-            with unquote_splicing(filters) do
-              if seen do
-                {:cont, :ok}
-              else
-                {:cont, unquote(final_call)(v, Path.join(path, k))}
-              end
-            else
-              error -> {:halt, error}
-            end
+            unquote(tracked_with(final_call, filters))
         end)
+      end
+    end
+  end
+
+  defp tracked_with(final_call, []) do
+    quote do
+      {:cont, unquote(final_call)(v, Path.join(path, k))}
+    end
+  end
+
+  defp tracked_with(final_call, filters) do
+    quote do
+      seen = false
+      with unquote_splicing(filters) do
+        if seen do
+          {:cont, :ok}
+        else
+          {:cont, unquote(final_call)(v, Path.join(path, k))}
+        end
+      else
+        error -> {:halt, error}
       end
     end
   end

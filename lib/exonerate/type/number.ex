@@ -53,17 +53,7 @@ defmodule Exonerate.Type.Number do
     end
   end
 
-  def accessories(schema, name, pointer, opts) do
-    for filter_name <- filters(opts),
-        is_map_key(schema, filter_name),
-        not Combining.filter?(filter_name) do
-      module = @modules[filter_name]
-      pointer = JsonPointer.traverse(pointer, filter_name)
-
-      quote do
-        require unquote(module)
-        unquote(module).filter_from_cached(unquote(name), unquote(pointer), unquote(opts))
-      end
-    end
-  end
+  # number doesn't require accessories because integer will always provide it
+  # and anything with number must have integer.
+  def accessories(_schema, _name, _pointer, _opts), do: []
 end
