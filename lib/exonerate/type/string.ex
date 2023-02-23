@@ -15,7 +15,7 @@ defmodule Exonerate.Type.String do
   @module_keys Map.keys(@modules)
 
   defp filters(opts) do
-    if Draft.before?(Keyword.get(opts, :draft, "2020-12"),  "2019-09") do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
       @module_keys -- ["$ref"]
     else
       @module_keys

@@ -18,21 +18,24 @@ defmodule ExonerateTest.CompositionTest do
       assert "/oneOf" = list[:schema_pointer]
 
       assert [
-               [
-                 schema_pointer: "/oneOf/0/type",
-                 error_value: "foobarbaz",
-                 json_pointer: "/"
-               ],
-               [
-                 schema_pointer: "/oneOf/1/type",
-                 error_value: "foobarbaz",
-                 json_pointer: "/"
-               ],
-               [
-                 schema_pointer: "/oneOf/2/type",
-                 error_value: "foobarbaz",
-                 json_pointer: "/"
-               ]
+               {:error,
+                [
+                  schema_pointer: "/oneOf/2/type",
+                  error_value: "foobarbaz",
+                  json_pointer: "/"
+                ]},
+               {:error,
+                [
+                  schema_pointer: "/oneOf/1/type",
+                  error_value: "foobarbaz",
+                  json_pointer: "/"
+                ]},
+               {:error,
+                [
+                  schema_pointer: "/oneOf/0/type",
+                  error_value: "foobarbaz",
+                  json_pointer: "/"
+                ]}
              ] = list[:failures]
 
       assert "no matches" == list[:reason]
@@ -71,16 +74,18 @@ defmodule ExonerateTest.CompositionTest do
       assert "/anyOf" = list[:schema_pointer]
 
       assert [
-               [
-                 schema_pointer: "/anyOf/0/maxLength",
-                 error_value: "foobarbaz",
-                 json_pointer: "/"
-               ],
-               [
-                 schema_pointer: "/anyOf/1/type",
-                 error_value: "foobarbaz",
-                 json_pointer: "/"
-               ]
+               {:error,
+                [
+                  schema_pointer: "/anyOf/1/maxLength",
+                  error_value: "foobarbaz",
+                  json_pointer: "/"
+                ]},
+               {:error,
+                [
+                  schema_pointer: "/anyOf/0/type",
+                  error_value: "foobarbaz",
+                  json_pointer: "/"
+                ]}
              ] = list[:failures]
     end
   end

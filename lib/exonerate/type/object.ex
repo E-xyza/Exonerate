@@ -20,7 +20,7 @@ defmodule Exonerate.Type.Object do
   @combining_filters Combining.filters()
 
   defp combining_filters(opts) do
-    if Draft.before?(Keyword.get(opts, :draft, "2020-12"),  "2019-09") do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
       @combining_filters -- ["$ref"]
     else
       @combining_filters
@@ -58,7 +58,7 @@ defmodule Exonerate.Type.Object do
     for filter <- filters, is_map_key(subschema, filter) do
       call =
         pointer
-        |> JsonPointer.traverse(entrypoint(filter))
+        |> JsonPointer.traverse(Combining.adjust(filter))
         |> Tools.pointer_to_fun_name(authority: name)
 
       quote do
@@ -66,10 +66,6 @@ defmodule Exonerate.Type.Object do
       end
     end
   end
-
-  # TODO: figure out how to generalize this
-  defp entrypoint("not"), do: ["not", ":entrypoint"]
-  defp entrypoint(filter), do: filter
 
   defp iterator_filter(subschema, name, pointer) do
     call =

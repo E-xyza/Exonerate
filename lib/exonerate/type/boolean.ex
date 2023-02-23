@@ -8,7 +8,7 @@ defmodule Exonerate.Type.Boolean do
   @module_keys Combining.filters()
 
   defp filters(opts) do
-    if Draft.before?(Keyword.get(opts, :draft, "2020-12"),  "2019-09") do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
       @module_keys -- ["$ref"]
     else
       @module_keys

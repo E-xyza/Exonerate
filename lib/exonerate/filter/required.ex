@@ -28,7 +28,8 @@ defmodule Exonerate.Filter.Required do
                {Exonerate.Tools.mismatch(
                   object,
                   Path.join(unquote(schema_pointer), "#{index}"),
-                  path
+                  path,
+                  required: Path.join(path, required_field)
                 ), :discard}}
           end)
           |> elem(0)
