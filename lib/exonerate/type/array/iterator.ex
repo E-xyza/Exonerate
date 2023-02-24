@@ -514,7 +514,7 @@ defmodule Exonerate.Type.Array.Iterator do
   # FIND MODE
   # since these don't have to be generic, go ahead and write out all three cases by hand.
 
-  defp find_code_for(%{"contains" => _, "minItems" => length}, name, pointer) do
+  defp find_code_for(schema = %{"contains" => contains, "minItems" => length}, name, pointer) do
     call =
       pointer
       |> JsonPointer.traverse(":iterator")
@@ -522,50 +522,81 @@ defmodule Exonerate.Type.Array.Iterator do
 
     contains_pointer = JsonPointer.traverse(pointer, "contains")
 
-    min_items_pointer =
-      pointer
-      |> JsonPointer.traverse("minItems")
-      |> JsonPointer.to_uri()
+    case Tools.determined(contains) do
+      :ok ->
+        primary_find =
+          schema
+          |> Map.delete("contains")
+          |> find_code_for(name, pointer)
 
-    contains_call = Tools.pointer_to_fun_name(contains_pointer, authority: name)
+        contains_pointer = JsonPointer.traverse(pointer, "contains")
 
-    quote do
-      def unquote(call)(content, path) do
-        require Exonerate.Tools
-
-        content
-        |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(JsonPointer.to_uri(contains_pointer)), path),
-           0},
-          fn
-            _item, {:ok, index} when index >= unquote(length) ->
-              {:halt, {:ok, index}}
-
-            _item, {:ok, index} when index < unquote(length) - 1 ->
-              {:cont, {:ok, index + 1}}
-
-            item, {{:error, params}, index} ->
-              with error = {:error, _} <- unquote(contains_call)(item, path) do
-                new_params = Keyword.update(params, :failures, [error], &[error | &1])
-                {:cont, {{:error, params}, index + 1}}
-              else
-                :ok ->
-                  {:cont, {:ok, index + 1}}
-              end
+        quote do
+          def unquote(call)([], path) do
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch([], unquote(contains_pointer), path)
           end
-        )
-        |> case do
-          {:ok, index} when index < unquote(length) - 1 ->
-            Exonerate.Tools.mismatch(content, unquote(min_items_pointer), path)
 
-          {error = {:error, _}, _} ->
-            error
+          unquote(primary_find)
         end
-      end
+
+      :error ->
+        quote do
+          def unquote(call)(content, path) do
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(content, unquote(contains_pointer), path)
+          end
+        end
+
+      :unknown ->
+        min_items_pointer =
+          pointer
+          |> JsonPointer.traverse("minItems")
+          |> JsonPointer.to_uri()
+
+        contains_call = Tools.pointer_to_fun_name(contains_pointer, authority: name)
+
+        quote do
+          def unquote(call)(content, path) do
+            require Exonerate.Tools
+
+            content
+            |> Enum.reduce_while(
+              {Exonerate.Tools.mismatch(
+                 content,
+                 unquote(JsonPointer.to_uri(contains_pointer)),
+                 path
+               ), 0},
+              fn
+                _item, {:ok, index} when index >= unquote(length) ->
+                  {:halt, {:ok, index}}
+
+                _item, {:ok, index} when index < unquote(length) - 1 ->
+                  {:cont, {:ok, index + 1}}
+
+                item, {{:error, params}, index} ->
+                  with error = {:error, _} <- unquote(contains_call)(item, path) do
+                    new_params = Keyword.update(params, :failures, [error], &[error | &1])
+                    {:cont, {{:error, params}, index + 1}}
+                  else
+                    :ok ->
+                      {:cont, {:ok, index + 1}}
+                  end
+              end
+            )
+            |> case do
+              {:ok, index} when index < unquote(length) - 1 ->
+                Exonerate.Tools.mismatch(content, unquote(min_items_pointer), path)
+
+              {error = {:error, _}, _} ->
+                error
+            end
+          end
+        end
     end
   end
 
-  defp find_code_for(schema = %{"contains" => _}, name, pointer) do
+  defp find_code_for(schema = %{"contains" => contains}, name, pointer) do
     call =
       pointer
       |> JsonPointer.traverse(":iterator")
@@ -573,35 +604,59 @@ defmodule Exonerate.Type.Array.Iterator do
 
     contains_pointer = JsonPointer.traverse(pointer, "contains")
 
-    contains_call = Tools.pointer_to_fun_name(contains_pointer, authority: name)
-
-    needed = Map.get(schema, "minContains", 1)
-
-    quote do
-      def unquote(call)(content, path) do
-        require Exonerate.Tools
-
-        content
-        |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(JsonPointer.to_uri(contains_pointer)), path),
-           0, 0},
-          fn
-            item, {{:error, params}, index, count} ->
-              case unquote(contains_call)(item, path) do
-                error = {:error, _} ->
-                  new_params = Keyword.update(params, :failures, [error], &[error | &1])
-                  {:cont, {{:error, params}, index + 1, count}}
-
-                :ok when count < unquote(needed - 1) ->
-                  {:cont, {{:error, params}, index, count + 1}}
-
-                :ok ->
-                  {:halt, {:ok, []}}
-              end
+    case Tools.determined(contains) do
+      :ok ->
+        quote do
+          def unquote(call)([], path) do
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch([], unquote(contains_pointer), path)
           end
-        )
-        |> elem(0)
-      end
+
+          def unquote(call)(_content, _path), do: :ok
+        end
+
+      :error ->
+        quote do
+          def unquote(call)(content, path) do
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(content, unquote(contains_pointer), path)
+          end
+        end
+
+      :unknown ->
+        contains_call = Tools.pointer_to_fun_name(contains_pointer, authority: name)
+
+        needed = Map.get(schema, "minContains", 1)
+
+        quote do
+          def unquote(call)(content, path) do
+            require Exonerate.Tools
+
+            content
+            |> Enum.reduce_while(
+              {Exonerate.Tools.mismatch(
+                 content,
+                 unquote(JsonPointer.to_uri(contains_pointer)),
+                 path
+               ), 0, 0},
+              fn
+                item, {{:error, params}, index, count} ->
+                  case unquote(contains_call)(item, path) do
+                    error = {:error, _} ->
+                      new_params = Keyword.update(params, :failures, [error], &[error | &1])
+                      {:cont, {{:error, params}, index + 1, count}}
+
+                    :ok when count < unquote(needed - 1) ->
+                      {:cont, {{:error, params}, index, count + 1}}
+
+                    :ok ->
+                      {:halt, {:ok, []}}
+                  end
+              end
+            )
+            |> elem(0)
+          end
+        end
     end
   end
 

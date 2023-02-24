@@ -29,7 +29,7 @@ defmodule Exonerate.Combining.Ref do
 
   defp build_code(
          a = %{host: nil, path: nil, fragment: fragment},
-         _module,
+         module,
          name,
          call,
          call_path,
@@ -44,22 +44,49 @@ defmodule Exonerate.Combining.Ref do
 
     ref = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    quote do
-      @compile {:inline, [{unquote(call), 2}]}
-      defp unquote(call)(content, path) do
-        case unquote(ref)(content, path) do
-          :ok ->
-            :ok
+    module
+    |> Cache.fetch!(name)
+    |> JsonPointer.resolve!(pointer)
+    |> Tools.determined()
+    |> case do
+      :ok ->
+        quote do
+          @compile {:inline, [{unquote(call), 2}]}
+          defp unquote(call)(_content, _path), do: :ok
+        end
 
-          {:error, error} ->
+      :error ->
+        quote do
+          @compile {:inline, [{unquote(call), 2}]}
+          defp unquote(call)(content, path) do
+            {:error, error} = unquote(ref)(content, path)
             ref_trace = Keyword.get(error, :ref_trace, [])
             new_error = Keyword.put(error, :ref_trace, [unquote(call_path) | ref_trace])
             {:error, new_error}
-        end
-      end
+          end
 
-      require Exonerate.Context
-      Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+          require Exonerate.Context
+          Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+        end
+
+      :unknown ->
+        quote do
+          @compile {:inline, [{unquote(call), 2}]}
+          defp unquote(call)(content, path) do
+            case unquote(ref)(content, path) do
+              :ok ->
+                :ok
+
+              {:error, error} ->
+                ref_trace = Keyword.get(error, :ref_trace, [])
+                new_error = Keyword.put(error, :ref_trace, [unquote(call_path) | ref_trace])
+                {:error, new_error}
+            end
+          end
+
+          require Exonerate.Context
+          Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+        end
     end
   end
 
