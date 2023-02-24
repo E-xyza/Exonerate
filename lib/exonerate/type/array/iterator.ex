@@ -71,23 +71,9 @@ defmodule Exonerate.Type.Array.Iterator do
 
     filters = Enum.flat_map(subschema, &filter_for(&1, acc, name, pointer, subschema))
 
-    Tools.maybe_dump(
-      quote do
-        def unquote(call)(content, path) do
-          content
-          |> Enum.reduce_while(unquote(filter_initializer_for(acc)), fn
-            item, unquote(filter_accumulator_for(acc)) ->
-              with unquote_splicing(filters) do
-                unquote(filter_continuation_for(acc))
-              else
-                error = {:error, _} -> {:halt, {error, []}}
-              end
-          end)
-          |> unquote(filter_analysis_for(subschema, acc, pointer))
-        end
-      end,
-      opts
-    )
+    subschema
+    |> build_code(filters, call, acc, pointer)
+    |> Tools.maybe_dump(opts)
   end
 
   defmacro from_cached(name, pointer, :find, opts) do
@@ -128,6 +114,48 @@ defmodule Exonerate.Type.Array.Iterator do
   defp accumulators_for(_), do: []
 
   # FILTER MODE
+
+  defp build_code(subschema, filters, call, acc, pointer) do
+    quote do
+      def unquote(call)(content, path) do
+        content
+        |> Enum.reduce_while(unquote(filter_initializer_for(acc)), fn
+          item, unquote(filter_accumulator_for(acc)) ->
+            unquote(with_statement_for(filters, acc, pointer))
+        end)
+        |> unquote(filter_analysis_for(subschema, acc, pointer))
+      end
+    end
+  end
+
+  defp with_statement_for([], acc, _schema_pointer) do
+    quote do
+      unquote(filter_continuation_for(acc))
+    end
+  end
+
+  defp with_statement_for(filters, acc, pointer) do
+    if error_path = Enum.find_value(filters, &(elem(&1, 0) === :error and (elem(&1, 1)))) do
+      error_pointer =
+        pointer
+        |> JsonPointer.traverse(error_path)
+        |> JsonPointer.to_uri()
+
+      quote do
+        require Exonerate.Tools
+        error = Exonerate.Tools.mismatch(content, unquote(error_pointer), Path.join(path, "#{index}"))
+        {:halt, {error, []}}
+      end
+    else
+      quote do
+        with unquote_splicing(filters) do
+          unquote(filter_continuation_for(acc))
+        else
+          error = {:error, _} -> {:halt, {error, []}}
+        end
+      end
+    end
+  end
 
   defp filter_initializer_for(acc) do
     case acc do
@@ -282,17 +310,27 @@ defmodule Exonerate.Type.Array.Iterator do
     ]
   end
 
-  defp filter_for({"items", _}, acc, name, pointer, _subschema) do
-    call =
-      pointer
-      |> JsonPointer.traverse("items")
-      |> Tools.pointer_to_fun_name(authority: name)
+  defp filter_for({"items", items_schema}, acc, name, pointer, _subschema) do
+    items_schema
+    |> Tools.determined()
+    |> case do
+      :ok ->
+        nil
 
-    [
-      quote do
-        :ok <- unquote(call)(item, Path.join(path, "#{unquote(index_for(acc))}"))
-      end
-    ]
+      :error ->
+        {:error, "items"}
+
+      :unknown ->
+        call =
+          pointer
+          |> JsonPointer.traverse("items")
+          |> Tools.pointer_to_fun_name(authority: name)
+
+        quote do
+          :ok <- unquote(call)(item, Path.join(path, "#{unquote(index_for(acc))}"))
+        end
+    end
+    |> List.wrap()
   end
 
   defp filter_for({"prefixItems", list}, acc, name, pointer, _subschema) when is_list(list) do
@@ -339,30 +377,50 @@ defmodule Exonerate.Type.Array.Iterator do
     ]
   end
 
-  defp filter_for({"maxContains", _}, [:contains], name, pointer, _subschema) do
-    call =
-      pointer
-      |> JsonPointer.traverse(["maxContains"])
-      |> Tools.pointer_to_fun_name(authority: name)
+  defp filter_for({"maxContains", subschema}, [:contains], name, pointer, _subschema) do
+    subschema
+    |> Tools.determined()
+    |> case do
+      :ok ->
+        nil
 
-    [
-      quote do
-        :ok <- unquote(call)(contains, content, path)
-      end
-    ]
+      :error ->
+        {:error, "maxContains"}
+
+      :unknown ->
+        call =
+          pointer
+          |> JsonPointer.traverse(["maxContains"])
+          |> Tools.pointer_to_fun_name(authority: name)
+
+        quote do
+          :ok <- unquote(call)(contains, content, path)
+        end
+    end
+    |> List.wrap()
   end
 
-  defp filter_for({"maxContains", _}, [:contains], name, pointer, _subschema) do
+  defp filter_for({"maxContains", subschema}, _, name, pointer, _subschema) do
     call =
       pointer
       |> JsonPointer.traverse(["maxContains"])
       |> Tools.pointer_to_fun_name(authority: name)
 
-    [
-      quote do
-        :ok <- unquote(call)(acc.contains, content, path)
-      end
-    ]
+    subschema
+    |> Tools.determined()
+    |> case do
+      :ok ->
+        nil
+
+      :error ->
+        {:error, "maxContains"}
+
+      :unknown ->
+        quote do
+          :ok <- unquote(call)(acc.contains, content, path)
+        end
+    end
+    |> List.wrap()
   end
 
   defp filter_for({"uniqueItems", true}, _, _name, pointer, _subschema) do
