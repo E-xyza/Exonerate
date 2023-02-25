@@ -84,19 +84,38 @@ defmodule Exonerate.Type.Object.Iterator do
       |> Enum.flat_map(&filter_for(&1, name, pointer, Keyword.put(opts, :tracker, track_state)))
       |> Enum.unzip()
 
+    # build the main call in three different cases:
+    # - empty
+    # - tracked
+    # - untracked
+    # - trivial
     main_call =
-      case track_state do
-        :tracked ->
+      case {filters, track_state, Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))} do
+        {[], _, _} ->
+          build_empty(call)
+
+        {_, :tracked, nil} ->
           build_tracked(call, final_call, filters)
 
-        :untracked ->
+        {_, :untracked, nil} ->
           build_untracked(call, filters)
+
+        {_, _, error_path} ->
+          build_trivial(call, pointer, error_path)
       end
 
     quote do
       unquote(main_call)
       unquote(accessories)
       unquote(final_accessory)
+    end
+  end
+
+  defp build_empty(call) do
+    quote do
+      defp unquote(call)(_content, _path) do
+        :ok
+      end
     end
   end
 
@@ -111,12 +130,6 @@ defmodule Exonerate.Type.Object.Iterator do
             unquote(tracked_with(final_call, filters))
         end)
       end
-    end
-  end
-
-  defp tracked_with(final_call, []) do
-    quote do
-      {:cont, unquote(final_call)(v, Path.join(path, k))}
     end
   end
 
@@ -147,6 +160,26 @@ defmodule Exonerate.Type.Object.Iterator do
               error -> {:halt, error}
             end
         end)
+      end
+    end
+  end
+
+  defp build_trivial(call, pointer, error_path) do
+    schema_pointer =
+      pointer
+      |> JsonPointer.traverse(error_path)
+      |> JsonPointer.to_uri()
+
+    quote do
+      defp unquote(call)(content, path) do
+        case map_size(content) do
+          0 ->
+            :ok
+
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+        end
       end
     end
   end
@@ -215,7 +248,7 @@ defmodule Exonerate.Type.Object.Iterator do
 
   # note that having propertyNames is incompatible with any tracked
   # parameters.
-  defp filter_for({"propertyNames", _}, name, pointer, opts) do
+  defp filter_for({"propertyNames", subschema}, name, pointer, opts) do
     pointer = JsonPointer.traverse(pointer, "propertyNames")
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
@@ -227,18 +260,28 @@ defmodule Exonerate.Type.Object.Iterator do
           end
       end
 
-    [
-      {filter,
-       quote do
-         require Exonerate.Filter.PropertyNames
+    subschema
+    |> Tools.determined()
+    |> case do
+      :ok ->
+        nil
 
-         Exonerate.Filter.PropertyNames.filter_from_cached(
-           unquote(name),
-           unquote(pointer),
-           unquote(opts)
-         )
-       end}
-    ]
+      :error ->
+        {{:error, "propertyNames"}, []}
+
+      :unknown ->
+        {filter,
+         quote do
+           require Exonerate.Filter.PropertyNames
+
+           Exonerate.Filter.PropertyNames.filter_from_cached(
+             unquote(name),
+             unquote(pointer),
+             unquote(opts)
+           )
+         end}
+    end
+    |> List.wrap()
   end
 
   defp filter_for(_, _, _, _) do

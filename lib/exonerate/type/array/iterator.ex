@@ -135,7 +135,7 @@ defmodule Exonerate.Type.Array.Iterator do
   end
 
   defp with_statement_for(filters, acc, pointer) do
-    if error_path = Enum.find_value(filters, &(elem(&1, 0) === :error and (elem(&1, 1)))) do
+    if error_path = Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1))) do
       error_pointer =
         pointer
         |> JsonPointer.traverse(error_path)
@@ -143,7 +143,10 @@ defmodule Exonerate.Type.Array.Iterator do
 
       quote do
         require Exonerate.Tools
-        error = Exonerate.Tools.mismatch(content, unquote(error_pointer), Path.join(path, "#{index}"))
+
+        error =
+          Exonerate.Tools.mismatch(content, unquote(error_pointer), Path.join(path, "#{index}"))
+
         {:halt, {error, []}}
       end
     else
