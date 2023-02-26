@@ -25,24 +25,49 @@ defmodule Exonerate.Filter.MinMaxLength do
     max_length = JsonPointer.resolve!(schema, JsonPointer.traverse(pointer, "maxLength"))
     min_length = JsonPointer.resolve!(schema, JsonPointer.traverse(pointer, "minLength"))
 
-    Tools.maybe_dump(
-      quote do
-        defp unquote(call)(string, path) do
-          case String.length(string) do
-            length when length < unquote(min_length) ->
-              require Exonerate.Tools
-              Exonerate.Tools.mismatch(string, unquote(min_pointer), path)
+    format_binary =
+      schema
+      |> JsonPointer.resolve!(pointer)
+      |> Map.get("format")
+      |> Kernel.===("binary")
 
-            length when length > unquote(max_length) ->
-              require Exonerate.Tools
-              Exonerate.Tools.mismatch(string, unquote(max_pointer), path)
+    call
+    |> build_code(min_length, min_pointer, max_length, max_pointer, format_binary)
+    |> Tools.maybe_dump(opts)
+  end
 
-            _ ->
-              :ok
-          end
+  defp build_code(call, min_length, min_pointer, max_length, max_pointer, true) do
+    quote do
+      defp unquote(call)(string, path) when byte_size(string) < unquote(min_length) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(string, unquote(min_pointer), path)
+      end
+
+      defp unquote(call)(string, path) when byte_size(string) > unquote(max_length) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(string, unquote(max_pointer), path)
+      end
+
+      defp unquote(call)(string, path), do: :ok
+    end
+  end
+
+  defp build_code(call, min_length, min_pointer, max_length, max_pointer, false) do
+    quote do
+      defp unquote(call)(string, path) do
+        case String.length(string) do
+          length when length < unquote(min_length) ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(string, unquote(min_pointer), path)
+
+          length when length > unquote(max_length) ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(string, unquote(max_pointer), path)
+
+          _ ->
+            :ok
         end
-      end,
-      opts
-    )
+      end
+    end
   end
 end

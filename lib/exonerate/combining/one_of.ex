@@ -11,24 +11,24 @@ defmodule Exonerate.Combining.OneOf do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
 
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
-      |> Enum.with_index(fn _, index ->
-        pointer = JsonPointer.traverse(pointer, "#{index}")
-        call = Tools.pointer_to_fun_name(pointer, authority: name)
+    __CALLER__.module
+    |> Cache.fetch!(name)
+    |> JsonPointer.resolve!(pointer)
+    |> Enum.with_index(fn _, index ->
+      pointer = JsonPointer.traverse(pointer, "#{index}")
+      call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-        {quote do
-           {&(unquote({call, [], Elixir}) / 2), unquote(index)}
-         end,
-         quote do
-           require Exonerate.Context
-           Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
-         end}
-      end)
-      |> Enum.unzip()
-      |> build_code(call, schema_pointer)
-      |> Tools.maybe_dump(opts)
+      {quote do
+         {&(unquote({call, [], Elixir}) / 2), unquote(index)}
+       end,
+       quote do
+         require Exonerate.Context
+         Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+       end}
+    end)
+    |> Enum.unzip()
+    |> build_code(call, schema_pointer)
+    |> Tools.maybe_dump(opts)
   end
 
   defp build_code({calls, contexts}, call, schema_pointer) do
@@ -46,8 +46,7 @@ defmodule Exonerate.Combining.OneOf do
                   {:cont, {:ok, index}}
 
                 error ->
-                  {:cont,
-                   {:error, Keyword.update(opts, :failures, [error], &[error | &1])}}
+                  {:cont, {:error, Keyword.update(opts, :failures, [error], &[error | &1])}}
               end
 
             {fun, index}, {:ok, previous} ->
@@ -55,8 +54,11 @@ defmodule Exonerate.Combining.OneOf do
                 :ok ->
                   {:halt,
                    Exonerate.Tools.mismatch(value, unquote(schema_pointer), path,
-                      matches: [Path.join(unquote(schema_pointer), "#{previous}"), Path.join(unquote(schema_pointer), "#{index}")],
-                      reason: "multiple matches"
+                     matches: [
+                       Path.join(unquote(schema_pointer), "#{previous}"),
+                       Path.join(unquote(schema_pointer), "#{index}")
+                     ],
+                     reason: "multiple matches"
                    )}
 
                 _error ->
@@ -69,6 +71,7 @@ defmodule Exonerate.Combining.OneOf do
           error = {:error, _} -> error
         end
       end
+
       unquote(contexts)
     end
   end
