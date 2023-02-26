@@ -66,30 +66,41 @@ defmodule Exonerate.Context do
     |> to_quoted_function(module, name, pointer, Keyword.put(opts, :id, id))
   end
 
-  defp to_quoted_function(subschema = %{"$ref" => _}, module, name, pointer, opts) do
-    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
-      call = Tools.pointer_to_fun_name(pointer, authority: name)
-      ref_pointer = JsonPointer.traverse(pointer, "$ref")
-      ref_call = Tools.pointer_to_fun_name(ref_pointer, authority: name)
+  defp to_quoted_function(subschema = %{"$ref" => ref_pointer}, module, name, pointer, opts) do
+    determined =
+      case ref_pointer do
+        "#/" <> uri ->
+          Tools.determined(module, name, JsonPointer.from_uri("/" <> uri))
 
-      quote do
-        @compile {:inline, [{unquote(call), 2}]}
-        defp unquote(call)(content, path) do
-          unquote(ref_call)(content, path)
+        _ ->
+          :unknown
+      end
+
+    cond do
+      Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") or determined == :error ->
+        call = Tools.pointer_to_fun_name(pointer, authority: name)
+        ref_pointer = JsonPointer.traverse(pointer, "$ref")
+        ref_call = Tools.pointer_to_fun_name(ref_pointer, authority: name)
+
+        quote do
+          @compile {:inline, [{unquote(call), 2}]}
+          defp unquote(call)(content, path) do
+            unquote(ref_call)(content, path)
+          end
+
+          require Exonerate.Combining.Ref
+
+          Exonerate.Combining.Ref.filter_from_cached(
+            unquote(name),
+            unquote(ref_pointer),
+            unquote(opts)
+          )
         end
 
-        require Exonerate.Combining.Ref
-
-        Exonerate.Combining.Ref.filter_from_cached(
-          unquote(name),
-          unquote(ref_pointer),
-          unquote(opts)
-        )
-      end
-    else
-      subschema
-      |> Map.delete("$ref")
-      |> to_quoted_function(module, name, pointer, opts)
+      true ->
+        subschema
+        |> Map.delete("$ref")
+        |> to_quoted_function(module, name, pointer, opts)
     end
   end
 

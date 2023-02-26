@@ -1,6 +1,7 @@
 defmodule Exonerate.Tools do
   @moduledoc false
 
+  alias Exonerate.Cache
   alias Exonerate.Type
 
   def inspect(macro, filter \\ true) do
@@ -98,6 +99,14 @@ defmodule Exonerate.Tools do
     # you can skip integer because number subsumes it
     ~w(array boolean null number object string)
   ]
+
+  @spec determined(module, atom, JsonPointer.t()) :: :ok | :error | :unknown
+  def determined(module, name, pointer) do
+    module
+    |> Cache.fetch!(name)
+    |> JsonPointer.resolve!(pointer)
+    |> determined
+  end
 
   @spec determined(Type.json()) :: :ok | :error | :unknown
   def determined(true), do: :ok

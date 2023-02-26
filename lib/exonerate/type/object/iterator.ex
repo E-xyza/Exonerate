@@ -91,8 +91,7 @@ defmodule Exonerate.Type.Object.Iterator do
     # - trivial
     main_call =
       case {filters, track_state,
-            Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))}
-           do
+            Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))} do
         {[], _, _} ->
           build_empty(call, final_call)
 
