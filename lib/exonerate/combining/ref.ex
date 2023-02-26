@@ -47,7 +47,7 @@ defmodule Exonerate.Combining.Ref do
     module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
-    |> Tools.determined()
+    |> Tools.degeneracy()
     |> case do
       :ok ->
         quote do

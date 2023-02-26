@@ -315,7 +315,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp filter_for({"items", items_schema}, acc, name, pointer, _subschema) do
     items_schema
-    |> Tools.determined()
+    |> Tools.degeneracy()
     |> case do
       :ok ->
         nil
@@ -382,7 +382,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp filter_for({"maxContains", subschema}, [:contains], name, pointer, _subschema) do
     subschema
-    |> Tools.determined()
+    |> Tools.degeneracy()
     |> case do
       :ok ->
         nil
@@ -410,7 +410,7 @@ defmodule Exonerate.Type.Array.Iterator do
       |> Tools.pointer_to_fun_name(authority: name)
 
     subschema
-    |> Tools.determined()
+    |> Tools.degeneracy()
     |> case do
       :ok ->
         nil
@@ -583,7 +583,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
     contains_pointer = JsonPointer.traverse(pointer, "contains")
 
-    case Tools.determined(contains) do
+    case Tools.degeneracy(contains) do
       :ok ->
         primary_find =
           schema
@@ -665,7 +665,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
     contains_pointer = JsonPointer.traverse(pointer, "contains")
 
-    case Tools.determined(contains) do
+    case Tools.degeneracy(contains) do
       :ok ->
         quote do
           def unquote(call)([], path) do

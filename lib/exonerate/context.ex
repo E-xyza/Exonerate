@@ -67,17 +67,17 @@ defmodule Exonerate.Context do
   end
 
   defp to_quoted_function(subschema = %{"$ref" => ref_pointer}, module, name, pointer, opts) do
-    determined =
+    degeneracy =
       case ref_pointer do
         "#/" <> uri ->
-          Tools.determined(module, name, JsonPointer.from_uri("/" <> uri))
+          Tools.degeneracy(module, name, JsonPointer.from_uri("/" <> uri))
 
         _ ->
           :unknown
       end
 
     cond do
-      Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") or determined == :error ->
+      Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") or degeneracy == :error ->
         call = Tools.pointer_to_fun_name(pointer, authority: name)
         ref_pointer = JsonPointer.traverse(pointer, "$ref")
         ref_call = Tools.pointer_to_fun_name(ref_pointer, authority: name)
@@ -255,7 +255,7 @@ defmodule Exonerate.Context do
       |> JsonPointer.traverse("type")
       |> JsonPointer.to_uri()
 
-    case Tools.determined(schema) do
+    case Tools.degeneracy(schema) do
       :ok ->
         quote do
           defp unquote(call)(content, path), do: :ok

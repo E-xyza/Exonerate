@@ -100,117 +100,117 @@ defmodule Exonerate.Tools do
     ~w(array boolean null number object string)
   ]
 
-  @spec determined(module, atom, JsonPointer.t()) :: :ok | :error | :unknown
-  def determined(module, name, pointer) do
+  @spec degeneracy(module, atom, JsonPointer.t()) :: :ok | :error | :unknown
+  def degeneracy(module, name, pointer) do
     module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
-    |> determined
+    |> degeneracy
   end
 
-  @spec determined(Type.json()) :: :ok | :error | :unknown
-  def determined(true), do: :ok
-  def determined(false), do: :error
+  @spec degeneracy(Type.json()) :: :ok | :error | :unknown
+  def degeneracy(true), do: :ok
+  def degeneracy(false), do: :error
 
-  def determined(subschema = %{"type" => t}) do
+  def degeneracy(subschema = %{"type" => t}) do
     if Enum.sort(List.wrap(t)) in @all_types_lists do
       subschema
       |> Map.delete("type")
-      |> determined()
+      |> degeneracy()
       |> matches(true)
     else
       :unknown
     end
   end
 
-  def determined(subschema = %{"not" => not_schema}) do
+  def degeneracy(subschema = %{"not" => not_schema}) do
     rest =
       subschema
       |> Map.delete("not")
-      |> determined
+      |> degeneracy
 
-    case determined(not_schema) do
+    case degeneracy(not_schema) do
       :ok when rest === :error -> :error
       :error when rest === :ok -> :ok
       _ -> :unknown
     end
   end
 
-  def determined(subschema = %{"allOf" => list}) do
-    rest_determined =
+  def degeneracy(subschema = %{"allOf" => list}) do
+    rest_degeneracy =
       subschema
       |> Map.delete("allOf")
-      |> determined
+      |> degeneracy
 
     list
-    |> Enum.map(&determined/1)
+    |> Enum.map(&degeneracy/1)
     |> Enum.uniq()
     |> case do
       [] ->
-        rest_determined
+        rest_degeneracy
 
       [:ok] ->
-        matches(rest_determined, true)
+        matches(rest_degeneracy, true)
 
       [:error] ->
-        matches(rest_determined, false)
+        matches(rest_degeneracy, false)
 
       _ ->
         :unknown
     end
   end
 
-  def determined(subschema = %{"anyOf" => list}) do
-    rest_determined =
+  def degeneracy(subschema = %{"anyOf" => list}) do
+    rest_degeneracy =
       subschema
       |> Map.delete("anyOf")
-      |> determined
+      |> degeneracy
 
     list
-    |> Enum.map(&determined/1)
+    |> Enum.map(&degeneracy/1)
     |> Enum.uniq()
     |> case do
       [] ->
-        rest_determined
+        rest_degeneracy
 
       [:error] ->
-        matches(rest_determined, false)
+        matches(rest_degeneracy, false)
 
       list ->
         if :ok in list do
-          matches(rest_determined, true)
+          matches(rest_degeneracy, true)
         else
           :unknown
         end
     end
   end
 
-  def determined(subschema = %{"minItems" => 0}) do
+  def degeneracy(subschema = %{"minItems" => 0}) do
     subschema
     |> Map.delete("minItems")
-    |> determined
+    |> degeneracy
   end
 
-  def determined(subschema = %{"minProperties" => 0}) do
+  def degeneracy(subschema = %{"minProperties" => 0}) do
     subschema
     |> Map.delete("minProperties")
-    |> determined
+    |> degeneracy
   end
 
-  def determined(subschema = %{"minContains" => 0}) do
+  def degeneracy(subschema = %{"minContains" => 0}) do
     subschema
     |> Map.delete("minContains")
-    |> determined
+    |> degeneracy
   end
 
-  def determined(empty_map) when empty_map == %{} do
+  def degeneracy(empty_map) when empty_map == %{} do
     :ok
   end
 
-  def determined(_), do: :unknown
+  def degeneracy(_), do: :unknown
 
   defp matches(value, rest_schema) do
-    case determined(rest_schema) do
+    case degeneracy(rest_schema) do
       ^value -> value
       _ -> :unknown
     end

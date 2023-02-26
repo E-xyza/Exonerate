@@ -57,22 +57,50 @@ defmodule Exonerate.Combining.If do
         {:ok, []}
       end
 
-    quote do
-      defp unquote(entrypoint_call(name, pointer))(content, path) do
-        case unquote(if_call(name, pointer))(content, path) do
-          :ok ->
+    entrypoint_call = entrypoint_call(name, pointer)
+
+    subschema
+    |> Map.fetch!("if")
+    |> Tools.degeneracy()
+    |> case do
+      :ok ->
+        quote do
+          @compile {:inline, [{unquote(entrypoint_call), 2}]}
+          defp unquote(entrypoint_call)(content, path) do
             unquote(then_clause)
+          end
 
-          {:error, _} ->
-            unquote(else_clause)
+          unquote(then_context)
         end
-      end
 
-      require Exonerate.Context
-      Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+      :error ->
+        quote do
+          @compile {:inline, [{unquote(entrypoint_call), 2}]}
+          defp unquote(entrypoint_call)(content, path) do
+            unquote(else_clause)
+          end
 
-      unquote(then_context)
-      unquote(else_context)
+          unquote(else_context)
+        end
+
+      :unknown ->
+        quote do
+          defp unquote(entrypoint_call)(content, path) do
+            case unquote(if_call(name, pointer))(content, path) do
+              :ok ->
+                unquote(then_clause)
+
+              {:error, _} ->
+                unquote(else_clause)
+            end
+          end
+
+          require Exonerate.Context
+          Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+
+          unquote(then_context)
+          unquote(else_context)
+        end
     end
   end
 

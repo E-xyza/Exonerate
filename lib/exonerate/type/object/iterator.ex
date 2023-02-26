@@ -274,7 +274,7 @@ defmodule Exonerate.Type.Object.Iterator do
       end
 
     subschema
-    |> Tools.determined()
+    |> Tools.degeneracy()
     |> case do
       :ok ->
         nil
