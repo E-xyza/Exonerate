@@ -70,13 +70,13 @@ defmodule ExonerateTest.CompositionTest do
                 [
                   error_value: "foobarbaz",
                   json_pointer: "/",
-                  schema_pointer: "/anyOf/1/maxLength"
+                  schema_pointer: "/anyOf/1/type"
                 ]},
                {:error,
                 [
                   error_value: "foobarbaz",
                   json_pointer: "/",
-                  schema_pointer: "/anyOf/0/type"
+                  schema_pointer: "/anyOf/0/maxLength"
                 ]}
              ] = list[:failures]
     end
