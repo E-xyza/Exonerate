@@ -90,9 +90,11 @@ defmodule Exonerate.Type.Object.Iterator do
     # - untracked
     # - trivial
     main_call =
-      case {filters, track_state, Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))} do
+      case {filters, track_state,
+            Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))}
+           do
         {[], _, _} ->
-          build_empty(call)
+          build_empty(call, final_call)
 
         {_, :tracked, nil} ->
           build_tracked(call, final_call, filters)
@@ -111,10 +113,22 @@ defmodule Exonerate.Type.Object.Iterator do
     end
   end
 
-  defp build_empty(call) do
-    quote do
-      defp unquote(call)(_content, _path) do
-        :ok
+  defp build_empty(call, final_call) do
+    if final_call do
+      quote do
+        defp unquote(call)(content, path) do
+          Enum.reduce_while(content, :ok, fn
+            {k, v}, _acc ->
+              case unquote(final_call)(v, Path.join(path, k)) do
+                :ok -> {:cont, :ok}
+                error = {:error, _} -> {:halt, error}
+              end
+          end)
+        end
+      end
+    else
+      quote do
+        defp unquote(call)(content, path), do: :ok
       end
     end
   end
