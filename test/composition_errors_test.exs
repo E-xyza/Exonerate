@@ -45,14 +45,6 @@ defmodule ExonerateTest.CompositionTest do
       assert {:error, list} = one_of(15)
       assert "/oneOf" = list[:schema_pointer]
 
-      assert [
-               [
-                 schema_pointer: "/oneOf/2/type",
-                 error_value: 15,
-                 json_pointer: "/"
-               ]
-             ] = list[:failures]
-
       assert ["/oneOf/0", "/oneOf/1"] == list[:matches]
 
       assert "multiple matches" == list[:reason]

@@ -36,6 +36,4 @@ defmodule ExonerateTest.Draft.Draft4ExclusiveTest do
     assert :ok = max_excl_false(1)
     assert {:error, _list} = max_excl_true(1)
   end
-
-  test "handle duplicative numerical filters"
 end

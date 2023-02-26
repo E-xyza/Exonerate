@@ -11,7 +11,6 @@ defmodule Exonerate.Combining.OneOf do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
 
-    {calls, contexts} =
       __CALLER__.module
       |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
@@ -28,45 +27,49 @@ defmodule Exonerate.Combining.OneOf do
          end}
       end)
       |> Enum.unzip()
+      |> build_code(call, schema_pointer)
+      |> Tools.maybe_dump(opts)
+  end
 
-    Tools.maybe_dump(
-      quote do
-        defp unquote(call)(value, path) do
-          require Exonerate.Tools
+  defp build_code({calls, contexts}, call, schema_pointer) do
+    quote do
+      defp unquote(call)(value, path) do
+        require Exonerate.Tools
 
-          unquote(calls)
-          |> Enum.reduce_while(
-            {Exonerate.Tools.mismatch(value, unquote(schema_pointer), path), []},
-            fn
-              {fun, index}, {{:error, opts}, []} ->
-                case fun.(value, path) do
-                  :ok ->
-                    {:cont, {:ok, index}}
+        unquote(calls)
+        |> Enum.reduce_while(
+          Exonerate.Tools.mismatch(value, unquote(schema_pointer), path, reason: "no matches"),
+          fn
+            {fun, index}, {:error, opts} ->
+              case fun.(value, path) do
+                :ok ->
+                  {:cont, {:ok, index}}
 
-                  error ->
-                    {:cont,
-                     {{:error, Keyword.update(opts, :failures, [error], &[error | &1])}, []}}
-                end
+                error ->
+                  {:cont,
+                   {:error, Keyword.update(opts, :failures, [error], &[error | &1])}}
+              end
 
-              {fun, index}, {:ok, previous} ->
-                case fun.(value, path) do
-                  :ok ->
-                    {:halt,
-                     {Exonerate.Tools.mismatch(value, unquote(schema_pointer), path,
-                        matches: [previous, index]
-                      )}}
+            {fun, index}, {:ok, previous} ->
+              case fun.(value, path) do
+                :ok ->
+                  {:halt,
+                   Exonerate.Tools.mismatch(value, unquote(schema_pointer), path,
+                      matches: [Path.join(unquote(schema_pointer), "#{previous}"), Path.join(unquote(schema_pointer), "#{index}")],
+                      reason: "multiple matches"
+                   )}
 
-                  _error ->
-                    {:cont, {:ok, index}}
-                end
-            end
-          )
-          |> elem(0)
+                _error ->
+                  {:cont, {:ok, index}}
+              end
+          end
+        )
+        |> case do
+          {:ok, _} -> :ok
+          error = {:error, _} -> error
         end
-
-        unquote(contexts)
-      end,
-      opts
-    )
+      end
+      unquote(contexts)
+    end
   end
 end
