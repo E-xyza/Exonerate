@@ -8,7 +8,7 @@ defmodule Exonerate.Combining.Not do
 
     entrypoint_call =
       pointer
-      |> JsonPointer.traverse(":entrypoint")
+      |> JsonPointer.join(":entrypoint")
       |> Tools.pointer_to_fun_name(authority: name)
 
     call = Tools.pointer_to_fun_name(pointer, authority: name)

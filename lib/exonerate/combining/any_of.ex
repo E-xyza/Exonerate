@@ -14,7 +14,7 @@ defmodule Exonerate.Combining.AnyOf do
       |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
       |> Enum.with_index(fn _, index ->
-        pointer = JsonPointer.traverse(pointer, "#{index}")
+        pointer = JsonPointer.join(pointer, "#{index}")
         call = Tools.pointer_to_fun_name(pointer, authority: name)
 
         {quote do

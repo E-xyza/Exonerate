@@ -46,7 +46,7 @@ defmodule Exonerate.Type.Integer do
   defp filter_for({filter, _}, name, pointer) do
     call =
       pointer
-      |> JsonPointer.traverse(Combining.adjust(filter))
+      |> JsonPointer.join(Combining.adjust(filter))
       |> Tools.pointer_to_fun_name(authority: name)
 
     quote do
@@ -59,7 +59,7 @@ defmodule Exonerate.Type.Integer do
         is_map_key(schema, filter_name),
         not Combining.filter?(filter_name) do
       module = @modules[filter_name]
-      pointer = JsonPointer.traverse(pointer, filter_name)
+      pointer = JsonPointer.join(pointer, filter_name)
 
       quote do
         require unquote(module)

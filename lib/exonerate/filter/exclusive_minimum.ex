@@ -28,7 +28,7 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
     minimum_pointer =
       pointer
       |> JsonPointer.backtrack!()
-      |> JsonPointer.traverse("minimum")
+      |> JsonPointer.join("minimum")
 
     module
     |> Cache.fetch!(name)

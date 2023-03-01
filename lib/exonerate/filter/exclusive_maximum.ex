@@ -27,7 +27,7 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
     maximum_pointer =
       pointer
       |> JsonPointer.backtrack!()
-      |> JsonPointer.traverse("maximum")
+      |> JsonPointer.join("maximum")
 
     module
     |> Cache.fetch!(name)

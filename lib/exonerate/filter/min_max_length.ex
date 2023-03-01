@@ -7,23 +7,23 @@ defmodule Exonerate.Filter.MinMaxLength do
   defmacro filter_from_cached(name, pointer, opts) do
     call =
       pointer
-      |> JsonPointer.traverse("min-max-length")
+      |> JsonPointer.join("min-max-length")
       |> Tools.pointer_to_fun_name(authority: name)
 
     min_pointer =
       pointer
-      |> JsonPointer.traverse("minLength")
+      |> JsonPointer.join("minLength")
       |> JsonPointer.to_uri()
 
     max_pointer =
       pointer
-      |> JsonPointer.traverse("maxLength")
+      |> JsonPointer.join("maxLength")
       |> JsonPointer.to_uri()
 
     schema = Cache.fetch!(__CALLER__.module, name)
 
-    max_length = JsonPointer.resolve!(schema, JsonPointer.traverse(pointer, "maxLength"))
-    min_length = JsonPointer.resolve!(schema, JsonPointer.traverse(pointer, "minLength"))
+    max_length = JsonPointer.resolve!(schema, JsonPointer.join(pointer, "maxLength"))
+    min_length = JsonPointer.resolve!(schema, JsonPointer.join(pointer, "minLength"))
 
     format_binary =
       schema

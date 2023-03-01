@@ -19,7 +19,7 @@ defmodule Exonerate.Combining.If do
   def build_code(subschema, name, pointer, parent_pointer, opts) do
     {then_clause, then_context} =
       if Map.get(subschema, "then") do
-        then_pointer = JsonPointer.traverse(parent_pointer, "then")
+        then_pointer = JsonPointer.join(parent_pointer, "then")
 
         {quote do
            unquote(then_call(name, parent_pointer))(content, path)
@@ -39,7 +39,7 @@ defmodule Exonerate.Combining.If do
 
     {else_clause, else_context} =
       if Map.get(subschema, "else") do
-        else_pointer = JsonPointer.traverse(parent_pointer, "else")
+        else_pointer = JsonPointer.join(parent_pointer, "else")
 
         {quote do
            unquote(else_call(name, parent_pointer))(content, path)
@@ -112,7 +112,7 @@ defmodule Exonerate.Combining.If do
 
   defp nexthop(name, pointer, next) do
     pointer
-    |> JsonPointer.traverse(next)
+    |> JsonPointer.join(next)
     |> Tools.pointer_to_fun_name(authority: name)
   end
 

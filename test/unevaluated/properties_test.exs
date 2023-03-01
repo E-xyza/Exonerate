@@ -92,7 +92,8 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
         ],
         "unevaluatedProperties": {"type": "number"}
       }
-      """
+      """,
+      dump: true
     )
 
     test "it works with allOf" do

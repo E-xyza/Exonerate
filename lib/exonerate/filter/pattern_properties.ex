@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.PatternProperties do
   end
 
   defp filter_for({regex, _}, name, pointer, opts) do
-    pointer = JsonPointer.traverse(pointer, regex)
+    pointer = JsonPointer.join(pointer, regex)
     fun = Tools.pointer_to_fun_name(pointer, authority: name)
 
     {quote do

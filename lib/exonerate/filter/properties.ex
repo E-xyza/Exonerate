@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.Properties do
   end
 
   defp filter_for({key, _schema}, call, name, pointer, tracker, opts) do
-    key_pointer = JsonPointer.traverse(pointer, key)
+    key_pointer = JsonPointer.join(pointer, key)
     key_call = Tools.pointer_to_fun_name(key_pointer, authority: name)
 
     filter =

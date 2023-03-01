@@ -27,26 +27,49 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  # additionalProperties clobbers unevaluatedProperties
-  def filter(
-        subschema = %{"additionalProperties" => _, "unevaluatedProperties" => _},
-        name,
-        pointer,
-        opts
+  def remove_degenerate_features(
+        subschema = %{"additionalProperties" => _, "unevaluatedProperties" => _}
       ) do
-    subschema
-    |> Map.delete("unevaluatedProperties")
-    |> filter(name, pointer, opts)
+    # additionalProperties clobbers unevaluatedProperties
+    Map.delete(subschema, "unevaluatedProperties")
   end
 
+  def remove_degenerate_features(subschema = %{"additionalProperties" => true}) do
+    # additionalProperties clobbers unevaluatedProperties
+    Map.delete(subschema, "additionalProperties")
+  end
+
+  def remove_degenerate_features(subschema = %{"unevaluatedProperties" => true}) do
+    # additionalProperties clobbers unevaluatedProperties
+    Map.delete(subschema, "unevaluatedProperties")
+  end
+
+  def remove_degenerate_features(subschema), do: subschema
+
   def filter(subschema, name, pointer, opts) do
-    combining_filters = make_filters(combining_filters(opts), subschema, name, pointer)
+    subschema = remove_degenerate_features(subschema)
+    combining_filters = make_combining_filters(combining_filters(opts), subschema, name, pointer)
     outer_filters = make_filters(@outer_filters, subschema, name, pointer)
     iterator_filter = iterator_filter(subschema, name, pointer)
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
+    {name, pointer, opts} |> dbg(limit: 25)
+
+    seen_prefix =
+      case Iterator.iterator_type(subschema) do
+        :unevaluated ->
+          quote do
+            seen = MapSet.new()
+          end
+
+        _ ->
+          []
+      end
+
     quote do
       defp unquote(call)(content, path) when is_map(content) do
+        unquote(seen_prefix)
+
         with unquote_splicing(combining_filters ++ outer_filters ++ iterator_filter) do
           :ok
         end
@@ -54,11 +77,29 @@ defmodule Exonerate.Type.Object do
     end
   end
 
+  defp make_combining_filters(filters, subschema = %{"unevaluatedProperties" => _}, name, pointer) do
+    for filter <- filters, is_map_key(subschema, filter), reduce: [] do
+      acc ->
+        call =
+          pointer
+          |> JsonPointer.join(Combining.adjust(filter, :tracked))
+          |> Tools.pointer_to_fun_name(authority: name)
+
+        quote do
+          [{:ok, new_seen} <- unquote(call)(content, path), seen = MapSet.union(seen, new_seen)]
+        end ++ acc
+    end
+  end
+
+  defp make_combining_filters(filters, subschema, name, pointer) do
+    make_filters(filters, subschema, name, pointer)
+  end
+
   defp make_filters(filters, subschema, name, pointer) do
     for filter <- filters, is_map_key(subschema, filter) do
       call =
         pointer
-        |> JsonPointer.traverse(Combining.adjust(filter))
+        |> JsonPointer.join(Combining.adjust(filter))
         |> Tools.pointer_to_fun_name(authority: name)
 
       quote do
@@ -70,40 +111,40 @@ defmodule Exonerate.Type.Object do
   defp iterator_filter(subschema, name, pointer) do
     call =
       pointer
-      |> JsonPointer.traverse(":iterator")
+      |> JsonPointer.join(":iterator")
       |> Tools.pointer_to_fun_name(authority: name)
 
     List.wrap(
-      if Iterator.needs_iterator?(subschema) do
-        quote do
-          :ok <- unquote(call)(content, path)
-        end
+      case Iterator.iterator_type(subschema) do
+        nil ->
+          nil
+
+        :unevaluated ->
+          quote do
+            :ok <- unquote(call)(content, path, seen)
+          end
+
+        _ ->
+          quote do
+            :ok <- unquote(call)(content, path)
+          end
       end
     )
   end
 
+  def maybe_add_tracked_option(_subschema, opts), do: opts
+
   def accessories(subschema, name, pointer, opts) do
     List.wrap(
-      if Iterator.needs_iterator?(subschema) do
-        quote do
-          require Exonerate.Type.Object.Iterator
+      quote do
+        require Exonerate.Type.Object.Iterator
 
-          Exonerate.Type.Object.Iterator.from_cached(
-            unquote(name),
-            unquote(pointer),
-            unquote(opts)
-          )
-        end
+        Exonerate.Type.Object.Iterator.from_cached(
+          unquote(name),
+          unquote(pointer),
+          unquote(opts)
+        )
       end
-    ) ++
-      for filter <- @outer_filters, is_map_key(subschema, filter) do
-        module = @modules[filter]
-        pointer = JsonPointer.traverse(pointer, filter)
-
-        quote do
-          require unquote(module)
-          unquote(module).filter_from_cached(unquote(name), unquote(pointer), unquote(opts))
-        end
-      end
+    )
   end
 end

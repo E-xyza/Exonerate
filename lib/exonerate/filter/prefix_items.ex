@@ -34,7 +34,7 @@ defmodule Exonerate.Filter.PrefixItems do
   defp item_to_filter(_, index, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    item_pointer = JsonPointer.traverse(pointer, "#{index}")
+    item_pointer = JsonPointer.join(pointer, "#{index}")
     item_call = Tools.pointer_to_fun_name(item_pointer, authority: name)
 
     {
@@ -59,7 +59,7 @@ defmodule Exonerate.Filter.PrefixItems do
         additional_call =
           pointer
           |> JsonPointer.backtrack!()
-          |> JsonPointer.traverse("additionalItems")
+          |> JsonPointer.join("additionalItems")
           |> Tools.pointer_to_fun_name(authority: name)
 
         quote do

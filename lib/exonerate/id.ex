@@ -16,7 +16,7 @@ defmodule Exonerate.Id do
 
   defp prescan(object, module, pointer) when is_map(object) do
     Enum.each(object, fn {k, v} ->
-      prescan(v, module, JsonPointer.traverse(pointer, k))
+      prescan(v, module, JsonPointer.join(pointer, k))
     end)
   end
 
@@ -24,7 +24,7 @@ defmodule Exonerate.Id do
     array
     |> Enum.with_index()
     |> Enum.each(fn {v, idx} ->
-      prescan(v, module, JsonPointer.traverse(pointer, "#{idx}"))
+      prescan(v, module, JsonPointer.join(pointer, "#{idx}"))
     end)
   end
 

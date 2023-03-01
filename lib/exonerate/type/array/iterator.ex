@@ -64,7 +64,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
     call =
       pointer
-      |> JsonPointer.traverse(":iterator")
+      |> JsonPointer.join(":iterator")
       |> Tools.pointer_to_fun_name(authority: name)
 
     acc = accumulator(subschema)
@@ -138,7 +138,7 @@ defmodule Exonerate.Type.Array.Iterator do
     if error_path = Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1))) do
       error_pointer =
         pointer
-        |> JsonPointer.traverse(error_path)
+        |> JsonPointer.join(error_path)
         |> JsonPointer.to_uri()
 
       quote do
@@ -280,7 +280,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"items", list}, acc, name, pointer, _subschema) when is_list(list) do
     call =
       pointer
-      |> JsonPointer.traverse("items")
+      |> JsonPointer.join("items")
       |> Tools.pointer_to_fun_name(authority: name)
 
     [
@@ -298,7 +298,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"items", _}, acc, name, pointer, %{"prefixItems" => _}) do
     call =
       pointer
-      |> JsonPointer.traverse("items")
+      |> JsonPointer.join("items")
       |> Tools.pointer_to_fun_name(authority: name)
 
     [
@@ -326,7 +326,7 @@ defmodule Exonerate.Type.Array.Iterator do
       :unknown ->
         call =
           pointer
-          |> JsonPointer.traverse("items")
+          |> JsonPointer.join("items")
           |> Tools.pointer_to_fun_name(authority: name)
 
         quote do
@@ -339,7 +339,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"prefixItems", list}, acc, name, pointer, _subschema) when is_list(list) do
     call =
       pointer
-      |> JsonPointer.traverse("prefixItems")
+      |> JsonPointer.join("prefixItems")
       |> Tools.pointer_to_fun_name(authority: name)
 
     [
@@ -357,7 +357,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"contains", _}, [:contains], name, pointer, _subschema) do
     call =
       pointer
-      |> JsonPointer.traverse(["contains", ":entrypoint"])
+      |> JsonPointer.join(["contains", ":entrypoint"])
       |> Tools.pointer_to_fun_name(authority: name)
 
     [
@@ -370,7 +370,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"contains", _}, _, name, pointer, _subschema) do
     call =
       pointer
-      |> JsonPointer.traverse(["contains", ":entrypoint"])
+      |> JsonPointer.join(["contains", ":entrypoint"])
       |> Tools.pointer_to_fun_name(authority: name)
 
     [
@@ -393,7 +393,7 @@ defmodule Exonerate.Type.Array.Iterator do
       :unknown ->
         call =
           pointer
-          |> JsonPointer.traverse(["maxContains"])
+          |> JsonPointer.join(["maxContains"])
           |> Tools.pointer_to_fun_name(authority: name)
 
         quote do
@@ -406,7 +406,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"maxContains", subschema}, _, name, pointer, _subschema) do
     call =
       pointer
-      |> JsonPointer.traverse(["maxContains"])
+      |> JsonPointer.join(["maxContains"])
       |> Tools.pointer_to_fun_name(authority: name)
 
     subschema
@@ -429,7 +429,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"uniqueItems", true}, _, _name, pointer, _subschema) do
     pointer =
       pointer
-      |> JsonPointer.traverse("uniqueItems")
+      |> JsonPointer.join("uniqueItems")
       |> JsonPointer.to_uri()
 
     [
@@ -446,7 +446,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"maxItems", count}, [:index], _name, pointer, _subschema) do
     pointer =
       pointer
-      |> JsonPointer.traverse("maxItems")
+      |> JsonPointer.join("maxItems")
       |> JsonPointer.to_uri()
 
     [
@@ -463,7 +463,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_for({"maxItems", count}, _, _name, pointer, _subschema) do
     pointer =
       pointer
-      |> JsonPointer.traverse("maxItems")
+      |> JsonPointer.join("maxItems")
       |> JsonPointer.to_uri()
 
     [
@@ -494,7 +494,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_analysis_for(%{"minItems" => count}, [:index], pointer) do
     pointer =
       pointer
-      |> JsonPointer.traverse("minItems")
+      |> JsonPointer.join("minItems")
       |> JsonPointer.to_uri()
 
     quote do
@@ -515,7 +515,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp filter_analysis_for(%{"minItems" => count}, _acc, pointer) do
     pointer =
       pointer
-      |> JsonPointer.traverse("minItems")
+      |> JsonPointer.join("minItems")
       |> JsonPointer.to_uri()
 
     quote do
@@ -578,10 +578,10 @@ defmodule Exonerate.Type.Array.Iterator do
   defp find_code_for(schema = %{"contains" => contains, "minItems" => length}, name, pointer) do
     call =
       pointer
-      |> JsonPointer.traverse(":iterator")
+      |> JsonPointer.join(":iterator")
       |> Tools.pointer_to_fun_name(authority: name)
 
-    contains_pointer = JsonPointer.traverse(pointer, "contains")
+    contains_pointer = JsonPointer.join(pointer, "contains")
 
     case Tools.degeneracy(contains) do
       :ok ->
@@ -590,7 +590,7 @@ defmodule Exonerate.Type.Array.Iterator do
           |> Map.delete("contains")
           |> find_code_for(name, pointer)
 
-        contains_pointer = JsonPointer.traverse(pointer, "contains")
+        contains_pointer = JsonPointer.join(pointer, "contains")
 
         quote do
           def unquote(call)([], path) do
@@ -612,7 +612,7 @@ defmodule Exonerate.Type.Array.Iterator do
       :unknown ->
         min_items_pointer =
           pointer
-          |> JsonPointer.traverse("minItems")
+          |> JsonPointer.join("minItems")
           |> JsonPointer.to_uri()
 
         contains_call = Tools.pointer_to_fun_name(contains_pointer, authority: name)
@@ -660,10 +660,10 @@ defmodule Exonerate.Type.Array.Iterator do
   defp find_code_for(schema = %{"contains" => contains}, name, pointer) do
     call =
       pointer
-      |> JsonPointer.traverse(":iterator")
+      |> JsonPointer.join(":iterator")
       |> Tools.pointer_to_fun_name(authority: name)
 
-    contains_pointer = JsonPointer.traverse(pointer, "contains")
+    contains_pointer = JsonPointer.join(pointer, "contains")
 
     case Tools.degeneracy(contains) do
       :ok ->
@@ -724,12 +724,12 @@ defmodule Exonerate.Type.Array.Iterator do
   defp find_code_for(%{"minItems" => length}, name, pointer) do
     call =
       pointer
-      |> JsonPointer.traverse(":iterator")
+      |> JsonPointer.join(":iterator")
       |> Tools.pointer_to_fun_name(authority: name)
 
     min_items_pointer =
       pointer
-      |> JsonPointer.traverse("minItems")
+      |> JsonPointer.join("minItems")
       |> JsonPointer.to_uri()
 
     quote do

@@ -39,7 +39,7 @@ defmodule Exonerate.Type.String do
 
     error_schema_pointer =
       pointer
-      |> JsonPointer.traverse("type")
+      |> JsonPointer.join("type")
       |> JsonPointer.to_uri()
 
     quote do
@@ -85,7 +85,7 @@ defmodule Exonerate.Type.String do
       Enum.map(filters, fn {filter, _} ->
         call =
           pointer
-          |> JsonPointer.traverse(Combining.adjust(filter))
+          |> JsonPointer.join(Combining.adjust(filter))
           |> Tools.pointer_to_fun_name(authority: name)
 
         quote do
@@ -117,5 +117,5 @@ defmodule Exonerate.Type.String do
   end
 
   defp traverse(pointer, "min-max-length"), do: pointer
-  defp traverse(pointer, filter), do: JsonPointer.traverse(pointer, filter)
+  defp traverse(pointer, filter), do: JsonPointer.join(pointer, filter)
 end

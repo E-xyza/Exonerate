@@ -5,14 +5,22 @@ defmodule Exonerate.Type.Object.Iterator do
   @modules %{
     "properties" => Exonerate.Filter.Properties,
     "additionalProperties" => Exonerate.Filter.AdditionalProperties,
+    "unevaluatedProperties" => Exonerate.Filter.UnevaluatedProperties,
     "propertyNames" => Exonerate.Filter.PropertyNames,
     "patternProperties" => Exonerate.Filter.PatternProperties
   }
 
   @filters Map.keys(@modules)
 
-  def needs_iterator?(subschema) do
-    Enum.any?(@filters, &is_map_key(subschema, &1))
+  @spec iterator_type(Type.json()) :: :unevaluated | :additional | :untracked | nil
+  def iterator_type(subschema) do
+    if Enum.any?(@filters, &is_map_key(subschema, &1)) do
+      case subschema do
+        %{"additionalProperties" => _} -> :additional
+        %{"unevaluatedProperties" => _} -> :unevaluated
+        _ -> :untracked
+      end
+    end
   end
 
   defmacro from_cached(name, pointer, opts) do
@@ -35,13 +43,15 @@ defmodule Exonerate.Type.Object.Iterator do
   defp build_code(schema, name, pointer, opts) do
     call =
       pointer
-      |> JsonPointer.traverse(":iterator")
+      |> JsonPointer.join(":iterator")
       |> Tools.pointer_to_fun_name(authority: name)
+
+    # TODO: simplify this.
 
     {track_state, final_call, final_accessory} =
       case schema do
         %{"additionalProperties" => _} ->
-          pointer = JsonPointer.traverse(pointer, "additionalProperties")
+          pointer = JsonPointer.join(pointer, "additionalProperties")
           final_call = Tools.pointer_to_fun_name(pointer, authority: name)
 
           final_accessory =
@@ -55,10 +65,10 @@ defmodule Exonerate.Type.Object.Iterator do
               )
             end
 
-          {:tracked, final_call, final_accessory}
+          {:additional, final_call, final_accessory}
 
         %{"unevaluatedProperties" => _} ->
-          pointer = JsonPointer.traverse(pointer, "unevaluatedProperties")
+          pointer = JsonPointer.join(pointer, "unevaluatedProperties")
           final_call = Tools.pointer_to_fun_name(pointer, authority: name)
 
           final_accessory =
@@ -72,7 +82,7 @@ defmodule Exonerate.Type.Object.Iterator do
               )
             end
 
-          {:tracked, final_call, final_accessory}
+          {:unevaluated, final_call, final_accessory}
 
         _ ->
           {:untracked, nil, []}
@@ -85,23 +95,21 @@ defmodule Exonerate.Type.Object.Iterator do
       |> Enum.unzip()
 
     # build the main call in three different cases:
-    # - empty
-    # - tracked
-    # - untracked
+    # - needs additionalProperties
+    # - needs unevaluatedProperties
     # - trivial
     main_call =
-      case {filters, track_state,
-            Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))} do
-        {[], _, _} ->
-          build_empty(call, final_call)
+      case {track_state, Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))} do
+        {:additional, nil} ->
+          build_additional(call, final_call, filters)
 
-        {_, :tracked, nil} ->
-          build_tracked(call, final_call, filters)
+        {:unevaluated, nil} ->
+          build_unevaluated(call, final_call, filters)
 
-        {_, :untracked, nil} ->
+        {:untracked, nil} ->
           build_untracked(call, filters)
 
-        {_, _, error_path} ->
+        {_, error_path} ->
           build_trivial(call, pointer, error_path)
       end
 
@@ -112,27 +120,21 @@ defmodule Exonerate.Type.Object.Iterator do
     end
   end
 
-  defp build_empty(call, final_call) do
-    if final_call do
-      quote do
-        defp unquote(call)(content, path) do
-          Enum.reduce_while(content, :ok, fn
-            {k, v}, _acc ->
-              case unquote(final_call)(v, Path.join(path, k)) do
-                :ok -> {:cont, :ok}
-                error = {:error, _} -> {:halt, error}
-              end
-          end)
-        end
-      end
-    else
-      quote do
-        defp unquote(call)(content, path), do: :ok
+  defp build_additional(call, final_call, []) do
+    quote do
+      defp unquote(call)(content, path) do
+        Enum.reduce_while(content, :ok, fn
+          {k, v}, _acc ->
+            case unquote(final_call)(v, Path.join(path, k)) do
+              :ok -> {:cont, :ok}
+              error = {:error, _} -> {:halt, error}
+            end
+        end)
       end
     end
   end
 
-  defp build_tracked(call, final_call, filters) do
+  defp build_additional(call, final_call, filters) do
     quote do
       defp unquote(call)(content, path) do
         Enum.reduce_while(content, :ok, fn
@@ -141,6 +143,24 @@ defmodule Exonerate.Type.Object.Iterator do
 
           {k, v}, :ok ->
             unquote(tracked_with(final_call, filters))
+        end)
+      end
+    end
+  end
+
+  defp build_unevaluated(call, final_call, []) do
+    quote do
+      defp unquote(call)(content, path, seen) do
+        Enum.reduce_while(content, :ok, fn
+          {k, v}, _acc ->
+            if k in seen do
+              {:cont, :ok}
+            else
+              case unquote(final_call)(v, Path.join(path, k)) do
+                :ok -> {:cont, :ok}
+                error = {:error, _} -> {:halt, error}
+              end
+            end
         end)
       end
     end
@@ -180,7 +200,7 @@ defmodule Exonerate.Type.Object.Iterator do
   defp build_trivial(call, pointer, error_path) do
     schema_pointer =
       pointer
-      |> JsonPointer.traverse(error_path)
+      |> JsonPointer.join(error_path)
       |> JsonPointer.to_uri()
 
     quote do
@@ -198,7 +218,7 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defp filter_for({"properties", _}, name, pointer, opts) do
-    pointer = JsonPointer.traverse(pointer, "properties")
+    pointer = JsonPointer.join(pointer, "properties")
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     filter =
@@ -229,7 +249,7 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defp filter_for({"patternProperties", _}, name, pointer, opts) do
-    pointer = JsonPointer.traverse(pointer, "patternProperties")
+    pointer = JsonPointer.join(pointer, "patternProperties")
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     filter =
@@ -262,7 +282,7 @@ defmodule Exonerate.Type.Object.Iterator do
   # note that having propertyNames is incompatible with any tracked
   # parameters.
   defp filter_for({"propertyNames", subschema}, name, pointer, opts) do
-    pointer = JsonPointer.traverse(pointer, "propertyNames")
+    pointer = JsonPointer.join(pointer, "propertyNames")
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     filter =

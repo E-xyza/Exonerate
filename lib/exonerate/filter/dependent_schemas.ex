@@ -20,7 +20,7 @@ defmodule Exonerate.Filter.DependentSchemas do
   defp make_dependencies({key, schema}, name, pointer, opts) do
     call =
       pointer
-      |> JsonPointer.traverse([key, ":entrypoint"])
+      |> JsonPointer.join([key, ":entrypoint"])
       |> Tools.pointer_to_fun_name(authority: name)
 
     {quote do
@@ -43,7 +43,7 @@ defmodule Exonerate.Filter.DependentSchemas do
   end
 
   defp accessory(call, key, schema, name, pointer, opts) do
-    pointer = JsonPointer.traverse(pointer, key)
+    pointer = JsonPointer.join(pointer, key)
     inner_call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do

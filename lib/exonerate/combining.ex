@@ -18,7 +18,11 @@ defmodule Exonerate.Combining do
 
   def filter?(filter), do: is_map_key(@modules, filter)
 
-  def adjust("not"), do: "not/:entrypoint"
-  def adjust("if"), do: "if/:entrypoint"
-  def adjust(other), do: other
+  def adjust(tag, tracked \\ :untracked)
+
+  def adjust("not", _), do: "not/:entrypoint"
+  def adjust("if", :tracked), do: "if:tracked/:entrypoint"
+  def adjust("if", _), do: "if/:entrypoint"
+  def adjust(other, :tracked), do: "#{other}:tracked"
+  def adjust(other, _), do: other
 end

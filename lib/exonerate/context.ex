@@ -8,6 +8,7 @@ defmodule Exonerate.Context do
   alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Type
+  alias Exonerate.Type.Object
 
   defmacro from_cached(name, pointer, opts) do
     module = __CALLER__.module
@@ -36,13 +37,22 @@ defmodule Exonerate.Context do
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
 
-  defp to_quoted_function(true, _module, name, pointer, _opts) do
+  defp to_quoted_function(true, _module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+    ok_response =
+      if opts[:tracked] do
+        quote do
+          {:ok, MapSet.new()}
+        end
+      else
+        :ok
+      end
 
     quote do
       @compile {:inline, [{unquote(call), 2}]}
       defp unquote(call)(content, _path) do
-        :ok
+        unquote(ok_response)
       end
     end
   end
@@ -79,7 +89,7 @@ defmodule Exonerate.Context do
     cond do
       Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") or degeneracy == :error ->
         call = Tools.pointer_to_fun_name(pointer, authority: name)
-        ref_pointer = JsonPointer.traverse(pointer, "$ref")
+        ref_pointer = JsonPointer.join(pointer, "$ref")
         ref_call = Tools.pointer_to_fun_name(ref_pointer, authority: name)
 
         quote do
@@ -171,7 +181,7 @@ defmodule Exonerate.Context do
 
     const_pointer =
       pointer
-      |> JsonPointer.traverse("const")
+      |> JsonPointer.join("const")
       |> JsonPointer.to_uri()
 
     rest_filter =
@@ -197,7 +207,7 @@ defmodule Exonerate.Context do
 
     enum_pointer =
       pointer
-      |> JsonPointer.traverse("enum")
+      |> JsonPointer.join("enum")
       |> JsonPointer.to_uri()
 
     types =
@@ -222,10 +232,18 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(schema = %{"type" => type_or_types}, module, name, pointer, opts) do
+  defp to_quoted_function(subschema = %{"type" => type_or_types}, module, name, pointer, opts) do
+    # condition the bindings
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema = Cache.fetch!(module, name)
-    subschema = JsonPointer.resolve!(schema, pointer)
+    subschema = Object.remove_degenerate_features(subschema)
+
+    opts =
+      case subschema do
+        %{"unevaluatedProperties" => _} -> Keyword.put(opts, :tracked, true)
+        _ -> opts
+      end
+
     types = resolve_types(type_or_types)
 
     type_filters = Enum.map(types, &Type.module(&1).filter(subschema, name, pointer, opts))
@@ -240,7 +258,7 @@ defmodule Exonerate.Context do
           List.wrap(
             if is_map_key(subschema, combiner) do
               module = @combining_modules[combiner]
-              pointer = JsonPointer.traverse(pointer, combiner)
+              pointer = JsonPointer.join(pointer, combiner)
 
               quote do
                 require unquote(module)
@@ -252,7 +270,7 @@ defmodule Exonerate.Context do
 
     schema_pointer =
       pointer
-      |> JsonPointer.traverse("type")
+      |> JsonPointer.join("type")
       |> JsonPointer.to_uri()
 
     case Tools.degeneracy(schema) do
@@ -280,6 +298,8 @@ defmodule Exonerate.Context do
   @all_types ~w(string object array number integer boolean null)
 
   defp to_quoted_function(schema, module, name, pointer, opts) when is_map(schema) do
+    # if it doesn't have a type, inject the type here.
+
     schema_types =
       schema
       |> Map.get("type", @all_types)

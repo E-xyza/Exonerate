@@ -20,7 +20,7 @@ defmodule Exonerate.Filter.DependentRequired do
   defp make_dependencies({key, schema}, name, pointer, opts) do
     call =
       pointer
-      |> JsonPointer.traverse([key, ":entrypoint"])
+      |> JsonPointer.join([key, ":entrypoint"])
       |> Tools.pointer_to_fun_name(authority: name)
 
     {quote do
@@ -48,7 +48,7 @@ defmodule Exonerate.Filter.DependentRequired do
         dependent_key, index ->
           schema_pointer =
             pointer
-            |> JsonPointer.traverse([key, "#{index}"])
+            |> JsonPointer.join([key, "#{index}"])
             |> JsonPointer.to_uri()
 
           quote do
