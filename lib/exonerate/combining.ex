@@ -18,11 +18,53 @@ defmodule Exonerate.Combining do
 
   def filter?(filter), do: is_map_key(@modules, filter)
 
-  def adjust(tag, tracked \\ :untracked)
+  def adjust("not"), do: "not/:entrypoint"
+  def adjust("if"), do: "if/:entrypoint"
+  def adjust(other), do: other
 
-  def adjust("not", _), do: "not/:entrypoint"
-  def adjust("if", :tracked), do: "if:tracked/:entrypoint"
-  def adjust("if", _), do: "if/:entrypoint"
-  def adjust(other, :tracked), do: "#{other}:tracked"
-  def adjust(other, _), do: other
+  # code helpers
+
+  def or_ok(tracked, quoted) do
+    if tracked do
+      quoted
+    else
+      :ok
+    end
+  end
+
+  defmacro initialize(tracked) do
+    or_ok(
+      tracked,
+      quote do
+        {:ok, MapSet.new()}
+      end
+    )
+  end
+
+  defmacro capture(tracked, seen) do
+    or_ok(
+      tracked,
+      quote do
+        {:ok, unquote(seen)}
+      end
+    )
+  end
+
+  defmacro update_key(tracked, seen, key) do
+    or_ok(
+      tracked,
+      quote do
+        {:ok, MapSet.put(unquote(seen), unquote(key))}
+      end
+    )
+  end
+
+  defmacro update_set(tracked, seen, set) do
+    or_ok(
+      tracked,
+      quote do
+        {:ok, MapSet.union(unquote(seen), unquote(set))}
+      end
+    )
+  end
 end

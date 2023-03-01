@@ -47,17 +47,23 @@ defmodule Exonerate.Type.Object do
   def remove_degenerate_features(subschema), do: subschema
 
   def filter(subschema, name, pointer, opts) do
+    tracked = Keyword.get(opts, :track_properties, false)
     subschema = remove_degenerate_features(subschema)
-    combining_filters = make_combining_filters(combining_filters(opts), subschema, name, pointer)
-    outer_filters = make_filters(@outer_filters, subschema, name, pointer)
-    iterator_filter = iterator_filter(subschema, name, pointer)
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    {name, pointer, opts} |> dbg(limit: 25)
+    combining_filters =
+      make_combining_filters(combining_filters(opts), subschema, name, pointer, opts)
+
+    outer_filters = make_filters(@outer_filters, subschema, name, pointer)
+    iterator_filter = iterator_filter(subschema, name, pointer, opts)
+
+    call =
+      pointer
+      |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
+      |> Tools.pointer_to_fun_name(authority: name)
 
     seen_prefix =
       case Iterator.iterator_type(subschema) do
-        :unevaluated ->
+        type when type === :unevaluated or tracked ->
           quote do
             seen = MapSet.new()
           end
@@ -66,33 +72,43 @@ defmodule Exonerate.Type.Object do
           []
       end
 
+    result =
+      if tracked do
+        quote do
+          {:ok, seen}
+        end
+      else
+        :ok
+      end
+
     quote do
       defp unquote(call)(content, path) when is_map(content) do
         unquote(seen_prefix)
 
         with unquote_splicing(combining_filters ++ outer_filters ++ iterator_filter) do
-          :ok
+          unquote(result)
         end
       end
     end
   end
 
-  defp make_combining_filters(filters, subschema = %{"unevaluatedProperties" => _}, name, pointer) do
-    for filter <- filters, is_map_key(subschema, filter), reduce: [] do
-      acc ->
-        call =
-          pointer
-          |> JsonPointer.join(Combining.adjust(filter, :tracked))
-          |> Tools.pointer_to_fun_name(authority: name)
+  defp make_combining_filters(filters, subschema, name, pointer, opts) do
+    if opts[:track_properties] || Map.has_key?(subschema, "unevaluatedProperties") do
+      for filter <- filters, is_map_key(subschema, filter), reduce: [] do
+        acc ->
+          call =
+            pointer
+            |> JsonPointer.join([Combining.adjust(filter), ":tracked"])
+            |> Tools.pointer_to_fun_name(authority: name)
 
-        quote do
-          [{:ok, new_seen} <- unquote(call)(content, path), seen = MapSet.union(seen, new_seen)]
-        end ++ acc
+          quote do
+            [{:ok, new_seen} <- unquote(call)(content, path), seen = MapSet.union(seen, new_seen)]
+          end ++ acc
+      end
+      |> Tools.inspect()
+    else
+      make_filters(filters, subschema, name, pointer)
     end
-  end
-
-  defp make_combining_filters(filters, subschema, name, pointer) do
-    make_filters(filters, subschema, name, pointer)
   end
 
   defp make_filters(filters, subschema, name, pointer) do
@@ -108,11 +124,21 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  defp iterator_filter(subschema, name, pointer) do
+  defp iterator_filter(subschema, name, pointer, opts) do
     call =
       pointer
       |> JsonPointer.join(":iterator")
+      |> Tools.if(opts[:track_properties], &JsonPointer.join(&1, ":tracked"))
       |> Tools.pointer_to_fun_name(authority: name)
+
+    filter_result =
+      if opts[:track_properties] do
+        quote do
+          {:ok, seen}
+        end
+      else
+        :ok
+      end
 
     List.wrap(
       case Iterator.iterator_type(subschema) do
@@ -121,12 +147,12 @@ defmodule Exonerate.Type.Object do
 
         :unevaluated ->
           quote do
-            :ok <- unquote(call)(content, path, seen)
+            unquote(filter_result) <- unquote(call)(content, path, seen)
           end
 
         _ ->
           quote do
-            :ok <- unquote(call)(content, path)
+            unquote(filter_result) <- unquote(call)(content, path)
           end
       end
     )
@@ -134,7 +160,7 @@ defmodule Exonerate.Type.Object do
 
   def maybe_add_tracked_option(_subschema, opts), do: opts
 
-  def accessories(subschema, name, pointer, opts) do
+  def accessories(_subschema, name, pointer, opts) do
     List.wrap(
       quote do
         require Exonerate.Type.Object.Iterator

@@ -52,17 +52,17 @@ defmodule Exonerate.Cache do
     :ok
   end
 
-  def register_context(module, authority, pointer) when is_atom(authority) do
-    if has_context?(module, authority, pointer) do
+  def register_context(module, authority, pointer, arity) when is_atom(authority) do
+    if has_context?(module, authority, pointer, arity) do
       false
     else
-      :ets.insert(get_table(), {{:context, module, authority, pointer}})
+      :ets.insert(get_table(), {{:context, module, authority, pointer, arity}})
       true
     end
   end
 
-  def has_context?(module, authority, pointer) when is_atom(authority) do
-    case :ets.lookup(get_table(), {:context, module, authority, pointer}) do
+  def has_context?(module, authority, pointer, arity) when is_atom(authority) do
+    case :ets.lookup(get_table(), {:context, module, authority, pointer, arity}) do
       [] -> false
       [_] -> true
     end

@@ -215,4 +215,18 @@ defmodule Exonerate.Tools do
       _ -> :unknown
     end
   end
+
+  # tracking related
+  def drop_tracking(opts) do
+    Keyword.drop(opts, [:track_properties, :track_items])
+  end
+
+  # general convenience functions
+  def if(item, boolean, predicate) do
+    if boolean do
+      predicate.(item)
+    else
+      item
+    end
+  end
 end

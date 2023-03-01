@@ -13,7 +13,7 @@ defmodule Exonerate.Context do
   defmacro from_cached(name, pointer, opts) do
     module = __CALLER__.module
 
-    if Cache.register_context(module, name, pointer) do
+    if Cache.register_context(module, name, pointer, 2) do
       module
       |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
@@ -40,19 +40,11 @@ defmodule Exonerate.Context do
   defp to_quoted_function(true, _module, name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
-    ok_response =
-      if opts[:tracked] do
-        quote do
-          {:ok, MapSet.new()}
-        end
-      else
-        :ok
-      end
-
     quote do
       @compile {:inline, [{unquote(call), 2}]}
       defp unquote(call)(content, _path) do
-        unquote(ok_response)
+        require Exonerate.Combining
+        Exonerate.Combining.initialize(unquote(opts[:tracked]))
       end
     end
   end
@@ -234,15 +226,16 @@ defmodule Exonerate.Context do
 
   defp to_quoted_function(subschema = %{"type" => type_or_types}, module, name, pointer, opts) do
     # condition the bindings
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    call =
+      pointer
+      |> Tools.if(
+        opts[:track_items] || opts[:track_properties],
+        &JsonPointer.join(&1, ":tracked")
+      )
+      |> Tools.pointer_to_fun_name(authority: name)
+
     schema = Cache.fetch!(module, name)
     subschema = Object.remove_degenerate_features(subschema)
-
-    opts =
-      case subschema do
-        %{"unevaluatedProperties" => _} -> Keyword.put(opts, :tracked, true)
-        _ -> opts
-      end
 
     types = resolve_types(type_or_types)
 

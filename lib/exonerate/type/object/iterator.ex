@@ -1,5 +1,6 @@
 defmodule Exonerate.Type.Object.Iterator do
   alias Exonerate.Cache
+  alias Exonerate.Combining
   alias Exonerate.Tools
 
   @modules %{
@@ -41,9 +42,12 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defp build_code(schema, name, pointer, opts) do
+    outer_tracked = Keyword.get(opts, :track_properties, false)
+
     call =
       pointer
       |> JsonPointer.join(":iterator")
+      |> Tools.if(outer_tracked, &JsonPointer.join(&1, ":tracked"))
       |> Tools.pointer_to_fun_name(authority: name)
 
     # TODO: simplify this.
@@ -101,16 +105,16 @@ defmodule Exonerate.Type.Object.Iterator do
     main_call =
       case {track_state, Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))} do
         {:additional, nil} ->
-          build_additional(call, final_call, filters)
+          build_additional(call, final_call, filters, outer_tracked)
 
         {:unevaluated, nil} ->
-          build_unevaluated(call, final_call, filters)
+          build_unevaluated(call, final_call, filters, outer_tracked)
 
         {:untracked, nil} ->
-          build_untracked(call, filters)
+          build_untracked(call, filters, outer_tracked)
 
         {_, error_path} ->
-          build_trivial(call, pointer, error_path)
+          build_trivial(call, pointer, error_path, outer_tracked)
       end
 
     quote do
@@ -120,13 +124,16 @@ defmodule Exonerate.Type.Object.Iterator do
     end
   end
 
-  defp build_additional(call, final_call, []) do
+  defp build_additional(call, final_call, [], outer_tracked) do
     quote do
       defp unquote(call)(content, path) do
-        Enum.reduce_while(content, :ok, fn
-          {k, v}, _acc ->
-            case unquote(final_call)(v, Path.join(path, k)) do
-              :ok -> {:cont, :ok}
+        alias Exonerate.Combining
+        require Combining
+
+        Enum.reduce_while(content, Combining.initialize(unquote(outer_tracked)), fn
+          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
+            case unquote(final_call)(value, Path.join(path, key)) do
+              :ok -> {:cont, Combining.update_key(unquote(outer_tracked, :key))}
               error = {:error, _} -> {:halt, error}
             end
         end)
@@ -134,30 +141,36 @@ defmodule Exonerate.Type.Object.Iterator do
     end
   end
 
-  defp build_additional(call, final_call, filters) do
+  defp build_additional(call, final_call, filters, outer_tracked) do
     quote do
       defp unquote(call)(content, path) do
-        Enum.reduce_while(content, :ok, fn
+        alias Exonerate.Combining
+        require Combining
+
+        Enum.reduce_while(content, Combining.initialize(unquote(outer_tracked)), fn
           _, error = {:error, _} ->
             {:halt, error}
 
-          {k, v}, :ok ->
-            unquote(tracked_with(final_call, filters))
+          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
+            unquote(tracked_with(final_call, filters, outer_tracked))
         end)
       end
     end
   end
 
-  defp build_unevaluated(call, final_call, []) do
+  defp build_unevaluated(call, final_call, [], outer_tracked) do
     quote do
       defp unquote(call)(content, path, seen) do
-        Enum.reduce_while(content, :ok, fn
-          {k, v}, _acc ->
-            if k in seen do
-              {:cont, :ok}
+        alias Exonerate.Combining
+        require Combining
+
+        Enum.reduce_while(content, Combining.initialize(unquote(outer_tracked)), fn
+          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
+            if key in seen do
+              {:cont, Combining.capture(unquote(outer_tracked), seen)}
             else
-              case unquote(final_call)(v, Path.join(path, k)) do
-                :ok -> {:cont, :ok}
+              case unquote(final_call)(value, Path.join(path, key)) do
+                :ok -> {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
                 error = {:error, _} -> {:halt, error}
               end
             end
@@ -166,15 +179,15 @@ defmodule Exonerate.Type.Object.Iterator do
     end
   end
 
-  defp tracked_with(final_call, filters) do
+  defp tracked_with(final_call, filters, outer_tracked) do
     quote do
       seen = false
 
       with unquote_splicing(filters) do
         if seen do
-          {:cont, :ok}
+          {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
         else
-          {:cont, unquote(final_call)(v, Path.join(path, k))}
+          {:cont, unquote(final_call)(value, Path.join(path, key))}
         end
       else
         error -> {:halt, error}
@@ -182,13 +195,16 @@ defmodule Exonerate.Type.Object.Iterator do
     end
   end
 
-  defp build_untracked(call, filters) do
+  defp build_untracked(call, filters, outer_tracked) do
     quote do
       defp unquote(call)(content, path) do
-        Enum.reduce_while(content, :ok, fn
-          {k, v}, :ok ->
+        alias Exonerate.Combining
+        require Combining
+
+        Enum.reduce_while(content, Combining.initialize(unquote(outer_tracked)), fn
+          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
             with unquote_splicing(filters) do
-              {:cont, :ok}
+              {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
             else
               error -> {:halt, error}
             end
@@ -197,17 +213,26 @@ defmodule Exonerate.Type.Object.Iterator do
     end
   end
 
-  defp build_trivial(call, pointer, error_path) do
+  defp build_trivial(call, pointer, error_path, outer_tracked) do
     schema_pointer =
       pointer
       |> JsonPointer.join(error_path)
       |> JsonPointer.to_uri()
 
+    result =
+      if outer_tracked do
+        quote do
+          {:ok, content |> Map.keys() |> MapSet.new()}
+        end
+      else
+        :ok
+      end
+
     quote do
       defp unquote(call)(content, path) do
         case map_size(content) do
           0 ->
-            :ok
+            unquote(result)
 
           _ ->
             require Exonerate.Tools
@@ -225,12 +250,12 @@ defmodule Exonerate.Type.Object.Iterator do
       case opts[:tracker] do
         :tracked ->
           quote do
-            {:ok, seen} <- unquote(call)({k, v}, path, seen)
+            {:ok, seen} <- unquote(call)({key, value}, path, seen)
           end
 
         :untracked ->
           quote do
-            :ok <- unquote(call)({k, v}, path)
+            :ok <- unquote(call)({key, value}, path)
           end
       end
 
@@ -242,7 +267,7 @@ defmodule Exonerate.Type.Object.Iterator do
          Exonerate.Filter.Properties.filter_from_cached(
            unquote(name),
            unquote(pointer),
-           unquote(opts)
+           unquote(Tools.drop_tracking(opts))
          )
        end}
     ]
@@ -256,12 +281,12 @@ defmodule Exonerate.Type.Object.Iterator do
       case opts[:tracker] do
         :tracked ->
           quote do
-            {:ok, seen} <- unquote(call)({k, v}, path, seen)
+            {:ok, seen} <- unquote(call)({key, value}, path, seen)
           end
 
         :untracked ->
           quote do
-            :ok <- unquote(call)({k, v}, path)
+            :ok <- unquote(call)({key, value}, path)
           end
       end
 
@@ -273,13 +298,13 @@ defmodule Exonerate.Type.Object.Iterator do
          Exonerate.Filter.PatternProperties.filter_from_cached(
            unquote(name),
            unquote(pointer),
-           unquote(opts)
+           unquote(Tools.drop_tracking(opts))
          )
        end}
     ]
   end
 
-  # note that having propertyNames is incompatible with any tracked
+  # note that having propertyNames is incompatible with any outer_tracked
   # parameters.
   defp filter_for({"propertyNames", subschema}, name, pointer, opts) do
     pointer = JsonPointer.join(pointer, "propertyNames")
@@ -289,7 +314,7 @@ defmodule Exonerate.Type.Object.Iterator do
       case opts[:tracker] do
         :untracked ->
           quote do
-            :ok <- unquote(call)(k, Path.join(path, k))
+            :ok <- unquote(call)(key, Path.join(path, key))
           end
       end
 
@@ -310,7 +335,7 @@ defmodule Exonerate.Type.Object.Iterator do
            Exonerate.Filter.PropertyNames.filter_from_cached(
              unquote(name),
              unquote(pointer),
-             unquote(opts)
+             unquote(Tools.drop_tracking(opts))
            )
          end}
     end
