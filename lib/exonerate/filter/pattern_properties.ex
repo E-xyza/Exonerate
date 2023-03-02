@@ -36,7 +36,9 @@ defmodule Exonerate.Filter.PatternProperties do
      end}
   end
 
-  defp build_code({filters, accessories}, call, :additional) do
+  @should_track [:additional, :unevaluated]
+
+  defp build_code({filters, accessories}, call, tracked) when tracked in @should_track do
     quote do
       defp unquote(call)({k, v}, path, seen) do
         Enum.reduce_while(unquote(filters), {:ok, seen}, fn
