@@ -67,7 +67,7 @@ defmodule Exonerate.Combining.Ref do
       :ok ->
         quote do
           @compile {:inline, [{unquote(call), 2}]}
-          defp unquote(call)(_content, _path)  do
+          defp unquote(call)(_content, _path) do
             require Exonerate.Combining
             Exonerate.Combining.initialize(unquote(tracked))
           end
@@ -97,7 +97,8 @@ defmodule Exonerate.Combining.Ref do
                 new_error = Keyword.put(error, :ref_trace, [unquote(call_path) | ref_trace])
                 {:error, new_error}
 
-              ok -> ok
+              ok ->
+                ok
             end
           end
 

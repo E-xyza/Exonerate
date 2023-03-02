@@ -67,9 +67,11 @@ defmodule Exonerate.Type.Object.Iterator do
 
         %{"unevaluatedProperties" => _} ->
           pointer = JsonPointer.join(pointer, "unevaluatedProperties")
-          final_call = pointer
-          |> Tools.if(outer_tracked, &JsonPointer.join(&1, ":tracked"))
-          |> Tools.pointer_to_fun_name(authority: name)
+
+          final_call =
+            pointer
+            |> Tools.if(outer_tracked, &JsonPointer.join(&1, ":tracked"))
+            |> Tools.pointer_to_fun_name(authority: name)
 
           final_accessory =
             quote do
@@ -188,6 +190,21 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defp build_unevaluated(call, final_call, filters, outer_tracked) do
+    final_clause = if final_call do
+      quote do
+        case unquote(final_call)(content, path) do
+          :ok ->
+            Combining.update_key(unquote(outer_tracked), visited, key)
+          error ->
+            error
+        end
+      end
+    else
+      quote do
+        Combining.capture(unquote(outer_tracked), visited)
+      end
+    end
+
     quote do
       defp unquote(call)(content, path, visited) do
         alias Exonerate.Combining
@@ -201,14 +218,11 @@ defmodule Exonerate.Type.Object.Iterator do
             seen = false
 
             with unquote_splicing(filters) do
-              update =
-                if seen do
-                  Combining.update_key(unquote(outer_tracked), visited, key)
-                else
-                  Combining.capture(unquote(outer_tracked), visited)
-                end
-
-              {:cont, update}
+              if seen or key in visited do
+                {:cont, Combining.update_key(unquote(outer_tracked), visited, key)}
+              else
+                {:cont, unquote(final_clause)}
+              end
             else
               error -> {:halt, error}
             end
