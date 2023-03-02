@@ -28,7 +28,7 @@ defmodule Exonerate.Combining.AnyOf do
     |> JsonPointer.resolve!(pointer)
     |> Enum.with_index(&call_and_context(&1, &2, name, pointer, opts))
     |> Enum.unzip()
-    |> build_code(call, schema_pointer, opts[:track_properties])
+    |> build_code(call, schema_pointer, tracked)
     |> Tools.maybe_dump(opts)
   end
 

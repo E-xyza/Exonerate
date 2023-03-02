@@ -67,7 +67,9 @@ defmodule Exonerate.Type.Object.Iterator do
 
         %{"unevaluatedProperties" => _} ->
           pointer = JsonPointer.join(pointer, "unevaluatedProperties")
-          final_call = Tools.pointer_to_fun_name(pointer, authority: name)
+          final_call = pointer
+          |> Tools.if(outer_tracked, &JsonPointer.join(&1, ":tracked"))
+          |> Tools.pointer_to_fun_name(authority: name)
 
           final_accessory =
             quote do

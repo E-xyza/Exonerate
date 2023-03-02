@@ -38,7 +38,7 @@ defmodule Exonerate.Context do
   @combining_filters Combining.filters()
 
   defp to_quoted_function(true, _module, name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    call = call(name, pointer, opts)
 
     quote do
       @compile {:inline, [{unquote(call), 2}]}
@@ -49,8 +49,8 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(false, _module, name, pointer, _opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+  defp to_quoted_function(false, _module, name, pointer, opts) do
+    call = call(name, pointer, opts)
     schema_pointer = JsonPointer.to_uri(pointer)
 
     quote do
@@ -79,7 +79,7 @@ defmodule Exonerate.Context do
       end
 
     if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") or degeneracy === :error do
-      call = Tools.pointer_to_fun_name(pointer, authority: name)
+      call = call(name, pointer, opts)
       ref_pointer = JsonPointer.join(pointer, "$ref")
       ref_call = Tools.pointer_to_fun_name(ref_pointer, authority: name)
 
@@ -106,7 +106,7 @@ defmodule Exonerate.Context do
 
   # metadata
   defp to_quoted_function(schema = %{"title" => title}, module, name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    call = call(name, pointer, opts)
 
     rest =
       schema
@@ -121,7 +121,7 @@ defmodule Exonerate.Context do
   end
 
   defp to_quoted_function(schema = %{"description" => title}, module, name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    call = call(name, pointer, opts)
 
     rest =
       schema
@@ -136,7 +136,7 @@ defmodule Exonerate.Context do
   end
 
   defp to_quoted_function(schema = %{"examples" => title}, module, name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    call = call(name, pointer, opts)
 
     rest =
       schema
@@ -151,7 +151,7 @@ defmodule Exonerate.Context do
   end
 
   defp to_quoted_function(schema = %{"default" => title}, module, name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    call = call(name, pointer, opts)
 
     rest =
       schema
@@ -167,7 +167,7 @@ defmodule Exonerate.Context do
 
   # intercept consts
   defp to_quoted_function(schema = %{"const" => const}, module, name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    call = call(name, pointer, opts)
 
     const_pointer =
       pointer
@@ -193,7 +193,7 @@ defmodule Exonerate.Context do
 
   # intercept enums
   defp to_quoted_function(schema = %{"enum" => enum}, module, name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    call = call(name, pointer, opts)
 
     enum_pointer =
       pointer
@@ -284,7 +284,7 @@ defmodule Exonerate.Context do
     case Tools.degeneracy(subschema) do
       :ok ->
         quote do
-          defp unquote(call)(content, path) do
+          defp unquote(call)(content, _path) do
             require Exonerate.Combining
             Exonerate.Combining.initialize(unquote(opts[:track_properties]))
           end
@@ -330,6 +330,14 @@ defmodule Exonerate.Context do
     schema
     |> Map.put("type", type)
     |> to_quoted_function(module, name, pointer, Keyword.drop(opts, [:type]))
+  end
+
+  defp call(name, pointer, opts) do
+    tracked = opts[:track_items] || opts[:track_properties]
+
+    pointer
+    |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
+    |> Tools.pointer_to_fun_name(authority: name)
   end
 
   defp typeof(value) when is_binary(value), do: "string"

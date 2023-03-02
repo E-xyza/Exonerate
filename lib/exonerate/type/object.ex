@@ -39,14 +39,17 @@ defmodule Exonerate.Type.Object do
     Map.delete(subschema, "additionalProperties")
   end
 
-  def remove_degenerate_features(subschema = %{"unevaluatedProperties" => true}) do
-    # additionalProperties clobbers unevaluatedProperties
-    Map.delete(subschema, "unevaluatedProperties")
-  end
+  # TODO: restore this when we make schema pruning automatic.
+
+  #def remove_degenerate_features(subschema = %{"unevaluatedProperties" => true}) do
+  #  # additionalProperties clobbers unevaluatedProperties
+  #  Map.delete(subschema, "unevaluatedProperties")
+  #end
 
   def remove_degenerate_features(subschema), do: subschema
 
   def filter(subschema, name, pointer, opts) do
+
     tracked = Keyword.get(opts, :track_properties, false)
     subschema = remove_degenerate_features(subschema)
     opts = add_internal_tracker(subschema, opts)
@@ -64,14 +67,12 @@ defmodule Exonerate.Type.Object do
       |> Tools.pointer_to_fun_name(authority: name)
 
     visited_prefix =
-      case opts[:internal_tracking] do
-        type when type === :unevaluated or tracked ->
-          quote do
-            visited = MapSet.new()
-          end
-
-        _ ->
-          []
+      if opts[:internal_tracking] || tracked do
+        quote do
+          visited = MapSet.new()
+        end
+      else
+        []
       end
 
     result =
@@ -95,12 +96,16 @@ defmodule Exonerate.Type.Object do
   end
 
   defp make_combining_filters(filters, subschema, name, pointer, opts) do
-    if opts[:track_properties] || Map.has_key?(subschema, "unevaluatedProperties") do
+    tracked = opts[:track_properties] || Map.has_key?(subschema, "unevaluatedProperties")
+
+
+    if tracked do
       for filter <- filters, is_map_key(subschema, filter), reduce: [] do
         acc ->
+
           call =
             pointer
-            |> JsonPointer.join(Combining.adjust(filter) ++ [":tracked"])
+            |> JsonPointer.join(Combining.adjust(filter, tracked))
             |> Tools.pointer_to_fun_name(authority: name)
 
           quote do

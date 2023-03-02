@@ -11,8 +11,15 @@ defmodule Exonerate.Combining.Ref do
     # - reference to something set with an id
     # - remote reference.
 
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-    call_path = JsonPointer.to_uri(pointer)
+    # condition the options to accept unevaluatedProperties
+    opts =
+      __CALLER__.module
+      |> Cache.fetch!(name)
+      |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
+      |> case do
+        %{"unevaluatedProperties" => _} -> Keyword.put(opts, :track_properties, true)
+        _ -> opts
+      end
 
     module = __CALLER__.module
 
@@ -20,7 +27,7 @@ defmodule Exonerate.Combining.Ref do
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> URI.parse()
-    |> build_code(module, name, call, call_path, opts)
+    |> build_code(module, name, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
@@ -28,31 +35,42 @@ defmodule Exonerate.Combining.Ref do
   defp normalize(fragment), do: "/" <> fragment
 
   defp build_code(
-         a = %{host: nil, path: nil, fragment: fragment},
+         %{host: nil, path: nil, fragment: fragment},
          module,
          name,
-         call,
-         call_path,
+         call_pointer,
          opts
        ) do
-    pointer =
+    ref_pointer =
       fragment
       |> normalize
       |> JsonPointer.from_uri()
 
+    tracked = opts[:track_items] || opts[:track_properties]
+
+    call =
+      call_pointer
+      |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
+      |> Tools.pointer_to_fun_name(authority: name)
+
+    call_path = JsonPointer.to_uri(call_pointer)
+
     opts = Keyword.delete(opts, :id)
 
-    ref = Tools.pointer_to_fun_name(pointer, authority: name)
+    ref = Tools.pointer_to_fun_name(ref_pointer, authority: name)
 
     module
     |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(pointer)
+    |> JsonPointer.resolve!(ref_pointer)
     |> Tools.degeneracy()
     |> case do
       :ok ->
         quote do
           @compile {:inline, [{unquote(call), 2}]}
-          defp unquote(call)(_content, _path), do: :ok
+          defp unquote(call)(_content, _path)  do
+            require Exonerate.Combining
+            Exonerate.Combining.initialize(unquote(tracked))
+          end
         end
 
       :error ->
@@ -66,7 +84,7 @@ defmodule Exonerate.Combining.Ref do
           end
 
           require Exonerate.Context
-          Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+          Exonerate.Context.from_cached(unquote(name), unquote(ref_pointer), unquote(opts))
         end
 
       :unknown ->
@@ -74,18 +92,17 @@ defmodule Exonerate.Combining.Ref do
           @compile {:inline, [{unquote(call), 2}]}
           defp unquote(call)(content, path) do
             case unquote(ref)(content, path) do
-              :ok ->
-                :ok
-
               {:error, error} ->
                 ref_trace = Keyword.get(error, :ref_trace, [])
                 new_error = Keyword.put(error, :ref_trace, [unquote(call_path) | ref_trace])
                 {:error, new_error}
+
+              ok -> ok
             end
           end
 
           require Exonerate.Context
-          Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+          Exonerate.Context.from_cached(unquote(name), unquote(ref_pointer), unquote(opts))
         end
     end
   end
