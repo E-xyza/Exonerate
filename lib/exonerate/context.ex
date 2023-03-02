@@ -44,7 +44,7 @@ defmodule Exonerate.Context do
       @compile {:inline, [{unquote(call), 2}]}
       defp unquote(call)(content, _path) do
         require Exonerate.Combining
-        Exonerate.Combining.initialize(unquote(opts[:tracked]))
+        Exonerate.Combining.initialize(unquote(opts[:track_properties]))
       end
     end
   end
@@ -224,17 +224,17 @@ defmodule Exonerate.Context do
 
   defp to_quoted_function(%{"type" => type_or_types}, module, name, pointer, opts) do
     # condition the bindings
+    tracked = opts[:track_items] || opts[:track_properties]
+
     call =
       pointer
-      |> Tools.if(
-        opts[:track_items] || opts[:track_properties],
-        &JsonPointer.join(&1, ":tracked")
-      )
+      |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
       |> Tools.pointer_to_fun_name(authority: name)
 
-    subschema = module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(pointer)
+    subschema =
+      module
+      |> Cache.fetch!(name)
+      |> JsonPointer.resolve!(pointer)
 
     subschema = Object.remove_degenerate_features(subschema)
 
@@ -267,10 +267,27 @@ defmodule Exonerate.Context do
       |> JsonPointer.join("type")
       |> JsonPointer.to_uri()
 
+    backup_fallback =
+      List.wrap(
+        if tracked do
+          backup_call = Tools.pointer_to_fun_name(pointer, authority: name)
+
+          quote do
+            defp unquote(backup_call)(content, path) do
+              require Exonerate.Tools
+              Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+            end
+          end
+        end
+      )
+
     case Tools.degeneracy(subschema) do
       :ok ->
         quote do
-          defp unquote(call)(content, path), do: :ok
+          defp unquote(call)(content, path) do
+            require Exonerate.Combining
+            Exonerate.Combining.initialize(unquote(opts[:track_properties]))
+          end
         end
 
       _ ->
@@ -281,6 +298,8 @@ defmodule Exonerate.Context do
             require Exonerate.Tools
             Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
           end
+
+          unquote(backup_fallback)
 
           unquote(combiners)
 

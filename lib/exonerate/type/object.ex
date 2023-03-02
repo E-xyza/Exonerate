@@ -63,11 +63,11 @@ defmodule Exonerate.Type.Object do
       |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
       |> Tools.pointer_to_fun_name(authority: name)
 
-    seen_prefix =
+    visited_prefix =
       case opts[:internal_tracking] do
         type when type === :unevaluated or tracked ->
           quote do
-            seen = MapSet.new()
+            visited = MapSet.new()
           end
 
         _ ->
@@ -77,7 +77,7 @@ defmodule Exonerate.Type.Object do
     result =
       if tracked do
         quote do
-          {:ok, seen}
+          {:ok, visited}
         end
       else
         :ok
@@ -85,7 +85,7 @@ defmodule Exonerate.Type.Object do
 
     quote do
       defp unquote(call)(content, path) when is_map(content) do
-        unquote(seen_prefix)
+        unquote(visited_prefix)
 
         with unquote_splicing(combining_filters ++ outer_filters ++ iterator_filter) do
           unquote(result)
@@ -104,7 +104,10 @@ defmodule Exonerate.Type.Object do
             |> Tools.pointer_to_fun_name(authority: name)
 
           quote do
-            [{:ok, new_seen} <- unquote(call)(content, path), seen = MapSet.union(seen, new_seen)]
+            [
+              {:ok, new_visited} <- unquote(call)(content, path),
+              visited = MapSet.union(visited, new_visited)
+            ]
           end ++ acc
       end
     else
@@ -135,7 +138,7 @@ defmodule Exonerate.Type.Object do
     filter_result =
       if opts[:track_properties] do
         quote do
-          {:ok, seen}
+          {:ok, visited}
         end
       else
         :ok
@@ -148,7 +151,7 @@ defmodule Exonerate.Type.Object do
 
         {_, :unevaluated} ->
           quote do
-            unquote(filter_result) <- unquote(call)(content, path, seen)
+            unquote(filter_result) <- unquote(call)(content, path, visited)
           end
 
         _ ->
@@ -207,6 +210,7 @@ defmodule Exonerate.Type.Object do
           is_map_key(subschema, filter_name) do
         module = @modules[filter_name]
         pointer = JsonPointer.join(pointer, filter_name)
+        opts = Keyword.delete(opts, :track_properties)
 
         quote do
           require unquote(module)

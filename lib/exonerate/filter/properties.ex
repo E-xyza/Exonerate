@@ -17,28 +17,28 @@ defmodule Exonerate.Filter.Properties do
     |> Tools.maybe_dump(opts)
   end
 
+  @should_track [:additional, :unevaluated]
+
   defp filter_for({key, _schema}, call, name, pointer, tracked, opts) do
     key_pointer = JsonPointer.join(pointer, key)
     key_call = Tools.pointer_to_fun_name(key_pointer, authority: name)
 
     filter =
-      case tracked do
-        :additional ->
-          quote do
-            defp unquote(call)({unquote(key), value}, path, _seen) do
-              case unquote(key_call)(value, Path.join(path, unquote(key))) do
-                :ok -> {:ok, true}
-                error -> error
-              end
+      if tracked in @should_track do
+        quote do
+          defp unquote(call)({unquote(key), value}, path, _seen) do
+            case unquote(key_call)(value, Path.join(path, unquote(key))) do
+              :ok -> {:ok, true}
+              error -> error
             end
           end
-
-        _ ->
-          quote do
-            defp unquote(call)({unquote(key), value}, path) do
-              unquote(key_call)(value, Path.join(path, unquote(key)))
-            end
+        end
+      else
+        quote do
+          defp unquote(call)({unquote(key), value}, path) do
+            unquote(key_call)(value, Path.join(path, unquote(key)))
           end
+        end
       end
 
     {filter,
@@ -49,33 +49,22 @@ defmodule Exonerate.Filter.Properties do
   end
 
   defp build_code({filters, accessories}, call, tracked) do
-    case tracked do
-      :additional ->
-        quote do
-          unquote(filters)
+    if tracked in @should_track do
+      quote do
+        unquote(filters)
 
-          defp unquote(call)(_kv, _path, seen), do: {:ok, seen}
+        defp unquote(call)(_kv, _path, seen), do: {:ok, seen}
 
-          unquote(accessories)
-        end
+        unquote(accessories)
+      end
+    else
+      quote do
+        unquote(filters)
 
-      :unevaluated ->
-        quote do
-          unquote(filters)
+        defp unquote(call)(_kv, _path), do: :ok
 
-          defp unquote(call)(_kv, _path), do: {:ok, MapSet.new()}
-
-          unquote(accessories)
-        end
-
-      _ ->
-        quote do
-          unquote(filters)
-
-          defp unquote(call)(_kv, _path), do: :ok
-
-          unquote(accessories)
-        end
+        unquote(accessories)
+      end
     end
   end
 end

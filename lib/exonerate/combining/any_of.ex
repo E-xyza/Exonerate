@@ -60,17 +60,17 @@ defmodule Exonerate.Combining.AnyOf do
           fn
             fun, {:error, msg} ->
               case fun.(value, path) do
-                {:ok, seen} ->
-                  {:ok, seen}
+                {:ok, visited} ->
+                  {:ok, visited}
 
                 {:error, error} ->
                   {:error, Keyword.update(msg, :failures, [error], &[error | &1])}
               end
 
-            fun, {:ok, seen} ->
+            fun, {:ok, visited} ->
               case fun.(value, path) do
-                {:ok, new_seen} -> {:ok, MapSet.union(seen, new_seen)}
-                {:error, error} -> {:ok, seen}
+                {:ok, new_visited} -> {:ok, MapSet.union(visited, new_visited)}
+                {:error, error} -> {:ok, visited}
               end
           end
         )

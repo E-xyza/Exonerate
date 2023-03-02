@@ -41,29 +41,29 @@ defmodule Exonerate.Combining do
     )
   end
 
-  defmacro capture(tracked, seen) do
+  defmacro capture(tracked, visited) do
     or_ok(
       tracked,
       quote do
-        {:ok, unquote(seen)}
+        {:ok, unquote(visited)}
       end
     )
   end
 
-  defmacro update_key(tracked, seen, key) do
+  defmacro update_key(tracked, visited, key) do
     or_ok(
       tracked,
       quote do
-        {:ok, MapSet.put(unquote(seen), unquote(key))}
+        {:ok, MapSet.put(unquote(visited), unquote(key))}
       end
     )
   end
 
-  defmacro update_set(tracked, seen, set) do
+  defmacro update_set(tracked, visited, set) do
     or_ok(
       tracked,
       quote do
-        {:ok, MapSet.union(unquote(seen), unquote(set))}
+        {:ok, MapSet.union(unquote(visited), unquote(set))}
       end
     )
   end

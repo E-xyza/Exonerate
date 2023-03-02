@@ -126,9 +126,9 @@ defmodule Exonerate.Type.Object.Iterator do
         require Combining
 
         Enum.reduce_while(content, Combining.initialize(unquote(outer_tracked)), fn
-          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
+          {key, value}, Combining.capture(unquote(outer_tracked), visited) ->
             case unquote(final_call)(value, Path.join(path, key)) do
-              :ok -> {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
+              :ok -> {:cont, Combining.update_key(unquote(outer_tracked), visited, key)}
               error = {:error, _} -> {:halt, error}
             end
         end)
@@ -146,7 +146,7 @@ defmodule Exonerate.Type.Object.Iterator do
           _, error = {:error, _} ->
             {:halt, error}
 
-          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
+          {key, value}, Combining.capture(unquote(outer_tracked), visited) ->
             unquote(tracked_with(final_call, filters, outer_tracked))
         end)
       end
@@ -154,20 +154,31 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defp build_unevaluated(call, final_call, [], outer_tracked) do
+    final_clause =
+      if final_call do
+        quote do
+          case unquote(final_call)(value, Path.join(path, key)) do
+            :ok -> {:cont, Combining.update_key(unquote(outer_tracked), visited, key)}
+            error = {:error, _} -> {:halt, error}
+          end
+        end
+      else
+        quote do
+          {:cont, {:ok, visited}}
+        end
+      end
+
     quote do
-      defp unquote(call)(content, path, seen) do
+      defp unquote(call)(content, path, visited) do
         alias Exonerate.Combining
         require Combining
 
         Enum.reduce_while(content, Combining.initialize(unquote(outer_tracked)), fn
-          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
-            if key in seen do
-              {:cont, Combining.capture(unquote(outer_tracked), seen)}
+          {key, value}, Combining.capture(unquote(outer_tracked), visited) ->
+            if key in visited do
+              {:cont, Combining.capture(unquote(outer_tracked), visited)}
             else
-              case unquote(make_final_call(final_call)) do
-                :ok -> {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
-                error = {:error, _} -> {:halt, error}
-              end
+              unquote(final_clause)
             end
         end)
       end
@@ -176,7 +187,7 @@ defmodule Exonerate.Type.Object.Iterator do
 
   defp build_unevaluated(call, final_call, filters, outer_tracked) do
     quote do
-      defp unquote(call)(content, path, seen) do
+      defp unquote(call)(content, path, visited) do
         alias Exonerate.Combining
         require Combining
 
@@ -184,38 +195,48 @@ defmodule Exonerate.Type.Object.Iterator do
           _, error = {:error, _} ->
             {:halt, error}
 
-          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
-            unquote(tracked_with(final_call, filters, outer_tracked))
+          {key, value}, Combining.capture(unquote(outer_tracked), visited) ->
+            seen = false
+
+            with unquote_splicing(filters) do
+              update =
+                if seen do
+                  Combining.update_key(unquote(outer_tracked), visited, key)
+                else
+                  Combining.capture(unquote(outer_tracked), visited)
+                end
+
+              {:cont, update}
+            else
+              error -> {:halt, error}
+            end
         end)
       end
     end
   end
 
   defp tracked_with(final_call, filters, outer_tracked) do
+    final_clause =
+      if final_call do
+        quote do
+          if seen do
+            {:cont, :ok}
+          else
+            {:cont, unquote(final_call)(value, Path.join(path, key))}
+          end
+        end
+      else
+        :ok
+      end
+
     quote do
       seen = false
 
       with unquote_splicing(filters) do
-        if seen do
-          {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
-        else
-          {:cont, unquote(make_final_call(final_call))}
-        end
+        unquote(final_clause)
       else
         error -> {:halt, error}
       end
-    end
-  end
-
-  defp make_final_call(nil) do
-    quote do
-      {:ok, seen}
-    end
-  end
-
-  defp make_final_call(call) do
-    quote do
-      unquote(call)(value, Path.join(path, key))
     end
   end
 
@@ -226,9 +247,9 @@ defmodule Exonerate.Type.Object.Iterator do
         require Combining
 
         Enum.reduce_while(content, Combining.initialize(unquote(outer_tracked)), fn
-          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
+          {key, value}, Combining.capture(unquote(outer_tracked), visited) ->
             with unquote_splicing(filters) do
-              {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
+              {:cont, Combining.update_key(unquote(outer_tracked), visited, key)}
             else
               error -> {:halt, error}
             end
@@ -271,16 +292,14 @@ defmodule Exonerate.Type.Object.Iterator do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     filter =
-      cond do
-        opts[:internal_tracking] === :additional ->
-          quote do
-            {:ok, seen} <- unquote(call)({key, value}, path, seen)
-          end
-
-        true ->
-          quote do
-            :ok <- unquote(call)({key, value}, path)
-          end
+      if opts[:internal_tracking] do
+        quote do
+          {:ok, seen} <- unquote(call)({key, value}, path, seen)
+        end
+      else
+        quote do
+          :ok <- unquote(call)({key, value}, path)
+        end
       end
 
     [
@@ -302,16 +321,14 @@ defmodule Exonerate.Type.Object.Iterator do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     filter =
-      cond do
-        opts[:internal_tracking] === :additional ->
-          quote do
-            {:ok, seen} <- unquote(call)({key, value}, path, seen)
-          end
-
-        true ->
-          quote do
-            :ok <- unquote(call)({key, value}, path)
-          end
+      if opts[:internal_tracking] do
+        quote do
+          {:ok, seen} <- unquote(call)({key, value}, path, seen)
+        end
+      else
+        quote do
+          :ok <- unquote(call)({key, value}, path)
+        end
       end
 
     [

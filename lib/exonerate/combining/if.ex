@@ -134,10 +134,10 @@ defmodule Exonerate.Combining.If do
     quote do
       defp unquote(entrypoint_call)(content, path) do
         case unquote(if_call(name, pointer, true))(content, path) do
-          {:ok, seen} ->
+          {:ok, visted} ->
             case unquote(then_clause) do
-              {:ok, new_seen} ->
-                {:ok, MapSet.union(seen, new_seen)}
+              {:ok, new_visted} ->
+                {:ok, MapSet.union(visted, new_visted)}
 
               error = {:error, _} ->
                 error

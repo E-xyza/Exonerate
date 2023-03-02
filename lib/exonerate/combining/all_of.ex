@@ -57,12 +57,12 @@ defmodule Exonerate.Combining.AllOf do
 
         Enum.reduce_while(
           unquote(calls),
-          Combining.initialize(unquote(tracked)),
+          Exonerate.Combining.initialize(unquote(tracked)),
           fn
-            fun, Combining.capture(unquote(tracked), seen) ->
+            fun, Exonerate.Combining.capture(unquote(tracked), visited) ->
               case fun.(value, path) do
-                Combining.capture(unquote(tracked), new_seen) ->
-                  {:cont, Combining.update_set(unquote(tracked), seen, new_seen)}
+                Exonerate.Combining.capture(unquote(tracked), new_visited) ->
+                  {:cont, Exonerate.Combining.update_set(unquote(tracked), visited, new_visited)}
 
                 error = {:error, _} ->
                   {:halt, error}

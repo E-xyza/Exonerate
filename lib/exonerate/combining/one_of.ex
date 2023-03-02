@@ -64,16 +64,16 @@ defmodule Exonerate.Combining.OneOf do
           fn
             {fun, index}, {:error, opts} ->
               case fun.(value, path) do
-                Combining.capture(unquote(tracked), seen) ->
-                  {:cont, {Combining.capture(unquote(tracked), seen), index}}
+                Combining.capture(unquote(tracked), visited) ->
+                  {:cont, {Combining.capture(unquote(tracked), visited), index}}
 
                 error ->
                   {:cont, {:error, Keyword.update(opts, :failures, [error], &[error | &1])}}
               end
 
-            {fun, index}, {Combining.capture(unquote(tracked), seen), previous} ->
+            {fun, index}, {Combining.capture(unquote(tracked), visited), previous} ->
               case fun.(value, path) do
-                Combining.capture(unquote(tracked), _seen) ->
+                Combining.capture(unquote(tracked), _visited) ->
                   {:halt,
                    Tools.mismatch(value, unquote(schema_pointer), path,
                      matches: [
@@ -84,7 +84,7 @@ defmodule Exonerate.Combining.OneOf do
                    )}
 
                 _error ->
-                  {:cont, {Combining.capture(unquote(tracked), seen), previous}}
+                  {:cont, {Combining.capture(unquote(tracked), visited), previous}}
               end
           end
         )
