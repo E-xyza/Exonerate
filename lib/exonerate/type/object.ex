@@ -99,7 +99,7 @@ defmodule Exonerate.Type.Object do
         acc ->
           call =
             pointer
-            |> JsonPointer.join([Combining.adjust(filter), ":tracked"])
+            |> JsonPointer.join(Combining.adjust(filter) ++ [":tracked"])
             |> Tools.pointer_to_fun_name(authority: name)
 
           quote do
