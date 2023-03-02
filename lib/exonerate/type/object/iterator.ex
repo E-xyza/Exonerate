@@ -13,6 +13,10 @@ defmodule Exonerate.Type.Object.Iterator do
 
   @filters Map.keys(@modules)
 
+  def needs_iterator?(schema) do
+    Enum.any?(@filters, &is_map_key(schema, &1))
+  end
+
   defmacro from_cached(name, pointer, opts) do
     __CALLER__.module
     |> Cache.fetch!(name)

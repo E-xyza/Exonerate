@@ -4,6 +4,7 @@ defmodule Exonerate.Type.Object do
   alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Combining
+  alias Exonerate.Type.Object.Iterator
 
   @modules %{
     "minProperties" => Exonerate.Filter.MinProperties,
@@ -124,7 +125,7 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  defp iterator_filter(_subschema, name, pointer, opts) do
+  defp iterator_filter(subschema, name, pointer, opts) do
     call =
       pointer
       |> JsonPointer.join(":iterator")
@@ -141,8 +142,9 @@ defmodule Exonerate.Type.Object do
       end
 
     List.wrap(
-      case opts[:internal_tracking] do
-        :unevaluated ->
+      case {Iterator.needs_iterator?(subschema), opts[:internal_tracking]} do
+        {false, _} -> nil
+        {_, :unevaluated} ->
           quote do
             unquote(filter_result) <- unquote(call)(content, path, seen)
           end
