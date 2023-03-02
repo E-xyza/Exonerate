@@ -13,17 +13,6 @@ defmodule Exonerate.Type.Object.Iterator do
 
   @filters Map.keys(@modules)
 
-  @spec iterator_type(Type.json()) :: :unevaluated | :additional | :untracked | nil
-  def iterator_type(subschema) do
-    if Enum.any?(@filters, &is_map_key(subschema, &1)) do
-      case subschema do
-        %{"additionalProperties" => _} -> :additional
-        %{"unevaluatedProperties" => _} -> :unevaluated
-        _ -> :untracked
-      end
-    end
-  end
-
   defmacro from_cached(name, pointer, opts) do
     __CALLER__.module
     |> Cache.fetch!(name)
@@ -50,9 +39,10 @@ defmodule Exonerate.Type.Object.Iterator do
       |> Tools.if(outer_tracked, &JsonPointer.join(&1, ":tracked"))
       |> Tools.pointer_to_fun_name(authority: name)
 
-    # TODO: simplify this.
-
-    {track_state, final_call, final_accessory} =
+    # NOTE: we can't count on this working properly with the outer_tracked variable
+    # beacuse outer_tracked describes the internal code structure and overloads the
+    # :additional tag for trivial unevaluated cases.
+    {final_call, final_accessory} =
       case schema do
         %{"additionalProperties" => _} ->
           pointer = JsonPointer.join(pointer, "additionalProperties")
@@ -69,7 +59,7 @@ defmodule Exonerate.Type.Object.Iterator do
               )
             end
 
-          {:additional, final_call, final_accessory}
+          {final_call, final_accessory}
 
         %{"unevaluatedProperties" => _} ->
           pointer = JsonPointer.join(pointer, "unevaluatedProperties")
@@ -86,16 +76,16 @@ defmodule Exonerate.Type.Object.Iterator do
               )
             end
 
-          {:unevaluated, final_call, final_accessory}
+          {final_call, final_accessory}
 
         _ ->
-          {:untracked, nil, []}
+          {nil, []}
       end
 
     {filters, accessories} =
       schema
       |> Map.take(@filters)
-      |> Enum.flat_map(&filter_for(&1, name, pointer, Keyword.put(opts, :tracker, track_state)))
+      |> Enum.flat_map(&filter_for(&1, name, pointer, opts))
       |> Enum.unzip()
 
     # build the main call in three different cases:
@@ -103,14 +93,15 @@ defmodule Exonerate.Type.Object.Iterator do
     # - needs unevaluatedProperties
     # - trivial
     main_call =
-      case {track_state, Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))} do
+      case {opts[:internal_tracking],
+            Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1)))} do
         {:additional, nil} ->
           build_additional(call, final_call, filters, outer_tracked)
 
         {:unevaluated, nil} ->
           build_unevaluated(call, final_call, filters, outer_tracked)
 
-        {:untracked, nil} ->
+        {nil, nil} ->
           build_untracked(call, filters, outer_tracked)
 
         {_, error_path} ->
@@ -133,7 +124,7 @@ defmodule Exonerate.Type.Object.Iterator do
         Enum.reduce_while(content, Combining.initialize(unquote(outer_tracked)), fn
           {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
             case unquote(final_call)(value, Path.join(path, key)) do
-              :ok -> {:cont, Combining.update_key(unquote(outer_tracked, :key))}
+              :ok -> {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
               error = {:error, _} -> {:halt, error}
             end
         end)
@@ -169,11 +160,28 @@ defmodule Exonerate.Type.Object.Iterator do
             if key in seen do
               {:cont, Combining.capture(unquote(outer_tracked), seen)}
             else
-              case unquote(final_call)(value, Path.join(path, key)) do
+              case unquote(make_final_call(final_call)) do
                 :ok -> {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
                 error = {:error, _} -> {:halt, error}
               end
             end
+        end)
+      end
+    end
+  end
+
+  defp build_unevaluated(call, final_call, filters, outer_tracked) do
+    quote do
+      defp unquote(call)(content, path, seen) do
+        alias Exonerate.Combining
+        require Combining
+
+        Enum.reduce_while(content, Combining.initialize(unquote(outer_tracked)), fn
+          _, error = {:error, _} ->
+            {:halt, error}
+
+          {key, value}, Combining.capture(unquote(outer_tracked), seen) ->
+            unquote(tracked_with(final_call, filters, outer_tracked))
         end)
       end
     end
@@ -187,11 +195,23 @@ defmodule Exonerate.Type.Object.Iterator do
         if seen do
           {:cont, Combining.update_key(unquote(outer_tracked), seen, key)}
         else
-          {:cont, unquote(final_call)(value, Path.join(path, key))}
+          {:cont, unquote(make_final_call(final_call))}
         end
       else
         error -> {:halt, error}
       end
+    end
+  end
+
+  defp make_final_call(nil) do
+    quote do
+      {:ok, seen}
+    end
+  end
+
+  defp make_final_call(call) do
+    quote do
+      unquote(call)(value, Path.join(path, key))
     end
   end
 
@@ -245,15 +265,16 @@ defmodule Exonerate.Type.Object.Iterator do
   defp filter_for({"properties", _}, name, pointer, opts) do
     pointer = JsonPointer.join(pointer, "properties")
     call = Tools.pointer_to_fun_name(pointer, authority: name)
+    tracked = Keyword.get(opts, :track_properties, false)
 
     filter =
-      case opts[:tracker] do
-        :tracked ->
+      cond do
+        opts[:internal_tracking] === :additional ->
           quote do
             {:ok, seen} <- unquote(call)({key, value}, path, seen)
           end
 
-        :untracked ->
+        true ->
           quote do
             :ok <- unquote(call)({key, value}, path)
           end
@@ -267,7 +288,7 @@ defmodule Exonerate.Type.Object.Iterator do
          Exonerate.Filter.Properties.filter_from_cached(
            unquote(name),
            unquote(pointer),
-           unquote(Tools.drop_tracking(opts))
+           unquote(opts)
          )
        end}
     ]
@@ -276,15 +297,16 @@ defmodule Exonerate.Type.Object.Iterator do
   defp filter_for({"patternProperties", _}, name, pointer, opts) do
     pointer = JsonPointer.join(pointer, "patternProperties")
     call = Tools.pointer_to_fun_name(pointer, authority: name)
+    tracked = Keyword.get(opts, :track_properties, false)
 
     filter =
-      case opts[:tracker] do
-        :tracked ->
+      cond do
+        opts[:internal_tracking] === :additional ->
           quote do
             {:ok, seen} <- unquote(call)({key, value}, path, seen)
           end
 
-        :untracked ->
+        true ->
           quote do
             :ok <- unquote(call)({key, value}, path)
           end
@@ -298,7 +320,7 @@ defmodule Exonerate.Type.Object.Iterator do
          Exonerate.Filter.PatternProperties.filter_from_cached(
            unquote(name),
            unquote(pointer),
-           unquote(Tools.drop_tracking(opts))
+           unquote(opts)
          )
        end}
     ]
@@ -312,7 +334,7 @@ defmodule Exonerate.Type.Object.Iterator do
 
     filter =
       case opts[:tracker] do
-        :untracked ->
+        nil ->
           quote do
             :ok <- unquote(call)(key, Path.join(path, key))
           end

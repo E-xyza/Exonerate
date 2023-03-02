@@ -117,7 +117,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp build_code(subschema, filters, call, acc, pointer) do
     quote do
-      def unquote(call)(content, path) do
+      defp unquote(call)(content, path) do
         content
         |> Enum.reduce_while(unquote(filter_initializer_for(acc)), fn
           item, unquote(filter_accumulator_for(acc)) ->
@@ -593,7 +593,7 @@ defmodule Exonerate.Type.Array.Iterator do
         contains_pointer = JsonPointer.join(pointer, "contains")
 
         quote do
-          def unquote(call)([], path) do
+          defp unquote(call)([], path) do
             require Exonerate.Tools
             Exonerate.Tools.mismatch([], unquote(contains_pointer), path)
           end
@@ -603,7 +603,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
       :error ->
         quote do
-          def unquote(call)(content, path) do
+          defp unquote(call)(content, path) do
             require Exonerate.Tools
             Exonerate.Tools.mismatch(content, unquote(contains_pointer), path)
           end
@@ -618,7 +618,7 @@ defmodule Exonerate.Type.Array.Iterator do
         contains_call = Tools.pointer_to_fun_name(contains_pointer, authority: name)
 
         quote do
-          def unquote(call)(content, path) do
+          defp unquote(call)(content, path) do
             require Exonerate.Tools
 
             content
@@ -668,17 +668,17 @@ defmodule Exonerate.Type.Array.Iterator do
     case Tools.degeneracy(contains) do
       :ok ->
         quote do
-          def unquote(call)([], path) do
+          defp unquote(call)([], path) do
             require Exonerate.Tools
             Exonerate.Tools.mismatch([], unquote(contains_pointer), path)
           end
 
-          def unquote(call)(_content, _path), do: :ok
+          defp unquote(call)(_content, _path), do: :ok
         end
 
       :error ->
         quote do
-          def unquote(call)(content, path) do
+          defp unquote(call)(content, path) do
             require Exonerate.Tools
             Exonerate.Tools.mismatch(content, unquote(contains_pointer), path)
           end
@@ -690,7 +690,7 @@ defmodule Exonerate.Type.Array.Iterator do
         needed = Map.get(schema, "minContains", 1)
 
         quote do
-          def unquote(call)(content, path) do
+          defp unquote(call)(content, path) do
             require Exonerate.Tools
 
             content
@@ -733,7 +733,7 @@ defmodule Exonerate.Type.Array.Iterator do
       |> JsonPointer.to_uri()
 
     quote do
-      def unquote(call)(content, path) do
+      defp unquote(call)(content, path) do
         require Exonerate.Tools
 
         content

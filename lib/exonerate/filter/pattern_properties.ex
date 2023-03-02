@@ -6,7 +6,8 @@ defmodule Exonerate.Filter.PatternProperties do
 
   defmacro filter_from_cached(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
-    {tracker, opts} = Keyword.pop!(opts, :tracker)
+
+    {tracker, opts} = Keyword.pop!(opts, :internal_tracking)
 
     __CALLER__.module
     |> Cache.fetch!(name)
@@ -26,11 +27,16 @@ defmodule Exonerate.Filter.PatternProperties do
      end,
      quote do
        require Exonerate.Context
-       Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+
+       Exonerate.Context.from_cached(
+         unquote(name),
+         unquote(pointer),
+         unquote(Tools.drop_tracking(opts))
+       )
      end}
   end
 
-  defp build_code({filters, accessories}, call, :tracked) do
+  defp build_code({filters, accessories}, call, :additional) do
     quote do
       defp unquote(call)({k, v}, path, seen) do
         Enum.reduce_while(unquote(filters), {:ok, seen}, fn
@@ -50,7 +56,7 @@ defmodule Exonerate.Filter.PatternProperties do
     end
   end
 
-  defp build_code({filters, accessories}, call, :untracked) do
+  defp build_code({filters, accessories}, call, _) do
     quote do
       defp unquote(call)({k, v}, path) do
         Enum.reduce_while(unquote(filters), :ok, fn

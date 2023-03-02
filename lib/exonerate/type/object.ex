@@ -3,7 +3,6 @@ defmodule Exonerate.Type.Object do
 
   alias Exonerate.Draft
   alias Exonerate.Tools
-  alias Exonerate.Type.Object.Iterator
   alias Exonerate.Combining
 
   @modules %{
@@ -49,11 +48,13 @@ defmodule Exonerate.Type.Object do
   def filter(subschema, name, pointer, opts) do
     tracked = Keyword.get(opts, :track_properties, false)
     subschema = remove_degenerate_features(subschema)
+    opts = add_internal_tracker(subschema, opts)
 
     combining_filters =
       make_combining_filters(combining_filters(opts), subschema, name, pointer, opts)
 
     outer_filters = make_filters(@outer_filters, subschema, name, pointer)
+
     iterator_filter = iterator_filter(subschema, name, pointer, opts)
 
     call =
@@ -62,7 +63,7 @@ defmodule Exonerate.Type.Object do
       |> Tools.pointer_to_fun_name(authority: name)
 
     seen_prefix =
-      case Iterator.iterator_type(subschema) do
+      case opts[:internal_tracking] do
         type when type === :unevaluated or tracked ->
           quote do
             seen = MapSet.new()
@@ -105,7 +106,6 @@ defmodule Exonerate.Type.Object do
             [{:ok, new_seen} <- unquote(call)(content, path), seen = MapSet.union(seen, new_seen)]
           end ++ acc
       end
-      |> Tools.inspect()
     else
       make_filters(filters, subschema, name, pointer)
     end
@@ -124,7 +124,7 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  defp iterator_filter(subschema, name, pointer, opts) do
+  defp iterator_filter(_subschema, name, pointer, opts) do
     call =
       pointer
       |> JsonPointer.join(":iterator")
@@ -141,7 +141,7 @@ defmodule Exonerate.Type.Object do
       end
 
     List.wrap(
-      case Iterator.iterator_type(subschema) do
+      case opts[:internal_tracking] do
         nil ->
           nil
 
@@ -158,9 +158,37 @@ defmodule Exonerate.Type.Object do
     )
   end
 
-  def maybe_add_tracked_option(_subschema, opts), do: opts
+  @internal_tracker_keys Combining.filters() -- ["not"]
 
-  def accessories(_subschema, name, pointer, opts) do
+  defp add_internal_tracker(subschema, opts) do
+    mode =
+      cond do
+        opts[:track_properties] ->
+          :unevaluated
+
+        is_map_key(subschema, "propertyNames") ->
+          nil
+
+        is_map_key(subschema, "additionalProperties") ->
+          :additional
+
+        is_map_key(subschema, "unevaluatedProperties") ->
+          if Enum.any?(@internal_tracker_keys, &is_map_key(subschema, &1)) do
+            :unevaluated
+          else
+            :additional
+          end
+
+        true ->
+          nil
+      end
+
+    Keyword.put(opts, :internal_tracking, mode)
+  end
+
+  def accessories(subschema, name, pointer, opts) do
+    opts_with_tracker = add_internal_tracker(subschema, opts)
+
     List.wrap(
       quote do
         require Exonerate.Type.Object.Iterator
@@ -168,9 +196,19 @@ defmodule Exonerate.Type.Object do
         Exonerate.Type.Object.Iterator.from_cached(
           unquote(name),
           unquote(pointer),
-          unquote(opts)
+          unquote(opts_with_tracker)
         )
       end
-    )
+    ) ++
+      for filter_name <- @outer_filters,
+          is_map_key(subschema, filter_name) do
+        module = @modules[filter_name]
+        pointer = JsonPointer.join(pointer, filter_name)
+
+        quote do
+          require unquote(module)
+          unquote(module).filter_from_cached(unquote(name), unquote(pointer), unquote(opts))
+        end
+      end
   end
 end

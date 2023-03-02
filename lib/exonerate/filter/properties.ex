@@ -6,24 +6,24 @@ defmodule Exonerate.Filter.Properties do
 
   defmacro filter_from_cached(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
-    {tracker, opts} = Keyword.pop!(opts, :tracker)
+    {tracked, opts} = Keyword.pop!(opts, :internal_tracking)
 
     __CALLER__.module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
-    |> Enum.map(&filter_for(&1, call, name, pointer, tracker, opts))
+    |> Enum.map(&filter_for(&1, call, name, pointer, tracked, opts))
     |> Enum.unzip()
-    |> build_code(call, tracker)
+    |> build_code(call, tracked)
     |> Tools.maybe_dump(opts)
   end
 
-  defp filter_for({key, _schema}, call, name, pointer, tracker, opts) do
+  defp filter_for({key, _schema}, call, name, pointer, tracked, opts) do
     key_pointer = JsonPointer.join(pointer, key)
     key_call = Tools.pointer_to_fun_name(key_pointer, authority: name)
 
     filter =
-      case tracker do
-        :tracked ->
+      case tracked do
+        :additional ->
           quote do
             defp unquote(call)({unquote(key), value}, path, _seen) do
               case unquote(key_call)(value, Path.join(path, unquote(key))) do
@@ -33,7 +33,7 @@ defmodule Exonerate.Filter.Properties do
             end
           end
 
-        :untracked ->
+        _ ->
           quote do
             defp unquote(call)({unquote(key), value}, path) do
               unquote(key_call)(value, Path.join(path, unquote(key)))
@@ -48,23 +48,34 @@ defmodule Exonerate.Filter.Properties do
      end}
   end
 
-  defp build_code({filters, accessories}, call, :tracked) do
-    quote do
-      unquote(filters)
+  defp build_code({filters, accessories}, call, tracked) do
+    case tracked do
+      :additional ->
+        quote do
+          unquote(filters)
 
-      defp unquote(call)(_kv, _path, seen), do: {:ok, seen}
+          defp unquote(call)(_kv, _path, seen), do: {:ok, seen}
 
-      unquote(accessories)
-    end
-  end
+          unquote(accessories)
+        end
 
-  defp build_code({filters, accessories}, call, :untracked) do
-    quote do
-      unquote(filters)
+      :unevaluated ->
+        quote do
+          unquote(filters)
 
-      defp unquote(call)(_kv, _path), do: :ok
+          defp unquote(call)(_kv, _path), do: {:ok, MapSet.new()}
 
-      unquote(accessories)
+          unquote(accessories)
+        end
+
+      _ ->
+        quote do
+          unquote(filters)
+
+          defp unquote(call)(_kv, _path), do: :ok
+
+          unquote(accessories)
+        end
     end
   end
 end
