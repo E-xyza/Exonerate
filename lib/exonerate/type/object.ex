@@ -142,8 +142,10 @@ defmodule Exonerate.Type.Object do
       end
 
     List.wrap(
-      case {Iterator.needs_iterator?(subschema), opts[:internal_tracking]} do
-        {false, _} -> nil
+      case {Iterator.needed?(subschema), opts[:internal_tracking]} do
+        {false, _} ->
+          nil
+
         {_, :unevaluated} ->
           quote do
             unquote(filter_result) <- unquote(call)(content, path, seen)
@@ -189,14 +191,16 @@ defmodule Exonerate.Type.Object do
     opts_with_tracker = add_internal_tracker(subschema, opts)
 
     List.wrap(
-      quote do
-        require Exonerate.Type.Object.Iterator
+      if Iterator.needed?(subschema) do
+        quote do
+          require Exonerate.Type.Object.Iterator
 
-        Exonerate.Type.Object.Iterator.from_cached(
-          unquote(name),
-          unquote(pointer),
-          unquote(opts_with_tracker)
-        )
+          Exonerate.Type.Object.Iterator.from_cached(
+            unquote(name),
+            unquote(pointer),
+            unquote(opts_with_tracker)
+          )
+        end
       end
     ) ++
       for filter_name <- @outer_filters,

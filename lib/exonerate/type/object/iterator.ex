@@ -13,7 +13,7 @@ defmodule Exonerate.Type.Object.Iterator do
 
   @filters Map.keys(@modules)
 
-  def needs_iterator?(schema) do
+  def needed?(schema) do
     Enum.any?(@filters, &is_map_key(schema, &1))
   end
 

@@ -78,31 +78,29 @@ defmodule Exonerate.Context do
           :unknown
       end
 
-    cond do
-      Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") or degeneracy == :error ->
-        call = Tools.pointer_to_fun_name(pointer, authority: name)
-        ref_pointer = JsonPointer.join(pointer, "$ref")
-        ref_call = Tools.pointer_to_fun_name(ref_pointer, authority: name)
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") or degeneracy === :error do
+      call = Tools.pointer_to_fun_name(pointer, authority: name)
+      ref_pointer = JsonPointer.join(pointer, "$ref")
+      ref_call = Tools.pointer_to_fun_name(ref_pointer, authority: name)
 
-        quote do
-          @compile {:inline, [{unquote(call), 2}]}
-          defp unquote(call)(content, path) do
-            unquote(ref_call)(content, path)
-          end
-
-          require Exonerate.Combining.Ref
-
-          Exonerate.Combining.Ref.filter_from_cached(
-            unquote(name),
-            unquote(ref_pointer),
-            unquote(opts)
-          )
+      quote do
+        @compile {:inline, [{unquote(call), 2}]}
+        defp unquote(call)(content, path) do
+          unquote(ref_call)(content, path)
         end
 
-      true ->
-        subschema
-        |> Map.delete("$ref")
-        |> to_quoted_function(module, name, pointer, opts)
+        require Exonerate.Combining.Ref
+
+        Exonerate.Combining.Ref.filter_from_cached(
+          unquote(name),
+          unquote(ref_pointer),
+          unquote(opts)
+        )
+      end
+    else
+      subschema
+      |> Map.delete("$ref")
+      |> to_quoted_function(module, name, pointer, opts)
     end
   end
 
@@ -224,7 +222,7 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(subschema = %{"type" => type_or_types}, module, name, pointer, opts) do
+  defp to_quoted_function(%{"type" => type_or_types}, module, name, pointer, opts) do
     # condition the bindings
     call =
       pointer
@@ -234,7 +232,10 @@ defmodule Exonerate.Context do
       )
       |> Tools.pointer_to_fun_name(authority: name)
 
-    schema = Cache.fetch!(module, name)
+    subschema = module
+    |> Cache.fetch!(name)
+    |> JsonPointer.resolve!(pointer)
+
     subschema = Object.remove_degenerate_features(subschema)
 
     types = resolve_types(type_or_types)
@@ -266,7 +267,7 @@ defmodule Exonerate.Context do
       |> JsonPointer.join("type")
       |> JsonPointer.to_uri()
 
-    case Tools.degeneracy(schema) do
+    case Tools.degeneracy(subschema) do
       :ok ->
         quote do
           defp unquote(call)(content, path), do: :ok
