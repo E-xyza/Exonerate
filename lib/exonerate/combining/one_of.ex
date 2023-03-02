@@ -34,9 +34,11 @@ defmodule Exonerate.Combining.OneOf do
 
   defp call_and_context(_, index, name, pointer, tracked, opts) do
     pointer = JsonPointer.join(pointer, "#{index}")
-    call = pointer
-    |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
-    |> Tools.pointer_to_fun_name(authority: name)
+
+    call =
+      pointer
+      |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
+      |> Tools.pointer_to_fun_name(authority: name)
 
     {quote do
        {&(unquote({call, [], Elixir}) / 2), unquote(index)}

@@ -142,9 +142,6 @@ defmodule Exonerate.Type.Object do
 
     List.wrap(
       case opts[:internal_tracking] do
-        nil ->
-          nil
-
         :unevaluated ->
           quote do
             unquote(filter_result) <- unquote(call)(content, path, seen)

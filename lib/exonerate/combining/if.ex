@@ -30,13 +30,14 @@ defmodule Exonerate.Combining.If do
   end
 
   def build_code(subschema, name, pointer, parent_pointer, tracked, opts) do
-    ok = if tracked do
-      quote do
-        {:ok, MapSet.new()}
+    ok =
+      if tracked do
+        quote do
+          {:ok, MapSet.new()}
+        end
+      else
+        :ok
       end
-    else
-      :ok
-    end
 
     {then_clause, then_context} =
       if Map.get(subschema, "then") do
@@ -105,11 +106,31 @@ defmodule Exonerate.Combining.If do
         end
 
       :unknown ->
-        standard_if(entrypoint_call, then_clause, then_context, else_clause, else_context, name, pointer, tracked, opts)
+        standard_if(
+          entrypoint_call,
+          then_clause,
+          then_context,
+          else_clause,
+          else_context,
+          name,
+          pointer,
+          tracked,
+          opts
+        )
     end
   end
 
-  defp standard_if(entrypoint_call, then_clause, then_context, else_clause, else_context, name, pointer, true, opts) do
+  defp standard_if(
+         entrypoint_call,
+         then_clause,
+         then_context,
+         else_clause,
+         else_context,
+         name,
+         pointer,
+         true,
+         opts
+       ) do
     quote do
       defp unquote(entrypoint_call)(content, path) do
         case unquote(if_call(name, pointer, true))(content, path) do
@@ -117,7 +138,9 @@ defmodule Exonerate.Combining.If do
             case unquote(then_clause) do
               {:ok, new_seen} ->
                 {:ok, MapSet.union(seen, new_seen)}
-              error = {:error, _} -> error
+
+              error = {:error, _} ->
+                error
             end
 
           {:error, _} ->
@@ -133,8 +156,17 @@ defmodule Exonerate.Combining.If do
     end
   end
 
-
-  defp standard_if(entrypoint_call, then_clause, then_context, else_clause, else_context, name, pointer, tracked, opts) do
+  defp standard_if(
+         entrypoint_call,
+         then_clause,
+         then_context,
+         else_clause,
+         else_context,
+         name,
+         pointer,
+         tracked,
+         opts
+       ) do
     quote do
       defp unquote(entrypoint_call)(content, path) do
         case unquote(if_call(name, pointer, tracked))(content, path) do

@@ -265,7 +265,6 @@ defmodule Exonerate.Type.Object.Iterator do
   defp filter_for({"properties", _}, name, pointer, opts) do
     pointer = JsonPointer.join(pointer, "properties")
     call = Tools.pointer_to_fun_name(pointer, authority: name)
-    tracked = Keyword.get(opts, :track_properties, false)
 
     filter =
       cond do
@@ -297,7 +296,6 @@ defmodule Exonerate.Type.Object.Iterator do
   defp filter_for({"patternProperties", _}, name, pointer, opts) do
     pointer = JsonPointer.join(pointer, "patternProperties")
     call = Tools.pointer_to_fun_name(pointer, authority: name)
-    tracked = Keyword.get(opts, :track_properties, false)
 
     filter =
       cond do
