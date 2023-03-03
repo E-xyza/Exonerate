@@ -4,7 +4,7 @@ defmodule Exonerate.Filter.Dependencies do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     __CALLER__.module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
@@ -83,7 +83,7 @@ defmodule Exonerate.Filter.Dependencies do
       defp unquote(call)(content, path), do: :ok
 
       require Exonerate.Context
-      Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
     end
   end
 end

@@ -4,5 +4,5 @@ defmodule Exonerate.Filter.MaxItems do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(_name, _pointer, _opts), do: []
+  defmacro filter(_name, _pointer, _opts), do: []
 end

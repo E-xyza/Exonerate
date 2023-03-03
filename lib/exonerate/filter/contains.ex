@@ -6,7 +6,7 @@ defmodule Exonerate.Filter.Contains do
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     module = __CALLER__.module
 
     module
@@ -20,7 +20,7 @@ defmodule Exonerate.Filter.Contains do
       :find ->
         quote do
           require Exonerate.Context
-          Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
         end
     end
     |> Tools.maybe_dump(opts)
@@ -64,7 +64,7 @@ defmodule Exonerate.Filter.Contains do
             end
 
             require Exonerate.Context
-            Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+            Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
           end
       end
   end

@@ -4,7 +4,7 @@ defmodule Exonerate.Filter.Items do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     module = __CALLER__.module
     subschema = Cache.fetch!(module, name)
     items = JsonPointer.resolve!(subschema, pointer)
@@ -21,7 +21,7 @@ defmodule Exonerate.Filter.Items do
         items when (is_map(items) or is_boolean(items)) and prefix_items == 0 ->
           quote do
             require Exonerate.Context
-            Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+            Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
           end
 
         items when is_map(items) or is_boolean(items) ->
@@ -36,7 +36,7 @@ defmodule Exonerate.Filter.Items do
             end
 
             require Exonerate.Context
-            Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+            Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
           end
 
         # legacy "items" which is now prefixItems
@@ -74,7 +74,7 @@ defmodule Exonerate.Filter.Items do
       end,
       quote do
         require Exonerate.Context
-        Exonerate.Context.from_cached(unquote(name), unquote(item_pointer), unquote(opts))
+        Exonerate.Context.filter(unquote(name), unquote(item_pointer), unquote(opts))
       end
     }
   end

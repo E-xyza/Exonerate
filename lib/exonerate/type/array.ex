@@ -1,4 +1,8 @@
 defmodule Exonerate.Type.Array do
+  @moduledoc false
+
+  @behaviour Exonerate.Type
+
   alias Exonerate.Combining
   alias Exonerate.Draft
   alias Exonerate.Tools
@@ -85,7 +89,7 @@ defmodule Exonerate.Type.Array do
 
     quote do
       require unquote(module)
-      unquote(module).filter_from_cached(unquote(name), unquote(pointer), unquote(opts))
+      unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
     end
   end
 end

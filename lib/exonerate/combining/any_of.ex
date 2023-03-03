@@ -2,7 +2,7 @@ defmodule Exonerate.Combining.AnyOf do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     # note this needs to change if we are doing unevaluateds, since we must
     # evaluate ALL options
     opts =
@@ -45,7 +45,7 @@ defmodule Exonerate.Combining.AnyOf do
      end,
      quote do
        require Exonerate.Context
-       Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+       Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
      end}
   end
 

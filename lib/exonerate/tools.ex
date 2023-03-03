@@ -7,10 +7,11 @@ defmodule Exonerate.Tools do
 
   # GENERAL-USE MACROS
   defmacro mismatch(error_value, schema_pointer, json_pointer, opts \\ []) do
-    primary = Keyword.take(binding(), ~w(error_value schema_pointer json_pointer)a)
+    primary = Keyword.take(binding(), ~w(error_value json_pointer)a)
+    schema_pointer = [schema_pointer: JsonPointer.to_uri(schema_pointer)]
     extras = Keyword.take(opts, ~w(reason failures matches required)a)
 
-    quote bind_quoted: [error_params: primary ++ extras] do
+    quote bind_quoted: [error_params: primary ++ schema_pointer ++ extras] do
       {:error, error_params}
     end
   end
@@ -35,25 +36,24 @@ defmodule Exonerate.Tools do
   @spec subschema(Macro.Env.t(), atom, JsonPointer.t(), context? :: boolean) :: Type.json()
   def subschema(caller, authority, pointer, context? \\ false) do
     caller.module
-    |> Cache.fetch!(authority)
+    |> Cache.fetch_schema!(authority)
     |> JsonPointer.resolve!(pointer)
     |> if(context?, &Degeneracy.canonicalize/1)
   end
 
-
   @spec parent(Macro.Env.t(), atom, JsonPointer.t(), context? :: boolean) :: Type.json()
   def parent(caller, authority, pointer, context? \\ false) do
     caller.module
-    |> Cache.fetch!(authority)
+    |> Cache.fetch_schema!(authority)
     |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
     |> if(context?, &Degeneracy.canonicalize/1)
   end
 
-  @spec call(atom, JsonPointer.t(), Keyword.t) :: atom
+  @spec call(atom, JsonPointer.t(), Keyword.t()) :: atom
   def call(authority, pointer, opts) do
     pointer
     |> if(tracked?(opts), &JsonPointer.join(&1, ":tracked"))
-    |> JsonPointer.to_uri(authority: authority)
+    |> JsonPointer.to_uri(authority: "#{authority}")
     |> adjust_length
     |> String.to_atom()
   end

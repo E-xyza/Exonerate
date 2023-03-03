@@ -27,4 +27,7 @@ defmodule Exonerate.Type do
   def of(value) when is_float(value), do: "number"
   def of(value) when is_boolean(value), do: "boolean"
   def of(value) when is_nil(value), do: "null"
+
+  @macrocallback filter(authority :: atom, JsonPointer.t(), keyword) :: Macro.t()
+  @macrocallback accessories(authority :: atom, JsonPointer.t(), keyword) :: Macro.t()
 end

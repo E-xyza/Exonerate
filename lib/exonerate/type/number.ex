@@ -1,6 +1,8 @@
 defmodule Exonerate.Type.Number do
   @moduledoc false
 
+  @behaviour Exonerate.Type
+
   # note this module ONLY implements "float".  If something has the "number" type declaration
   # it will implement both Number and Integer, this is handled at the Context level.
 

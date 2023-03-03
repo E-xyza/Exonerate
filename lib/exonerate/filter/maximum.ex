@@ -6,7 +6,7 @@ defmodule Exonerate.Filter.Maximum do
 
   # TODO: figure out draft-4 stuff
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
 

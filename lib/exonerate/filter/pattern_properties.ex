@@ -4,7 +4,7 @@ defmodule Exonerate.Filter.PatternProperties do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     {tracker, opts} = Keyword.pop!(opts, :internal_tracking)
@@ -28,7 +28,7 @@ defmodule Exonerate.Filter.PatternProperties do
      quote do
        require Exonerate.Context
 
-       Exonerate.Context.from_cached(
+       Exonerate.Context.filter(
          unquote(name),
          unquote(pointer),
          unquote(Tools.drop_tracking(opts))

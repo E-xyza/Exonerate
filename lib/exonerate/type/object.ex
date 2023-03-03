@@ -1,6 +1,8 @@
 defmodule Exonerate.Type.Object do
   @moduledoc false
 
+  @behaviour Exonerate.Type
+
   alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Combining
@@ -200,7 +202,7 @@ defmodule Exonerate.Type.Object do
         quote do
           require Exonerate.Type.Object.Iterator
 
-          Exonerate.Type.Object.Iterator.from_cached(
+          Exonerate.Type.Object.Iterator.filter(
             unquote(name),
             unquote(pointer),
             unquote(opts_with_tracker)
@@ -216,7 +218,7 @@ defmodule Exonerate.Type.Object do
 
         quote do
           require unquote(module)
-          unquote(module).filter_from_cached(unquote(name), unquote(pointer), unquote(opts))
+          unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
         end
       end
   end

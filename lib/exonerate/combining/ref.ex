@@ -5,7 +5,7 @@ defmodule Exonerate.Combining.Ref do
   alias Exonerate.Degeneracy
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     # a ref might be:
 
     # - reference to something local (usually starts with #)
@@ -85,7 +85,7 @@ defmodule Exonerate.Combining.Ref do
           end
 
           require Exonerate.Context
-          Exonerate.Context.from_cached(unquote(name), unquote(ref_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(name), unquote(ref_pointer), unquote(opts))
         end
 
       :unknown ->
@@ -104,7 +104,7 @@ defmodule Exonerate.Combining.Ref do
           end
 
           require Exonerate.Context
-          Exonerate.Context.from_cached(unquote(name), unquote(ref_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(name), unquote(ref_pointer), unquote(opts))
         end
     end
   end
@@ -137,7 +137,7 @@ defmodule Exonerate.Combining.Ref do
       end
 
       require Exonerate.Context
-      Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
     end
   end
 end

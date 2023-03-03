@@ -24,18 +24,18 @@ defmodule Exonerate.Cache do
 
   @type cache_id :: atom | {:file, Path.t()}
 
-  @spec fetch(module, cache_id) :: {:ok, Type.json()} | :error
-  def fetch(module, cache_id) do
+  @spec fetch_schema(module, cache_id) :: {:ok, Type.json()} | :error
+  def fetch_schema(module, cache_id) do
     case :ets.lookup(get_table(), {module, cache_id}) do
       [] -> :error
-      [{{^module, ^cache_id}, {:cached, id}}] when is_atom(id) -> fetch(module, id)
+      [{{^module, ^cache_id}, {:cached, id}}] when is_atom(id) -> fetch_schema(module, id)
       [{{^module, ^cache_id}, json}] -> {:ok, json}
     end
   end
 
-  @spec fetch!(module, cache_id) :: Type.json()
-  def fetch!(module, cache_id) do
-    case fetch(module, cache_id) do
+  @spec fetch_schema!(module, cache_id) :: Type.json()
+  def fetch_schema!(module, cache_id) do
+    case fetch_schema(module, cache_id) do
       {:ok, json} ->
         json
 
@@ -46,23 +46,23 @@ defmodule Exonerate.Cache do
     end
   end
 
-  @spec put(module, atom, Type.json()) :: :ok
-  def put(module, authority, content) when is_atom(authority) do
+  @spec put_schema(module, authority :: atom, schema :: Type.json()) :: :ok
+  def put_schema(module, authority, content) when is_atom(authority) do
     :ets.insert(get_table(), {{module, authority}, content})
     :ok
   end
 
-  def register_context(module, authority, pointer, arity) when is_atom(authority) do
-    if has_context?(module, authority, pointer, arity) do
+  def register_context(module, call) when is_atom(call) do
+    if has_context?(module, call) do
       false
     else
-      :ets.insert(get_table(), {{:context, module, authority, pointer, arity}})
+      :ets.insert(get_table(), {{:context, module, call}})
       true
     end
   end
 
-  def has_context?(module, authority, pointer, arity) when is_atom(authority) do
-    case :ets.lookup(get_table(), {:context, module, authority, pointer, arity}) do
+  def has_context?(module, call) when is_atom(call) do
+    case :ets.lookup(get_table(), {:context, module, call}) do
       [] -> false
       [_] -> true
     end

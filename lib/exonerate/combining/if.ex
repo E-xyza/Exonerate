@@ -4,7 +4,7 @@ defmodule Exonerate.Combining.If do
   alias Exonerate.Degeneracy
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     # note we have to pull the parent pointer because we need to see "if"/"then"/"else"
     # clauses.
 
@@ -50,7 +50,7 @@ defmodule Exonerate.Combining.If do
          quote do
            require Exonerate.Combining.Then
 
-           Exonerate.Combining.Then.filter_from_cached(
+           Exonerate.Combining.Then.filter(
              unquote(name),
              unquote(then_pointer),
              unquote(opts)
@@ -70,7 +70,7 @@ defmodule Exonerate.Combining.If do
          quote do
            require Exonerate.Combining.Else
 
-           Exonerate.Combining.Else.filter_from_cached(
+           Exonerate.Combining.Else.filter(
              unquote(name),
              unquote(else_pointer),
              unquote(opts)
@@ -150,7 +150,7 @@ defmodule Exonerate.Combining.If do
       end
 
       require Exonerate.Context
-      Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
 
       unquote(then_context)
       unquote(else_context)
@@ -180,7 +180,7 @@ defmodule Exonerate.Combining.If do
       end
 
       require Exonerate.Context
-      Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
 
       unquote(then_context)
       unquote(else_context)

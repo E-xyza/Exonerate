@@ -7,7 +7,7 @@ defmodule Exonerate.Filter.DependentRequired do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     __CALLER__.module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)

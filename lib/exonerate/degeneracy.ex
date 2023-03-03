@@ -12,33 +12,17 @@ defmodule Exonerate.Degeneracy do
 
   This process includes three steps:
 
-  1. always include a type descriptor.
+  1. prune filters which are redundant
 
-  2. prune filters which are redundant
-
-  3. prune filters which are degenerate-ok.  Currently, degenerate-error
+  2. prune filters which are degenerate-ok.  Currently, degenerate-error
   filters are not pruned because they will be needed to generate correct
   error messages.
+
+  3. always include a type filter, and make sure it's always an array
 
   NB: Canonicalize does not recursively canonicalize, it only performs
   local canonicalization
   """
-  def canonicalize(context) when not is_map_key(context, "type") do
-    # include a type statement when it's not present
-    types =
-      if enum = context["enum"] do
-        enum
-        |> List.wrap()
-        |> Enum.map(&Type.of/1)
-        |> Enum.uniq()
-      else
-        @all_types
-      end
-
-    context
-    |> Map.put("type", types)
-    |> canonicalize
-  end
 
   # redundant filters
   def canonicalize(context = %{"maximum" => max, "exclusiveMaximum" => emax}) when max >= emax do
@@ -53,9 +37,15 @@ defmodule Exonerate.Degeneracy do
     |> canonicalize
   end
 
-  def canonicalize(context = "minContains") when not is_map_key(context, "contains") do
+  def canonicalize(context = %{"minContains" => _}) when not is_map_key(context, "contains") do
     context
     |> Map.delete("minContains")
+    |> canonicalize
+  end
+
+  def canonicalize(context = %{"const" => _, "enum" => _}) do
+    context
+    |> Map.delete("enum")
     |> canonicalize
   end
 
@@ -96,6 +86,34 @@ defmodule Exonerate.Degeneracy do
   def canonicalize(context = %{"required" => []}) do
     context
     |> Map.delete("required")
+    |> canonicalize
+  end
+
+  def canonicalize(context = %{"type" => type}) when is_binary(type) do
+    context
+    |> Map.put("type", [type])
+    |> canonicalize
+  end
+
+  def canonicalize(context) when not is_map_key(context, "type") do
+    # include a type statement when it's not present
+    types =
+      cond do
+        enum = context["enum"] ->
+          enum
+          |> List.wrap()
+          |> Enum.map(&Type.of/1)
+          |> Enum.uniq()
+
+        const = context["const"] ->
+          [Type.of(const)]
+
+        true ->
+          @all_types
+      end
+
+    context
+    |> Map.put("type", types)
     |> canonicalize
   end
 

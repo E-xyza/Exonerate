@@ -11,14 +11,14 @@ defmodule Exonerate.Context do
   alias Exonerate.Type
   alias Exonerate.Type.Object
 
-  defmacro from_cached(name, pointer, opts) do
-    module = __CALLER__.module
+  defmacro filter(authority, pointer, opts) do
+    caller = __CALLER__
+    call = Tools.call(authority, pointer, opts)
 
-    if Cache.register_context(module, name, pointer, 2) do
-      module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
-      |> to_quoted_function(module, name, pointer, opts)
+    if Cache.register_context(caller.module, call) do
+      __CALLER__
+      |> Tools.subschema(authority, pointer, true)
+      |> build_code(authority, pointer, opts)
       |> Tools.maybe_dump(opts)
     else
       []
@@ -38,8 +38,8 @@ defmodule Exonerate.Context do
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
 
-  defp to_quoted_function(true, _module, name, pointer, opts) do
-    call = call(name, pointer, opts)
+  defp build_code(true, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
 
     quote do
       @compile {:inline, [{unquote(call), 2}]}
@@ -50,39 +50,29 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(false, _module, name, pointer, opts) do
-    call = call(name, pointer, opts)
-    schema_pointer = JsonPointer.to_uri(pointer)
+  defp build_code(false, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
 
     quote do
       @compile {:inline, [{unquote(call), 2}]}
       defp unquote(call)(content, path) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+        Exonerate.Tools.mismatch(content, unquote(pointer), path)
       end
     end
   end
 
-  defp to_quoted_function(subschema = %{"id" => id}, module, name, pointer, opts) do
+  defp build_code(subschema = %{"id" => id}, authority, pointer, opts) do
     subschema
     |> Map.delete("id")
-    |> to_quoted_function(module, name, pointer, Keyword.put(opts, :id, id))
+    |> build_code(authority, pointer, Keyword.put(opts, :id, id))
   end
 
-  defp to_quoted_function(subschema = %{"$ref" => ref_pointer}, module, name, pointer, opts) do
-    degeneracy =
-      case ref_pointer do
-        "#/" <> uri ->
-          Degeneracy.class(module, name, JsonPointer.from_uri("/" <> uri))
-
-        _ ->
-          :unknown
-      end
-
-    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") or degeneracy === :error do
-      call = call(name, pointer, opts)
+  defp build_code(subschema = %{"$ref" => _}, authority, pointer, opts) do
+    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
+      call = Tools.call(authority, pointer, opts)
       ref_pointer = JsonPointer.join(pointer, "$ref")
-      ref_call = Tools.pointer_to_fun_name(ref_pointer, authority: name)
+      ref_call = Tools.call(authority, ref_pointer, opts)
 
       quote do
         @compile {:inline, [{unquote(call), 2}]}
@@ -92,8 +82,8 @@ defmodule Exonerate.Context do
 
         require Exonerate.Combining.Ref
 
-        Exonerate.Combining.Ref.filter_from_cached(
-          unquote(name),
+        Exonerate.Combining.Ref.filter(
+          unquote(authority),
           unquote(ref_pointer),
           unquote(opts)
         )
@@ -101,89 +91,77 @@ defmodule Exonerate.Context do
     else
       subschema
       |> Map.delete("$ref")
-      |> to_quoted_function(module, name, pointer, opts)
+      |> build_code(authority, pointer, opts)
     end
   end
 
   # metadata
-  defp to_quoted_function(schema = %{"title" => title}, module, name, pointer, opts) do
-    call = call(name, pointer, opts)
-
+  defp build_code(schema = %{"title" => title}, authority, pointer, opts) do
     rest =
       schema
       |> Map.delete("title")
-      |> to_quoted_function(module, name, pointer, opts)
+      |> build_code(authority, pointer, opts)
 
     quote do
-      defp unquote(call)(:title, _), do: unquote(title)
+      defp unquote(Tools.call(authority, pointer, opts))(:title, _), do: unquote(title)
 
       unquote(rest)
     end
   end
 
-  defp to_quoted_function(schema = %{"description" => title}, module, name, pointer, opts) do
-    call = call(name, pointer, opts)
-
+  defp build_code(schema = %{"description" => title}, authority, pointer, opts) do
     rest =
       schema
       |> Map.delete("description")
-      |> to_quoted_function(module, name, pointer, opts)
+      |> build_code(authority, pointer, opts)
 
     quote do
-      defp unquote(call)(:description, _), do: unquote(title)
+      defp unquote(Tools.call(authority, pointer, opts))(:description, _), do: unquote(title)
 
       unquote(rest)
     end
   end
 
-  defp to_quoted_function(schema = %{"examples" => title}, module, name, pointer, opts) do
-    call = call(name, pointer, opts)
-
+  defp build_code(schema = %{"examples" => title}, authority, pointer, opts) do
     rest =
       schema
       |> Map.delete("examples")
-      |> to_quoted_function(module, name, pointer, opts)
+      |> build_code(authority, pointer, opts)
 
     quote do
-      defp unquote(call)(:examples, _), do: unquote(title)
+      defp unquote(Tools.call(authority, pointer, opts))(:examples, _), do: unquote(title)
 
       unquote(rest)
     end
   end
 
-  defp to_quoted_function(schema = %{"default" => title}, module, name, pointer, opts) do
-    call = call(name, pointer, opts)
-
+  defp build_code(schema = %{"default" => title}, authority, pointer, opts) do
     rest =
       schema
       |> Map.delete("default")
-      |> to_quoted_function(module, name, pointer, opts)
+      |> build_code(authority, pointer, opts)
 
     quote do
-      defp unquote(call)(:default, _), do: unquote(title)
+      defp unquote(Tools.call(authority, pointer, opts))(:default, _), do: unquote(title)
 
       unquote(rest)
     end
   end
 
   # intercept consts
-  defp to_quoted_function(schema = %{"const" => const}, module, name, pointer, opts) do
-    call = call(name, pointer, opts)
-
-    const_pointer =
-      pointer
-      |> JsonPointer.join("const")
-      |> JsonPointer.to_uri()
+  defp build_code(schema = %{"const" => const}, authority, pointer, opts) do
+    const_pointer = JsonPointer.join(pointer, "const")
 
     rest_filter =
       schema
       |> Map.delete("const")
-      |> to_quoted_function(module, name, pointer, Keyword.merge(opts, type: Type.of(const)))
+      |> build_code(authority, pointer, Keyword.merge(opts, type: Type.of(const)))
 
     value = Macro.escape(const)
 
     quote do
-      defp unquote(call)(content, path) when content != unquote(value) do
+      defp unquote(Tools.call(authority, pointer, opts))(content, path)
+           when content != unquote(value) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(const_pointer), path)
       end
@@ -193,13 +171,8 @@ defmodule Exonerate.Context do
   end
 
   # intercept enums
-  defp to_quoted_function(schema = %{"enum" => enum}, module, name, pointer, opts) do
-    call = call(name, pointer, opts)
-
-    enum_pointer =
-      pointer
-      |> JsonPointer.join("enum")
-      |> JsonPointer.to_uri()
+  defp build_code(schema = %{"enum" => enum}, authority, pointer, opts) do
+    enum_pointer = JsonPointer.join(pointer, "enum")
 
     types =
       enum
@@ -209,12 +182,13 @@ defmodule Exonerate.Context do
     rest_filter =
       schema
       |> Map.delete("enum")
-      |> to_quoted_function(module, name, pointer, Keyword.merge(opts, type: types))
+      |> build_code(authority, pointer, Keyword.merge(opts, type: types))
 
     values = Macro.escape(enum)
 
     quote do
-      defp unquote(call)(content, path) when content not in unquote(values) do
+      defp unquote(Tools.call(authority, pointer, opts))(content, path)
+           when content not in unquote(values) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(enum_pointer), path)
       end
@@ -223,64 +197,10 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp to_quoted_function(%{"type" => type_or_types}, module, name, pointer, opts) do
+  # NB: schema should always contain a type field as per Degeneracy.canonicalize/1 called from Tools.subschema/3
+  defp build_code(subschema = %{"type" => types}, authority, pointer, opts) do
     # condition the bindings
-    tracked = opts[:track_items] || opts[:track_properties]
-
-    call =
-      pointer
-      |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    subschema =
-      module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
-
-    subschema = Object.remove_degenerate_features(subschema)
-
-    types = resolve_types(type_or_types)
-
-    type_filters = Enum.map(types, &Type.module(&1).filter(subschema, name, pointer, opts))
-
-    accessories =
-      Enum.flat_map(types, &Type.module(&1).accessories(subschema, name, pointer, opts))
-
-    combiners =
-      @combining_filters
-      |> Enum.flat_map(fn
-        combiner ->
-          List.wrap(
-            if is_map_key(subschema, combiner) do
-              module = @combining_modules[combiner]
-              pointer = JsonPointer.join(pointer, combiner)
-
-              quote do
-                require unquote(module)
-                unquote(module).filter_from_cached(unquote(name), unquote(pointer), unquote(opts))
-              end
-            end
-          )
-      end)
-
-    schema_pointer =
-      pointer
-      |> JsonPointer.join("type")
-      |> JsonPointer.to_uri()
-
-    backup_fallback =
-      List.wrap(
-        if tracked do
-          backup_call = Tools.pointer_to_fun_name(pointer, authority: name)
-
-          quote do
-            defp unquote(backup_call)(content, path) do
-              require Exonerate.Tools
-              Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
-            end
-          end
-        end
-      )
+    call = Tools.call(authority, pointer, opts)
 
     case Degeneracy.class(subschema) do
       :ok ->
@@ -292,63 +212,35 @@ defmodule Exonerate.Context do
         end
 
       _ ->
+        {filters, accessories} =
+          types
+          |> MapSet.new()
+          |> MapSet.intersection(MapSet.new(List.wrap(opts[:only])))
+          |> Enum.map(fn type ->
+            module = Type.module(type)
+
+            {quote do
+               require unquote(module)
+               unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+             end,
+             quote do
+               unquote(module).accessory(unquote(authority), unquote(pointer), unquote(opts))
+             end}
+          end)
+          |> Enum.unzip()
+
+        type_failure_pointer = JsonPointer.join(pointer, "type")
+
         quote do
-          unquote(type_filters)
+          unquote(filters)
 
           defp unquote(call)(content, path) do
             require Exonerate.Tools
-            Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+            Exonerate.Tools.mismatch(content, unquote(type_failure_pointer), path)
           end
-
-          unquote(backup_fallback)
-
-          unquote(combiners)
 
           unquote(accessories)
         end
     end
-  end
-
-  @all_types ~w(string object array number integer boolean null)
-
-  defp to_quoted_function(schema, module, name, pointer, opts) when is_map(schema) do
-    # if it doesn't have a type, inject the type here.
-
-    schema_types =
-      schema
-      |> Map.get("type", @all_types)
-      |> List.wrap()
-      |> MapSet.new()
-
-    type =
-      opts
-      |> Keyword.get(:type, @all_types)
-      |> List.wrap()
-      |> MapSet.new()
-      |> MapSet.intersection(schema_types)
-      |> Enum.to_list()
-
-    schema
-    |> Map.put("type", type)
-    |> to_quoted_function(module, name, pointer, Keyword.drop(opts, [:type]))
-  end
-
-  defp call(name, pointer, opts) do
-    tracked = opts[:track_items] || opts[:track_properties]
-
-    pointer
-    |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
-    |> Tools.pointer_to_fun_name(authority: name)
-  end
-
-  defp resolve_types(type) do
-    # make sure that "number" implements integer, always
-    type
-    |> List.wrap()
-    |> Enum.flat_map(fn
-      "number" -> ["number", "integer"]
-      other -> List.wrap(other)
-    end)
-    |> Enum.uniq()
   end
 end

@@ -108,7 +108,7 @@ defmodule Exonerate do
 
   Note that the `schema` parameter must be a string literal.
   """
-  defmacro function_from_string(type, name, schema_ast, opts \\ []) do
+  defmacro function_from_string(type, authority, schema_ast, opts \\ []) do
     # prewalk the schema text
 
     root_pointer = JsonPointer.from_uri("/")
@@ -120,19 +120,19 @@ defmodule Exonerate do
       |> Jason.decode!()
       |> Id.prescan(module)
 
-    Cache.put(module, name, schema)
+    Cache.put_schema(module, authority, schema)
 
-    call = Tools.pointer_to_fun_name(root_pointer, authority: name)
+    call = Tools.call(authority, root_pointer, opts)
     {schema_str, id} = if is_map(schema), do: {schema["$schema"], schema["$id"]}, else: {nil, nil}
 
     Tools.maybe_dump(
       quote do
         require Exonerate.Context
-        Exonerate.schema(unquote(type), unquote(name), unquote(schema_str))
-        Exonerate.id(unquote(type), unquote(name), unquote(id))
+        Exonerate.schema(unquote(type), unquote(authority), unquote(schema_str))
+        Exonerate.id(unquote(type), unquote(authority), unquote(id))
 
-        unquote(type)(unquote(name)(value), do: unquote(call)(value, "/"))
-        Exonerate.Context.from_cached(unquote(name), unquote(root_pointer), unquote(opts))
+        unquote(type)(unquote(authority)(value), do: unquote(call)(value, "/"))
+        Exonerate.Context.filter(unquote(authority), unquote(root_pointer), unquote(opts))
       end,
       opts
     )
@@ -144,9 +144,10 @@ defmodule Exonerate do
 
   Note that the `path` parameter must be a string literal.
   """
-  defmacro function_from_file(type, name, path, opts \\ [])
+  defmacro function_from_file(type, authority, path, opts \\ [])
 
-  defmacro function_from_file(type, name, path, opts) do
+  defmacro function_from_file(type, authority, path, opts) do
+    raise "not yet"
     # opts =
     #  opts
     #  |> Keyword.merge(authority: Atom.to_string(name))
@@ -180,20 +181,20 @@ defmodule Exonerate do
 
   @doc false
   # private api.  Causes the $schema metadata to be accessible by passing the `:schema` atom.
-  defmacro schema(type, name, schema) do
+  defmacro schema(type, authority, schema) do
     if schema do
       quote do
-        unquote(type)(unquote(name)(:schema), do: unquote(schema))
+        unquote(type)(unquote(authority)(:schema), do: unquote(schema))
       end
     end
   end
 
   @doc false
   # private api.  Causes the $id metadata to be accessible by passing the `:id` atom.
-  defmacro id(type, name, id) do
+  defmacro id(type, authority, id) do
     if id do
       quote do
-        unquote(type)(unquote(name)(:id), do: unquote(id))
+        unquote(type)(unquote(authority)(:id), do: unquote(id))
       end
     end
   end

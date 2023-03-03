@@ -4,7 +4,7 @@ defmodule Exonerate.Filter.MinMaxLength do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     call =
       pointer
       |> JsonPointer.join("min-max-length")

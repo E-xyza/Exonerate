@@ -18,7 +18,7 @@ defmodule Exonerate.Type.Object.Iterator do
     Enum.any?(@filters, &is_map_key(schema, &1))
   end
 
-  defmacro from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     __CALLER__.module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
@@ -57,7 +57,7 @@ defmodule Exonerate.Type.Object.Iterator do
             quote do
               require Exonerate.Filter.AdditionalProperties
 
-              Exonerate.Filter.AdditionalProperties.filter_from_cached(
+              Exonerate.Filter.AdditionalProperties.filter(
                 unquote(name),
                 unquote(pointer),
                 unquote(opts)
@@ -78,7 +78,7 @@ defmodule Exonerate.Type.Object.Iterator do
             quote do
               require Exonerate.Filter.UnevaluatedProperties
 
-              Exonerate.Filter.UnevaluatedProperties.filter_from_cached(
+              Exonerate.Filter.UnevaluatedProperties.filter(
                 unquote(name),
                 unquote(pointer),
                 unquote(opts)
@@ -326,7 +326,7 @@ defmodule Exonerate.Type.Object.Iterator do
        quote do
          require Exonerate.Filter.Properties
 
-         Exonerate.Filter.Properties.filter_from_cached(
+         Exonerate.Filter.Properties.filter(
            unquote(name),
            unquote(pointer),
            unquote(opts)
@@ -355,7 +355,7 @@ defmodule Exonerate.Type.Object.Iterator do
        quote do
          require Exonerate.Filter.PatternProperties
 
-         Exonerate.Filter.PatternProperties.filter_from_cached(
+         Exonerate.Filter.PatternProperties.filter(
            unquote(name),
            unquote(pointer),
            unquote(opts)
@@ -392,7 +392,7 @@ defmodule Exonerate.Type.Object.Iterator do
          quote do
            require Exonerate.Filter.PropertyNames
 
-           Exonerate.Filter.PropertyNames.filter_from_cached(
+           Exonerate.Filter.PropertyNames.filter(
              unquote(name),
              unquote(pointer),
              unquote(Tools.drop_tracking(opts))

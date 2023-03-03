@@ -4,7 +4,7 @@ defmodule Exonerate.Filter.MaxLength do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
     schema = Cache.fetch!(__CALLER__.module, name)

@@ -1,6 +1,8 @@
 defmodule Exonerate.Type.Null do
   @moduledoc false
 
+  @behaviour Exonerate.Type
+
   alias Exonerate.Combining
   alias Exonerate.Draft
   alias Exonerate.Tools

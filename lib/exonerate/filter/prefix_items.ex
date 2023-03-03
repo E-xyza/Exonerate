@@ -4,7 +4,7 @@ defmodule Exonerate.Filter.PrefixItems do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     module = __CALLER__.module
 
     items =
@@ -45,7 +45,7 @@ defmodule Exonerate.Filter.PrefixItems do
       end,
       quote do
         require Exonerate.Context
-        Exonerate.Context.from_cached(unquote(name), unquote(item_pointer), unquote(opts))
+        Exonerate.Context.filter(unquote(name), unquote(item_pointer), unquote(opts))
       end
     }
   end

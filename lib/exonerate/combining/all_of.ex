@@ -5,7 +5,7 @@ defmodule Exonerate.Combining.AllOf do
   alias Exonerate.Combining
   alias Exonerate.Tools
 
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     opts =
       __CALLER__.module
       |> Cache.fetch!(name)
@@ -44,7 +44,7 @@ defmodule Exonerate.Combining.AllOf do
      end,
      quote do
        require Exonerate.Context
-       Exonerate.Context.from_cached(unquote(name), unquote(pointer), unquote(opts))
+       Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
      end}
   end
 

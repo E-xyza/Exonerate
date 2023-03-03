@@ -5,7 +5,7 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
   alias Exonerate.Tools
 
   # TODO: figure out draft-4 stuff
-  defmacro filter_from_cached(name, pointer, opts) do
+  defmacro filter(name, pointer, opts) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
     schema_pointer = JsonPointer.to_uri(pointer)
     module = __CALLER__.module

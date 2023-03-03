@@ -56,7 +56,7 @@ defmodule Exonerate.Type.Array.Iterator do
     end
   end
 
-  defmacro from_cached(name, pointer, :filter, opts) do
+  defmacro filter(name, pointer, :filter, opts) do
     subschema =
       __CALLER__.module
       |> Cache.fetch!(name)
@@ -77,7 +77,7 @@ defmodule Exonerate.Type.Array.Iterator do
     |> Tools.maybe_dump(opts)
   end
 
-  defmacro from_cached(name, pointer, :find, opts) do
+  defmacro filter(name, pointer, :find, opts) do
     subschema =
       __CALLER__.module
       |> Cache.fetch!(name)
@@ -88,7 +88,7 @@ defmodule Exonerate.Type.Array.Iterator do
     |> Tools.maybe_dump(opts)
   end
 
-  defmacro from_cached(_name, _pointer, nil, _opts), do: []
+  defmacro filter(_name, _pointer, nil, _opts), do: []
 
   # COMMON FUNCTIONS
 
@@ -764,7 +764,7 @@ defmodule Exonerate.Type.Array.Iterator do
         quote do
           require Exonerate.Type.Array.Iterator
 
-          Exonerate.Type.Array.Iterator.from_cached(
+          Exonerate.Type.Array.Iterator.filter(
             unquote(name),
             unquote(pointer),
             unquote(mode),
