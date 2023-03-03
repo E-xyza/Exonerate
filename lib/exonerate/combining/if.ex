@@ -1,6 +1,7 @@
 defmodule Exonerate.Combining.If do
   @moduledoc false
   alias Exonerate.Cache
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
 
   defmacro filter_from_cached(name, pointer, opts) do
@@ -83,7 +84,7 @@ defmodule Exonerate.Combining.If do
 
     subschema
     |> Map.fetch!("if")
-    |> Tools.degeneracy()
+    |> Degeneracy.class()
     |> case do
       :ok ->
         quote do

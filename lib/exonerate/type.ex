@@ -15,4 +15,16 @@ defmodule Exonerate.Type do
           )
 
   def module(type), do: @module[type]
+
+  @all Map.keys(@module)
+  def all, do: @all
+
+  @spec of(json) :: String.t()
+  def of(value) when is_binary(value), do: "string"
+  def of(value) when is_map(value), do: "object"
+  def of(value) when is_list(value), do: "array"
+  def of(value) when is_integer(value), do: "integer"
+  def of(value) when is_float(value), do: "number"
+  def of(value) when is_boolean(value), do: "boolean"
+  def of(value) when is_nil(value), do: "null"
 end

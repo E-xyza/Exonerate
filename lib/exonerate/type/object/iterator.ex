@@ -1,6 +1,7 @@
 defmodule Exonerate.Type.Object.Iterator do
   alias Exonerate.Cache
   alias Exonerate.Combining
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
 
   @modules %{
@@ -190,20 +191,22 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defp build_unevaluated(call, final_call, filters, outer_tracked) do
-    final_clause = if final_call do
-      quote do
-        case unquote(final_call)(content, path) do
-          :ok ->
-            Combining.update_key(unquote(outer_tracked), visited, key)
-          error ->
-            error
+    final_clause =
+      if final_call do
+        quote do
+          case unquote(final_call)(content, path) do
+            :ok ->
+              Combining.update_key(unquote(outer_tracked), visited, key)
+
+            error ->
+              error
+          end
+        end
+      else
+        quote do
+          Combining.capture(unquote(outer_tracked), visited)
         end
       end
-    else
-      quote do
-        Combining.capture(unquote(outer_tracked), visited)
-      end
-    end
 
     quote do
       defp unquote(call)(content, path, visited) do
@@ -376,7 +379,7 @@ defmodule Exonerate.Type.Object.Iterator do
       end
 
     subschema
-    |> Tools.degeneracy()
+    |> Degeneracy.class()
     |> case do
       :ok ->
         nil

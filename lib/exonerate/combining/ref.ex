@@ -2,6 +2,7 @@ defmodule Exonerate.Combining.Ref do
   @moduledoc false
 
   alias Exonerate.Cache
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
 
   defmacro filter_from_cached(name, pointer, opts) do
@@ -62,7 +63,7 @@ defmodule Exonerate.Combining.Ref do
     module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(ref_pointer)
-    |> Tools.degeneracy()
+    |> Degeneracy.class()
     |> case do
       :ok ->
         quote do

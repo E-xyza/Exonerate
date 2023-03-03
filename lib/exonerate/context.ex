@@ -5,6 +5,7 @@ defmodule Exonerate.Context do
 
   alias Exonerate.Cache
   alias Exonerate.Combining
+  alias Exonerate.Degeneracy
   alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Type
@@ -72,7 +73,7 @@ defmodule Exonerate.Context do
     degeneracy =
       case ref_pointer do
         "#/" <> uri ->
-          Tools.degeneracy(module, name, JsonPointer.from_uri("/" <> uri))
+          Degeneracy.class(module, name, JsonPointer.from_uri("/" <> uri))
 
         _ ->
           :unknown
@@ -177,7 +178,7 @@ defmodule Exonerate.Context do
     rest_filter =
       schema
       |> Map.delete("const")
-      |> to_quoted_function(module, name, pointer, Keyword.merge(opts, type: typeof(const)))
+      |> to_quoted_function(module, name, pointer, Keyword.merge(opts, type: Type.of(const)))
 
     value = Macro.escape(const)
 
@@ -202,7 +203,7 @@ defmodule Exonerate.Context do
 
     types =
       enum
-      |> Enum.flat_map(&List.wrap(typeof(&1)))
+      |> Enum.flat_map(&List.wrap(Type.of(&1)))
       |> Enum.uniq()
 
     rest_filter =
@@ -281,7 +282,7 @@ defmodule Exonerate.Context do
         end
       )
 
-    case Tools.degeneracy(subschema) do
+    case Degeneracy.class(subschema) do
       :ok ->
         quote do
           defp unquote(call)(content, _path) do
@@ -339,14 +340,6 @@ defmodule Exonerate.Context do
     |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
     |> Tools.pointer_to_fun_name(authority: name)
   end
-
-  defp typeof(value) when is_binary(value), do: "string"
-  defp typeof(value) when is_map(value), do: "object"
-  defp typeof(value) when is_list(value), do: "array"
-  defp typeof(value) when is_integer(value), do: ["integer", "number"]
-  defp typeof(value) when is_float(value), do: "number"
-  defp typeof(value) when is_boolean(value), do: "boolean"
-  defp typeof(value) when is_nil(value), do: "null"
 
   defp resolve_types(type) do
     # make sure that "number" implements integer, always

@@ -2,6 +2,7 @@ defmodule Exonerate.Filter.Contains do
   @moduledoc false
 
   alias Exonerate.Cache
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
@@ -37,7 +38,7 @@ defmodule Exonerate.Filter.Contains do
       module
       |> Cache.fetch!(name)
       |> JsonPointer.resolve!(pointer)
-      |> Tools.degeneracy()
+      |> Degeneracy.class()
       |> case do
         :ok ->
           quote do

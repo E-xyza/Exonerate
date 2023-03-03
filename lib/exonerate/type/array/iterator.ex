@@ -9,6 +9,7 @@ defmodule Exonerate.Type.Array.Iterator do
   # to "minItems" and "contains" filters.
 
   alias Exonerate.Cache
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
   alias Exonerate.Type
 
@@ -315,7 +316,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp filter_for({"items", items_schema}, acc, name, pointer, _subschema) do
     items_schema
-    |> Tools.degeneracy()
+    |> Degeneracy.class()
     |> case do
       :ok ->
         nil
@@ -382,7 +383,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp filter_for({"maxContains", subschema}, [:contains], name, pointer, _subschema) do
     subschema
-    |> Tools.degeneracy()
+    |> Degeneracy.class()
     |> case do
       :ok ->
         nil
@@ -410,7 +411,7 @@ defmodule Exonerate.Type.Array.Iterator do
       |> Tools.pointer_to_fun_name(authority: name)
 
     subschema
-    |> Tools.degeneracy()
+    |> Degeneracy.class()
     |> case do
       :ok ->
         nil
@@ -583,7 +584,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
     contains_pointer = JsonPointer.join(pointer, "contains")
 
-    case Tools.degeneracy(contains) do
+    case Degeneracy.class(contains) do
       :ok ->
         primary_find =
           schema
@@ -665,7 +666,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
     contains_pointer = JsonPointer.join(pointer, "contains")
 
-    case Tools.degeneracy(contains) do
+    case Degeneracy.class(contains) do
       :ok ->
         quote do
           defp unquote(call)([], path) do
