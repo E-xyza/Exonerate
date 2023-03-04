@@ -163,7 +163,9 @@ defmodule Exonerate.Degeneracy do
   end
 
   # final polishing step:  Amend type and recursively entery other content
-  def canonicalize(context) do
+  def canonicalize(context) when is_boolean(context), do: context
+
+  def canonicalize(context) when is_map(context) do
     context
     |> Map.update!("type", &ensure_integer_for_number/1)
     |> update("additionalItems", &canonicalize/1)

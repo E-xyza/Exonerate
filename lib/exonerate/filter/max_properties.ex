@@ -1,34 +1,28 @@
 defmodule Exonerate.Filter.MaxProperties do
   @moduledoc false
-
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
+
   # TODO: figure out draft-4 stuff
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
 
-  defmacro filter(name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-    schema_pointer = JsonPointer.to_uri(pointer)
+  defp build_filter(maximum, authority, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(authority, pointer, opts))(object, path) do
+        case object do
+          object when map_size(object) <= unquote(maximum) ->
+            :ok
 
-    maximum =
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
-
-    Tools.maybe_dump(
-      quote do
-        defp unquote(call)(object, path) do
-          case object do
-            object when map_size(object) <= unquote(maximum) ->
-              :ok
-
-            _ ->
-              require Exonerate.Tools
-              Exonerate.Tools.mismatch(object, unquote(schema_pointer), path)
-          end
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(object, unquote(pointer), path)
         end
-      end,
-      opts
-    )
+      end
+    end
   end
 end

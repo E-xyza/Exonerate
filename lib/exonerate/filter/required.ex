@@ -1,41 +1,36 @@
 defmodule Exonerate.Filter.Required do
   @moduledoc false
 
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-    schema_pointer = JsonPointer.to_uri(pointer)
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
 
-    required_list =
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
+  defp build_filter(required_list, authority, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(authority, pointer, opts))(object, path) do
+        unquote(required_list)
+        |> Enum.reduce_while({:ok, 0}, fn
+          required_field, {:ok, index} when is_map_key(object, required_field) ->
+            {:cont, {:ok, index + 1}}
 
-    Tools.maybe_dump(
-      quote do
-        defp unquote(call)(object, path) do
-          unquote(required_list)
-          |> Enum.reduce_while({:ok, 0}, fn
-            required_field, {:ok, index} when is_map_key(object, required_field) ->
-              {:cont, {:ok, index + 1}}
+          required_field, {:ok, index} ->
+            require Exonerate.Tools
 
-            required_field, {:ok, index} ->
-              require Exonerate.Tools
-
-              {:halt,
-               {Exonerate.Tools.mismatch(
-                  object,
-                  Path.join(unquote(schema_pointer), "#{index}"),
-                  path,
-                  required: Path.join(path, required_field)
-                ), :discard}}
-          end)
-          |> elem(0)
-        end
-      end,
-      opts
-    )
+            {:halt,
+             {Exonerate.Tools.mismatch(
+                object,
+                {unquote(pointer), "#{index}"},
+                path,
+                required: Path.join(path, required_field)
+              ), []}}
+        end)
+        |> elem(0)
+      end
+    end
   end
 end

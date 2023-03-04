@@ -6,7 +6,20 @@ defmodule Exonerate.Tools do
   alias Exonerate.Type
 
   # GENERAL-USE MACROS
-  defmacro mismatch(error_value, schema_pointer, json_pointer, opts \\ []) do
+  defmacro mismatch(error_value, schema_pointer, json_pointer, opts \\ [])
+
+  defmacro mismatch(error_value, {schema_pointer, extras}, json_pointer, opts) do
+    primary = Keyword.take(binding(), ~w(error_value json_pointer)a)
+    schema_uri = JsonPointer.to_uri(schema_pointer)
+    schema_pointer = [schema_pointer: quote do Path.join(unquote(schema_uri), unquote(extras)) end]
+    extras = Keyword.take(opts, ~w(reason failures matches required)a)
+
+    quote bind_quoted: [error_params: primary ++ schema_pointer ++ extras] do
+      {:error, error_params}
+    end
+  end
+
+  defmacro mismatch(error_value, schema_pointer, json_pointer, opts) do
     primary = Keyword.take(binding(), ~w(error_value json_pointer)a)
     schema_pointer = [schema_pointer: JsonPointer.to_uri(schema_pointer)]
     extras = Keyword.take(opts, ~w(reason failures matches required)a)

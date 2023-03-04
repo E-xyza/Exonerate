@@ -1,34 +1,27 @@
 defmodule Exonerate.Filter.MinProperties do
-  @moduledoc false
+    @moduledoc false
+    alias Exonerate.Tools
 
-  alias Exonerate.Cache
-  alias Exonerate.Tools
+    # TODO: figure out draft-4 stuff
+    defmacro filter(authority, pointer, opts) do
+      __CALLER__
+      |> Tools.subschema(authority, pointer)
+      |> build_filter(authority, pointer, opts)
+      |> Tools.maybe_dump(opts)
+    end
 
-  # TODO: figure out draft-4 stuff
-
-  defmacro filter(name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-    schema_pointer = JsonPointer.to_uri(pointer)
-
-    minimum =
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
-
-    Tools.maybe_dump(
+    defp build_filter(minimum, authority, pointer, opts) do
       quote do
-        defp unquote(call)(object, path) do
+        defp unquote(Tools.call(authority, pointer, opts))(object, path) do
           case object do
-            object when map_size(object) >= unquote(minimum) ->
+            object when map_size(object) <= unquote(minimum) ->
               :ok
 
             _ ->
               require Exonerate.Tools
-              Exonerate.Tools.mismatch(object, unquote(schema_pointer), path)
+              Exonerate.Tools.mismatch(object, unquote(pointer), path)
           end
         end
-      end,
-      opts
-    )
+      end
+    end
   end
-end

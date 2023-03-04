@@ -1,34 +1,29 @@
 defmodule Exonerate.Filter.MultipleOf do
   @moduledoc false
 
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
-  # TODO: figure out draft-4 stuff
+  # TODO: reenable the decision to force use with floats.
 
-  defmacro filter(name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-    schema_pointer = JsonPointer.to_uri(pointer)
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
 
-    divisor =
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
+  defp build_filter(divisor, authority, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(authority, pointer, opts))(integer, path) do
+        case integer do
+          value when rem(value, unquote(divisor)) === 0 ->
+            :ok
 
-    Tools.maybe_dump(
-      quote do
-        defp unquote(call)(integer, path) do
-          case integer do
-            value when rem(value, unquote(divisor)) === 0 ->
-              :ok
-
-            _ ->
-              require Exonerate.Tools
-              Exonerate.Tools.mismatch(integer, unquote(schema_pointer), path)
-          end
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(integer, unquote(pointer), path)
         end
-      end,
-      opts
-    )
+      end
+    end
   end
 end

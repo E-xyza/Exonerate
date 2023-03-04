@@ -24,9 +24,6 @@ defmodule Exonerate.Type.Integer do
   end
 
   defp build_filter(context, authority, pointer, opts) do
-    # TODO: make sure that this actually detects the draft version before
-    # attempting to adjust the draft
-
     filter_clauses =
       for filter <- @filters, is_map_key(context, filter) do
         filter_call = Tools.call(authority, JsonPointer.join(pointer, filter), opts)
@@ -36,10 +33,8 @@ defmodule Exonerate.Type.Integer do
         end
       end
 
-    call = Tools.call(authority, pointer, opts)
-
     quote do
-      defp unquote(call)(integer, path) when is_integer(integer) do
+      defp unquote(Tools.call(authority, pointer, opts))(integer, path) when is_integer(integer) do
         with unquote_splicing(filter_clauses) do
           :ok
         end

@@ -1,34 +1,29 @@
 defmodule Exonerate.Filter.Minimum do
   @moduledoc false
-
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
   # TODO: figure out draft-4 stuff
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(__CALLER__, authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
 
-  defmacro filter(name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-    schema_pointer = JsonPointer.to_uri(pointer)
+  defp build_filter(minimum, _caller, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
 
-    minimum =
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
+    quote do
+      defp unquote(call)(number, path) do
+        case number do
+          value when value >= unquote(minimum) ->
+            :ok
 
-    Tools.maybe_dump(
-      quote do
-        defp unquote(call)(number, path) do
-          case number do
-            value when value >= unquote(minimum) ->
-              :ok
-
-            _ ->
-              require Exonerate.Tools
-              Exonerate.Tools.mismatch(number, unquote(schema_pointer), path)
-          end
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(number, unquote(pointer), path)
         end
-      end,
-      opts
-    )
+      end
+    end
   end
 end

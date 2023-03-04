@@ -1,7 +1,5 @@
 defmodule Exonerate.Filter.ExclusiveMinimum do
   @moduledoc false
-
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
   # TODO: figure out draft-4 stuff
