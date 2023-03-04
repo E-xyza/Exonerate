@@ -17,45 +17,39 @@ defmodule Exonerate.Type.Number do
              "exclusiveMinimum" => Exonerate.Filter.ExclusiveMinimum
            })
 
-  @module_keys Map.keys(@modules)
+  @filters Map.keys(@modules)
 
-  defp filters(opts) do
-    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
-      @module_keys -- ["$ref"]
-    else
-      @module_keys
-    end
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def filter(schema, name, pointer, opts) do
-    filters =
-      schema
-      |> Map.take(filters(opts))
-      |> Enum.map(&filter_for(&1, name, pointer))
+  defp build_filter(context, authority, pointer, opts) do
+    # TODO: make sure that this actually detects the draft version before
+    # attempting to adjust the draft
 
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+    filter_clauses =
+      for filter <- @filters, is_map_key(context, filter) do
+        filter_call = Tools.call(authority, JsonPointer.join(pointer, filter), opts)
+
+        quote do
+          :ok <- unquote(filter_call)(float, path)
+        end
+      end
+
+    call = Tools.call(authority, pointer, opts)
 
     quote do
-      defp unquote(call)(content, path) when is_float(content) do
-        with unquote_splicing(filters) do
+      defp unquote(call)(float, path) when is_float(float) do
+        with unquote_splicing(filter_clauses) do
           :ok
         end
       end
     end
   end
 
-  defp filter_for({filter, _}, name, pointer) do
-    call =
-      pointer
-      |> JsonPointer.join(Combining.adjust(filter))
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    quote do
-      :ok <- unquote(call)(content, path)
-    end
-  end
-
-  # number doesn't require accessories because integer will always provide it
-  # and anything with number must have integer.
-  def accessories(_schema, _name, _pointer, _opts), do: []
+  # there are no accessories for "number" because these will ALWAYS be included in "integer".
+  defmacro accessories(_, _, _), do: []
 end

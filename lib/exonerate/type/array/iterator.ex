@@ -73,7 +73,7 @@ defmodule Exonerate.Type.Array.Iterator do
     filters = Enum.flat_map(subschema, &filter_for(&1, acc, name, pointer, subschema))
 
     subschema
-    |> build_code(filters, call, acc, pointer)
+    |> build_filter(filters, call, acc, pointer)
     |> Tools.maybe_dump(opts)
   end
 
@@ -116,7 +116,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   # FILTER MODE
 
-  defp build_code(subschema, filters, call, acc, pointer) do
+  defp build_filter(subschema, filters, call, acc, pointer) do
     quote do
       defp unquote(call)(content, path) do
         content

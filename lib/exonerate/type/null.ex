@@ -9,6 +9,9 @@ defmodule Exonerate.Type.Null do
 
   @module_keys Combining.filters()
 
+  defmacro filter(_, _, _), do: []
+  defmacro accessories(_, _, _), do: []
+
   defp filters(opts) do
     if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
       @module_keys -- ["$ref"]

@@ -46,4 +46,6 @@ defmodule ExonerateTest.RefTraceTest do
              schema_pointer: "/properties/foo/type"
            ] = Enum.sort(error)
   end
+
+  test "a ref is okay if it's type-restricted but called from elsewhere"
 end

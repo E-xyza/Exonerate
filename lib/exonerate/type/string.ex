@@ -3,7 +3,7 @@ defmodule Exonerate.Type.String do
 
   @behaviour Exonerate.Type
 
-  alias Exonerate.Draft
+  # alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Combining
 
@@ -14,86 +14,50 @@ defmodule Exonerate.Type.String do
              "pattern" => Exonerate.Filter.Pattern
            })
 
-  @module_keys Map.keys(@modules)
+  @filters Map.keys(@modules)
 
-  defp filters(opts) do
-    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
-      @module_keys -- ["$ref"]
-    else
-      @module_keys
-    end
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def filter(schema = %{"format" => "binary"}, name, pointer, opts) do
-    filters = filter_calls(schema, name, pointer, opts)
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+  defp build_filter(schema = %{"format" => "binary"}, authority, pointer, opts) do
+    filters = build_filter_with_clause(schema, authority, pointer, opts)
 
     quote do
-      defp unquote(call)(content, path) when is_binary(content) do
+      defp unquote(Tools.call(authority, pointer, opts))(content, path) when is_binary(content) do
         unquote(filters)
       end
     end
   end
 
-  def filter(schema, name, pointer, opts) do
-    filters = filter_calls(schema, name, pointer, opts)
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-
-    error_schema_pointer =
-      pointer
-      |> JsonPointer.join("type")
-      |> JsonPointer.to_uri()
+  defp build_filter(schema, authority, pointer, opts) do
+    filters = build_filter_with_clause(schema, authority, pointer, opts)
+    non_utf_error_pointer = JsonPointer.join(pointer, "type")
 
     quote do
-      defp unquote(call)(content, path) when is_binary(content) do
-        if String.valid?(content) do
+      defp unquote(Tools.call(authority, pointer, opts))(string, path) when is_binary(string) do
+        if String.valid?(string) do
           unquote(filters)
         else
           require Exonerate.Tools
-          Exonerate.Tools.mismatch(content, unquote(error_schema_pointer), path)
+          Exonerate.Tools.mismatch(string, unquote(non_utf_error_pointer), path)
         end
       end
     end
   end
 
-  # maxLength and minLength can be combined
-  defp combine_min_max(schema) do
-    case schema do
-      %{"maxLength" => _, "minLength" => _} ->
-        schema
-        |> Map.drop(["maxLength", "minLength"])
-        |> Map.put("min-max-length", :ok)
-
-      _ ->
-        schema
-    end
-  end
-
-  defp filter_calls(schema, name, pointer, opts) do
-    schema
-    |> combine_min_max
-    |> Map.take(filters(opts))
-    |> case do
-      empty when empty === %{} ->
-        :ok
-
-      filters ->
-        build_filters(filters, name, pointer)
-    end
-  end
-
-  defp build_filters(filters, name, pointer) do
+  defp build_filter_with_clause(schema, authority, pointer, opts) do
     filter_clauses =
-      Enum.map(filters, fn {filter, _} ->
-        call =
-          pointer
-          |> JsonPointer.join(Combining.adjust(filter))
-          |> Tools.pointer_to_fun_name(authority: name)
+      for filter <- @filters, is_map_key(schema, filter) do
+        call = Tools.call(authority, JsonPointer.join(pointer, filter), opts)
 
         quote do
-          :ok <- unquote(call)(content, path)
+          :ok <- unquote(call)(string, path)
         end
-      end)
+      end
 
     quote do
       with unquote_splicing(filter_clauses) do
@@ -102,22 +66,22 @@ defmodule Exonerate.Type.String do
     end
   end
 
-  def accessories(schema, name, pointer, opts) do
-    schema = combine_min_max(schema)
+  defmacro accessories(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_accessories(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
 
-    for filter_name <- filters(opts),
-        is_map_key(schema, filter_name),
-        not Combining.filter?(filter_name) do
-      module = @modules[filter_name]
-      pointer = traverse(pointer, filter_name)
+  defp build_accessories(context, authority, pointer, opts) do
+    for filter <- @filters, is_map_key(context, filter), not Combining.filter?(filter) do
+      module = @modules[filter]
+      pointer = JsonPointer.join(pointer, filter)
 
       quote do
         require unquote(module)
-        unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
+        unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
       end
     end
   end
-
-  defp traverse(pointer, "min-max-length"), do: pointer
-  defp traverse(pointer, filter), do: JsonPointer.join(pointer, filter)
 end

@@ -47,8 +47,8 @@ defmodule Exonerate.Cache do
   end
 
   @spec put_schema(module, authority :: atom, schema :: Type.json()) :: :ok
-  def put_schema(module, authority, content) when is_atom(authority) do
-    :ets.insert(get_table(), {{module, authority}, content})
+  def put_schema(module, authority, schema) when is_atom(authority) do
+    :ets.insert(get_table(), {{module, authority}, schema})
     :ok
   end
 

@@ -95,6 +95,7 @@ defmodule Exonerate do
   """
 
   alias Exonerate.Cache
+  alias Exonerate.Degeneracy
   alias Exonerate.Id
   alias Exonerate.Tools
 
@@ -118,6 +119,7 @@ defmodule Exonerate do
       schema_ast
       |> Macro.expand(__CALLER__)
       |> Jason.decode!()
+      |> Degeneracy.canonicalize()
       |> Id.prescan(module)
 
     Cache.put_schema(module, authority, schema)

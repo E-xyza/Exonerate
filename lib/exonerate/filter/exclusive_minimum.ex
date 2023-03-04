@@ -5,64 +5,44 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
   alias Exonerate.Tools
 
   # TODO: figure out draft-4 stuff
-  defmacro filter(name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-    schema_pointer = JsonPointer.to_uri(pointer)
-    module = __CALLER__.module
-
-    module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(pointer)
-    |> case do
-      bool when is_boolean(bool) ->
-        # TODO: figure out a draft-4 warning here
-        filter_boolean(bool, call, fetch_minimum!(module, name, pointer), schema_pointer)
-
-      value ->
-        filter_value(value, call, schema_pointer)
-    end
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(__CALLER__, authority, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp fetch_minimum!(module, name, pointer) do
-    minimum_pointer =
-      pointer
-      |> JsonPointer.backtrack!()
-      |> JsonPointer.join("minimum")
+  defp build_filter(true, caller, authority, pointer, opts) do
+    # TODO: include a draft-4 warning
+    call = Tools.call(authority, pointer, opts)
 
-    module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(minimum_pointer)
-  end
+    minimum =
+      caller
+      |> Tools.parent(authority, pointer)
+      |> Map.fetch!("minimum")
 
-  defp filter_boolean(false, call, _, _schema_pointer) do
     quote do
-      @compile {:inline, [{unquote(call), 2}]}
-      defp unquote(call)(_number, _path), do: :ok
-    end
-  end
-
-  defp filter_boolean(true, call, maximum, schema_pointer) do
-    quote do
-      defp unquote(call)(number = unquote(maximum), path) do
+      defp unquote(call)(number = unquote(minimum), path) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(number, unquote(schema_pointer), path)
+        Exonerate.Tools.mismatch(number, unquote(pointer), path)
       end
 
       defp unquote(call)(_, _), do: :ok
     end
   end
 
-  defp filter_value(maximum, call, schema_pointer) do
+  defp build_filter(minimum, _caller, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
+
     quote do
       defp unquote(call)(number, path) do
         case number do
-          value when value > unquote(maximum) ->
+          value when value > unquote(minimum) ->
             :ok
 
           _ ->
             require Exonerate.Tools
-            Exonerate.Tools.mismatch(number, unquote(schema_pointer), path)
+            Exonerate.Tools.mismatch(number, unquote(pointer), path)
         end
       end
     end

@@ -26,11 +26,11 @@ defmodule Exonerate.Combining.If do
     __CALLER__.module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(parent_pointer)
-    |> build_code(name, pointer, parent_pointer, tracked, opts)
+    |> build_filter(name, pointer, parent_pointer, tracked, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  def build_code(subschema, name, pointer, parent_pointer, tracked, opts) do
+  def build_filter(subschema, name, pointer, parent_pointer, tracked, opts) do
     ok =
       if tracked do
         quote do

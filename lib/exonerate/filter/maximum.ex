@@ -13,11 +13,11 @@ defmodule Exonerate.Filter.Maximum do
     __CALLER__.module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
-    |> build_code(call, schema_pointer)
+    |> build_filter(call, schema_pointer)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_code(maximum, call, schema_pointer) do
+  defp build_filter(maximum, call, schema_pointer) do
     quote do
       defp unquote(call)(number, path) do
         case number do

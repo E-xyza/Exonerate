@@ -17,11 +17,11 @@ defmodule Exonerate.Filter.MinLength do
 
     schema
     |> JsonPointer.resolve!(pointer)
-    |> build_code(call, schema_pointer, format_binary)
+    |> build_filter(call, schema_pointer, format_binary)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_code(length, call, schema_pointer, true) do
+  defp build_filter(length, call, schema_pointer, true) do
     quote do
       defp unquote(call)(string, path) when byte_size(string) < unquote(length) do
         require Exonerate.Tools
@@ -32,7 +32,7 @@ defmodule Exonerate.Filter.MinLength do
     end
   end
 
-  defp build_code(length, call, schema_pointer, false) do
+  defp build_filter(length, call, schema_pointer, false) do
     quote do
       defp unquote(call)(string, path) do
         case String.length(string) do

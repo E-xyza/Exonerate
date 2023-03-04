@@ -21,6 +21,9 @@ defmodule Exonerate.Type.Object do
 
   @combining_filters Combining.filters()
 
+  defmacro filter(_, _, _), do: []
+  defmacro accessories(_, _, _), do: []
+
   defp combining_filters(opts) do
     if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
       @combining_filters -- ["$ref"]

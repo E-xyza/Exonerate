@@ -33,20 +33,18 @@ defmodule Exonerate.Tools do
 
   # SUBSCHEMA MANIPULATION
 
-  @spec subschema(Macro.Env.t(), atom, JsonPointer.t(), context? :: boolean) :: Type.json()
-  def subschema(caller, authority, pointer, context? \\ false) do
+  @spec subschema(Macro.Env.t(), atom, JsonPointer.t()) :: Type.json()
+  def subschema(caller, authority, pointer) do
     caller.module
     |> Cache.fetch_schema!(authority)
     |> JsonPointer.resolve!(pointer)
-    |> if(context?, &Degeneracy.canonicalize/1)
   end
 
-  @spec parent(Macro.Env.t(), atom, JsonPointer.t(), context? :: boolean) :: Type.json()
-  def parent(caller, authority, pointer, context? \\ false) do
+  @spec parent(Macro.Env.t(), atom, JsonPointer.t()) :: Type.json()
+  def parent(caller, authority, pointer) do
     caller.module
     |> Cache.fetch_schema!(authority)
     |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
-    |> if(context?, &Degeneracy.canonicalize/1)
   end
 
   @spec call(atom, JsonPointer.t(), Keyword.t()) :: atom

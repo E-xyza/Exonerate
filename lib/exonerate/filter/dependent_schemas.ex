@@ -13,7 +13,7 @@ defmodule Exonerate.Filter.DependentSchemas do
     |> JsonPointer.resolve!(pointer)
     |> Enum.map(&make_dependencies(&1, name, pointer, opts))
     |> Enum.unzip()
-    |> build_code(name, pointer)
+    |> build_filter(name, pointer)
     |> Tools.maybe_dump(opts)
   end
 
@@ -28,7 +28,7 @@ defmodule Exonerate.Filter.DependentSchemas do
      end, accessory(call, key, schema, name, pointer, opts)}
   end
 
-  defp build_code({prongs, accessories}, name, pointer) do
+  defp build_filter({prongs, accessories}, name, pointer) do
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
     quote do

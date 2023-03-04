@@ -28,14 +28,14 @@ defmodule Exonerate.Combining.Ref do
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
     |> URI.parse()
-    |> build_code(module, name, pointer, opts)
+    |> build_filter(module, name, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   defp normalize(fragment = "/" <> _), do: fragment
   defp normalize(fragment), do: "/" <> fragment
 
-  defp build_code(
+  defp build_filter(
          %{host: nil, path: nil, fragment: fragment},
          module,
          name,
@@ -109,7 +109,7 @@ defmodule Exonerate.Combining.Ref do
     end
   end
 
-  defp build_code(%{host: nil, path: path}, module, name, call, call_path, opts) do
+  defp build_filter(%{host: nil, path: path}, module, name, call, call_path, opts) do
     pointer =
       opts
       |> Keyword.fetch!(:id)

@@ -22,20 +22,20 @@ defmodule Exonerate.Type.Object.Iterator do
     __CALLER__.module
     |> Cache.fetch!(name)
     |> JsonPointer.resolve!(pointer)
-    |> build_code(name, pointer, opts)
+    |> build_filter(name, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   # as an optimization, remove filters that are impossible given other filters.
-  defp build_code(schema = %{"propertyNames" => _}, name, pointer, opts)
+  defp build_filter(schema = %{"propertyNames" => _}, name, pointer, opts)
        when is_map_key(schema, "additionalProperties") or
               is_map_key(schema, "unevaluatedProperties") do
     schema
     |> Map.drop(["additionalProperties", "unevaluatedProperties"])
-    |> build_code(name, pointer, opts)
+    |> build_filter(name, pointer, opts)
   end
 
-  defp build_code(schema, name, pointer, opts) do
+  defp build_filter(schema, name, pointer, opts) do
     outer_tracked = Keyword.get(opts, :track_properties, false)
 
     call =

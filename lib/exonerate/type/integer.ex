@@ -4,7 +4,6 @@ defmodule Exonerate.Type.Integer do
   @behaviour Exonerate.Type
 
   alias Exonerate.Combining
-  alias Exonerate.Draft
   alias Exonerate.Tools
 
   @modules Combining.merge(%{
@@ -15,53 +14,50 @@ defmodule Exonerate.Type.Integer do
              "multipleOf" => Exonerate.Filter.MultipleOf
            })
 
-  @module_keys Map.keys(@modules)
+  @filters Map.keys(@modules)
 
-  defp filters(opts) do
-    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
-      @module_keys -- ["$ref"]
-    else
-      @module_keys
-    end
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def filter(schema, name, pointer, opts) do
+  defp build_filter(context, authority, pointer, opts) do
     # TODO: make sure that this actually detects the draft version before
     # attempting to adjust the draft
 
-    filters =
-      schema
-      |> Map.take(filters(opts))
-      |> Enum.map(&filter_for(&1, name, pointer))
+    filter_clauses =
+      for filter <- @filters, is_map_key(context, filter) do
+        filter_call = Tools.call(authority, JsonPointer.join(pointer, filter), opts)
 
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+        quote do
+          :ok <- unquote(filter_call)(integer, path)
+        end
+      end
+
+    call = Tools.call(authority, pointer, opts)
 
     quote do
-      defp unquote(call)(content, path) when is_integer(content) do
-        with unquote_splicing(filters) do
+      defp unquote(call)(integer, path) when is_integer(integer) do
+        with unquote_splicing(filter_clauses) do
           :ok
         end
       end
     end
   end
 
-  defp filter_for({filter, _}, name, pointer) do
-    call =
-      pointer
-      |> JsonPointer.join(Combining.adjust(filter))
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    quote do
-      :ok <- unquote(call)(content, path)
-    end
+  defmacro accessories(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_accessories(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def accessories(schema, name, pointer, opts) do
-    for filter_name <- filters(opts),
-        is_map_key(schema, filter_name),
-        not Combining.filter?(filter_name) do
-      module = @modules[filter_name]
-      pointer = JsonPointer.join(pointer, filter_name)
+  defp build_accessories(context, name, pointer, opts) do
+    for filter <- @filters, is_map_key(context, filter), not Combining.filter?(filter) do
+      module = @modules[filter]
+      pointer = JsonPointer.join(pointer, filter)
 
       quote do
         require unquote(module)

@@ -14,7 +14,7 @@ defmodule Exonerate.Filter.PatternProperties do
     |> JsonPointer.resolve!(pointer)
     |> Enum.map(&filter_for(&1, name, pointer, opts))
     |> Enum.unzip()
-    |> build_code(call, tracker)
+    |> build_filter(call, tracker)
     |> Tools.maybe_dump(opts)
   end
 
@@ -38,7 +38,7 @@ defmodule Exonerate.Filter.PatternProperties do
 
   @should_track [:additional, :unevaluated]
 
-  defp build_code({filters, accessories}, call, tracked) when tracked in @should_track do
+  defp build_filter({filters, accessories}, call, tracked) when tracked in @should_track do
     quote do
       defp unquote(call)({k, v}, path, seen) do
         Enum.reduce_while(unquote(filters), {:ok, seen}, fn
@@ -58,7 +58,7 @@ defmodule Exonerate.Filter.PatternProperties do
     end
   end
 
-  defp build_code({filters, accessories}, call, _) do
+  defp build_filter({filters, accessories}, call, _) do
     quote do
       defp unquote(call)({k, v}, path) do
         Enum.reduce_while(unquote(filters), :ok, fn

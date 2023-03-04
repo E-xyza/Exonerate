@@ -28,7 +28,7 @@ defmodule Exonerate.Combining.OneOf do
     |> JsonPointer.resolve!(pointer)
     |> Enum.with_index(&call_and_context(&1, &2, name, pointer, tracked, opts))
     |> Enum.unzip()
-    |> build_code(call, schema_pointer, tracked)
+    |> build_filter(call, schema_pointer, tracked)
     |> Tools.maybe_dump(opts)
   end
 
@@ -49,7 +49,7 @@ defmodule Exonerate.Combining.OneOf do
      end}
   end
 
-  defp build_code({calls, contexts}, call, schema_pointer, tracked) do
+  defp build_filter({calls, contexts}, call, schema_pointer, tracked) do
     quote do
       defp unquote(call)(value, path) do
         alias Exonerate.Combining

@@ -2,13 +2,16 @@ defmodule Exonerate.Degeneracy do
   @moduledoc false
 
   # module with code that deals with degenerate subschemas, as well as code that can be safely deleted.
+
+  alias Exonerate.Cache
   alias Exonerate.Type
 
   @all_types Type.all()
 
   @spec canonicalize(Type.json()) :: Type.json()
   @doc """
-  operates specifically on contexts, and works to canonicalize them.
+  operates specifically on contexts, and works to canonicalize them.  This is
+  performed when the schema is cached, so all
 
   This process includes three steps:
 
@@ -18,10 +21,14 @@ defmodule Exonerate.Degeneracy do
   filters are not pruned because they will be needed to generate correct
   error messages.
 
-  3. always include a type filter, and make sure it's always an array
+  3. combine filters that for performance reasons should be combined.
+    - this is currently only minLength/maxLength for strings.
 
-  NB: Canonicalize does not recursively canonicalize, it only performs
-  local canonicalization
+  4. recursively enter content that is a context
+
+  5. always include a type filter, and make sure it's always an array
+
+  Canonicalize recursively canonicalizes.
   """
 
   # redundant filters
@@ -46,6 +53,32 @@ defmodule Exonerate.Degeneracy do
   def canonicalize(context = %{"const" => _, "enum" => _}) do
     context
     |> Map.delete("enum")
+    |> canonicalize
+  end
+
+  def canonicalize(context = %{"exclusiveMinimum" => false}) do
+    context
+    |> Map.delete("exclusiveMinimum")
+    |> canonicalize
+  end
+
+  def canonicalize(context = %{"exclusiveMaximum" => false}) do
+    context
+    |> Map.delete("exclusiveMaximum")
+    |> canonicalize
+  end
+
+  def canonicalize(context = %{"exclusiveMinimum" => true})
+      when not is_map_key(context, "minimum") do
+    context
+    |> Map.delete("exclusiveMinimum")
+    |> canonicalize
+  end
+
+  def canonicalize(context = %{"exclusiveMaximum" => true})
+      when not is_map_key(context, "maximum") do
+    context
+    |> Map.delete("exclusiveMaximum")
     |> canonicalize
   end
 
@@ -95,6 +128,18 @@ defmodule Exonerate.Degeneracy do
     |> canonicalize
   end
 
+  def canonicalize(context = %{"minLength" => min, "maxLength" => max}) do
+    # note the min-max-length string doesn't look like a normal JsonSchema filter.
+    context
+    |> Map.drop(["minLength", "maxLength"])
+    |> Map.put("min-max-length", [min, max])
+    |> canonicalize
+  end
+
+  def canonicalize(context) when context === %{}, do: true
+
+  # canonicalize type statements
+
   def canonicalize(context) when not is_map_key(context, "type") do
     # include a type statement when it's not present
     types =
@@ -117,7 +162,44 @@ defmodule Exonerate.Degeneracy do
     |> canonicalize
   end
 
-  def canonicalize(context), do: context
+  # final polishing step:  Amend type and recursively entery other content
+  def canonicalize(context) do
+    context
+    |> Map.update!("type", &ensure_integer_for_number/1)
+    |> update("additionalItems", &canonicalize/1)
+    |> update("additionalProperties", &canonicalize/1)
+    |> update("contains", &canonicalize/1)
+    |> update("dependencies", &canonicalize_dependencies/1)
+    |> update("dependentRequired", &canonicalize_object/1)
+    |> update("items", &canonicalize_items/1)
+    |> update("patternProperties", &canonicalize_object/1)
+    |> update("prefix_items", &canonicalize_array/1)
+    |> update("properties", &canonicalize_object/1)
+    |> update("propertyNames", &canonicalize/1)
+    |> update("unevaluatedItems", &canonicalize/1)
+    |> update("unevaluatedProperties", &canonicalize/1)
+  end
+
+  defp update(map, key, fun) when is_map_key(map, key), do: Map.update!(map, key, fun)
+  defp update(map, _key, _fun), do: map
+
+  defp canonicalize_items(array) when is_list(array), do: canonicalize_array(array)
+  defp canonicalize_items(object) when is_map(object), do: canonicalize_object(object)
+
+  defp canonicalize_dependencies(array) when is_list(array), do: array
+  defp canonicalize_dependencies(object) when is_map(object), do: canonicalize_object(object)
+
+  defp canonicalize_object(object), do: Map.new(object, fn {k, v} -> {k, canonicalize(v)} end)
+
+  defp canonicalize_array(array), do: Enum.map(array, &canonicalize/1)
+
+  def ensure_integer_for_number(types) do
+    if "number" in types and "integer" not in types do
+      ["integer" | types]
+    else
+      types
+    end
+  end
 
   @all_types_lists [
     ~w(array boolean integer null number object string),

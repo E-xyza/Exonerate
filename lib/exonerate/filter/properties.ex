@@ -13,7 +13,7 @@ defmodule Exonerate.Filter.Properties do
     |> JsonPointer.resolve!(pointer)
     |> Enum.map(&filter_for(&1, call, name, pointer, tracked, opts))
     |> Enum.unzip()
-    |> build_code(call, tracked)
+    |> build_filter(call, tracked)
     |> Tools.maybe_dump(opts)
   end
 
@@ -48,7 +48,7 @@ defmodule Exonerate.Filter.Properties do
      end}
   end
 
-  defp build_code({filters, accessories}, call, tracked) do
+  defp build_filter({filters, accessories}, call, tracked) do
     if tracked in @should_track do
       quote do
         unquote(filters)
