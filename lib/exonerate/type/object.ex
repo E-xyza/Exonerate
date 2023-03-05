@@ -3,7 +3,6 @@ defmodule Exonerate.Type.Object do
 
   @behaviour Exonerate.Type
 
-  alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Combining
   alias Exonerate.Type.Object.Iterator
@@ -36,7 +35,16 @@ defmodule Exonerate.Type.Object do
         quote do
           :ok <- unquote(filter_call)(object, path)
         end
-      end
+      end ++
+        List.wrap(
+          if Iterator.needed?(context) do
+            iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
+
+            quote do
+              :ok <- unquote(iterator_call)(object, path)
+            end
+          end
+        )
 
     quote do
       defp unquote(Tools.call(authority, pointer, opts))(object, path) when is_map(object) do
@@ -63,6 +71,20 @@ defmodule Exonerate.Type.Object do
         require unquote(module)
         unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
       end
-    end
+    end ++
+      List.wrap(
+        if Iterator.needed?(context) do
+          quote do
+            require Exonerate.Type.Object.Iterator
+            Exonerate.Type.Object.Iterator.filter(unquote(name), unquote(pointer), unquote(opts))
+
+            Exonerate.Type.Object.Iterator.accessories(
+              unquote(name),
+              unquote(pointer),
+              unquote(opts)
+            )
+          end
+        end
+      )
   end
 end

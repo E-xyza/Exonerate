@@ -2,7 +2,6 @@ defmodule Exonerate.Filter.MaxProperties do
   @moduledoc false
   alias Exonerate.Tools
 
-
   # TODO: figure out draft-4 stuff
   defmacro filter(authority, pointer, opts) do
     __CALLER__

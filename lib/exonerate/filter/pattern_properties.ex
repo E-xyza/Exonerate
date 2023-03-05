@@ -4,23 +4,44 @@ defmodule Exonerate.Filter.PatternProperties do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-
-    {tracker, opts} = Keyword.pop!(opts, :internal_tracking)
-
-    __CALLER__.module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(pointer)
-    |> Enum.map(&filter_for(&1, name, pointer, opts))
-    |> Enum.unzip()
-    |> build_filter(call, tracker)
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp filter_for({regex, _}, name, pointer, opts) do
+  defp build_filter(subschema, authority, pointer, opts) do
+    {subfilters, contexts} =
+      subschema
+      |> Enum.map(&filters_for(&1, authority, pointer, opts))
+      |> Enum.unzip()
+
+    quote do
+      defp unquote(Tools.call(authority, pointer, opts))({key, value}, path) do
+        Enum.reduce_while(unquote(subfilters), :ok, fn
+          {regex, fun}, :ok ->
+            result =
+              if Regex.match?(regex, key) do
+                fun.(value, Path.join(path, key))
+              else
+                :ok
+              end
+
+            {:cont, result}
+
+          _, error = {:error, _} ->
+            {:halt, error}
+        end)
+      end
+
+      unquote(contexts)
+    end
+  end
+
+  defp filters_for({regex, _}, authority, pointer, opts) do
     pointer = JsonPointer.join(pointer, regex)
-    fun = Tools.pointer_to_fun_name(pointer, authority: name)
+    fun = Tools.call(authority, pointer, opts)
 
     {quote do
        {sigil_r(<<unquote(regex)>>, []), &(unquote({fun, [], Elixir}) / 2)}
@@ -29,52 +50,10 @@ defmodule Exonerate.Filter.PatternProperties do
        require Exonerate.Context
 
        Exonerate.Context.filter(
-         unquote(name),
+         unquote(authority),
          unquote(pointer),
-         unquote(Tools.drop_tracking(opts))
+         unquote(opts)
        )
      end}
-  end
-
-  @should_track [:additional, :unevaluated]
-
-  defp build_filter({filters, accessories}, call, tracked) when tracked in @should_track do
-    quote do
-      defp unquote(call)({k, v}, path, seen) do
-        Enum.reduce_while(unquote(filters), {:ok, seen}, fn
-          {regex, fun}, {:ok, seen} ->
-            if Regex.match?(regex, k) do
-              case fun.(v, Path.join(path, k)) do
-                :ok -> {:cont, {:ok, true}}
-                error = {:error, _} -> {:halt, error}
-              end
-            else
-              {:cont, {:ok, seen}}
-            end
-        end)
-      end
-
-      unquote(accessories)
-    end
-  end
-
-  defp build_filter({filters, accessories}, call, _) do
-    quote do
-      defp unquote(call)({k, v}, path) do
-        Enum.reduce_while(unquote(filters), :ok, fn
-          _, error = {:error, _} ->
-            {:halt, error}
-
-          {regex, fun}, :ok ->
-            if Regex.match?(regex, k) do
-              {:cont, fun.(v, Path.join(path, k))}
-            else
-              {:cont, :ok}
-            end
-        end)
-      end
-
-      unquote(accessories)
-    end
   end
 end

@@ -82,6 +82,12 @@ defmodule Exonerate.Degeneracy do
     |> canonicalize
   end
 
+  def canonicalize(context = %{"propertyNames" => true}) do
+    context
+    |> Map.delete("propertyNames")
+    |> canonicalize
+  end
+
   ## degenerate-OK filters
 
   def canonicalize(context = %{"minLength" => min}) when min == 0 do
@@ -323,11 +329,6 @@ defmodule Exonerate.Degeneracy do
       ^value -> value
       _ -> :unknown
     end
-  end
-
-  # tracking related
-  def drop_tracking(opts) do
-    Keyword.drop(opts, [:track_properties, :track_items])
   end
 
   # general convenience functions

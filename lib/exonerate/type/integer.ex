@@ -34,7 +34,8 @@ defmodule Exonerate.Type.Integer do
       end
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(integer, path) when is_integer(integer) do
+      defp unquote(Tools.call(authority, pointer, opts))(integer, path)
+           when is_integer(integer) do
         with unquote_splicing(filter_clauses) do
           :ok
         end
