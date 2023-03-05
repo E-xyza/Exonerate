@@ -4,26 +4,31 @@ defmodule Exonerate.Filter.PropertyNames do
   alias Exonerate.Tools
 
   defmacro filter(authority, pointer, opts) do
-    __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    authority
+    |> build_filter(pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(schema, authority, pointer, opts) do
+  defp build_filter(authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
     special_opts = Keyword.put(opts, :only, ["string"])
 
-    subfilter = quote do
-      defp unquote(call)({k, _v}, path) do
-        unquote(call)(k, path)
+    subfilter =
+      quote do
+        defp unquote(call)({key, _v}, path) do
+          case unquote(call)(key, path) do
+            :ok -> :ok
+            {:error, errors} ->
+              {:error, Keyword.update!(errors, :json_pointer, &Path.join(&1, key))}
+          end
+        end
       end
-    end
 
-    context = quote do
-      require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(special_opts))
-    end
+    context =
+      quote do
+        require Exonerate.Context
+        Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(special_opts))
+      end
 
     quote do
       unquote(subfilter)

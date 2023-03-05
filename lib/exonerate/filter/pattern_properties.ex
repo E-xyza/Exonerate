@@ -17,15 +17,52 @@ defmodule Exonerate.Filter.PatternProperties do
       |> Enum.map(&filters_for(&1, authority, pointer, opts))
       |> Enum.unzip()
 
+    init = if opts[:visited] do
+      {:ok, false}
+    else
+      :ok
+    end
+
+    capture = if opts[:visited] do
+      quote do
+        {:ok, visited}
+      end
+    else
+      :ok
+    end
+
+    evaluation =
+      if opts[:visited] do
+        quote do
+          case fun.(value, Path.join(path, key)) do
+            :ok -> {:ok, true}
+            error -> error
+          end
+        end
+      else
+        quote do
+          fun.(value, Path.join(path, key))
+        end
+      end
+
+    negative =
+      if opts[:visited] do
+        quote do
+          {:ok, visited}
+        end
+      else
+        :ok
+      end
+
     quote do
       defp unquote(Tools.call(authority, pointer, opts))({key, value}, path) do
-        Enum.reduce_while(unquote(subfilters), :ok, fn
-          {regex, fun}, :ok ->
+        Enum.reduce_while(unquote(subfilters), unquote(init), fn
+          {regex, fun}, unquote(capture) ->
             result =
               if Regex.match?(regex, key) do
-                fun.(value, Path.join(path, key))
+                unquote(evaluation)
               else
-                :ok
+                unquote(negative)
               end
 
             {:cont, result}
@@ -40,6 +77,7 @@ defmodule Exonerate.Filter.PatternProperties do
   end
 
   defp filters_for({regex, _}, authority, pointer, opts) do
+    opts = Keyword.delete(opts, :visited)
     pointer = JsonPointer.join(pointer, regex)
     fun = Tools.call(authority, pointer, opts)
 
