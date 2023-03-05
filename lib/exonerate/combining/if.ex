@@ -30,7 +30,7 @@ defmodule Exonerate.Combining.If do
     |> Tools.maybe_dump(opts)
   end
 
-  def build_filter(subschema, name, pointer, parent_pointer, tracked, opts) do
+  defp build_filter(subschema, name, pointer, parent_pointer, tracked, opts) do
     ok =
       if tracked do
         quote do

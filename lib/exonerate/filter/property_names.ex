@@ -3,15 +3,31 @@ defmodule Exonerate.Filter.PropertyNames do
 
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
-    special_opts = Keyword.merge(opts, type: "string")
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
 
-    Tools.maybe_dump(
-      quote do
-        require Exonerate.Context
-        Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(special_opts))
-      end,
-      opts
-    )
+  defp build_filter(schema, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
+    special_opts = Keyword.put(opts, :only, ["string"])
+
+    subfilter = quote do
+      defp unquote(call)({k, _v}, path) do
+        unquote(call)(k, path)
+      end
+    end
+
+    context = quote do
+      require Exonerate.Context
+      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(special_opts))
+    end
+
+    quote do
+      unquote(subfilter)
+      unquote(context)
+    end
   end
 end
