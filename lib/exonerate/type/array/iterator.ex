@@ -6,12 +6,13 @@ defmodule Exonerate.Type.Array.Iterator do
   # JsonSchema logic -- when an error is encountered, it terminates and
   # reports this error as the result.  In "find" mode, error is assumed and
   # the looping terminates when a passing result is found, this only applies
-  # to "minItems" and "contains" filters.
+  # when the only filters are "minItems" and "contains" filters.
 
-  alias Exonerate.Cache
-  alias Exonerate.Degeneracy
   alias Exonerate.Tools
   alias Exonerate.Type
+
+  alias Exonerate.Type.Array.Find
+  alias Exonerate.Type.Array.Filter
 
   @modules %{
     "items" => Exonerate.Filter.Items,
@@ -34,7 +35,7 @@ defmodule Exonerate.Type.Array.Iterator do
     Enum.any?(@filters, &is_map_key(schema, &1))
   end
 
-  @find_keys [
+  @find_key_sets [
     ["contains"],
     ["minItems"],
     ["contains", "minItems"],
@@ -42,736 +43,57 @@ defmodule Exonerate.Type.Array.Iterator do
     ["contains", "minContains", "minItems"]
   ]
 
-  @spec mode(Type.json()) :: :find | :filter | nil
-  def mode(schema) do
-    schema
+  @spec mode(Type.json()) :: Find | Filter | nil
+  def mode(context) do
+    context
     |> Map.take(@filters)
-    |> adjust_subschema
     |> Map.keys()
     |> Enum.sort()
     |> case do
       [] -> nil
-      keys when keys in @find_keys -> :find
-      _ -> :filter
+      keys when keys in @find_key_sets -> Find
+      _ -> Filter
     end
   end
 
-  defmacro filter(name, pointer, :filter, opts) do
-    subschema =
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
-      |> adjust_subschema
+  def call(authority, pointer, opts) do
+    Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
+  end
 
-    call =
-      pointer
-      |> JsonPointer.join(":iterator")
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    acc = accumulator(subschema)
-
-    filters = Enum.flat_map(subschema, &filter_for(&1, acc, name, pointer, subschema))
-
-    subschema
-    |> build_filter(filters, call, acc, pointer)
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defmacro filter(name, pointer, :find, opts) do
-    subschema =
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
-
-    subschema
-    |> find_code_for(name, pointer)
-    |> Tools.maybe_dump(opts)
-  end
-
-  defmacro filter(_name, _pointer, nil, _opts), do: []
-
-  # COMMON FUNCTIONS
-
-  defp adjust_subschema(subschema) when not is_map_key(subschema, "contains") do
-    Map.drop(subschema, ["maxContains", "minContains"])
-  end
-
-  defp adjust_subschema(subschema), do: subschema
-
-  defp accumulator(schema) do
-    schema
-    |> Map.take(@filters)
-    |> Map.keys()
-    |> Enum.flat_map(&accumulators_for/1)
-    |> Enum.uniq()
-  end
-
-  defp accumulators_for("contains"), do: [:contains]
-  defp accumulators_for("prefixItems"), do: [:index]
-  defp accumulators_for("items"), do: [:index]
-  defp accumulators_for("uniqueItems"), do: [:index, :so_far]
-  defp accumulators_for("minItems"), do: [:index]
-  defp accumulators_for("maxItems"), do: [:index]
-  defp accumulators_for(_), do: []
-
-  # FILTER MODE
-
-  defp build_filter(subschema, filters, call, acc, pointer) do
-    quote do
-      defp unquote(call)(content, path) do
-        content
-        |> Enum.reduce_while(unquote(filter_initializer_for(acc)), fn
-          item, unquote(filter_accumulator_for(acc)) ->
-            unquote(with_statement_for(filters, acc, pointer))
-        end)
-        |> unquote(filter_analysis_for(subschema, acc, pointer))
-      end
-    end
-  end
-
-  defp with_statement_for([], acc, _schema_pointer) do
-    quote do
-      unquote(filter_continuation_for(acc))
-    end
-  end
-
-  defp with_statement_for(filters, acc, pointer) do
-    if error_path = Enum.find_value(filters, &(elem(&1, 0) === :error and elem(&1, 1))) do
-      error_pointer =
-        pointer
-        |> JsonPointer.join(error_path)
-        |> JsonPointer.to_uri()
-
-      quote do
-        require Exonerate.Tools
-
-        error =
-          Exonerate.Tools.mismatch(content, unquote(error_pointer), Path.join(path, "#{index}"))
-
-        {:halt, {error, []}}
-      end
-    else
-      quote do
-        with unquote_splicing(filters) do
-          unquote(filter_continuation_for(acc))
-        else
-          error = {:error, _} -> {:halt, {error, []}}
-        end
-      end
-    end
-  end
-
-  defp filter_initializer_for(acc) do
-    case acc do
-      [:contains] ->
-        quote do
-          {:ok, 0}
-        end
-
-      [:index] ->
-        {:ok, 0}
-
-      [:so_far] ->
-        {:ok,
-         quote do
-           MapSet.new()
-         end}
-
-      [] ->
-        :ok
-
-      list ->
-        init =
-          Enum.map(list, fn
-            :contains ->
-              {:contains, 0}
-
-            :so_far ->
-              {:so_far,
-               quote do
-                 MapSet.new()
-               end}
-
-            :index ->
-              {:index, 0}
-          end)
-
-        {:ok, {:%{}, [], init}}
-    end
-  end
-
-  defp filter_accumulator_for(acc) do
-    case acc do
-      [:index] ->
-        quote do
-          {:ok, index}
-        end
-
-      [:contains] ->
-        quote do
-          {:ok, contains}
-        end
-
-      [] ->
-        quote do
-          _
-        end
-
-      _ ->
-        quote do
-          {:ok, acc}
-        end
-    end
-  end
-
-  defp filter_continuation_for(acc) do
-    case Enum.sort(acc) do
-      [:contains] ->
-        quote do
-          {:cont, {:ok, contains}}
-        end
-
-      [:index] ->
-        quote do
-          {:cont, {:ok, index + 1}}
-        end
-
-      [] ->
-        {:cont, {:ok, []}}
-
-      list ->
-        build_continuation(list)
-    end
-  end
-
-  defp build_continuation(keys) do
-    accumulator_chain =
-      Enum.reduce(
-        keys,
-        quote do
-          acc
-        end,
-        fn
-          :index, so_far ->
-            quote do
-              unquote(so_far)
-              |> Map.replace!(:index, acc.index + 1)
-            end
-
-          :so_far, so_far ->
-            quote do
-              unquote(so_far)
-              |> Map.replace!(:so_far, MapSet.put(acc.so_far, item))
-            end
-
-          :contains, so_far ->
-            quote do
-              unquote(so_far)
-              |> Map.replace!(:contains, contains)
-            end
-        end
-      )
-
-    quote do
-      result = unquote(accumulator_chain)
-      {:cont, {:ok, result}}
-    end
-  end
-
-  defp filter_for({"items", list}, acc, name, pointer, _subschema) when is_list(list) do
-    call =
-      pointer
-      |> JsonPointer.join("items")
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    [
-      quote do
-        :ok <-
-          unquote(call)(
-            item,
-            unquote(index_for(acc)),
-            Path.join(path, "#{unquote(index_for(acc))}")
-          )
-      end
-    ]
-  end
-
-  defp filter_for({"items", _}, acc, name, pointer, %{"prefixItems" => _}) do
-    call =
-      pointer
-      |> JsonPointer.join("items")
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    [
-      quote do
-        :ok <-
-          unquote(call)(
-            item,
-            unquote(index_for(acc)),
-            Path.join(path, "#{unquote(index_for(acc))}")
-          )
-      end
-    ]
-  end
-
-  defp filter_for({"items", items_schema}, acc, name, pointer, _subschema) do
-    items_schema
-    |> Degeneracy.class()
-    |> case do
-      :ok ->
-        nil
-
-      :error ->
-        {:error, "items"}
-
-      :unknown ->
-        call =
-          pointer
-          |> JsonPointer.join("items")
-          |> Tools.pointer_to_fun_name(authority: name)
-
-        quote do
-          :ok <- unquote(call)(item, Path.join(path, "#{unquote(index_for(acc))}"))
-        end
-    end
-    |> List.wrap()
-  end
-
-  defp filter_for({"prefixItems", list}, acc, name, pointer, _subschema) when is_list(list) do
-    call =
-      pointer
-      |> JsonPointer.join("prefixItems")
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    [
-      quote do
-        :ok <-
-          unquote(call)(
-            item,
-            unquote(index_for(acc)),
-            Path.join(path, "#{unquote(index_for(acc))}")
-          )
-      end
-    ]
-  end
-
-  defp filter_for({"contains", _}, [:contains], name, pointer, _subschema) do
-    call =
-      pointer
-      |> JsonPointer.join(["contains", ":entrypoint"])
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    [
-      quote do
-        contains = unquote(call)(item, path, contains)
-      end
-    ]
-  end
-
-  defp filter_for({"contains", _}, _, name, pointer, _subschema) do
-    call =
-      pointer
-      |> JsonPointer.join(["contains", ":entrypoint"])
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    [
-      quote do
-        contains = unquote(call)(item, path, acc.contains)
-      end
-    ]
-  end
-
-  defp filter_for({"maxContains", subschema}, [:contains], name, pointer, _subschema) do
-    subschema
-    |> Degeneracy.class()
-    |> case do
-      :ok ->
-        nil
-
-      :error ->
-        {:error, "maxContains"}
-
-      :unknown ->
-        call =
-          pointer
-          |> JsonPointer.join(["maxContains"])
-          |> Tools.pointer_to_fun_name(authority: name)
-
-        quote do
-          :ok <- unquote(call)(contains, content, path)
-        end
-    end
-    |> List.wrap()
-  end
-
-  defp filter_for({"maxContains", subschema}, _, name, pointer, _subschema) do
-    call =
-      pointer
-      |> JsonPointer.join(["maxContains"])
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    subschema
-    |> Degeneracy.class()
-    |> case do
-      :ok ->
-        nil
-
-      :error ->
-        {:error, "maxContains"}
-
-      :unknown ->
-        quote do
-          :ok <- unquote(call)(acc.contains, content, path)
-        end
-    end
-    |> List.wrap()
-  end
-
-  defp filter_for({"uniqueItems", true}, _, _name, pointer, _subschema) do
-    pointer =
-      pointer
-      |> JsonPointer.join("uniqueItems")
-      |> JsonPointer.to_uri()
-
-    [
-      quote do
-        nil <-
-          if item in acc.so_far do
-            require Exonerate.Tools
-            Exonerate.Tools.mismatch(item, unquote(pointer), Path.join(path, "#{acc.index}"))
-          end
-      end
-    ]
-  end
-
-  defp filter_for({"maxItems", count}, [:index], _name, pointer, _subschema) do
-    pointer =
-      pointer
-      |> JsonPointer.join("maxItems")
-      |> JsonPointer.to_uri()
-
-    [
-      quote do
-        nil <-
-          if index >= unquote(count) do
-            require Exonerate.Tools
-            Exonerate.Tools.mismatch(content, unquote(pointer), path)
-          end
-      end
-    ]
-  end
-
-  defp filter_for({"maxItems", count}, _, _name, pointer, _subschema) do
-    pointer =
-      pointer
-      |> JsonPointer.join("maxItems")
-      |> JsonPointer.to_uri()
-
-    [
-      quote do
-        nil <-
-          if acc.index >= unquote(count) do
-            require Exonerate.Tools
-            Exonerate.Tools.mismatch(content, unquote(pointer), path)
-          end
-      end
-    ]
-  end
-
-  defp filter_for(_, _, _name, _pointer, _subschema), do: []
-
-  defp index_for([:index]) do
-    quote do
-      index
-    end
-  end
-
-  defp index_for([_ | _]) do
-    quote do
-      acc.index
-    end
-  end
-
-  defp filter_analysis_for(%{"minItems" => count}, [:index], pointer) do
-    pointer =
-      pointer
-      |> JsonPointer.join("minItems")
-      |> JsonPointer.to_uri()
-
-    quote do
-      then(fn
-        {:ok, deficient} when deficient < unquote(count) - 1 ->
-          require Exonerate.Tools
-          Exonerate.Tools.mismatch(content, unquote(pointer), path)
-
-        {:ok, _} ->
-          :ok
-
-        {error = {:error, _}, _} ->
-          error
-      end)
-    end
-  end
-
-  defp filter_analysis_for(%{"minItems" => count}, _acc, pointer) do
-    pointer =
-      pointer
-      |> JsonPointer.join("minItems")
-      |> JsonPointer.to_uri()
-
-    quote do
-      case do
-        {:ok, %{index: deficient}} when deficient < unquote(count) - 1 ->
-          require Exonerate.Tools
-          Exonerate.Tools.mismatch(content, unquote(pointer), path)
-
-        other ->
-          other
-      end
-    end
-  end
-
-  defp filter_analysis_for(schema = %{"contains" => _}, [:contains], pointer) do
-    minimum = Map.get(schema, "minContains", 1)
-
-    quote do
-      case do
-        {:ok, amount} when amount < unquote(minimum) ->
-          require Exonerate.Tools
-          Exonerate.Tools.mismatch(content, unquote(pointer), Path.join(path, "contains"))
-
-        {:ok, _} ->
-          :ok
-
-        {error = {:error, _}, _} ->
-          error
-      end
-    end
-  end
-
-  defp filter_analysis_for(schema = %{"contains" => _}, _, pointer) do
-    minimum = Map.get(schema, "minContains", 1)
-
-    quote do
-      case do
-        {:ok, acc} when acc.contains < unquote(minimum) ->
-          require Exonerate.Tools
-          Exonerate.Tools.mismatch(content, unquote(pointer), Path.join(path, "contains"))
-
-        {:ok, _} ->
-          :ok
-
-        {error = {:error, _}, _} ->
-          error
-      end
-    end
-  end
-
-  defp filter_analysis_for(_schema, _acc, _pointer) do
-    quote do
-      elem(0)
-    end
-  end
-
-  # FIND MODE
-  # since these don't have to be generic, go ahead and write out all three cases by hand.
-
-  defp find_code_for(schema = %{"contains" => contains, "minItems" => length}, name, pointer) do
-    call =
-      pointer
-      |> JsonPointer.join(":iterator")
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    contains_pointer = JsonPointer.join(pointer, "contains")
-
-    case Degeneracy.class(contains) do
-      :ok ->
-        primary_find =
-          schema
-          |> Map.delete("contains")
-          |> find_code_for(name, pointer)
-
-        contains_pointer = JsonPointer.join(pointer, "contains")
-
-        quote do
-          defp unquote(call)([], path) do
-            require Exonerate.Tools
-            Exonerate.Tools.mismatch([], unquote(contains_pointer), path)
-          end
-
-          unquote(primary_find)
-        end
-
-      :error ->
-        quote do
-          defp unquote(call)(content, path) do
-            require Exonerate.Tools
-            Exonerate.Tools.mismatch(content, unquote(contains_pointer), path)
-          end
-        end
-
-      :unknown ->
-        min_items_pointer =
-          pointer
-          |> JsonPointer.join("minItems")
-          |> JsonPointer.to_uri()
-
-        contains_call = Tools.pointer_to_fun_name(contains_pointer, authority: name)
-
-        quote do
-          defp unquote(call)(content, path) do
-            require Exonerate.Tools
-
-            content
-            |> Enum.reduce_while(
-              {Exonerate.Tools.mismatch(
-                 content,
-                 unquote(JsonPointer.to_uri(contains_pointer)),
-                 path
-               ), 0},
-              fn
-                _item, {:ok, index} when index >= unquote(length) ->
-                  {:halt, {:ok, index}}
-
-                _item, {:ok, index} when index < unquote(length) - 1 ->
-                  {:cont, {:ok, index + 1}}
-
-                item, {{:error, params}, index} ->
-                  with error = {:error, _} <- unquote(contains_call)(item, path) do
-                    new_params = Keyword.update(params, :failures, [error], &[error | &1])
-                    {:cont, {{:error, params}, index + 1}}
-                  else
-                    :ok ->
-                      {:cont, {:ok, index + 1}}
-                  end
-              end
-            )
-            |> case do
-              {:ok, index} when index < unquote(length) - 1 ->
-                Exonerate.Tools.mismatch(content, unquote(min_items_pointer), path)
-
-              {error = {:error, _}, _} ->
-                error
-            end
-          end
-        end
-    end
-  end
-
-  defp find_code_for(schema = %{"contains" => contains}, name, pointer) do
-    call =
-      pointer
-      |> JsonPointer.join(":iterator")
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    contains_pointer = JsonPointer.join(pointer, "contains")
-
-    case Degeneracy.class(contains) do
-      :ok ->
-        quote do
-          defp unquote(call)([], path) do
-            require Exonerate.Tools
-            Exonerate.Tools.mismatch([], unquote(contains_pointer), path)
-          end
-
-          defp unquote(call)(_content, _path), do: :ok
-        end
-
-      :error ->
-        quote do
-          defp unquote(call)(content, path) do
-            require Exonerate.Tools
-            Exonerate.Tools.mismatch(content, unquote(contains_pointer), path)
-          end
-        end
-
-      :unknown ->
-        contains_call = Tools.pointer_to_fun_name(contains_pointer, authority: name)
-
-        needed = Map.get(schema, "minContains", 1)
-
-        quote do
-          defp unquote(call)(content, path) do
-            require Exonerate.Tools
-
-            content
-            |> Enum.reduce_while(
-              {Exonerate.Tools.mismatch(
-                 content,
-                 unquote(JsonPointer.to_uri(contains_pointer)),
-                 path
-               ), 0, 0},
-              fn
-                item, {{:error, params}, index, count} ->
-                  case unquote(contains_call)(item, path) do
-                    error = {:error, _} ->
-                      new_params = Keyword.update(params, :failures, [error], &[error | &1])
-                      {:cont, {{:error, params}, index + 1, count}}
-
-                    :ok when count < unquote(needed - 1) ->
-                      {:cont, {{:error, params}, index, count + 1}}
-
-                    :ok ->
-                      {:halt, {:ok, []}}
-                  end
-              end
-            )
-            |> elem(0)
-          end
-        end
-    end
-  end
-
-  defp find_code_for(%{"minItems" => length}, name, pointer) do
-    call =
-      pointer
-      |> JsonPointer.join(":iterator")
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    min_items_pointer =
-      pointer
-      |> JsonPointer.join("minItems")
-      |> JsonPointer.to_uri()
-
-    quote do
-      defp unquote(call)(content, path) do
-        require Exonerate.Tools
-
-        content
-        |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(min_items_pointer), path), 0},
-          fn
-            _item, {error, index} when index < unquote(length - 1) ->
-              {:cont, {error, index + 1}}
-
-            _item, {error, index} ->
-              {:halt, {:ok, []}}
-          end
-        )
-        |> elem(0)
-      end
-    end
-  end
-
-  # ACCESSORIES
-  def accessories(schema, name, pointer, opts) do
-    # this only is necessary if we have *any* iterated feature, and creates
-    # the single :iterator accessory.
+  defp build_filter(context, authority, pointer, opts) do
     List.wrap(
-      if Enum.any?(@filters, &is_map_key(schema, &1)) do
-        mode = mode(schema)
-
+      if execution_mode = mode(context) do
         quote do
-          require Exonerate.Type.Array.Iterator
-
-          Exonerate.Type.Array.Iterator.filter(
-            unquote(name),
-            unquote(pointer),
-            unquote(mode),
-            unquote(opts)
-          )
+          require unquote(execution_mode)
+          unquote(execution_mode).iterator(unquote(authority), unquote(pointer), unquote(opts))
         end
       end
     )
+  end
+
+  defmacro accessories(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_accessories(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
+
+  defp build_accessories(context, authority, pointer, opts) do
+    for filter <- @filters, is_map_key(context, filter) do
+      module = @modules[filter]
+      pointer = JsonPointer.join(pointer, filter)
+
+      quote do
+        require unquote(module)
+        unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+      end
+    end
   end
 end

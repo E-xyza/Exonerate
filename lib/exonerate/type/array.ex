@@ -4,7 +4,6 @@ defmodule Exonerate.Type.Array do
   @behaviour Exonerate.Type
 
   alias Exonerate.Combining
-  alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
@@ -13,56 +12,35 @@ defmodule Exonerate.Type.Array do
 
   @module_keys Combining.filters()
 
-  defmacro filter(_, _, _), do: []
-  defmacro accessories(_, _, _), do: []
-
-  defp combining_filters(opts) do
-    if Draft.before?(Keyword.get(opts, :draft, "2020-12"), "2019-09") do
-      @module_keys -- ["$ref"]
-    else
-      @module_keys
-    end
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def filter(subschema, name, pointer, opts) do
-    subschema = adjust(subschema)
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+  def build_filter(context, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
 
-    combining_filters =
-      subschema
-      |> Map.take(combining_filters(opts))
-      |> Enum.map(&filter_for(&1, name, pointer))
-
-    iterator_filter =
+    iterator_filters =
       List.wrap(
-        if Iterator.mode(subschema) do
-          iterator_call =
-            pointer
-            |> JsonPointer.join(":iterator")
-            |> Tools.pointer_to_fun_name(authority: name)
+        if Iterator.mode(context) do
+          iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
 
           quote do
-            :ok <- unquote(iterator_call)(content, path)
+            :ok <- unquote(iterator_call)(array, path)
           end
         end
       )
 
     quote do
-      defp unquote(call)(content, path) when is_list(content) do
-        with unquote_splicing(combining_filters ++ iterator_filter) do
+      defp unquote(call)(array, path) when is_list(array) do
+        with unquote_splicing(iterator_filters) do
           :ok
         end
       end
     end
   end
-
-  defp adjust(subschema = %{"minContains" => 0}) do
-    subschema
-    |> Map.drop(["minContains", "contains"])
-    |> adjust
-  end
-
-  defp adjust(subschema), do: subschema
 
   defp filter_for({filter, _}, name, pointer) do
     call =
@@ -75,24 +53,32 @@ defmodule Exonerate.Type.Array do
     end
   end
 
-  def accessories(schema, name, pointer, opts) do
-    schema
-    |> adjust
-    |> Iterator.accessories(name, pointer, opts)
-    |> Kernel.++(
-      for filter_name <- @iterator_filters, Map.has_key?(schema, filter_name) do
-        list_accessory(filter_name, schema, name, pointer, opts)
-      end
-    )
+  defmacro accessories(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_accessories(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  defp list_accessory(filter_name, _schema, name, pointer, opts) do
-    module = @modules[filter_name]
-    pointer = JsonPointer.join(pointer, filter_name)
+  defp build_accessories(context, authority, pointer, opts) do
+    List.wrap(
+      if Iterator.mode(context) do
+        quote do
+          require Exonerate.Type.Array.Iterator
 
-    quote do
-      require unquote(module)
-      unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
-    end
+          Exonerate.Type.Array.Iterator.filter(
+            unquote(authority),
+            unquote(pointer),
+            unquote(opts)
+          )
+
+          Exonerate.Type.Array.Iterator.accessories(
+            unquote(authority),
+            unquote(pointer),
+            unquote(opts)
+          )
+        end
+      end
+    )
   end
 end

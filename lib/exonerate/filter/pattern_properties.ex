@@ -17,19 +17,21 @@ defmodule Exonerate.Filter.PatternProperties do
       |> Enum.map(&filters_for(&1, authority, pointer, opts))
       |> Enum.unzip()
 
-    init = if opts[:visited] do
-      {:ok, false}
-    else
-      :ok
-    end
-
-    capture = if opts[:visited] do
-      quote do
-        {:ok, visited}
+    init =
+      if opts[:visited] do
+        {:ok, false}
+      else
+        :ok
       end
-    else
-      :ok
-    end
+
+    capture =
+      if opts[:visited] do
+        quote do
+          {:ok, visited}
+        end
+      else
+        :ok
+      end
 
     evaluation =
       if opts[:visited] do

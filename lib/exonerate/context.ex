@@ -249,11 +249,14 @@ defmodule Exonerate.Context do
   defmacro fallthrough(authority, pointer, opts) do
     type_failure_pointer = JsonPointer.join(pointer, "type")
 
-    quote do
-      defp unquote(Tools.call(authority, pointer, opts))(content, path) do
-        require Exonerate.Tools
-        Exonerate.Tools.mismatch(content, unquote(type_failure_pointer), path)
-      end
-    end
+    Tools.maybe_dump(
+      quote do
+        defp unquote(Tools.call(authority, pointer, opts))(content, path) do
+          require Exonerate.Tools
+          Exonerate.Tools.mismatch(content, unquote(type_failure_pointer), path)
+        end
+      end,
+      opts
+    )
   end
 end

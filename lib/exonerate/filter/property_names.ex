@@ -17,7 +17,9 @@ defmodule Exonerate.Filter.PropertyNames do
       quote do
         defp unquote(call)({key, _v}, path) do
           case unquote(call)(key, path) do
-            :ok -> :ok
+            :ok ->
+              :ok
+
             {:error, errors} ->
               {:error, Keyword.update!(errors, :json_pointer, &Path.join(&1, key))}
           end

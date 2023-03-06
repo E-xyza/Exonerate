@@ -44,6 +44,12 @@ defmodule Exonerate.Degeneracy do
     |> canonicalize
   end
 
+  def canonicalize(context = %{"maxContains" => _}) when not is_map_key(context, "contains") do
+    context
+    |> Map.delete("maxContains")
+    |> canonicalize
+  end
+
   def canonicalize(context = %{"minContains" => _}) when not is_map_key(context, "contains") do
     context
     |> Map.delete("minContains")
@@ -53,18 +59,6 @@ defmodule Exonerate.Degeneracy do
   def canonicalize(context = %{"const" => _, "enum" => _}) do
     context
     |> Map.delete("enum")
-    |> canonicalize
-  end
-
-  def canonicalize(context = %{"exclusiveMinimum" => false}) do
-    context
-    |> Map.delete("exclusiveMinimum")
-    |> canonicalize
-  end
-
-  def canonicalize(context = %{"exclusiveMaximum" => false}) do
-    context
-    |> Map.delete("exclusiveMaximum")
     |> canonicalize
   end
 
@@ -82,13 +76,31 @@ defmodule Exonerate.Degeneracy do
     |> canonicalize
   end
 
+  ## degenerate-OK filters
+
+  def canonicalize(context = %{"exclusiveMinimum" => false}) do
+    context
+    |> Map.delete("exclusiveMinimum")
+    |> canonicalize
+  end
+
+  def canonicalize(context = %{"exclusiveMaximum" => false}) do
+    context
+    |> Map.delete("exclusiveMaximum")
+    |> canonicalize
+  end
+
   def canonicalize(context = %{"propertyNames" => true}) do
     context
     |> Map.delete("propertyNames")
     |> canonicalize
   end
 
-  ## degenerate-OK filters
+  def canonicalize(context = %{"uniqueItems" => false}) do
+    context
+    |> Map.delete("uniqueItems")
+    |> canonicalize
+  end
 
   def canonicalize(context = %{"minLength" => min}) when min == 0 do
     context
@@ -192,7 +204,7 @@ defmodule Exonerate.Degeneracy do
   defp update(map, _key, _fun), do: map
 
   defp canonicalize_items(array) when is_list(array), do: canonicalize_array(array)
-  defp canonicalize_items(object) when is_map(object), do: canonicalize_object(object)
+  defp canonicalize_items(object) when is_map(object), do: canonicalize(object)
 
   defp canonicalize_dependencies(array) when is_list(array), do: array
   defp canonicalize_dependencies(object) when is_map(object), do: canonicalize_object(object)
