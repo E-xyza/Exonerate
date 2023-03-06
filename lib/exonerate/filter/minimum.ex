@@ -6,11 +6,11 @@ defmodule Exonerate.Filter.Minimum do
   defmacro filter(authority, pointer, opts) do
     __CALLER__
     |> Tools.subschema(authority, pointer)
-    |> build_filter(__CALLER__, authority, pointer, opts)
+    |> build_filter(authority, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(minimum, _caller, authority, pointer, opts) do
+  defp build_filter(minimum, authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
 
     quote do

@@ -198,6 +198,13 @@ defmodule Exonerate.Degeneracy do
     |> update("propertyNames", &canonicalize/1)
     |> update("unevaluatedItems", &canonicalize/1)
     |> update("unevaluatedProperties", &canonicalize/1)
+    |> update("allOf", &canonicalize_array/1)
+    |> update("anyOf", &canonicalize_array/1)
+    |> update("oneOf", &canonicalize_array/1)
+    |> update("not", &canonicalize/1)
+    |> update("if", &canonicalize/1)
+    |> update("then", &canonicalize/1)
+    |> update("else", &canonicalize/1)
   end
 
   defp update(map, key, fun) when is_map_key(map, key), do: Map.update!(map, key, fun)

@@ -1,70 +1,46 @@
 defmodule Exonerate.Combining.AllOf do
   @moduledoc false
-
-  alias Exonerate.Cache
-  alias Exonerate.Combining
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
-    opts =
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
-      |> case do
-        %{"unevaluatedProperties" => _} -> Keyword.put(opts, :track_properties, true)
-        _ -> opts
-      end
-
-    tracked = opts[:track_properties]
-
-    call =
-      pointer
-      |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    __CALLER__.module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(pointer)
-    |> Enum.with_index(&call_and_context(&1, &2, name, pointer, tracked, opts))
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> Enum.with_index(&call_and_context(&1, &2, authority, pointer, opts))
     |> Enum.unzip()
-    |> build_filter(call, tracked)
+    |> build_filter(authority, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp call_and_context(_, index, name, pointer, tracked, opts) do
-    pointer = JsonPointer.join(pointer, "#{index}")
+  defp build_filter({[all_of_call], [context]}, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
 
-    call =
-      pointer
-      |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
-      |> Tools.pointer_to_fun_name(authority: name)
-
-    {quote do
-       &(unquote({call, [], Elixir}) / 2)
-     end,
-     quote do
-       require Exonerate.Context
-       Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
-     end}
-  end
-
-  defp build_filter({calls, contexts}, call, tracked) do
     quote do
       defp unquote(call)(value, path) do
-        alias Exonerate.Combining
-        require Combining
+        unquote(all_of_call)(value, path)
+      end
+
+      unquote(context)
+    end
+  end
+
+  defp build_filter({calls, contexts}, authority, pointer, opts) do
+    lambdas = Enum.map(calls, &to_lambda/1)
+    call = Tools.call(authority, pointer, opts)
+
+    quote do
+      defp unquote(call)(value, path) do
         require Exonerate.Tools
 
         Enum.reduce_while(
-          unquote(calls),
-          Exonerate.Combining.initialize(unquote(tracked)),
+          unquote(lambdas),
+          :ok,
           fn
-            fun, Exonerate.Combining.capture(unquote(tracked), visited) ->
+            fun, :ok ->
               case fun.(value, path) do
-                Exonerate.Combining.capture(unquote(tracked), new_visited) ->
-                  {:cont, Exonerate.Combining.update_set(unquote(tracked), visited, new_visited)}
+                :ok ->
+                  {:cont, :ok}
 
-                error = {:error, _} ->
+                error ->
                   {:halt, error}
               end
           end
@@ -73,5 +49,24 @@ defmodule Exonerate.Combining.AllOf do
 
       unquote(contexts)
     end
+  end
+
+  defp to_lambda(call) do
+    quote do
+      &(unquote({call, [], Elixir}) / 2)
+    end
+  end
+
+  defp call_and_context(_, index, authority, pointer, opts) do
+    pointer = JsonPointer.join(pointer, "#{index}")
+    call = Tools.call(authority, pointer, opts)
+
+    context =
+      quote do
+        require Exonerate.Context
+        Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(opts))
+      end
+
+    {call, context}
   end
 end

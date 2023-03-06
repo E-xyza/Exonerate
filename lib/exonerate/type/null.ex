@@ -5,7 +5,7 @@ defmodule Exonerate.Type.Null do
 
   alias Exonerate.Combining
   alias Exonerate.Tools
-  
+
   @filters Combining.filters()
 
   defmacro filter(authority, pointer, opts) do
@@ -18,7 +18,7 @@ defmodule Exonerate.Type.Null do
   defp build_filter(context, authority, pointer, opts) do
     filter_clauses =
       for filter <- @filters, is_map_key(context, filter) do
-        filter_call = Tools.call(authority, JsonPointer.join(pointer, filter), opts)
+        filter_call = Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
           :ok <- unquote(filter_call)(null, path)

@@ -43,8 +43,7 @@ defmodule Exonerate.Context do
     quote do
       @compile {:inline, [{unquote(call), 2}]}
       defp unquote(call)(content, _path) do
-        require Exonerate.Combining
-        Exonerate.Combining.initialize(unquote(opts[:track_properties]))
+        :ok
       end
     end
   end
@@ -207,8 +206,7 @@ defmodule Exonerate.Context do
       :ok ->
         quote do
           defp unquote(call)(content, _path) do
-            require Exonerate.Combining
-            Exonerate.Combining.initialize(unquote(opts[:track_properties]))
+            :ok
           end
         end
 
@@ -236,11 +234,26 @@ defmodule Exonerate.Context do
           end)
           |> Enum.unzip()
 
+        combining =
+          for filter <- @combining_filters, is_map_key(subschema, filter) do
+            combining_module = @combining_modules[filter]
+            combining_pointer = JsonPointer.join(pointer, filter)
+
+            quote do
+              require unquote(combining_module)
+
+              unquote(combining_module).filter(
+                unquote(authority),
+                unquote(combining_pointer),
+                unquote(opts)
+              )
+            end
+          end
+
         quote do
           unquote(filters)
-
           Exonerate.Context.fallthrough(unquote(authority), unquote(pointer), unquote(opts))
-
+          unquote(combining)
           unquote(accessories)
         end
     end

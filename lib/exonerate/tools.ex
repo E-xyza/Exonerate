@@ -40,12 +40,32 @@ defmodule Exonerate.Tools do
   def inspect(macro, filter \\ true) do
     if filter do
       macro
+      |> scrub_macros
       |> Macro.to_string()
       |> IO.puts()
     end
 
     macro
   end
+
+  # scrub macros helps to make "dump: true" output more legible, by removing
+  # the scar tissue of macro calls that are going to be dumped anyways.
+
+  @drop_macros ~w(filter accessories fallthrough iterator)a
+
+  defp scrub_macros({:__block__, meta, content}) do
+    {:__block__, meta, scrub_macros(content)}
+  end
+
+  defp scrub_macros(content) when is_list(content) do
+    Enum.flat_map(content, &List.wrap(scrub_macros(&1)))
+  end
+
+  defp scrub_macros({:require, _, _}), do: []
+
+  defp scrub_macros({{:., _, [_module, call]}, _, _}) when call in @drop_macros, do: []
+
+  defp scrub_macros(other), do: other
 
   def maybe_dump(macro, opts) do
     __MODULE__.inspect(macro, Keyword.get(opts, :dump))

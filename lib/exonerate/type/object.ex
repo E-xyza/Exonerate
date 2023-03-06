@@ -29,8 +29,8 @@ defmodule Exonerate.Type.Object do
 
   defp build_filter(context, authority, pointer, opts) do
     filter_clauses =
-      for filter <- @outer_filters, is_map_key(context, filter) do
-        filter_call = Tools.call(authority, JsonPointer.join(pointer, filter), opts)
+      for filter <- @outer_filters ++ @combining_filters, is_map_key(context, filter) do
+        filter_call = Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
           :ok <- unquote(filter_call)(object, path)

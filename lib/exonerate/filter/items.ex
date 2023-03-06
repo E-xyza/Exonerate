@@ -30,14 +30,19 @@ defmodule Exonerate.Filter.Items do
 
     parent = JsonPointer.backtrack!(pointer)
 
-    additional_items = case Tools.subschema(caller, authority, parent) do
-      %{"additionalItems" => _} ->
-        additional_items_call = Tools.call(authority, JsonPointer.join(parent, "additionalItems"), opts)
-        quote do
-          unquote(additional_items_call)(item, path)
-        end
-      _ -> :ok
-    end
+    additional_items =
+      case Tools.subschema(caller, authority, parent) do
+        %{"additionalItems" => _} ->
+          additional_items_call =
+            Tools.call(authority, JsonPointer.join(parent, "additionalItems"), opts)
+
+          quote do
+            unquote(additional_items_call)(item, path)
+          end
+
+        _ ->
+          :ok
+      end
 
     quote do
       require Exonerate.Context

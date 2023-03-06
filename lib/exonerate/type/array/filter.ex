@@ -139,7 +139,8 @@ defmodule Exonerate.Type.Array.Filter do
     ]
   end
 
-  defp filters_for({"items", object}, accumulator, authority, pointer, opts) when is_map(object) do
+  defp filters_for({"items", object}, accumulator, authority, pointer, opts)
+       when is_map(object) do
     items_call = Tools.call(authority, JsonPointer.join(pointer, "items"), opts)
 
     [
@@ -154,7 +155,11 @@ defmodule Exonerate.Type.Array.Filter do
 
     [
       quote do
-        :ok <- unquote(items_call)({item, unquote(index(accumulator))}, Path.join(path, "#{unquote(index(accumulator))}"))
+        :ok <-
+          unquote(items_call)(
+            {item, unquote(index(accumulator))},
+            Path.join(path, "#{unquote(index(accumulator))}")
+          )
       end
     ]
   end

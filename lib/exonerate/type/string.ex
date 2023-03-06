@@ -52,7 +52,7 @@ defmodule Exonerate.Type.String do
   defp build_filter_with_clause(schema, authority, pointer, opts) do
     filter_clauses =
       for filter <- @filters, is_map_key(schema, filter) do
-        call = Tools.call(authority, JsonPointer.join(pointer, filter), opts)
+        call = Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
           :ok <- unquote(call)(string, path)
