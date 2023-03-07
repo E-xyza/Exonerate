@@ -56,6 +56,13 @@ defmodule Exonerate.Degeneracy do
     |> canonicalize
   end
 
+  def canonicalize(context = %{"if" => _})
+      when not is_map_key(context, "then") and not is_map_key(context, "else") do
+    context
+    |> Map.delete("if")
+    |> canonicalize
+  end
+
   def canonicalize(context = %{"const" => _, "enum" => _}) do
     context
     |> Map.delete("enum")
@@ -213,8 +220,12 @@ defmodule Exonerate.Degeneracy do
   defp canonicalize_items(array) when is_list(array), do: canonicalize_array(array)
   defp canonicalize_items(object) when is_map(object), do: canonicalize(object)
 
-  defp canonicalize_dependencies(array) when is_list(array), do: array
-  defp canonicalize_dependencies(object) when is_map(object), do: canonicalize_object(object)
+  defp canonicalize_dependencies(object) do
+    Map.new(object, fn
+      {k, v} when is_map(v) -> {k, canonicalize(v)}
+      kv -> kv
+    end)
+  end
 
   defp canonicalize_object(object), do: Map.new(object, fn {k, v} -> {k, canonicalize(v)} end)
 

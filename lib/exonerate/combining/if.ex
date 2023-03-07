@@ -1,210 +1,44 @@
 defmodule Exonerate.Combining.If do
   @moduledoc false
-  alias Exonerate.Cache
-  alias Exonerate.Degeneracy
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
-    # note we have to pull the parent pointer because we need to see "if"/"then"/"else"
-    # clauses.
-
+  defmacro filter(authority, pointer, opts) do
+    # note we have to pull the parent pointer because we need to see the
+    # "then"/"else" clauses.
     parent_pointer = JsonPointer.backtrack!(pointer)
 
-    opts =
-      __CALLER__.module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(parent_pointer)
-      |> case do
-        %{"unevaluatedProperties" => _} -> Keyword.put(opts, :track_properties, true)
-        _ -> opts
-      end
-
-    tracked = opts[:track_properties]
-
-    parent_pointer = JsonPointer.backtrack!(pointer)
-
-    __CALLER__.module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(parent_pointer)
-    |> build_filter(name, pointer, parent_pointer, tracked, opts)
+    __CALLER__
+    |> Tools.subschema(authority, parent_pointer)
+    |> build_filter(authority, parent_pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(subschema, name, pointer, parent_pointer, tracked, opts) do
-    ok =
-      if tracked do
-        quote do
-          {:ok, MapSet.new()}
-        end
-      else
-        :ok
-      end
+  defp build_filter(context, authority, parent_pointer, opts) do
+    entrypoint_call = call(["if", ":entrypoint"], authority, parent_pointer, opts)
+    if_expr = expr("if", authority, parent_pointer, opts)
+    then_expr = if context["then"], do: expr("then", authority, parent_pointer, opts), else: :ok
+    else_expr = if context["else"], do: expr("else", authority, parent_pointer, opts), else: {:error, [], Elixir}
 
-    {then_clause, then_context} =
-      if Map.get(subschema, "then") do
-        then_pointer = JsonPointer.join(parent_pointer, "then")
-
-        {quote do
-           unquote(then_call(name, parent_pointer, tracked))(content, path)
-         end,
-         quote do
-           require Exonerate.Combining.Then
-
-           Exonerate.Combining.Then.filter(
-             unquote(name),
-             unquote(then_pointer),
-             unquote(opts)
-           )
-         end}
-      else
-        {ok, []}
-      end
-
-    {else_clause, else_context} =
-      if Map.get(subschema, "else") do
-        else_pointer = JsonPointer.join(parent_pointer, "else")
-
-        {quote do
-           unquote(else_call(name, parent_pointer, tracked))(content, path)
-         end,
-         quote do
-           require Exonerate.Combining.Else
-
-           Exonerate.Combining.Else.filter(
-             unquote(name),
-             unquote(else_pointer),
-             unquote(opts)
-           )
-         end}
-      else
-        {ok, []}
-      end
-
-    entrypoint_call = entrypoint_call(name, pointer, tracked)
-
-    subschema
-    |> Map.fetch!("if")
-    |> Degeneracy.class()
-    |> case do
-      :ok ->
-        quote do
-          @compile {:inline, [{unquote(entrypoint_call), 2}]}
-          defp unquote(entrypoint_call)(content, path) do
-            unquote(then_clause)
-          end
-
-          unquote(then_context)
-        end
-
-      :error ->
-        quote do
-          @compile {:inline, [{unquote(entrypoint_call), 2}]}
-          defp unquote(entrypoint_call)(content, path) do
-            unquote(else_clause)
-          end
-
-          unquote(else_context)
-        end
-
-      :unknown ->
-        standard_if(
-          entrypoint_call,
-          then_clause,
-          then_context,
-          else_clause,
-          else_context,
-          name,
-          pointer,
-          tracked,
-          opts
-        )
-    end
-  end
-
-  defp standard_if(
-         entrypoint_call,
-         then_clause,
-         then_context,
-         else_clause,
-         else_context,
-         name,
-         pointer,
-         true,
-         opts
-       ) do
     quote do
       defp unquote(entrypoint_call)(content, path) do
-        case unquote(if_call(name, pointer, true))(content, path) do
-          {:ok, visted} ->
-            case unquote(then_clause) do
-              {:ok, new_visted} ->
-                {:ok, MapSet.union(visted, new_visted)}
-
-              error = {:error, _} ->
-                error
-            end
-
-          {:error, _} ->
-            unquote(else_clause)
-        end
-      end
-
-      require Exonerate.Context
-      Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
-
-      unquote(then_context)
-      unquote(else_context)
-    end
-  end
-
-  defp standard_if(
-         entrypoint_call,
-         then_clause,
-         then_context,
-         else_clause,
-         else_context,
-         name,
-         pointer,
-         tracked,
-         opts
-       ) do
-    quote do
-      defp unquote(entrypoint_call)(content, path) do
-        case unquote(if_call(name, pointer, tracked))(content, path) do
+        case unquote(if_expr) do
           :ok ->
-            unquote(then_clause)
-
-          {:error, _} ->
-            unquote(else_clause)
+            unquote(then_expr)
+          error = {:error, _} ->
+            unquote(else_expr)
         end
       end
-
-      require Exonerate.Context
-      Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
-
-      unquote(then_context)
-      unquote(else_context)
     end
   end
 
-  # callsite generation
-
-  defp if_call(name, pointer, tracked) do
-    pointer
-    |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
-    |> Tools.pointer_to_fun_name(authority: name)
+  defp expr(what, authority, parent_pointer, opts) do
+    quote do
+      unquote(call(what, authority, parent_pointer, opts))(content, path)
+    end
   end
 
-  defp nexthop(name, pointer, next, tracked) do
-    pointer
-    |> JsonPointer.join(next)
-    |> Tools.if(tracked, &JsonPointer.join(&1, ":tracked"))
-    |> Tools.pointer_to_fun_name(authority: name)
+  defp call(what, authority, parent_pointer, opts) do
+    Tools.call(authority, JsonPointer.join(parent_pointer, what), opts)
   end
 
-  defp entrypoint_call(name, pointer, tracked), do: nexthop(name, pointer, ":entrypoint", tracked)
-
-  defp then_call(name, pointer, tracked), do: nexthop(name, pointer, "then", tracked)
-
-  defp else_call(name, pointer, tracked), do: nexthop(name, pointer, "else", tracked)
 end

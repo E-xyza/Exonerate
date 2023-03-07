@@ -21,7 +21,8 @@ defmodule Exonerate.Type.Array do
 
     filter_clauses =
       for filter <- @combining_filters, is_map_key(context, filter) do
-        filter_call = Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        filter_call =
+          Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
           :ok <- unquote(filter_call)(array, path)

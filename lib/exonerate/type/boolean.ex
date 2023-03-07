@@ -18,7 +18,8 @@ defmodule Exonerate.Type.Boolean do
   defp build_filter(context, authority, pointer, opts) do
     filter_clauses =
       for filter <- @filters, is_map_key(context, filter) do
-        filter_call = Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        filter_call =
+          Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
           :ok <- unquote(filter_call)(boolean, path)

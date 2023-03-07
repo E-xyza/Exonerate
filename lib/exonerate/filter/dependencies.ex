@@ -4,29 +4,28 @@ defmodule Exonerate.Filter.Dependencies do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
-    __CALLER__.module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(pointer)
-    |> Enum.map(&make_dependencies(&1, name, pointer, opts))
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> Enum.map(&make_dependencies(&1, authority, pointer, opts))
     |> Enum.unzip()
-    |> build_filter(name, pointer)
+    |> build_filter(authority, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp make_dependencies({key, schema}, name, pointer, opts) do
-    call =
-      pointer
-      |> JsonPointer.join([key, ":entrypoint"])
-      |> Tools.pointer_to_fun_name(authority: name)
+  defp make_dependencies({key, schema}, authority, pointer, opts) do
+    call = Tools.call(authority, JsonPointer.join(pointer, [key, ":entrypoint"]), opts)
 
-    {quote do
-       :ok <- unquote(call)(content, path)
-     end, accessory(call, key, schema, name, pointer, opts)}
+    prong =
+      quote do
+        :ok <- unquote(call)(content, path)
+      end
+
+    {prong, accessory(call, key, schema, authority, pointer, opts)}
   end
 
-  defp build_filter({prongs, accessories}, name, pointer) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+  defp build_filter({prongs, accessories}, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
 
     quote do
       defp unquote(call)(content, path) do
@@ -43,10 +42,7 @@ defmodule Exonerate.Filter.Dependencies do
     prongs =
       Enum.with_index(schema, fn
         dependent_key, index ->
-          schema_pointer =
-            pointer
-            |> JsonPointer.join([key, "#{index}"])
-            |> JsonPointer.to_uri()
+          schema_pointer = JsonPointer.join(pointer, [key, "#{index}"])
 
           quote do
             :ok <-
@@ -70,10 +66,10 @@ defmodule Exonerate.Filter.Dependencies do
     end
   end
 
-  defp accessory(call, key, schema, name, pointer, opts)
+  defp accessory(call, key, schema, authority, pointer, opts)
        when is_map(schema) or is_boolean(schema) do
     pointer = JsonPointer.join(pointer, key)
-    inner_call = Tools.pointer_to_fun_name(pointer, authority: name)
+    inner_call = Tools.call(authority, pointer, opts)
 
     quote do
       defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do
@@ -83,7 +79,7 @@ defmodule Exonerate.Filter.Dependencies do
       defp unquote(call)(content, path), do: :ok
 
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(opts))
     end
   end
 end

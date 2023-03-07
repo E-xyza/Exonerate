@@ -3,11 +3,11 @@ defmodule Exonerate.Combining.Then do
 
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
+  defmacro filter(authority, pointer, opts) do
     Tools.maybe_dump(
       quote do
         require Exonerate.Context
-        Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
+        Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(opts))
       end,
       opts
     )
