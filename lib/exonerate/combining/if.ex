@@ -17,13 +17,18 @@ defmodule Exonerate.Combining.If do
     entrypoint_call = call(["if", ":entrypoint"], authority, parent_pointer, opts)
     if_expr = expr("if", authority, parent_pointer, opts)
     then_expr = if context["then"], do: expr("then", authority, parent_pointer, opts), else: :ok
-    else_expr = if context["else"], do: expr("else", authority, parent_pointer, opts), else: {:error, [], Elixir}
+
+    else_expr =
+      if context["else"],
+        do: expr("else", authority, parent_pointer, opts),
+        else: {:error, [], Elixir}
 
     quote do
       defp unquote(entrypoint_call)(content, path) do
         case unquote(if_expr) do
           :ok ->
             unquote(then_expr)
+
           error = {:error, _} ->
             unquote(else_expr)
         end
@@ -40,5 +45,4 @@ defmodule Exonerate.Combining.If do
   defp call(what, authority, parent_pointer, opts) do
     Tools.call(authority, JsonPointer.join(parent_pointer, what), opts)
   end
-
 end

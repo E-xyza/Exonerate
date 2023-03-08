@@ -41,7 +41,7 @@ defmodule Exonerate.Filter.Format do
     fun =
       try do
         filter.context.pointer
-        |> JsonPointer.to_uri()
+        |> JsonPointer.to_()
         |> :erlang.map_get(filter.context.format)
         |> case do
           false ->

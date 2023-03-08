@@ -13,7 +13,7 @@ defmodule Exonerate.Metadata do
   @metadata_keys Map.keys(@metadata_call)
 
   def metadata_functions(name, schema, entrypoint) do
-    case JsonPointer.resolve!(schema, entrypoint) do
+    case JsonPointer.resolve_json!(schema, entrypoint) do
       nil ->
         raise "the entrypoint #{entrypoint} does not exist in your JSONschema"
 

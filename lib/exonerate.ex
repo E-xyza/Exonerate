@@ -119,7 +119,10 @@ defmodule Exonerate do
       schema_ast
       |> Macro.expand(__CALLER__)
       |> Jason.decode!()
-      |> Degeneracy.canonicalize()
+      |> then(fn schema ->
+        refs = Tools.scan(schema, [], &scan_refs/3)
+        Degeneracy.canonicalize(schema, refs: refs)
+      end)
       |> Id.prescan(module)
 
     Cache.put_schema(module, authority, schema)
@@ -139,6 +142,13 @@ defmodule Exonerate do
       opts
     )
   end
+
+  @spec scan_refs(Type.json(), JsonPointer.t(), [JsonPointer.t()]) :: [JsonPointer.t()]
+  defp scan_refs(%{"$ref" => pointer}, _pointer, so_far) do
+    [JsonPointer.from_uri(pointer) | so_far]
+  end
+
+  defp scan_refs(_, _, so_far), do: so_far
 
   @doc """
   generates a series of functions that validates a JSONschema in a file at

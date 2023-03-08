@@ -10,7 +10,7 @@ defmodule Exonerate.Filter.PrefixItems do
     items =
       module
       |> Cache.fetch!(name)
-      |> JsonPointer.resolve!(pointer)
+      |> JsonPointer.resolve_json!(pointer)
 
     call = Tools.pointer_to_fun_name(pointer, authority: name)
 
@@ -53,7 +53,7 @@ defmodule Exonerate.Filter.PrefixItems do
   defp additional_items_for(module, name, pointer, _opts) do
     module
     |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
+    |> JsonPointer.resolve_json!(JsonPointer.backtrack!(pointer))
     |> case do
       %{"additionalItems" => _} ->
         additional_call =

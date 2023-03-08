@@ -41,7 +41,7 @@ defmodule Exonerate.Filter.MinMaxLength do
         )
       end
 
-      defp unquote(call)(string, path), do: :ok
+      defp unquote(call)(_string, _path), do: :ok
     end
   end
 

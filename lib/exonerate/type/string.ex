@@ -27,7 +27,7 @@ defmodule Exonerate.Type.String do
     filters = build_filter_with_clause(schema, authority, pointer, opts)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(content, path) when is_binary(content) do
+      defp unquote(Tools.call(authority, pointer, opts))(string, path) when is_binary(string) do
         unquote(filters)
       end
     end

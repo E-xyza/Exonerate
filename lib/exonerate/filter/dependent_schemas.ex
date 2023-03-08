@@ -10,7 +10,7 @@ defmodule Exonerate.Filter.DependentSchemas do
   defmacro filter(name, pointer, opts) do
     __CALLER__.module
     |> Cache.fetch!(name)
-    |> JsonPointer.resolve!(pointer)
+    |> JsonPointer.resolve_json!(pointer)
     |> Enum.map(&make_dependencies(&1, name, pointer, opts))
     |> Enum.unzip()
     |> build_filter(name, pointer)

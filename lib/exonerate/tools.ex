@@ -2,7 +2,6 @@ defmodule Exonerate.Tools do
   @moduledoc false
 
   alias Exonerate.Cache
-  alias Exonerate.Degeneracy
   alias Exonerate.Type
 
   # GENERAL-USE MACROS
@@ -10,12 +9,12 @@ defmodule Exonerate.Tools do
 
   defmacro mismatch(error_value, {schema_pointer, extras}, json_pointer, opts) do
     primary = Keyword.take(binding(), ~w(error_value json_pointer)a)
-    schema_uri = JsonPointer.to_uri(schema_pointer)
+    schema_pointer = JsonPointer.to_path(schema_pointer)
 
     schema_pointer = [
       schema_pointer:
         quote do
-          Path.join(unquote(schema_uri), unquote(extras))
+          Path.join(unquote(schema_pointer), unquote(extras))
         end
     ]
 
@@ -28,7 +27,7 @@ defmodule Exonerate.Tools do
 
   defmacro mismatch(error_value, schema_pointer, json_pointer, opts) do
     primary = Keyword.take(binding(), ~w(error_value json_pointer)a)
-    schema_pointer = [schema_pointer: JsonPointer.to_uri(schema_pointer)]
+    schema_pointer = [schema_pointer: JsonPointer.to_path(schema_pointer)]
     extras = Keyword.take(opts, ~w(reason failures matches required)a)
 
     quote bind_quoted: [error_params: primary ++ schema_pointer ++ extras] do
@@ -77,21 +76,23 @@ defmodule Exonerate.Tools do
   def subschema(caller, authority, pointer) do
     caller.module
     |> Cache.fetch_schema!(authority)
-    |> JsonPointer.resolve!(pointer)
+    |> JsonPointer.resolve_json!(pointer)
   end
 
   @spec parent(Macro.Env.t(), atom, JsonPointer.t()) :: Type.json()
   def parent(caller, authority, pointer) do
     caller.module
     |> Cache.fetch_schema!(authority)
-    |> JsonPointer.resolve!(JsonPointer.backtrack!(pointer))
+    |> JsonPointer.resolve_json!(JsonPointer.backtrack!(pointer))
   end
 
   @spec call(atom, JsonPointer.t(), Keyword.t()) :: atom
   def call(authority, pointer, opts) do
     pointer
     |> if(tracked?(opts), &JsonPointer.join(&1, ":tracked"))
-    |> JsonPointer.to_uri(authority: "#{authority}")
+    |> JsonPointer.to_uri()
+    |> struct(authority: "#{authority}")
+    |> to_string
     |> adjust_length
     |> String.to_atom()
   end
@@ -111,6 +112,36 @@ defmodule Exonerate.Tools do
     last = g |> Enum.reverse() |> Enum.take(25) |> Enum.reverse()
     middle = Base.encode16(<<:erlang.phash2(string)::32>>)
     IO.iodata_to_binary([first, "..", middle, "..", last])
+  end
+
+  # scans an entire jsonschema by reducing over it and returns certain things back.
+  @spec scan(Type.json(), acc, (Type.json(), JsonPointer.t(), acc -> acc)) :: acc when acc: term
+  def scan(object, acc, transformation) do
+    do_scan(object, JsonPointer.from_path("/"), acc, transformation)
+  end
+
+  defp do_scan(object, pointer, acc, transformation) when is_map(object) do
+    acc = transformation.(object, pointer, acc)
+
+    Enum.reduce(object, acc, fn
+      {k, v}, acc ->
+        do_scan(v, JsonPointer.join(pointer, k), acc, transformation)
+    end)
+  end
+
+  defp do_scan(array, pointer, acc, transformation) when is_list(array) do
+    acc = transformation.(array, pointer, acc)
+
+    array
+    |> Enum.reduce({acc, 0}, fn
+      v, {acc, index} ->
+        {do_scan(v, JsonPointer.join(pointer, "#{index}"), acc, transformation), index + 1}
+    end)
+    |> elem(0)
+  end
+
+  defp do_scan(data, pointer, acc, transformation) do
+    transformation.(data, pointer, acc)
   end
 
   # general tools
