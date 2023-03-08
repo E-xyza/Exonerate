@@ -19,9 +19,19 @@ defmodule Exonerate.Combining.If do
     then_expr = if context["then"], do: expr("then", authority, parent_pointer, opts), else: :ok
 
     else_expr =
-      if context["else"],
-        do: expr("else", authority, parent_pointer, opts),
-        else: {:error, [], Elixir}
+      if context["else"] do
+        expr("else", authority, parent_pointer, opts)
+      else
+        quote do
+          error
+        end
+      end
+
+    contexts =
+      Enum.flat_map(
+        ["if", "then", "else"],
+        &List.wrap(if is_map_key(context, &1), do: context(&1, authority, parent_pointer, opts))
+      )
 
     quote do
       defp unquote(entrypoint_call)(content, path) do
@@ -33,6 +43,8 @@ defmodule Exonerate.Combining.If do
             unquote(else_expr)
         end
       end
+
+      unquote(contexts)
     end
   end
 
@@ -44,5 +56,14 @@ defmodule Exonerate.Combining.If do
 
   defp call(what, authority, parent_pointer, opts) do
     Tools.call(authority, JsonPointer.join(parent_pointer, what), opts)
+  end
+
+  defp context(what, authority, parent_pointer, opts) do
+    pointer = JsonPointer.join(parent_pointer, what)
+
+    quote do
+      require Exonerate.Context
+      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(opts))
+    end
   end
 end

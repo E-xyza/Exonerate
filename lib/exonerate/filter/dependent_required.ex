@@ -4,32 +4,29 @@ defmodule Exonerate.Filter.DependentRequired do
 
   @moduledoc false
 
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
-    __CALLER__.module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve_json!(pointer)
-    |> Enum.map(&make_dependencies(&1, name, pointer, opts))
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> Enum.map(&make_prong_and_accessory(&1, authority, pointer, opts))
     |> Enum.unzip()
-    |> build_filter(name, pointer)
+    |> build_filter(authority, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp make_dependencies({key, schema}, name, pointer, opts) do
-    call =
-      pointer
-      |> JsonPointer.join([key, ":entrypoint"])
-      |> Tools.pointer_to_fun_name(authority: name)
+  defp make_prong_and_accessory({key, schema}, authority, pointer, opts) do
+    call = Tools.call(authority, JsonPointer.join(pointer, [key, ":entrypoint"]), opts)
+    prong = quote do
+      :ok <- unquote(call)(content, path)
+    end
+    accessory = accessory(call, key, schema, pointer)
 
-    {quote do
-       :ok <- unquote(call)(content, path)
-     end, accessory(call, key, schema, name, pointer, opts)}
+    {prong, accessory}
   end
 
-  defp build_filter({prongs, accessories}, name, pointer) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+  defp build_filter({prongs, accessories}, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
 
     quote do
       defp unquote(call)(content, path) do
@@ -42,14 +39,11 @@ defmodule Exonerate.Filter.DependentRequired do
     end
   end
 
-  defp accessory(call, key, schema, _name, pointer, _opts) when is_list(schema) do
+  defp accessory(call, key, schema, pointer) when is_list(schema) do
     prongs =
       Enum.with_index(schema, fn
         dependent_key, index ->
-          schema_pointer =
-            pointer
-            |> JsonPointer.join([key, "#{index}"])
-            |> JsonPointer.to_path()
+          pointer = JsonPointer.join(pointer, [key, "#{index}"])
 
           quote do
             :ok <-
@@ -57,7 +51,7 @@ defmodule Exonerate.Filter.DependentRequired do
                 :ok
               else
                 require Exonerate.Tools
-                Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+                Exonerate.Tools.mismatch(content, unquote(pointer), path)
               end
           end
       end)

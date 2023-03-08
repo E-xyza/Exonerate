@@ -59,7 +59,8 @@ defmodule Exonerate.Degeneracy do
       context = %{"minContains" => _} when not is_map_key(context, "contains") ->
         canonicalize_purged(context, "minContains", opts)
 
-      context = %{"if" => _} when not is_map_key(context, "then") and not is_map_key(context, "else") ->
+      context = %{"if" => _}
+      when not is_map_key(context, "then") and not is_map_key(context, "else") ->
         canonicalize_purged(context, "if", opts)
 
       context = %{"exclusiveMinimum" => true} when not is_map_key(context, "minimum") ->
@@ -186,10 +187,10 @@ defmodule Exonerate.Degeneracy do
     |> update("additionalProperties", &canonicalize(&1, opts))
     |> update("contains", &canonicalize(&1, opts))
     |> update("dependencies", &canonicalize_dependencies(&1, opts))
-    |> update("dependentRequired", &canonicalize_object(&1, opts))
+    |> update("dependentSchemas", &canonicalize_object(&1, opts))
     |> update("items", &canonicalize_items(&1, opts))
     |> update("patternProperties", &canonicalize_object(&1, opts))
-    |> update("prefix_items", &canonicalize_array(&1, opts))
+    |> update("prefixItems", &canonicalize_array(&1, opts))
     |> update("properties", &canonicalize_object(&1, opts))
     |> update("propertyNames", &canonicalize(&1, opts))
     |> update("unevaluatedItems", &canonicalize(&1, opts))
@@ -206,6 +207,7 @@ defmodule Exonerate.Degeneracy do
   defp update(map, key, fun) when is_map_key(map, key), do: Map.update!(map, key, fun)
   defp update(map, _key, _fun), do: map
 
+  defp canonicalize_items(boolean, _pts) when is_boolean(boolean), do: boolean
   defp canonicalize_items(array, opts) when is_list(array), do: canonicalize_array(array, opts)
   defp canonicalize_items(object, opts) when is_map(object), do: canonicalize(object, opts)
 
@@ -222,6 +224,7 @@ defmodule Exonerate.Degeneracy do
   defp canonicalize_array(array, opts), do: Enum.map(array, &canonicalize(&1, opts))
 
   defp canonicalize_finalize(boolean) when is_boolean(boolean), do: boolean
+
   defp canonicalize_finalize(context) do
     Map.update!(context, "type", &cleanup_types/1)
   end

@@ -91,7 +91,7 @@ defmodule Exonerate.Tools do
     pointer
     |> if(tracked?(opts), &JsonPointer.join(&1, ":tracked"))
     |> JsonPointer.to_uri()
-    |> struct(authority: "#{authority}")
+    |> struct(path: "#{authority}")
     |> to_string
     |> adjust_length
     |> String.to_atom()

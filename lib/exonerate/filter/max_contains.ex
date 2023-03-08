@@ -4,22 +4,20 @@ defmodule Exonerate.Filter.MaxContains do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
-    __CALLER__.module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve_json!(pointer)
-    |> build_filter(name, pointer)
+  defmacro filter(authority, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(maximum, name, pointer) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-    schema_pointer = JsonPointer.to_uri(pointer)
+  defp build_filter(maximum, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
 
     quote do
       defp unquote(call)(content, parent, path) when content > unquote(maximum) do
         require Exonerate.Tools
-        Tools.mismatch(parent, unquote(schema_pointer), path)
+        Tools.mismatch(parent, unquote(pointer), path)
       end
 
       defp unquote(call)(_, _, _), do: :ok

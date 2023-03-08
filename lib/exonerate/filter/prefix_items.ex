@@ -4,38 +4,37 @@ defmodule Exonerate.Filter.PrefixItems do
   alias Exonerate.Cache
   alias Exonerate.Tools
 
-  defmacro filter(name, pointer, opts) do
-    module = __CALLER__.module
-
-    items =
-      module
-      |> Cache.fetch!(name)
-      |> JsonPointer.resolve_json!(pointer)
-
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
-
-    {calls, filters} =
-      items
-      |> Enum.with_index(&item_to_filter(&1, &2, name, pointer, opts))
-      |> Enum.unzip()
-
-    additional_items = additional_items_for(module, name, pointer, opts)
-
-    code =
-      quote do
-        unquote(calls)
-        defp unquote(call)(item, _index, path), do: unquote(additional_items)
-        unquote(filters)
-      end
-
-    Tools.maybe_dump(code, opts)
+  defmacro filter(authority, pointer, opts) do
+    parent_pointer = JsonPointer.backtrack!(pointer)
+    __CALLER__
+    |> Tools.subschema(authority, parent_pointer)
+    |> build_filter(authority, parent_pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  defp item_to_filter(_, index, name, pointer, opts) do
-    call = Tools.pointer_to_fun_name(pointer, authority: name)
+  defp build_filter(parent = %{"prefixItems" => subschema}, authority, parent_pointer, opts) do
+    pointer = JsonPointer.join(parent_pointer, "prefixItems")
+    call = Tools.call(authority, pointer, opts)
+
+    {calls, filters} =
+      subschema
+      |> Enum.with_index(&item_to_filter(&1, &2, authority, pointer, opts))
+      |> Enum.unzip()
+
+    additional_items = additional_items_for(parent, authority, parent_pointer, opts)
+
+    quote do
+      unquote(calls)
+      defp unquote(call)(item, _index, path), do: unquote(additional_items)
+      unquote(filters)
+    end
+  end
+
+  defp item_to_filter(_, index, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
 
     item_pointer = JsonPointer.join(pointer, "#{index}")
-    item_call = Tools.pointer_to_fun_name(item_pointer, authority: name)
+    item_call = Tools.call(authority, item_pointer, opts)
 
     {
       quote do
@@ -45,23 +44,15 @@ defmodule Exonerate.Filter.PrefixItems do
       end,
       quote do
         require Exonerate.Context
-        Exonerate.Context.filter(unquote(name), unquote(item_pointer), unquote(opts))
+        Exonerate.Context.filter(unquote(authority), unquote(item_pointer), unquote(opts))
       end
     }
   end
 
-  defp additional_items_for(module, name, pointer, _opts) do
-    module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve_json!(JsonPointer.backtrack!(pointer))
-    |> case do
+  defp additional_items_for(parent, authority, parent_pointer, opts) do
+    case parent do
       %{"additionalItems" => _} ->
-        additional_call =
-          pointer
-          |> JsonPointer.backtrack!()
-          |> JsonPointer.join("additionalItems")
-          |> Tools.pointer_to_fun_name(authority: name)
-
+        additional_call = Tools.call(authority, parent_pointer, opts)
         quote do
           unquote(additional_call)(item, path)
         end

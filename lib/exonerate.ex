@@ -144,7 +144,7 @@ defmodule Exonerate do
   end
 
   @spec scan_refs(Type.json(), JsonPointer.t(), [JsonPointer.t()]) :: [JsonPointer.t()]
-  defp scan_refs(%{"$ref" => pointer}, _pointer, so_far) do
+  defp scan_refs(%{"$ref" => pointer}, _pointer, so_far) when is_binary(pointer) do
     [JsonPointer.from_uri(pointer) | so_far]
   end
 

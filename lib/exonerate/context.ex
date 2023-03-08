@@ -66,33 +66,6 @@ defmodule Exonerate.Context do
     |> build_filter(authority, pointer, Keyword.put(opts, :id, id))
   end
 
-  defp build_filter(subschema = %{"$ref" => _}, authority, pointer, opts) do
-    if Draft.opts_before?("2019-09", opts) do
-      call = Tools.call(authority, pointer, opts)
-      ref_pointer = JsonPointer.join(pointer, "$ref")
-      ref_call = Tools.call(authority, ref_pointer, opts)
-
-      quote do
-        @compile {:inline, [{unquote(call), 2}]}
-        defp unquote(call)(content, path) do
-          unquote(ref_call)(content, path)
-        end
-
-        require Exonerate.Combining.Ref
-
-        Exonerate.Combining.Ref.filter(
-          unquote(authority),
-          unquote(ref_pointer),
-          unquote(opts)
-        )
-      end
-    else
-      subschema
-      |> Map.delete("$ref")
-      |> build_filter(authority, pointer, opts)
-    end
-  end
-
   # metadata
   defp build_filter(schema = %{"title" => title}, authority, pointer, opts) do
     rest =
@@ -200,62 +173,51 @@ defmodule Exonerate.Context do
   # NB: schema should always contain a type field as per Degeneracy.canonicalize/1 called from Tools.subschema/3
   defp build_filter(subschema = %{"type" => types}, authority, pointer, opts) do
     # condition the bindings
-    call = Tools.call(authority, pointer, opts)
 
-    case Degeneracy.class(subschema) do
-      :ok ->
-        quote do
-          defp unquote(call)(content, _path) do
-            :ok
-          end
-        end
+    filtered_types =
+      opts
+      |> Keyword.get(:only, @all_types)
+      |> List.wrap()
+      |> MapSet.new()
 
-      _ ->
-        filtered_types =
-          opts
-          |> Keyword.get(:only, @all_types)
-          |> List.wrap()
-          |> MapSet.new()
+    {filters, accessories} =
+      types
+      |> MapSet.new()
+      |> MapSet.intersection(filtered_types)
+      |> Enum.map(fn type ->
+        module = Type.module(type)
 
-        {filters, accessories} =
-          types
-          |> MapSet.new()
-          |> MapSet.intersection(filtered_types)
-          |> Enum.map(fn type ->
-            module = Type.module(type)
+        {quote do
+           require unquote(module)
+           unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+         end,
+         quote do
+           unquote(module).accessories(unquote(authority), unquote(pointer), unquote(opts))
+         end}
+      end)
+      |> Enum.unzip()
 
-            {quote do
-               require unquote(module)
-               unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
-             end,
-             quote do
-               unquote(module).accessories(unquote(authority), unquote(pointer), unquote(opts))
-             end}
-          end)
-          |> Enum.unzip()
-
-        combining =
-          for filter <- @combining_filters, is_map_key(subschema, filter) do
-            combining_module = @combining_modules[filter]
-            combining_pointer = JsonPointer.join(pointer, filter)
-
-            quote do
-              require unquote(combining_module)
-
-              unquote(combining_module).filter(
-                unquote(authority),
-                unquote(combining_pointer),
-                unquote(opts)
-              )
-            end
-          end
+    combining =
+      for filter <- @combining_filters, is_map_key(subschema, filter) do
+        combining_module = @combining_modules[filter]
+        combining_pointer = JsonPointer.join(pointer, filter)
 
         quote do
-          unquote(filters)
-          Exonerate.Context.fallthrough(unquote(authority), unquote(pointer), unquote(opts))
-          unquote(combining)
-          unquote(accessories)
+          require unquote(combining_module)
+
+          unquote(combining_module).filter(
+            unquote(authority),
+            unquote(combining_pointer),
+            unquote(opts)
+          )
         end
+      end
+
+    quote do
+      unquote(filters)
+      Exonerate.Context.fallthrough(unquote(authority), unquote(pointer), unquote(opts))
+      unquote(combining)
+      unquote(accessories)
     end
   end
 

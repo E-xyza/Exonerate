@@ -20,9 +20,6 @@ defmodule Exonerate.Combining.Ref do
     |> Tools.maybe_dump(opts)
   end
 
-  defp normalize(fragment = "/" <> _), do: fragment
-  defp normalize(fragment), do: "/" <> fragment
-
   defp build_filter(
          %{host: nil, path: nil, fragment: fragment},
          _module,

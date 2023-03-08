@@ -118,7 +118,7 @@ defmodule Exonerate.Type.Array.Find do
 
   # minItems-only case
 
-  defp find_code_for(%{"minItems" => length}, authority, pointer, opts) do
+  defp build_iterator(%{"minItems" => length}, authority, pointer, opts) do
     call = Iterator.call(authority, pointer, opts)
 
     quote do

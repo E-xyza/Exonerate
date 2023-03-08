@@ -139,6 +139,18 @@ defmodule Exonerate.Type.Array.Filter do
     ]
   end
 
+  defp filters_for({"contains", _}, accumulator, authority, pointer, opts) do
+    # just a basic assertion here for safety
+    :contains in accumulator or raise "contains without :contains in accumulator"
+    contains_call = Tools.call(authority, JsonPointer.join(pointer, "contains"), opts)
+
+    [
+      quote do
+        contained = :ok === unquote(contains_call)(item, Path.join(path, "#{accumulator.index}"))
+      end
+    ]
+  end
+
   defp filters_for({"items", object}, accumulator, authority, pointer, opts)
        when is_map(object) do
     items_call = Tools.call(authority, JsonPointer.join(pointer, "items"), opts)
