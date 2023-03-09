@@ -16,7 +16,8 @@ defmodule Exonerate.MixProject do
         links: %{"GitHub" => "https://github.com/ityonemo/exonerate"}
       ],
       source_url: "https://github.com/ityonemo/exonerate/",
-      docs: [main: "Exonerate"]
+      docs: [main: "Exonerate"],
+      preferred_cli_env: [bench: :bench],
     ]
   end
 
@@ -28,6 +29,7 @@ defmodule Exonerate.MixProject do
   end
 
   def elixirc_paths(:test), do: ["lib", "test/support"]
+  def elixirc_paths(:bench), do: ["lib", "bench"]
   def elixirc_paths(_), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.
@@ -38,7 +40,9 @@ defmodule Exonerate.MixProject do
       {:json_ptr, "~> 0.5"},
       {:jason, "~> 1.4.0"},
       {:dialyxir, "~> 1.2.0", only: :dev, runtime: false},
-      {:match_spec, "~> 0.3.1"}
+      {:match_spec, "~> 0.3.1"},
+      {:ex_json_schema, "~> 0.9.2", only: :bench},
+      {:benchee, "~> 1.1.0", only: :bench}
     ]
   end
 end
