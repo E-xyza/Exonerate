@@ -23,7 +23,8 @@ defmodule Exonerate.Combining.If do
         expr("else", authority, parent_pointer, opts)
       else
         quote do
-          error
+          _ = error
+          :ok
         end
       end
 
