@@ -100,6 +100,13 @@ defmodule Exonerate.Degeneracy do
         # this is not comprehensive, but it's good enough for a first pass.
         canonicalize_purged(context, "pattern", opts)
 
+      context = %{"additionalItems" => _} when not is_map_key(context, "items") ->
+        canonicalize_purged(context, "additionalItems", opts)
+
+      context = %{"additionalItems" => _, "items" => items}
+      when is_map(items) or is_boolean(items) ->
+        canonicalize_purged(context, "additionalItems", opts)
+
       ### empty filter lists
       context = %{"required" => []} ->
         canonicalize_purged(context, "required", opts)
