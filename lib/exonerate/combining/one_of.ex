@@ -54,7 +54,10 @@ defmodule Exonerate.Combining.OneOf do
                     end)
 
                   {:halt,
-                   {Exonerate.Tools.mismatch(value, unquote(pointer), path, matches: matches)}}
+                   {Exonerate.Tools.mismatch(value, unquote(pointer), path,
+                      matches: matches,
+                      reason: "multiple matches"
+                    )}}
 
                 error ->
                   {:cont, {:ok, last, index}}

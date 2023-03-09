@@ -47,10 +47,12 @@ defmodule Exonerate.Degeneracy do
         true
 
       ## redundant filters
-      context = %{"maximum" => max, "exclusiveMaximum" => emax} when is_number(emax) and max >= emax ->
+      context = %{"maximum" => max, "exclusiveMaximum" => emax}
+      when is_number(emax) and max >= emax ->
         canonicalize_purged(context, "maximum", opts)
 
-      context = %{"minimum" => min, "exclusiveMinimum" => emin} when is_number(emin) and min <= emin ->
+      context = %{"minimum" => min, "exclusiveMinimum" => emin}
+      when is_number(emin) and min <= emin ->
         canonicalize_purged(context, "minimum", opts)
 
       context = %{"maxContains" => _} when not is_map_key(context, "contains") ->
