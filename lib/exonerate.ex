@@ -121,6 +121,7 @@ defmodule Exonerate do
       |> Jason.decode!()
       |> then(fn schema ->
         refs = Tools.scan(schema, [], &scan_refs/3)
+
         Degeneracy.canonicalize(schema, refs: refs)
       end)
       |> Id.prescan(module)

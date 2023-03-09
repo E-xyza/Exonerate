@@ -47,10 +47,10 @@ defmodule Exonerate.Degeneracy do
         true
 
       ## redundant filters
-      context = %{"maximum" => max, "exclusiveMaximum" => emax} when max >= emax ->
+      context = %{"maximum" => max, "exclusiveMaximum" => emax} when is_number(emax) and max >= emax ->
         canonicalize_purged(context, "maximum", opts)
 
-      context = %{"minimum" => min, "exclusiveMinimum" => emin} when min <= emin ->
+      context = %{"minimum" => min, "exclusiveMinimum" => emin} when is_number(emin) and min <= emin ->
         canonicalize_purged(context, "minimum", opts)
 
       context = %{"maxContains" => _} when not is_map_key(context, "contains") ->
@@ -162,12 +162,14 @@ defmodule Exonerate.Degeneracy do
     types =
       cond do
         const = context["const"] ->
-          [Type.of(const)]
+          const
+          |> Type.of()
+          |> to_list_type
 
         enum = context["enum"] ->
           enum
           |> List.wrap()
-          |> Enum.map(&Type.of/1)
+          |> Enum.flat_map(&(&1 |> Type.of() |> to_list_type()))
           |> Enum.uniq()
 
         true ->
@@ -178,6 +180,10 @@ defmodule Exonerate.Degeneracy do
     |> Map.put("type", types)
     |> canonicalize(opts)
   end
+
+  defp to_list_type("integer"), do: ["integer", "number"]
+  defp to_list_type("number"), do: ["integer", "number"]
+  defp to_list_type(type), do: [type]
 
   defp canonicalize_recursive(boolean, _) when is_boolean(boolean), do: boolean
 
