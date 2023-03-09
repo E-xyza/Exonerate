@@ -18,9 +18,10 @@ defmodule Exonerate.Filter.DependentSchemas do
   defp prong_and_accessory({key, _schema}, authority, pointer, opts) do
     call = Tools.call(authority, JsonPointer.join(pointer, [key, ":entrypoint"]), opts)
 
-    prong = quote do
-      :ok <- unquote(call)(content, path)
-    end
+    prong =
+      quote do
+        :ok <- unquote(call)(content, path)
+      end
 
     accessory = accessory(call, key, authority, pointer, opts)
 

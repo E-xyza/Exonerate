@@ -1,10 +1,7 @@
 defmodule Exonerate.Filter.Contains do
   @moduledoc false
 
-  alias Exonerate.Cache
-  alias Exonerate.Degeneracy
   alias Exonerate.Tools
-  alias Exonerate.Type.Array.Iterator
 
   defmacro filter(authority, pointer, opts) do
     authority

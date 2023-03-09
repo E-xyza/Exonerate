@@ -67,4 +67,6 @@ defmodule ExonerateTest.MiscTest do
       assert {:error, _} = non_utf8_length("aaaaaaaaaaaaaaaa")
     end
   end
+
+  test "array with minItems AND contains"
 end

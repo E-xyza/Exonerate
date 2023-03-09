@@ -1,4 +1,4 @@
-#defmodule ExonerateTest.Unevaluated.PropertiesTest do
+# defmodule ExonerateTest.Unevaluated.PropertiesTest do
 #  use ExUnit.Case, async: true
 #  require Exonerate
 #
@@ -207,5 +207,5 @@
 #      assert :ok = nested_outer_false_inner_true(%{"foo" => "foo", "bar" => "bar"})
 #    end
 #  end
-#end
+# end
 #

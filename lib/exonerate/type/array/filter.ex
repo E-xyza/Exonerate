@@ -178,6 +178,8 @@ defmodule Exonerate.Type.Array.Filter do
 
   defp filters_for(_, _, _, _, _), do: []
 
+  # TODO: minItems AND contains
+
   defp finalizer_for(%{"minItems" => min}, accumulator, pointer) do
     minitems_pointer = JsonPointer.join(pointer, "minItems")
 
@@ -202,6 +204,30 @@ defmodule Exonerate.Type.Array.Filter do
         {:ok, accumulator} when unquote(index) < unquote(min) ->
           require Exonerate.Tools
           Exonerate.Tools.mismatch(array, unquote(minitems_pointer), path)
+
+        {:ok, accumulator} ->
+          :ok
+      end
+    end
+  end
+
+  defp finalizer_for(subschema = %{"contains" => _}, _, pointer) do
+    contains_pointer = JsonPointer.join(pointer, "contains")
+    mincontains_pointer = JsonPointer.join(pointer, "minContains")
+    mincontains = Map.get(subschema, "minContains", 1)
+
+    quote do
+      case do
+        {error} ->
+          error
+
+        {:ok, accumulator} when accumulator.contains == 0 ->
+          require Exonerate.Tools
+          Exonerate.Tools.mismatch(array, unquote(contains_pointer), path)
+
+        {:ok, accumulator} when accumulator.contains < unquote(mincontains) ->
+          require Exonerate.Tools
+          Exonerate.Tools.mismatch(array, unquote(mincontains_pointer), path)
 
         {:ok, accumulator} ->
           :ok

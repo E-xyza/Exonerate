@@ -17,7 +17,7 @@ defmodule Exonerate.MixProject do
       ],
       source_url: "https://github.com/ityonemo/exonerate/",
       docs: [main: "Exonerate"],
-      preferred_cli_env: [bench: :bench],
+      preferred_cli_env: [bench: :bench]
     ]
   end
 

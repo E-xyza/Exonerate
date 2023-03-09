@@ -6,6 +6,7 @@ defmodule Exonerate.Filter.PrefixItems do
 
   defmacro filter(authority, pointer, opts) do
     parent_pointer = JsonPointer.backtrack!(pointer)
+
     __CALLER__
     |> Tools.subschema(authority, parent_pointer)
     |> build_filter(authority, parent_pointer, opts)
@@ -53,6 +54,7 @@ defmodule Exonerate.Filter.PrefixItems do
     case parent do
       %{"additionalItems" => _} ->
         additional_call = Tools.call(authority, parent_pointer, opts)
+
         quote do
           unquote(additional_call)(item, path)
         end
