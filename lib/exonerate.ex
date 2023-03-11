@@ -121,8 +121,9 @@ defmodule Exonerate do
       |> Jason.decode!()
       |> then(fn schema ->
         refs = Tools.scan(schema, [], &scan_refs/3)
+        draft = Keyword.get(opts, :draft, "2020-12")
 
-        Degeneracy.canonicalize(schema, refs: refs)
+        Degeneracy.canonicalize(schema, refs: refs, draft: draft)
       end)
       |> Id.prescan(module)
 

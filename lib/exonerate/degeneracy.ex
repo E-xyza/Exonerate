@@ -13,7 +13,7 @@ defmodule Exonerate.Degeneracy do
   operates specifically on contexts, and works to canonicalize them.  This is
   performed when the schema is cached, so all
 
-  This process includes three steps:
+  Steps:
 
   1. prune filters which are redundant
 
@@ -32,11 +32,13 @@ defmodule Exonerate.Degeneracy do
   """
 
   @regex_all ["", ".*"]
+  @ref_override_drafts ~w(4 5 6 7)
 
   def canonicalize(boolean, _opts) when is_boolean(boolean), do: boolean
 
   def canonicalize(context, opts) do
     {refs, opts} = Keyword.pop(opts, :refs, [])
+    draft = Keyword.get(opts, :draft)
 
     context
     |> canonicalize_refs(refs)
@@ -47,6 +49,10 @@ defmodule Exonerate.Degeneracy do
         true
 
       ## redundant filters
+      %{"$ref" => ref} when draft in @ref_override_drafts ->
+        # ref overrides all other filters in draft <= 7
+        %{"$ref" => ref, "type" => @all_types}
+
       context = %{"maximum" => max, "exclusiveMaximum" => emax}
       when is_number(emax) and max >= emax ->
         canonicalize_purged(context, "maximum", opts)
