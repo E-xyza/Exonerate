@@ -24,21 +24,10 @@ defmodule Exonerate.Filter.Items do
       |> Enum.with_index(&build_filter(&1, &2, call, authority, this_pointer, opts))
       |> Enum.unzip()
 
-    additional_items =
-      case context do
-        %{"additionalItems" => _} ->
-          quote do
-            unquote(Tools.call(authority, parent_pointer, opts))(item, path)
-          end
-
-        _ ->
-          :ok
-      end
-
     quote do
       require Exonerate.Context
       unquote(calls)
-      defp unquote(call)({item, _index}, path), do: unquote(additional_items)
+      defp unquote(call)({item, _index}, path), do: :ok
       unquote(filters)
     end
   end

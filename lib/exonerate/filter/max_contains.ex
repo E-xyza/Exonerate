@@ -1,7 +1,6 @@
 defmodule Exonerate.Filter.MaxContains do
   @moduledoc false
 
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
   defmacro filter(authority, pointer, opts) do
@@ -15,7 +14,7 @@ defmodule Exonerate.Filter.MaxContains do
     call = Tools.call(authority, pointer, opts)
 
     quote do
-      defp unquote(call)(content, parent, path) when content > unquote(maximum) do
+      defp unquote(call)(contains_count, parent, path) when contains_count > unquote(maximum) do
         require Exonerate.Tools
         Tools.mismatch(parent, unquote(pointer), path)
       end

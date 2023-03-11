@@ -93,7 +93,8 @@ defmodule Exonerate.Degeneracy do
       context = %{"minProperties" => 0} ->
         canonicalize_purged(context, "minProperties", opts)
 
-      context = %{"minContains" => 0, "contains" => _} ->
+      context = %{"minContains" => 0, "contains" => _}
+      when not is_map_key(context, "maxContains") ->
         canonicalize_purged(context, ["minContains", "contains"], opts)
 
       context = %{"pattern" => regex_all} when regex_all in @regex_all ->

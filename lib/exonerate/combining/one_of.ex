@@ -33,7 +33,7 @@ defmodule Exonerate.Combining.OneOf do
 
         unquote(lambdas)
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(value, unquote(pointer), path), 0},
+          {Exonerate.Tools.mismatch(value, unquote(pointer), path, reason: "no matches"), 0},
           fn
             fun, {{:error, opts}, index} ->
               case fun.(value, path) do

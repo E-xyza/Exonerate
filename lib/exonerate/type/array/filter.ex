@@ -93,14 +93,17 @@ defmodule Exonerate.Type.Array.Filter do
 
   defp next(:contains) do
     quote do
-      {:contains, accumulator.contains + if(contained, do: 1, else: 0)}
+      {:contains, new_contains}
     end
   end
 
   # CODE BLOCKS
 
   defp with_statement(context, accumulator, authority, pointer, opts) do
-    filters = Enum.flat_map(context, &filters_for(&1, accumulator, authority, pointer, opts))
+    filters =
+      context
+      |> Enum.sort()
+      |> Enum.flat_map(&filters_for(&1, accumulator, authority, pointer, opts))
 
     quote do
       with unquote_splicing(filters) do
@@ -117,24 +120,6 @@ defmodule Exonerate.Type.Array.Filter do
     [
       quote do
         :ok <- unquote(max_items_call)(array, unquote(index(accumulator)), path)
-      end
-    ]
-  end
-
-  defp filters_for({"uniqueItems", true}, accumulator, authority, pointer, opts) do
-    # just a basic assertion here for safety
-    :so_far in accumulator or raise "uniqueItems without :so_far in accumulator"
-
-    unique_items_call = Tools.call(authority, JsonPointer.join(pointer, "uniqueItems"), opts)
-
-    [
-      quote do
-        :ok <-
-          unquote(unique_items_call)(
-            item,
-            accumulator.so_far,
-            Path.join(path, "#{accumulator.index}")
-          )
       end
     ]
   end
@@ -179,7 +164,26 @@ defmodule Exonerate.Type.Array.Filter do
 
     [
       quote do
-        contained = :ok === unquote(contains_call)(item, Path.join(path, "#{accumulator.index}"))
+        new_contains =
+          if :ok === unquote(contains_call)(item, Path.join(path, "#{accumulator.index}")),
+            do: accumulator.contains + 1,
+            else: accumulator.contains
+      end
+    ]
+  end
+
+  defp filters_for({"maxContains", _}, accumulator, authority, pointer, opts) do
+    # just a basic assertion here for safety
+
+    # NOTE THAT THIS FILTER must come after "contains" filter.
+    :contains in accumulator or raise "maxContains without :contains in accumulator"
+
+    max_contains_call = Tools.call(authority, JsonPointer.join(pointer, "maxContains"), opts)
+
+    [
+      quote do
+        :ok <-
+          unquote(max_contains_call)(new_contains, array, Path.join(path, "#{accumulator.index}"))
       end
     ]
   end
