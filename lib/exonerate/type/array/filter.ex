@@ -139,6 +139,39 @@ defmodule Exonerate.Type.Array.Filter do
     ]
   end
 
+  defp filters_for({"uniqueItems", true}, accumulator, authority, pointer, opts) do
+    # just a basic assertion here for safety
+    :so_far in accumulator or raise "uniqueItems without :so_far in accumulator"
+
+    unique_items_call = Tools.call(authority, JsonPointer.join(pointer, "uniqueItems"), opts)
+
+    [
+      quote do
+        :ok <-
+          unquote(unique_items_call)(
+            item,
+            accumulator.so_far,
+            Path.join(path, "#{accumulator.index}")
+          )
+      end
+    ]
+  end
+
+  defp filters_for({"prefixItems", _}, accumulator, authority, pointer, opts) do
+    prefix_items_call = Tools.call(authority, JsonPointer.join(pointer, "prefixItems"), opts)
+
+    [
+      quote do
+        :ok <-
+          unquote(prefix_items_call)(
+            item,
+            unquote(index(accumulator)),
+            Path.join(path, "#{unquote(index(accumulator))}")
+          )
+      end
+    ]
+  end
+
   defp filters_for({"contains", _}, accumulator, authority, pointer, opts) do
     # just a basic assertion here for safety
     :contains in accumulator or raise "contains without :contains in accumulator"

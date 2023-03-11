@@ -20,7 +20,7 @@ defmodule Exonerate.Filter.AdditionalItems do
 
     case context do
       # TODO: add a compiler error if this isn't a list
-      %{"items" => prefix} when is_map(prefix) ->
+      %{"items" => prefix} when is_list(prefix) ->
         prefix_length = length(prefix)
 
         quote do

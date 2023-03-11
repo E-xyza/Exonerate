@@ -1,7 +1,6 @@
 defmodule Exonerate.Filter.PrefixItems do
   @moduledoc false
 
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
   defmacro filter(authority, pointer, opts) do
@@ -52,8 +51,8 @@ defmodule Exonerate.Filter.PrefixItems do
 
   defp additional_items_for(parent, authority, parent_pointer, opts) do
     case parent do
-      %{"additionalItems" => _} ->
-        additional_call = Tools.call(authority, parent_pointer, opts)
+      %{"items" => object} when is_map(object) ->
+        additional_call = Tools.call(authority, JsonPointer.join(parent_pointer, "items"), opts)
 
         quote do
           unquote(additional_call)(item, path)
