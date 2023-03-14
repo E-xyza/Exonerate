@@ -159,28 +159,28 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
       assert :ok = with_one_of(%{"foo" => 47, "bar" => true})
     end
 
-    #    # note it's not necessary for unevaluatedProperties to work with "not"
-    #
-    #    Exonerate.function_from_string(
-    #      :def,
-    #      :with_if,
-    #      """
-    #      {
-    #        "type": "object",
-    #        "if": {"properties": {"foo": {"type": "string"}}, "required": ["foo"]},
-    #        "then": {"properties": {"bar": {"type": "boolean"}}, "required": ["bar"]},
-    #        "else": {"properties": {"baz": {"type": "string"}}, "required": ["baz"]},
-    #        "unevaluatedProperties": {"type": "number"}
-    #      }
-    #      """
-    #    )
-    #
-    #    test "it works with if" do
-    #      assert {:error, _} = with_if(%{"foo" => "bar", "bar" => true, "baz" => "42"})
-    #      assert :ok = with_if(%{"foo" => "bar", "bar" => true, "baz" => 47})
-    #      assert {:error, _} = with_if(%{"bar" => "42", "baz" => "42"})
-    #      assert :ok = with_if(%{"bar" => 47, "baz" => "47"})
-    #    end
+    # note it's not necessary for unevaluatedProperties to work with "not"
+
+    Exonerate.function_from_string(
+      :def,
+      :with_if,
+      """
+      {
+        "type": "object",
+        "if": {"properties": {"foo": {"type": "string"}}, "required": ["foo"]},
+        "then": {"properties": {"bar": {"type": "boolean"}}, "required": ["bar"]},
+        "else": {"properties": {"baz": {"type": "string"}}, "required": ["baz"]},
+        "unevaluatedProperties": {"type": "number"}
+      }
+      """
+    )
+
+    test "it works with if" do
+      assert {:error, _} = with_if(%{"foo" => "bar", "bar" => true, "baz" => "42"})
+      assert :ok = with_if(%{"foo" => "bar", "bar" => true, "baz" => 47})
+      assert {:error, _} = with_if(%{"bar" => "42", "baz" => "42"})
+      assert :ok = with_if(%{"bar" => 47, "baz" => "47"})
+    end
   end
 
   #

@@ -16,17 +16,8 @@ defmodule Exonerate.Combining.If do
   defp build_filter(context, authority, parent_pointer, opts) do
     entrypoint_call = call(["if", ":entrypoint"], authority, parent_pointer, opts)
     if_expr = expr("if", authority, parent_pointer, opts)
-    then_expr = if context["then"], do: expr("then", authority, parent_pointer, opts), else: :ok
-
-    else_expr =
-      if context["else"] do
-        expr("else", authority, parent_pointer, opts)
-      else
-        quote do
-          _ = error
-          :ok
-        end
-      end
+    then_expr = then_expr(context, authority, parent_pointer, opts)
+    else_expr = else_expr(context, authority, parent_pointer, opts)
 
     contexts =
       Enum.flat_map(
@@ -34,6 +25,36 @@ defmodule Exonerate.Combining.If do
         &List.wrap(if is_map_key(context, &1), do: context(&1, authority, parent_pointer, opts))
       )
 
+    function =
+      if opts[:tracked] do
+        build_tracked(entrypoint_call, if_expr, then_expr, else_expr)
+      else
+        build_untracked(entrypoint_call, if_expr, then_expr, else_expr)
+      end
+
+    quote do
+      unquote(function)
+      unquote(contexts)
+    end
+  end
+
+  defp build_tracked(entrypoint_call, if_expr, then_expr, else_expr) do
+    quote do
+      defp unquote(entrypoint_call)(content, path) do
+        require Exonerate.Tools
+
+        case unquote(if_expr) do
+          {:ok, if_seen} ->
+            unquote(then_expr)
+
+          Exonerate.Tools.error_match(_error) ->
+            unquote(else_expr)
+        end
+      end
+    end
+  end
+
+  defp build_untracked(entrypoint_call, if_expr, then_expr, else_expr) do
     quote do
       defp unquote(entrypoint_call)(content, path) do
         require Exonerate.Tools
@@ -46,8 +67,51 @@ defmodule Exonerate.Combining.If do
             unquote(else_expr)
         end
       end
+    end
+  end
 
-      unquote(contexts)
+  defp then_expr(context, authority, parent_pointer, opts) do
+    case {context["then"], opts[:tracked]} do
+      {nil, true} ->
+        quote do
+          {:ok, if_seen}
+        end
+
+      {nil, _} ->
+        :ok
+
+      {_, true} ->
+        then = expr("then", authority, parent_pointer, opts)
+
+        quote do
+          require Exonerate.Tools
+
+          case unquote(then) do
+            {:ok, then_seen} ->
+              {:ok, MapSet.union(if_seen, then_seen)}
+
+            Exonerate.Tools.error_match(error) ->
+              error
+          end
+        end
+
+      _ ->
+        expr("then", authority, parent_pointer, opts)
+    end
+  end
+
+  defp else_expr(context, authority, parent_pointer, opts) do
+    case {context["else"], opts[:tracked]} do
+      {nil, true} ->
+        quote do
+          {:ok, MapSet.new()}
+        end
+
+      {nil, _} ->
+        :ok
+
+      _ ->
+        expr("else", authority, parent_pointer, opts)
     end
   end
 
