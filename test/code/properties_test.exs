@@ -1,4 +1,4 @@
-defmodule ExonerateTest.Code.ObjectTest do
+defmodule ExonerateTest.Code.PropertiesTest do
   use ExUnit.Case, async: true
   import ExonerateTest.CodeCase
 
@@ -9,6 +9,7 @@ defmodule ExonerateTest.Code.ObjectTest do
       assert_filter(
         quote do
           defp unquote(:"empty#/properties/:tracked")({"foo", value}, path) do
+            require Exonerate.Tools
             case unquote(:"empty#/properties/foo")(value, Path.join(path, "foo")) do
               :ok -> {:ok, true}
               Exonerate.Tools.error_match(error) -> error
