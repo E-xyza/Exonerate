@@ -108,10 +108,9 @@ defmodule Exonerate.Type.Object.Iterator do
 
     quote do
       defp unquote(call)(object, path, seen) do
-        Enum.reduce_while(object, {:ok, seen}, fn
-          _, error = {:error, _} ->
-            {:halt, error}
+        require Exonerate.Tools
 
+        Enum.reduce_while(object, {:ok, seen}, fn
           {key, value}, {:ok, seen} ->
             visited = false
 
@@ -119,8 +118,11 @@ defmodule Exonerate.Type.Object.Iterator do
               {:cont, {:ok, MapSet.put(seen, key)}}
             else
               true -> {:cont, {:ok, MapSet.put(seen, key)}}
-              error -> {:halt, error}
+              Exonerate.Tools.error_match(error) -> {:halt, error}
             end
+
+          _, Exonerate.Tools.error_match(error) ->
+            {:halt, error}
         end)
       end
     end
@@ -129,10 +131,9 @@ defmodule Exonerate.Type.Object.Iterator do
   defp build_seen(call, visitor_call, filters, _) do
     quote do
       defp unquote(call)(object, path, seen) do
-        Enum.reduce_while(object, :ok, fn
-          _, error = {:error, _} ->
-            {:halt, error}
+        require Exonerate.Tools
 
+        Enum.reduce_while(object, :ok, fn
           {key, value}, :ok ->
             visited = false
 
@@ -146,8 +147,11 @@ defmodule Exonerate.Type.Object.Iterator do
 
               {:cont, result}
             else
-              error -> {:halt, error}
+              Exonerate.Tools.error_match(error) -> {:halt, error}
             end
+
+          _, Exonerate.Tools.error_match(error) ->
+            {:halt, error}
         end)
       end
     end
@@ -174,10 +178,9 @@ defmodule Exonerate.Type.Object.Iterator do
 
     quote do
       defp unquote(call)(object, path) do
-        Enum.reduce_while(object, :ok, fn
-          _, error = {:error, _} ->
-            {:halt, error}
+        require Exonerate.Tools
 
+        Enum.reduce_while(object, :ok, fn
           {key, value}, :ok ->
             visited = false
 
@@ -185,8 +188,11 @@ defmodule Exonerate.Type.Object.Iterator do
               {:cont, unquote(final_return)}
             else
               true -> {:cont, unquote(final_return)}
-              error -> {:halt, error}
+              Exonerate.Tools.error_match(error) -> {:halt, error}
             end
+
+          _, Exonerate.Tools.error_match(error) ->
+            {:halt, error}
         end)
       end
     end
@@ -195,10 +201,9 @@ defmodule Exonerate.Type.Object.Iterator do
   defp build_tracked(call, filters) do
     quote do
       defp unquote(call)(object, path) do
-        Enum.reduce_while(object, {:ok, MapSet.new()}, fn
-          _, error = {:error, _} ->
-            {:halt, error}
+        require Exonerate.Tools
 
+        Enum.reduce_while(object, {:ok, MapSet.new()}, fn
           {key, value}, {:ok, seen} ->
             visited = false
 
@@ -213,8 +218,11 @@ defmodule Exonerate.Type.Object.Iterator do
               {:cont, {:ok, seen}}
             else
               true -> {:cont, {:ok, MapSet.put(seen, key)}}
-              error -> {:halt, error}
+              Exonerate.Tools.error_match(error) -> {:halt, error}
             end
+
+          _, Exonerate.Tools.error_match(error) ->
+            {:halt, error}
         end)
       end
     end
@@ -223,12 +231,14 @@ defmodule Exonerate.Type.Object.Iterator do
   defp build_trivial(call, filters) do
     quote do
       defp unquote(call)(object, path) do
+        require Exonerate.Tools
+
         Enum.reduce_while(object, :ok, fn
           {key, value}, :ok ->
             with unquote_splicing(filters) do
               {:cont, :ok}
             else
-              error -> {:halt, error}
+              Exonerate.Tools.error_match(error) -> {:halt, error}
             end
         end)
       end

@@ -11,7 +11,7 @@ defmodule ExonerateTest.Code.ObjectTest do
           defp unquote(:"empty#/properties/:tracked")({"foo", value}, path) do
             case unquote(:"empty#/properties/foo")(value, Path.join(path, "foo")) do
               :ok -> {:ok, true}
-              error -> error
+              Exonerate.Tools.error_match(error) -> error
             end
           end
         end,

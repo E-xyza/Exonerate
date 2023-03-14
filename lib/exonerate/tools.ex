@@ -47,6 +47,21 @@ defmodule Exonerate.Tools do
     macro
   end
 
+  # this macro exists to trap error outputs (in case and with matching blocks)
+  # as the pattern `error = {:error, _}` in test environment for safety, but to
+  # elide that into the single `error` variable in other environments for
+  # performance
+
+  if Mix.env() === :test do
+    defmacro error_match(error) do
+      quote do
+        unquote(error) = {:error, _}
+      end
+    end
+  else
+    defmacro error_match(error), do: error
+  end
+
   # scrub macros helps to make "dump: true" output more legible, by removing
   # the scar tissue of macro calls that are going to be dumped anyways.
 

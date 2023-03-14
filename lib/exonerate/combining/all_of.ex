@@ -48,7 +48,7 @@ defmodule Exonerate.Combining.AllOf do
                 {:ok, new_seen} ->
                   {:cont, {:ok, MapSet.union(seen, new_seen)}}
 
-                error ->
+                Exonerate.Tools.error_match(error) ->
                   {:halt, error}
               end
           end
@@ -73,7 +73,7 @@ defmodule Exonerate.Combining.AllOf do
                 :ok ->
                   {:cont, :ok}
 
-                error ->
+                Exonerate.Tools.error_match(error) ->
                   {:halt, error}
               end
           end

@@ -48,15 +48,15 @@ defmodule Exonerate.Type.Array.Find do
 
             item, {{:error, error_so_far}, index, count} ->
               case unquote(contains_call)(item, Path.join(path, "#{index}")) do
-                error = {:error, _} ->
-                  new_params = Keyword.update(error_so_far, :failures, [error], &[error | &1])
-                  {:cont, {{:error, error_so_far}, index + 1}}
-
                 :ok when count >= unquote(needed) ->
                   {:cont, {:ok, index + 1, count}}
 
                 :ok ->
                   {:cont, {:error, error_so_far}, index + 1, count + 1}
+
+                Exonerate.Tools.error_match(error) ->
+                  new_params = Keyword.update(error_so_far, :failures, [error], &[error | &1])
+                  {:cont, {{:error, error_so_far}, index + 1}}
               end
           end
         )
@@ -75,7 +75,7 @@ defmodule Exonerate.Type.Array.Find do
               path
             )
 
-          {error = {:error, _}, _} ->
+          {Exonerate.Tools.error_match(error), _} ->
             error
         end
       end
@@ -99,15 +99,15 @@ defmodule Exonerate.Type.Array.Find do
           fn
             item, {{:error, params}, index, count} ->
               case unquote(contains_call)(item, path) do
-                error = {:error, _} ->
-                  new_params = Keyword.update(params, :failures, [error], &[error | &1])
-                  {:cont, {{:error, params}, index + 1, count}}
-
                 :ok when count < unquote(needed - 1) ->
                   {:cont, {{:error, params}, index, count + 1}}
 
                 :ok ->
                   {:halt, {:ok}}
+
+                Exonerate.Tools.error_match(error) ->
+                  new_params = Keyword.update(params, :failures, [error], &[error | &1])
+                  {:cont, {{:error, params}, index + 1, count}}
               end
           end
         )

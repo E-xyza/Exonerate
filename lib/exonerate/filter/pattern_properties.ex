@@ -34,9 +34,11 @@ defmodule Exonerate.Filter.PatternProperties do
     evaluation =
       if opts[:tracked] do
         quote do
+          require Exonerate.Tools
+
           case fun.(value, Path.join(path, key)) do
             :ok -> {:ok, true}
-            error -> error
+            Exonerate.Tools.error_match(error) -> error
           end
         end
       else
@@ -56,6 +58,8 @@ defmodule Exonerate.Filter.PatternProperties do
 
     quote do
       defp unquote(Tools.call(authority, pointer, opts))({key, value}, path) do
+        require Exonerate.Tools
+
         Enum.reduce_while(unquote(subfilters), unquote(init), fn
           {regex, fun}, unquote(capture) ->
             result =
@@ -67,7 +71,7 @@ defmodule Exonerate.Filter.PatternProperties do
 
             {:cont, result}
 
-          _, error = {:error, _} ->
+          _, Exonerate.Tools.error_match(error) ->
             {:halt, error}
         end)
       end

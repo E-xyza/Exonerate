@@ -24,6 +24,58 @@ defmodule Exonerate.Combining.AnyOf do
   end
 
   defp build_filter({calls, contexts}, authority, pointer, opts) do
+    function =
+      if opts[:tracked] do
+        build_tracked(calls, authority, pointer, opts)
+      else
+        build_untracked(calls, authority, pointer, opts)
+      end
+
+    quote do
+      unquote(function)
+      unquote(contexts)
+    end
+  end
+
+  defp build_tracked(calls, authority, pointer, opts) do
+    # NB we need to complete reducing over the lambdas because when tracked, we must
+    # honor all branches which have found content.
+
+    lambdas = Enum.map(calls, &to_lambda/1)
+    call = Tools.call(authority, pointer, opts)
+
+    quote do
+      defp unquote(call)(value, path) do
+        require Exonerate.Tools
+
+        Enum.reduce(
+          unquote(lambdas),
+          Exonerate.Tools.mismatch(value, unquote(pointer), path),
+          fn
+            fun, {:error, opts} ->
+              case fun.(value, path) do
+                ok = {:ok, _seen} ->
+                  ok
+
+                Exonerate.Tools.error_match(error) ->
+                  {:error, Keyword.update(opts, :failures, [error], &[error | &1])}
+              end
+
+            fun, {:ok, seen} ->
+              case fun.(value, path) do
+                ok = {:ok, new_seen} ->
+                  {:ok, MapSet.union(seen, new_seen)}
+
+                Exonerate.Tools.error_match(_error) ->
+                  {:ok, seen}
+              end
+          end
+        )
+      end
+    end
+  end
+
+  defp build_untracked(calls, authority, pointer, opts) do
     lambdas = Enum.map(calls, &to_lambda/1)
     call = Tools.call(authority, pointer, opts)
 
@@ -40,14 +92,12 @@ defmodule Exonerate.Combining.AnyOf do
                 :ok ->
                   {:halt, :ok}
 
-                error ->
+                Exonerate.Tools.error_match(error) ->
                   {:cont, {:error, Keyword.update(opts, :failures, [error], &[error | &1])}}
               end
           end
         )
       end
-
-      unquote(contexts)
     end
   end
 

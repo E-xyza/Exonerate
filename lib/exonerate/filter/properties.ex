@@ -34,15 +34,17 @@ defmodule Exonerate.Filter.Properties do
 
   defp filters_for({key, _schema}, main_call, authority, pointer, opts) do
     key_pointer = JsonPointer.join(pointer, key)
-    key_call = Tools.call(authority, key_pointer,  Keyword.delete(opts, :tracked))
+    key_call = Tools.call(authority, key_pointer, Keyword.delete(opts, :tracked))
 
     subfilter =
       if opts[:tracked] do
         quote do
           defp unquote(main_call)({unquote(key), value}, path) do
+            require Exonerate.Tools
+
             case unquote(key_call)(value, Path.join(path, unquote(key))) do
               :ok -> {:ok, true}
-              error -> error
+              Exonerate.Tools.error_match(error) -> error
             end
           end
         end

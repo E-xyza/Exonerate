@@ -106,10 +106,12 @@ defmodule Exonerate.Type.Array.Filter do
       |> Enum.flat_map(&filters_for(&1, accumulator, authority, pointer, opts))
 
     quote do
+      require Exonerate.Tools
+
       with unquote_splicing(filters) do
         {:cont, {:ok, unquote(next(accumulator))}}
       else
-        error = {:error, _} -> {:halt, {error}}
+        Exonerate.Tools.error_match(error) -> {:halt, {error}}
       end
     end
   end

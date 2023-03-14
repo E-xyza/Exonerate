@@ -36,11 +36,13 @@ defmodule Exonerate.Combining.If do
 
     quote do
       defp unquote(entrypoint_call)(content, path) do
+        require Exonerate.Tools
+
         case unquote(if_expr) do
           :ok ->
             unquote(then_expr)
 
-          error = {:error, _} ->
+          Exonerate.Tools.error_match(error) ->
             unquote(else_expr)
         end
       end

@@ -9,12 +9,14 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
       assert_filter(
         quote do
           defp unquote(:"properties#/:iterator")(object, path) do
+            require Exonerate.Tools
+
             Enum.reduce_while(object, :ok, fn
               {key, value}, :ok ->
                 with :ok <- unquote(:"properties#/properties")({key, value}, path) do
                   {:cont, :ok}
                 else
-                  error -> {:halt, error}
+                  Exonerate.Tools.error_match(error) -> {:halt, error}
                 end
             end)
           end
@@ -31,10 +33,9 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
       assert_filter(
         quote do
           defp unquote(:"additional#/:iterator")(object, path) do
-            Enum.reduce_while(object, :ok, fn
-              _, error = {:error, _} ->
-                {:halt, error}
+            require Exonerate.Tools
 
+            Enum.reduce_while(object, :ok, fn
               {key, value}, :ok ->
                 visited = false
 
@@ -44,8 +45,11 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
                   {:cont, :ok}
                 else
                   true -> {:cont, :ok}
-                  error -> {:halt, error}
+                  Exonerate.Tools.error_match(error) -> {:halt, error}
                 end
+
+              _, Exonerate.Tools.error_match(error) ->
+                {:halt, error}
             end)
           end
         end,
@@ -59,10 +63,9 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
       assert_filter(
         quote do
           defp unquote(:"additional#/:iterator")(object, path) do
-            Enum.reduce_while(object, :ok, fn
-              _, error = {:error, _} ->
-                {:halt, error}
+            require Exonerate.Tools
 
+            Enum.reduce_while(object, :ok, fn
               {key, value}, :ok ->
                 visited = false
 
@@ -75,8 +78,11 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
                   {:cont, :ok}
                 else
                   true -> {:cont, :ok}
-                  error -> {:halt, error}
+                  Exonerate.Tools.error_match(error) -> {:halt, error}
                 end
+
+              _, Exonerate.Tools.error_match(error) ->
+                {:halt, error}
             end)
           end
         end,

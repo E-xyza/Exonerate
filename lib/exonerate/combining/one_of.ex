@@ -40,7 +40,7 @@ defmodule Exonerate.Combining.OneOf do
                 :ok ->
                   {:cont, {:ok, index, index + 1}}
 
-                error ->
+                Exonerate.Tools.error_match(error) ->
                   {:cont,
                    {{:error, Keyword.update(opts, :failures, [error], &[error | &1])}, index + 1}}
               end
@@ -59,7 +59,7 @@ defmodule Exonerate.Combining.OneOf do
                       reason: "multiple matches"
                     )}}
 
-                error ->
+                Exonerate.Tools.error_match(error) ->
                   {:cont, {:ok, last, index}}
               end
           end
