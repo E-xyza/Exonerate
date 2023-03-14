@@ -21,39 +21,130 @@ defmodule Exonerate.Type.Object do
   @combining_filters Combining.filters()
 
   defmacro filter(authority, pointer, opts) do
-    __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    if opts[:tracked] do
+      quote do
+        require Exonerate.Type.Object.Tracked
+        Exonerate.Type.Object.Tracked.filter(unquote(authority), unquote(pointer), unquote(opts))
+      end
+    else
+      __CALLER__
+      |> Tools.subschema(authority, pointer)
+      |> build_filter(authority, pointer, opts)
+      |> Tools.maybe_dump(opts)
+    end
   end
 
   defp build_filter(context, authority, pointer, opts) do
     filter_clauses =
-      for filter <- @outer_filters ++ @combining_filters, is_map_key(context, filter) do
-        filter_call =
-          Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+      outer_filters(context, authority, pointer, opts) ++
+        seen_filters(context, authority, pointer, opts) ++
+        unseen_filters(context, authority, pointer, opts) ++
+        iterator_filter(context, authority, pointer, opts)
 
-        quote do
-          :ok <- unquote(filter_call)(object, path)
-        end
-      end ++
-        List.wrap(
-          if Iterator.needed?(context) do
-            iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
+    if needs_seen?(context) do
+      quote do
+        defp unquote(Tools.call(authority, pointer, opts))(object, path) when is_map(object) do
+          seen = MapSet.new()
 
-            quote do
-              :ok <- unquote(iterator_call)(object, path)
-            end
+          with unquote_splicing(filter_clauses) do
+            :ok
           end
-        )
-
-    quote do
-      defp unquote(Tools.call(authority, pointer, opts))(object, path) when is_map(object) do
-        with unquote_splicing(filter_clauses) do
-          :ok
+        end
+      end
+    else
+      quote do
+        defp unquote(Tools.call(authority, pointer, opts))(object, path) when is_map(object) do
+          with unquote_splicing(filter_clauses) do
+            :ok
+          end
         end
       end
     end
+  end
+
+  @seen_filters ~w(allOf anyOf if oneOf)
+  @unseen_filters @combining_filters -- @seen_filters
+
+  def needs_seen?(context) do
+    is_map_key(context, "unevaluatedProperties") and
+      Enum.any?(@seen_filters, &is_map_key(context, &1))
+  end
+
+  defp outer_filters(context, authority, pointer, opts) do
+    for filter <- @outer_filters, is_map_key(context, filter) do
+      filter_call =
+        Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+
+      quote do
+        :ok <- unquote(filter_call)(object, path)
+      end
+    end
+  end
+
+  defp seen_filters(context, authority, pointer, opts) do
+    needs_seen = needs_seen?(context)
+
+    opts =
+      if needs_seen do
+        Keyword.put(opts, :tracked, true)
+      else
+        opts
+      end
+
+    for filter <- @seen_filters, is_map_key(context, filter) do
+      filter_call =
+        Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+
+      if needs_seen do
+        quote do
+          [
+            {:ok, new_seen} <- unquote(filter_call)(object, path),
+            seen = MapSet.union(seen, new_seen)
+          ]
+        end
+      else
+        [
+          quote do
+            :ok <- unquote(filter_call)(object, path)
+          end
+        ]
+      end
+    end
+    |> Enum.flat_map(&Function.identity/1)
+  end
+
+  defp unseen_filters(context, authority, pointer, opts) do
+    for filter <- @unseen_filters, is_map_key(context, filter) do
+      filter_call =
+        Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+
+      quote do
+        :ok <- unquote(filter_call)(object, path)
+      end
+    end
+  end
+
+  defp iterator_filter(context, authority, pointer, opts) do
+    List.wrap(
+      case {Iterator.needed?(context), needs_seen?(context)} do
+        {true, true} ->
+          iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
+
+          quote do
+            :ok <- unquote(iterator_call)(object, path, seen)
+          end
+
+        {true, _} ->
+          iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
+
+          quote do
+            :ok <- unquote(iterator_call)(object, path)
+          end
+
+        _ ->
+          nil
+      end
+    )
   end
 
   defmacro accessories(authority, pointer, opts) do
@@ -64,6 +155,12 @@ defmodule Exonerate.Type.Object do
   end
 
   defp build_accessories(context, name, pointer, opts) do
+    iterator_accessory(context, name, pointer, opts) ++
+      filter_accessories(context, name, pointer, opts) ++
+      tracked_accessories(context, name, pointer, opts)
+  end
+
+  defp iterator_accessory(context, name, pointer, opts) do
     List.wrap(
       if Iterator.needed?(context) do
         quote do
@@ -77,15 +174,37 @@ defmodule Exonerate.Type.Object do
           )
         end
       end
-    ) ++
-      for filter <- @outer_filters, is_map_key(context, filter), not Combining.filter?(filter) do
-        module = @modules[filter]
-        pointer = JsonPointer.join(pointer, filter)
+    )
+  end
 
-        quote do
-          require unquote(module)
-          unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
+  defp filter_accessories(context, name, pointer, opts) do
+    for filter <- @outer_filters, is_map_key(context, filter), not Combining.filter?(filter) do
+      module = @modules[filter]
+      pointer = JsonPointer.join(pointer, filter)
+
+      quote do
+        require unquote(module)
+        unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
+      end
+    end
+  end
+
+  @combining_modules Combining.modules()
+
+  defp tracked_accessories(context, name, pointer, opts) do
+    List.wrap(
+      if needs_seen?(context) do
+        for filter <- @seen_filters, is_map_key(context, filter) do
+          module = @combining_modules[filter]
+          pointer = JsonPointer.join(pointer, filter)
+          opts = Keyword.merge(opts, tracked: true, only: "object")
+
+          quote do
+            require unquote(module)
+            unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
+          end
         end
       end
+    )
   end
 end

@@ -27,6 +27,39 @@ defmodule Exonerate.Combining.AllOf do
     lambdas = Enum.map(calls, &to_lambda/1)
     call = Tools.call(authority, pointer, opts)
 
+    if opts[:tracked] do
+      build_tracked(call, lambdas, contexts)
+    else
+      build_untracked(call, lambdas, contexts)
+    end
+  end
+
+  defp build_tracked(call, lambdas, contexts) do
+    quote do
+      defp unquote(call)(value, path) do
+        require Exonerate.Tools
+
+        Enum.reduce_while(
+          unquote(lambdas),
+          {:ok, MapSet.new()},
+          fn
+            fun, {:ok, seen} ->
+              case fun.(value, path) do
+                {:ok, new_seen} ->
+                  {:cont, {:ok, MapSet.union(seen, new_seen)}}
+
+                error ->
+                  {:halt, error}
+              end
+          end
+        )
+      end
+
+      unquote(contexts)
+    end
+  end
+
+  defp build_untracked(call, lambdas, contexts) do
     quote do
       defp unquote(call)(value, path) do
         require Exonerate.Tools

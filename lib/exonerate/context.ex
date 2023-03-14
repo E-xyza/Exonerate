@@ -5,8 +5,6 @@ defmodule Exonerate.Context do
 
   alias Exonerate.Cache
   alias Exonerate.Combining
-  alias Exonerate.Degeneracy
-  alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Type
 

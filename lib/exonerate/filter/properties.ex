@@ -15,11 +15,11 @@ defmodule Exonerate.Filter.Properties do
 
     {subfilters, contexts} =
       subschema
-      |> Enum.map(&filters_for(&1, main_call, authority, pointer, opts))
+      |> Enum.map(&filters_for(&1, main_call, authority, pointer, Keyword.delete(opts, :tracked)))
       |> Enum.unzip()
 
     negative =
-      if opts[:visited] do
+      if opts[:tracked] do
         {:ok, false}
       else
         :ok
@@ -37,7 +37,7 @@ defmodule Exonerate.Filter.Properties do
     key_call = Tools.call(authority, key_pointer, opts)
 
     subfilter =
-      if opts[:visited] do
+      if opts[:tracked] do
         quote do
           defp unquote(main_call)({unquote(key), value}, path) do
             case unquote(key_call)(value, Path.join(path, unquote(key))) do
@@ -61,7 +61,7 @@ defmodule Exonerate.Filter.Properties do
         Exonerate.Context.filter(
           unquote(authority),
           unquote(key_pointer),
-          unquote(Keyword.delete(opts, :visited))
+          unquote(Keyword.delete(opts, :tracked))
         )
       end
 

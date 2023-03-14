@@ -1,7 +1,5 @@
 defmodule Exonerate.Filter.PatternProperties do
   @moduledoc false
-
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
   defmacro filter(authority, pointer, opts) do
@@ -18,14 +16,14 @@ defmodule Exonerate.Filter.PatternProperties do
       |> Enum.unzip()
 
     init =
-      if opts[:visited] do
+      if opts[:tracked] do
         {:ok, false}
       else
         :ok
       end
 
     capture =
-      if opts[:visited] do
+      if opts[:tracked] do
         quote do
           {:ok, visited}
         end
@@ -34,7 +32,7 @@ defmodule Exonerate.Filter.PatternProperties do
       end
 
     evaluation =
-      if opts[:visited] do
+      if opts[:tracked] do
         quote do
           case fun.(value, Path.join(path, key)) do
             :ok -> {:ok, true}
@@ -48,7 +46,7 @@ defmodule Exonerate.Filter.PatternProperties do
       end
 
     negative =
-      if opts[:visited] do
+      if opts[:tracked] do
         quote do
           {:ok, visited}
         end
@@ -79,7 +77,7 @@ defmodule Exonerate.Filter.PatternProperties do
   end
 
   defp filters_for({regex, _}, authority, pointer, opts) do
-    opts = Keyword.delete(opts, :visited)
+    opts = Keyword.delete(opts, :tracked)
     pointer = JsonPointer.join(pointer, regex)
     fun = Tools.call(authority, pointer, opts)
 
