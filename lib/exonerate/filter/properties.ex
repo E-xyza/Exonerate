@@ -15,7 +15,7 @@ defmodule Exonerate.Filter.Properties do
 
     {subfilters, contexts} =
       subschema
-      |> Enum.map(&filters_for(&1, main_call, authority, pointer, Keyword.delete(opts, :tracked)))
+      |> Enum.map(&filters_for(&1, main_call, authority, pointer, opts))
       |> Enum.unzip()
 
     negative =
@@ -34,7 +34,7 @@ defmodule Exonerate.Filter.Properties do
 
   defp filters_for({key, _schema}, main_call, authority, pointer, opts) do
     key_pointer = JsonPointer.join(pointer, key)
-    key_call = Tools.call(authority, key_pointer, opts)
+    key_call = Tools.call(authority, key_pointer,  Keyword.delete(opts, :tracked))
 
     subfilter =
       if opts[:tracked] do
