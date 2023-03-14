@@ -24,6 +24,66 @@ defmodule Exonerate.Combining.OneOf do
   end
 
   defp build_filter({calls, contexts}, authority, pointer, opts) do
+    function =
+      if opts[:tracked] do
+        build_tracked(calls, authority, pointer, opts)
+      else
+        build_untracked(calls, authority, pointer, opts)
+      end
+
+    quote do
+      unquote(function)
+      unquote(contexts)
+    end
+  end
+
+  defp build_tracked(calls, authority, pointer, opts) do
+    lambdas = Enum.map(calls, &to_lambda/1)
+    call = Tools.call(authority, pointer, opts)
+
+    quote do
+      defp unquote(call)(value, path) do
+        require Exonerate.Tools
+
+        unquote(lambdas)
+        |> Enum.reduce_while(
+          {Exonerate.Tools.mismatch(value, unquote(pointer), path, reason: "no matches"), 0},
+          fn
+            fun, {{:error, opts}, index} ->
+              case fun.(value, path) do
+                ok = {:ok, _seen} ->
+                  {:cont, {ok, index, index + 1}}
+
+                Exonerate.Tools.error_match(error) ->
+                  {:cont,
+                   {{:error, Keyword.update(opts, :failures, [error], &[error | &1])}, index + 1}}
+              end
+
+            fun, {ok = {:ok, _seen}, last, index} ->
+              case fun.(value, path) do
+                {:ok, _} ->
+                  matches =
+                    Enum.map([last, index], fn slot ->
+                      "/" <> Path.join(unquote(pointer) ++ ["#{slot}"])
+                    end)
+
+                  {:halt,
+                   {Exonerate.Tools.mismatch(value, unquote(pointer), path,
+                      matches: matches,
+                      reason: "multiple matches"
+                    )}}
+
+                Exonerate.Tools.error_match(error) ->
+                  {:cont, {ok, last, index}}
+              end
+          end
+        )
+        |> elem(0)
+      end
+    end
+  end
+
+  defp build_untracked(calls, authority, pointer, opts) do
     lambdas = Enum.map(calls, &to_lambda/1)
     call = Tools.call(authority, pointer, opts)
 
@@ -66,8 +126,6 @@ defmodule Exonerate.Combining.OneOf do
         )
         |> elem(0)
       end
-
-      unquote(contexts)
     end
   end
 
