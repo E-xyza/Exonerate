@@ -148,10 +148,22 @@ defmodule Exonerate.Type.Object do
   end
 
   defmacro accessories(authority, pointer, opts) do
-    __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_accessories(authority, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    if opts[:tracked] do
+      quote do
+        require Exonerate.Type.Object.Tracked
+
+        Exonerate.Type.Object.Tracked.accessories(
+          unquote(authority),
+          unquote(pointer),
+          unquote(opts)
+        )
+      end
+    else
+      __CALLER__
+      |> Tools.subschema(authority, pointer)
+      |> build_accessories(authority, pointer, opts)
+      |> Tools.maybe_dump(opts)
+    end
   end
 
   defp build_accessories(context, name, pointer, opts) do

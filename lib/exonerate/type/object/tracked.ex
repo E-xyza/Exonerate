@@ -26,6 +26,15 @@ defmodule Exonerate.Type.Object.Tracked do
   end
 
   defp build_filter(context, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
+    if is_map_key(context, "unevaluatedProperties") or is_map_key(context, "additionalProperties") do
+      trivial_filter(call, context, authority, pointer, Keyword.delete(opts, :tracked))
+    else
+      general_filter(call, context, authority, pointer, opts)
+    end
+  end
+
+  defp trivial_filter(call, context, authority, pointer, opts) do
     filter_clauses =
       outer_filters(context, authority, pointer, opts) ++
         seen_filters(context, authority, pointer, opts) ++
@@ -33,7 +42,23 @@ defmodule Exonerate.Type.Object.Tracked do
         iterator_filter(context, authority, pointer, opts)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(object, path) when is_map(object) do
+      defp unquote(call)(object, path) when is_map(object) do
+        with unquote_splicing(filter_clauses) do
+          {:ok, MapSet.new(Map.keys(object))}
+        end
+      end
+    end
+  end
+
+  defp general_filter(call, context, authority, pointer, opts) do
+    filter_clauses =
+      outer_filters(context, authority, pointer, opts) ++
+        seen_filters(context, authority, pointer, opts) ++
+        unseen_filters(context, authority, pointer, opts) ++
+        iterator_filter(context, authority, pointer, opts)
+
+    quote do
+      defp unquote(call)(object, path) when is_map(object) do
         seen = MapSet.new()
 
         with unquote_splicing(filter_clauses) do
@@ -62,11 +87,17 @@ defmodule Exonerate.Type.Object.Tracked do
       filter_call =
         Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
-      quote do
-        [
-          {:ok, new_seen} <- unquote(filter_call)(object, path),
-          seen = MapSet.union(seen, new_seen)
-        ]
+      if opts[:tracked] do
+        quote do
+          [
+            {:ok, new_seen} <- unquote(filter_call)(object, path),
+            seen = MapSet.union(seen, new_seen)
+          ]
+        end
+      else
+        quote do
+          [:ok <- unquote(filter_call)(object, path)]
+        end
       end
     end
     |> Enum.flat_map(&Function.identity/1)
@@ -88,11 +119,17 @@ defmodule Exonerate.Type.Object.Tracked do
       if Iterator.needed?(context) do
         iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
 
-        quote do
-          [
-            {:ok, new_seen} <- unquote(iterator_call)(object, path),
-            seen = MapSet.union(seen, new_seen)
-          ]
+        if opts[:tracked] do
+          quote do
+            [
+              {:ok, new_seen} <- unquote(iterator_call)(object, path),
+              seen = MapSet.union(seen, new_seen)
+            ]
+          end
+        else
+          quote do
+            [:ok <- unquote(iterator_call)(object, path)]
+          end
         end
       end
     )
@@ -106,6 +143,14 @@ defmodule Exonerate.Type.Object.Tracked do
   end
 
   defp build_accessories(context, name, pointer, opts) do
+    opts =
+      if is_map_key(context, "unevaluatedProperties") or
+           is_map_key(context, "additionalProperties") do
+        Keyword.delete(opts, :tracked)
+      else
+        opts
+      end
+
     iterator_accessory(context, name, pointer, opts) ++
       filter_accessories(context, name, pointer, opts) ++
       tracked_accessories(context, name, pointer, opts)
