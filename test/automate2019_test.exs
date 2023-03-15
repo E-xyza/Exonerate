@@ -4,7 +4,7 @@ directory2019 =
   |> Path.expand()
 
 omit_modules = ~w(refRemote.json anchor.json dynamicRef.json defs.json id.json
-  unevaluatedProperties.json unevaluatedItems.json format.json)
+  unevaluatedItems.json format.json)
 
 omit_describes = [
   # no external URIs.

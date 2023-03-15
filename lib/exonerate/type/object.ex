@@ -188,9 +188,17 @@ defmodule Exonerate.Type.Object do
     )
   end
 
+  @outer_modules Map.put(@modules, "dependentSchemas", Exonerate.Filter.DependentSchemas)
+
   defp filter_accessories(context, name, pointer, opts) do
-    for filter <- @outer_filters, is_map_key(context, filter), not Combining.filter?(filter) do
-      module = @modules[filter]
+    filters = if opts[:tracked] do
+      @outer_filters
+    else
+      @outer_filters ++ ["dependentSchemas"]
+    end
+
+    for filter <- filters, is_map_key(context, filter), not Combining.filter?(filter) do
+      module = @outer_modules[filter]
       pointer = JsonPointer.join(pointer, filter)
 
       quote do
