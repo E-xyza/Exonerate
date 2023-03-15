@@ -12,13 +12,12 @@ defmodule Exonerate.Type.Object do
     "maxProperties" => Exonerate.Filter.MaxProperties,
     "required" => Exonerate.Filter.Required,
     "dependencies" => Exonerate.Filter.Dependencies,
-    "dependentRequired" => Exonerate.Filter.DependentRequired,
-    "dependentSchemas" => Exonerate.Filter.DependentSchemas
+    "dependentRequired" => Exonerate.Filter.DependentRequired
   }
 
   @outer_filters Map.keys(@modules)
 
-  @combining_filters Combining.filters()
+  @combining_filters Combining.filters() ++ ["dependentSchemas"]
 
   defmacro filter(authority, pointer, opts) do
     if opts[:tracked] do
@@ -62,7 +61,7 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  @seen_filters ~w(allOf anyOf if oneOf)
+  @seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
   @unseen_filters @combining_filters -- @seen_filters
 
   def needs_seen?(context) do
@@ -201,7 +200,11 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  @combining_modules Combining.modules()
+  @combining_modules Map.put(
+                       Combining.modules(),
+                       "dependentSchemas",
+                       Exonerate.Filter.DependentSchemas
+                     )
 
   defp tracked_accessories(context, name, pointer, opts) do
     List.wrap(
