@@ -1,4 +1,4 @@
-defmodule Exonerate.Type.Array.Filter do
+defmodule Exonerate.Type.Array.FilterIterator do
   @moduledoc false
 
   # macros for "filter-mode" array filtering.  This is for cases when rejecting
@@ -10,7 +10,7 @@ defmodule Exonerate.Type.Array.Filter do
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
-  defmacro iterator(authority, pointer, opts) do
+  defmacro filter(authority, pointer, opts) do
     __CALLER__
     |> Tools.subschema(authority, pointer)
     |> build_iterator(authority, pointer, opts)

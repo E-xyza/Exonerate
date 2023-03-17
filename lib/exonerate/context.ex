@@ -37,13 +37,15 @@ defmodule Exonerate.Context do
 
   defp build_filter(true, authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
-    result = if opts[:tracked] do
-      quote do
-        {:ok, MapSet.new()}
+
+    result =
+      if opts[:tracked] do
+        quote do
+          {:ok, MapSet.new()}
+        end
+      else
+        :ok
       end
-    else
-      :ok
-    end
 
     quote do
       @compile {:inline, [{unquote(call), 2}]}

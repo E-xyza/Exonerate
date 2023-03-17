@@ -191,11 +191,12 @@ defmodule Exonerate.Type.Object do
   @outer_modules Map.put(@modules, "dependentSchemas", Exonerate.Filter.DependentSchemas)
 
   defp filter_accessories(context, name, pointer, opts) do
-    filters = if opts[:tracked] do
-      @outer_filters
-    else
-      @outer_filters ++ ["dependentSchemas"]
-    end
+    filters =
+      if opts[:tracked] do
+        @outer_filters
+      else
+        @outer_filters ++ ["dependentSchemas"]
+      end
 
     for filter <- filters, is_map_key(context, filter), not Combining.filter?(filter) do
       module = @outer_modules[filter]

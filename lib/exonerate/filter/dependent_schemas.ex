@@ -37,13 +37,15 @@ defmodule Exonerate.Filter.DependentSchemas do
   defp accessory(call, key, authority, pointer, opts) do
     pointer = JsonPointer.join(pointer, key)
     inner_call = Tools.call(authority, pointer, opts)
-    fallthrough = if opts[:tracked] do
-      quote do
-        {:ok, MapSet.new()}
+
+    fallthrough =
+      if opts[:tracked] do
+        quote do
+          {:ok, MapSet.new()}
+        end
+      else
+        :ok
       end
-    else
-      :ok
-    end
 
     quote do
       defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do

@@ -182,30 +182,4 @@ defmodule ExonerateTest.Unevaluated.PropertiesTest do
       assert :ok = with_if(%{"bar" => 47, "baz" => "47"})
     end
   end
-
-  #
-  #  describe "automated test regressions" do
-  #    Exonerate.function_from_string(
-  #      :def,
-  #      :nested_outer_false_inner_true,
-  #      """
-  #      {
-  #          "type": "object",
-  #          "properties": {
-  #              "foo": { "type": "string" }
-  #          },
-  #          "allOf": [
-  #              {
-  #                  "unevaluatedProperties": true
-  #              }
-  #          ],
-  #          "unevaluatedProperties": false
-  #      }
-  #      """
-  #    )
-  #
-  #    test "nested, outer false, inner true" do
-  #      assert :ok = nested_outer_false_inner_true(%{"foo" => "foo", "bar" => "bar"})
-  #    end
-  #  end
 end

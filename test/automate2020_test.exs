@@ -4,7 +4,7 @@ directory2020 =
   |> Path.expand()
 
 omit_modules = ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json
-refRemote.json unevaluatedItems.json)
+refRemote.json)
 
 omit_describes = [
   # integer filters do not match float values:

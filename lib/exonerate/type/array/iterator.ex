@@ -11,8 +11,8 @@ defmodule Exonerate.Type.Array.Iterator do
   alias Exonerate.Tools
   alias Exonerate.Type
 
-  alias Exonerate.Type.Array.Find
-  alias Exonerate.Type.Array.Filter
+  alias Exonerate.Type.Array.FindIterator
+  alias Exonerate.Type.Array.FilterIterator
 
   @modules %{
     "items" => Exonerate.Filter.Items,
@@ -43,7 +43,7 @@ defmodule Exonerate.Type.Array.Iterator do
     ["contains", "minContains", "minItems"]
   ]
 
-  @spec mode(Type.json()) :: Find | Filter | nil
+  @spec mode(Type.json()) :: FindIterator | FilterIterator | nil
   def mode(context) do
     context
     |> Map.take(@filters)
@@ -51,8 +51,8 @@ defmodule Exonerate.Type.Array.Iterator do
     |> Enum.sort()
     |> case do
       [] -> nil
-      keys when keys in @find_key_sets -> Find
-      _ -> Filter
+      keys when keys in @find_key_sets -> FindIterator
+      _ -> FilterIterator
     end
   end
 
@@ -72,7 +72,7 @@ defmodule Exonerate.Type.Array.Iterator do
       if execution_mode = mode(context) do
         quote do
           require unquote(execution_mode)
-          unquote(execution_mode).iterator(unquote(authority), unquote(pointer), unquote(opts))
+          unquote(execution_mode).filter(unquote(authority), unquote(pointer), unquote(opts))
         end
       end
     )

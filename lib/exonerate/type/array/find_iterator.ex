@@ -1,4 +1,4 @@
-defmodule Exonerate.Type.Array.Find do
+defmodule Exonerate.Type.Array.FindIterator do
   @moduledoc false
 
   # macros for "find-mode" array filtering.  This is for cases when accepting
@@ -10,7 +10,7 @@ defmodule Exonerate.Type.Array.Find do
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
-  defmacro iterator(authority, pointer, opts) do
+  defmacro filter(authority, pointer, opts) do
     __CALLER__
     |> Tools.subschema(authority, pointer)
     |> build_iterator(authority, pointer, opts)
