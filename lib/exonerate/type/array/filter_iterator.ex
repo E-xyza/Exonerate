@@ -235,6 +235,21 @@ defmodule Exonerate.Type.Array.FilterIterator do
     ]
   end
 
+  defp filters_for({"unevaluatedItems", _}, accumulator, authority, pointer, opts) do
+    additional_items_call =
+      Tools.call(authority, JsonPointer.join(pointer, ["unevaluatedItems", ":entrypoint"]), opts)
+
+    [
+      quote do
+        :ok <-
+          unquote(additional_items_call)(
+            {item, unquote(index(accumulator))},
+            Path.join(path, "#{unquote(index(accumulator))}")
+          )
+      end
+    ]
+  end
+
   defp filters_for(_, _, _, _, _), do: []
 
   # TODO: minItems AND contains

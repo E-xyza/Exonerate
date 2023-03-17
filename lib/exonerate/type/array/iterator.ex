@@ -23,7 +23,8 @@ defmodule Exonerate.Type.Array.Iterator do
     "additionalItems" => Exonerate.Filter.AdditionalItems,
     "prefixItems" => Exonerate.Filter.PrefixItems,
     "maxContains" => Exonerate.Filter.MaxContains,
-    "minContains" => Exonerate.Filter.MinContains
+    "minContains" => Exonerate.Filter.MinContains,
+    "unevaluatedItems" => Exonerate.Filter.UnevaluatedItems
   }
 
   @filters Map.keys(@modules)

@@ -5,21 +5,21 @@ defmodule ExonerateTest.Unevaluated.ItemsTest do
   describe "when as part of a primary operation" do
     Exonerate.function_from_string(
       :def,
-      :with_properties,
+      :with_items,
       """
       {
         "type": "array",
         "items": [{"type": "string"}],
-        "unevaluatedProperties": {"type": "number"}
+        "unevaluatedItems": {"type": "number"}
       }
       """
     )
 
-    test "with properties" do
-      assert {:error, _} = with_properties([42])
-      assert :ok = with_properties(["47"])
-      assert :ok = with_properties(["47", 47])
-      assert {:error, _} = with_properties(["42", "42"])
+    test "with items" do
+      assert {:error, _} = with_items([42])
+      assert :ok = with_items(["47"])
+      assert :ok = with_items(["47", 47])
+      assert {:error, _} = with_items(["42", "42"])
     end
 
     #    Exonerate.function_from_string(
