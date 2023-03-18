@@ -9,7 +9,7 @@ defmodule ExonerateTest.Unevaluated.ItemsTest do
       """
       {
         "type": "array",
-        "items": [{"type": "string"}],
+        "prefixItems": [{"type": "string"}],
         "unevaluatedItems": {"type": "number"}
       }
       """
@@ -22,84 +22,47 @@ defmodule ExonerateTest.Unevaluated.ItemsTest do
       assert {:error, _} = with_items(["42", "42"])
     end
 
-    #    Exonerate.function_from_string(
-    #      :def,
-    #      :with_properties_false,
-    #      """
-    #      {
-    #        "type": "object",
-    #        "properties": {"foo": {"type": "string"}},
-    #        "unevaluatedProperties": false
-    #      }
-    #      """
-    #    )
-    #
-    #    test "with properties, but false" do
-    #      assert :ok = with_properties_false(%{})
-    #      assert :ok = with_properties_false(%{"foo" => "bar"})
-    #      assert {:error, _} = with_properties_false(%{"foo" => "bar", "baz" => "quux"})
-    #      assert {:error, _} = with_properties_false(%{"baz" => "quux"})
-    #    end
-    #
-    #    Exonerate.function_from_string(
-    #      :def,
-    #      :with_pattern_properties,
-    #      """
-    #      {
-    #        "type": "object",
-    #        "patternProperties": {"^S_": {"type": "string"}},
-    #        "unevaluatedProperties": {"type": "number"}
-    #      }
-    #      """
-    #    )
-    #
-    #    test "with patternProperties" do
-    #      assert {:error, _} = with_pattern_properties(%{"S_1" => 47})
-    #      assert :ok = with_pattern_properties(%{"S_1" => "foo"})
-    #      assert :ok = with_pattern_properties(%{"S_1" => "foo", "bar" => 47})
-    #      assert {:error, _} = with_pattern_properties(%{"S_1" => "foo", "bar" => "baz"})
-    #    end
-    #
-    #    Exonerate.function_from_string(
-    #      :def,
-    #      :with_additional_properties,
-    #      """
-    #      {
-    #        "type": "object",
-    #        "additionalProperties": {"type": "string"},
-    #        "unevaluatedProperties": {"type": "number"}
-    #      }
-    #      """
-    #    )
-    #
-    #    # note that unevaluatedProperties will never trigger.
-    #    test "with additionalProperties" do
-    #      assert {:error, _} = with_additional_properties(%{"foo" => 47})
-    #      assert :ok = with_additional_properties(%{"foo" => "bar"})
-    #    end
-    #  end
-    #
-    #  describe "when used with in-place combiners" do
-    #    Exonerate.function_from_string(
-    #      :def,
-    #      :with_all_of,
-    #      """
-    #      {
-    #        "type": "object",
-    #        "allOf": [
-    #          {"properties": {"foo": {"type": "string"}}},
-    #          {"properties": {"bar": {"type": "boolean"}}}
-    #        ],
-    #        "unevaluatedProperties": {"type": "number"}
-    #      }
-    #      """
-    #    )
-    #
-    #    test "it works with allOf" do
-    #      assert {:error, _} = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => "42"})
-    #      assert :ok = with_all_of(%{"foo" => "bar", "bar" => true, "baz" => 47})
-    #    end
-    #
+    Exonerate.function_from_string(
+      :def,
+      :with_prefix_items_false,
+      """
+      {
+        "type": "array",
+        "prefixItems": [{"type": "string"}],
+        "unevaluatedItems": false
+      }
+      """
+    )
+
+    test "with items, but false" do
+      assert :ok = with_prefix_items_false([])
+      assert :ok = with_prefix_items_false(["47"])
+      assert {:error, _} = with_prefix_items_false(["42", 42])
+      assert {:error, _} = with_prefix_items_false(["42", "42"])
+    end
+  end
+
+  describe "when used with in-place combiners" do
+    Exonerate.function_from_string(
+      :def,
+      :with_all_of,
+      """
+      {
+        "type": "array",
+        "allOf": [
+          {"prefixItems": [true]},
+          {"prefixItems": [true, true]}
+        ],
+        "unevaluatedItems": {"type": "number"}
+      }
+      """
+    )
+
+    test "it works with allOf" do
+      assert {:error, _} = with_all_of(["42", 42, "42"])
+      assert :ok = with_all_of(["47", 47, 47])
+    end
+
     #    Exonerate.function_from_string(
     #      :def,
     #      :with_any_of,

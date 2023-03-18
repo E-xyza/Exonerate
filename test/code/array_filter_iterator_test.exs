@@ -5,7 +5,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
   alias Exonerate.Type.Array.FilterIterator
 
   describe "without the tracked option" do
-    test "works with items" do
+    test "works with prefixItems" do
       assert_filter(
         quote do
           defp unquote(:"items#/:iterator")(array, path) do
@@ -13,8 +13,9 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"items#/items")(
-                       {item, accumulator},
+                     unquote(:"items#/prefixItems")(
+                       item,
+                       accumulator,
                        Path.join(path, "#{accumulator}")
                      ) do
                 {:cont, {:ok, accumulator + 1}}
@@ -27,7 +28,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
         end,
         FilterIterator,
         :items,
-        %{"items" => [%{"type" => "string"}]}
+        %{"prefixItems" => [%{"type" => "string"}]}
       )
     end
   end
@@ -72,8 +73,9 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
-                     unquote(:"additional#/items")(
-                       {item, accumulator},
+                     unquote(:"additional#/prefixItems")(
+                       item,
+                       accumulator,
                        Path.join(path, "#{accumulator}")
                      ) do
                 {:cont, {:ok, accumulator + 1}}
@@ -86,7 +88,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
         end,
         FilterIterator,
         :additional,
-        %{"items" => [true], "additionalItems" => %{"const" => true}}
+        %{"prefixItems" => [true], "additionalItems" => %{"const" => true}}
       )
     end
 
@@ -124,8 +126,9 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"unevaluated#/items")(
-                       {item, accumulator},
+                     unquote(:"unevaluated#/prefixItems")(
+                       item,
+                       accumulator,
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
@@ -143,7 +146,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
         end,
         FilterIterator,
         :unevaluated,
-        %{"items" => [true], "unevaluatedItems" => %{"const" => true}}
+        %{"prefixItems" => [true], "unevaluatedItems" => %{"const" => true}}
       )
     end
   end
