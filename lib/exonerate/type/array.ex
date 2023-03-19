@@ -7,6 +7,7 @@ defmodule Exonerate.Type.Array do
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
+  @combining_modules Combining.modules()
   @combining_filters Combining.filters()
 
   defmacro filter(authority, pointer, opts) do
@@ -19,9 +20,7 @@ defmodule Exonerate.Type.Array do
   def build_filter(context, authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
 
-    track_external = opts[:tracked]
-    track_internal = track_internal?(context)
-    tracked = track_external || track_internal
+    tracked = track_internal?(context) or opts[:tracked]
 
     filter_clauses =
       for filter <- @combining_filters, is_map_key(context, filter), reduce: [] do
@@ -35,7 +34,7 @@ defmodule Exonerate.Type.Array do
         end
       )
 
-    if track_internal do
+    if tracked do
       build_tracked(call, filter_clauses, iterator_clause)
     else
       build_untracked(call, filter_clauses, iterator_clause)
@@ -47,7 +46,7 @@ defmodule Exonerate.Type.Array do
 
     quote do
       defp unquote(call)(array, path) when is_list(array) do
-        saw_prior_to = 0
+        first_unseen_index = 0
 
         with unquote_splicing(clauses) do
           :ok
@@ -69,9 +68,8 @@ defmodule Exonerate.Type.Array do
   end
 
   @seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
-  @unseen_filters @combining_filters -- @seen_filters
 
-  defp track_internal?(context) do
+  def track_internal?(context) do
     is_map_key(context, "unevaluatedItems") and Enum.any?(@seen_filters, &is_map_key(context, &1))
   end
 
@@ -85,8 +83,8 @@ defmodule Exonerate.Type.Array do
 
     quote do
       [
-        {:ok, new_saw_prior_to} <- unquote(filter_call)(array, path),
-        saw_prior_to = max(saw_prior_to, new_saw_prior_to)
+        {:ok, new_first_unseen_index} <- unquote(filter_call)(array, path),
+        first_unseen_index = max(first_unseen_index, new_first_unseen_index)
       ]
     end
   end
@@ -102,15 +100,19 @@ defmodule Exonerate.Type.Array do
   end
 
   defp iterator_clause(authority, pointer, opts, true) do
-    iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), Keyword.put(opts, :tracked, true))
+    iterator_call =
+      Tools.call(
+        authority,
+        JsonPointer.join(pointer, ":iterator"),
+        Keyword.put(opts, :tracked, true)
+      )
 
     quote do
-      :ok <- unquote(iterator_call)(array, path, saw_prior_to)
+      :ok <- unquote(iterator_call)(array, path, first_unseen_index)
     end
   end
 
   defp iterator_clause(authority, pointer, opts, _) do
-
     iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
 
     quote do
@@ -126,7 +128,25 @@ defmodule Exonerate.Type.Array do
   end
 
   defp build_accessories(context, authority, pointer, opts) do
-    List.wrap(
+    opts =
+      if track_internal?(context) do
+        Keyword.put(opts, :tracked, true)
+      else
+        opts
+      end
+
+    # TODO: break this up into two functions
+    List.wrap(if opts[:tracked] do
+      opts = Keyword.put(opts, :only, ["array"])
+      for filter <- @seen_filters, is_map_key(context, filter) do
+        module = @combining_modules[filter]
+        pointer = JsonPointer.join(pointer, filter)
+        quote do
+          require unquote(module)
+          unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+        end
+      end
+    end) ++ List.wrap(
       if Iterator.mode(context) do
         quote do
           require Exonerate.Type.Array.Iterator

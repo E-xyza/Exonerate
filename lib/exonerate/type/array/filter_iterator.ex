@@ -8,6 +8,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   # modes are selected using Exonerate.Type.Array.Filter.Iterator.mode/1
 
   alias Exonerate.Tools
+  alias Exonerate.Type.Array
   alias Exonerate.Type.Array.Iterator
 
   defmacro filter(authority, pointer, opts) do
@@ -21,9 +22,37 @@ defmodule Exonerate.Type.Array.FilterIterator do
   # the reduce-while operates over the entire array.
 
   defp build_iterator(context, authority, pointer, opts) do
+    track_external = opts[:tracked]
+    track_internal = Array.track_internal?(context)
+    tracked = track_external || track_internal
+
+    if tracked do
+      build_tracked(context, authority, pointer, opts)
+    else
+      build_untracked(context, authority, pointer, opts)
+    end
+  end
+
+  defp build_tracked(context, authority, pointer, opts) do
     call = Iterator.call(authority, pointer, opts)
     accumulator = accumulator(context)
-    finalizer = finalizer_for(context, accumulator, pointer)
+    finalizer = finalizer_for(context, true, accumulator, pointer)
+
+    quote do
+      defp unquote(call)(array, path, first_unseen_index) do
+        Enum.reduce_while(array, {:ok, unquote(init(accumulator))}, fn
+          item, {:ok, accumulator} ->
+            unquote(with_statement(context, accumulator, authority, pointer, opts))
+        end)
+        |> unquote(finalizer)
+      end
+    end
+  end
+
+  defp build_untracked(context, authority, pointer, opts) do
+    call = Iterator.call(authority, pointer, opts)
+    accumulator = accumulator(context)
+    finalizer = finalizer_for(context, false, accumulator, pointer)
 
     quote do
       defp unquote(call)(array, path) do
@@ -254,11 +283,11 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   # TODO: minItems AND contains
 
-  defp finalizer_for(%{"minItems" => min}, accumulator, pointer) do
+  defp finalizer_for(%{"minItems" => min}, tracked, accumulators, pointer) do
     minitems_pointer = JsonPointer.join(pointer, "minItems")
 
     index =
-      case accumulator do
+      case accumulators do
         [] ->
           quote do
             accumulator
@@ -280,12 +309,12 @@ defmodule Exonerate.Type.Array.FilterIterator do
           Exonerate.Tools.mismatch(array, unquote(minitems_pointer), path)
 
         {:ok, accumulator} ->
-          :ok
+          unquote(finalizer_return(tracked, accumulators))
       end
     end
   end
 
-  defp finalizer_for(subschema = %{"contains" => _}, _, pointer) do
+  defp finalizer_for(subschema = %{"contains" => _}, tracked, accumulators, pointer) do
     contains_pointer = JsonPointer.join(pointer, "contains")
     mincontains_pointer = JsonPointer.join(pointer, "minContains")
     mincontains = Map.get(subschema, "minContains", 1)
@@ -304,14 +333,40 @@ defmodule Exonerate.Type.Array.FilterIterator do
           Exonerate.Tools.mismatch(array, unquote(mincontains_pointer), path)
 
         {:ok, accumulator} ->
-          :ok
+          unquote(finalizer_return(tracked, accumulators))
       end
     end
   end
 
-  defp finalizer_for(_, _, _) do
-    quote do
-      elem(0)
+  defp finalizer_for(_, tracked, _, _) do
+    if tracked do
+      quote do
+        # note: we need a no-op that is pipable.  The trivial case statement is a no-op.
+        case do
+          result -> result
+        end
+      end
+    else
+      quote do
+        elem(0)
+      end
+    end
+  end
+
+  defp finalizer_return(tracked, accumulators) do
+    case {tracked, accumulators} do
+      {true, []} ->
+        quote do
+          {:ok, accumulator}
+        end
+
+      {true, [_ | _]} ->
+        quote do
+          {:ok, accumulator.index + 1}
+        end
+
+      _ ->
+        :ok
     end
   end
 

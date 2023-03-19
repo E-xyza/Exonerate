@@ -54,10 +54,11 @@ defmodule ExonerateTest.Code.ArrayTest do
     assert_filter(
       quote do
         defp unquote(:"iterated#/")(array, path) when is_list(array) do
-          saw_prior_to = 0
-          with {:ok, new_saw_prior_to} <- unquote(:"iterated#/allOf/:tracked")(array, path),
-               saw_prior_to = max(saw_prior_to, new_saw_prior_to),
-               :ok <- unquote(:"iterated#/:iterator/:tracked")(array, path, saw_prior_to) do
+          first_unseen_index = 0
+
+          with {:ok, new_first_unseen_index} <- unquote(:"iterated#/allOf/:tracked")(array, path),
+               first_unseen_index = max(first_unseen_index, new_first_unseen_index),
+               :ok <- unquote(:"iterated#/:iterator/:tracked")(array, path, first_unseen_index) do
             :ok
           end
         end
