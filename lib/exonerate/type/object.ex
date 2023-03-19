@@ -85,7 +85,7 @@ defmodule Exonerate.Type.Object do
 
     opts =
       if needs_seen do
-        Keyword.put(opts, :tracked, true)
+        Keyword.put(opts, :tracked, :object)
       else
         opts
       end
@@ -221,7 +221,7 @@ defmodule Exonerate.Type.Object do
         for filter <- @seen_filters, is_map_key(context, filter) do
           module = @combining_modules[filter]
           pointer = JsonPointer.join(pointer, filter)
-          opts = Keyword.merge(opts, tracked: true, only: "object")
+          opts = Keyword.merge(opts, tracked: :object, only: "object")
 
           quote do
             require unquote(module)

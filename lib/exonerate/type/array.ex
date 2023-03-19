@@ -78,7 +78,7 @@ defmodule Exonerate.Type.Array do
       Tools.call(
         authority,
         JsonPointer.join(pointer, Combining.adjust(filter)),
-        Keyword.put(opts, :tracked, true)
+        Keyword.put(opts, :tracked, :array)
       )
 
     quote do
@@ -104,7 +104,7 @@ defmodule Exonerate.Type.Array do
       Tools.call(
         authority,
         JsonPointer.join(pointer, ":iterator"),
-        Keyword.put(opts, :tracked, true)
+        Keyword.put(opts, :tracked, :array)
       )
 
     quote do
@@ -130,40 +130,45 @@ defmodule Exonerate.Type.Array do
   defp build_accessories(context, authority, pointer, opts) do
     opts =
       if track_internal?(context) do
-        Keyword.put(opts, :tracked, true)
+        Keyword.put(opts, :tracked, :array)
       else
         opts
       end
 
     # TODO: break this up into two functions
-    List.wrap(if opts[:tracked] do
-      opts = Keyword.put(opts, :only, ["array"])
-      for filter <- @seen_filters, is_map_key(context, filter) do
-        module = @combining_modules[filter]
-        pointer = JsonPointer.join(pointer, filter)
-        quote do
-          require unquote(module)
-          unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+    List.wrap(
+      if opts[:tracked] do
+        opts = Keyword.put(opts, :only, ["array"])
+
+        for filter <- @seen_filters, is_map_key(context, filter) do
+          module = @combining_modules[filter]
+          pointer = JsonPointer.join(pointer, filter)
+
+          quote do
+            require unquote(module)
+            unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+          end
         end
       end
-    end) ++ List.wrap(
-      if Iterator.mode(context) do
-        quote do
-          require Exonerate.Type.Array.Iterator
+    ) ++
+      List.wrap(
+        if Iterator.mode(context) do
+          quote do
+            require Exonerate.Type.Array.Iterator
 
-          Exonerate.Type.Array.Iterator.filter(
-            unquote(authority),
-            unquote(pointer),
-            unquote(opts)
-          )
+            Exonerate.Type.Array.Iterator.filter(
+              unquote(authority),
+              unquote(pointer),
+              unquote(opts)
+            )
 
-          Exonerate.Type.Array.Iterator.accessories(
-            unquote(authority),
-            unquote(pointer),
-            unquote(opts)
-          )
+            Exonerate.Type.Array.Iterator.accessories(
+              unquote(authority),
+              unquote(pointer),
+              unquote(opts)
+            )
+          end
         end
-      end
-    )
+      )
   end
 end

@@ -26,10 +26,15 @@ defmodule Exonerate.Combining.If do
       )
 
     function =
-      if opts[:tracked] do
-        build_tracked(entrypoint_call, if_expr, then_expr, else_expr)
-      else
-        build_untracked(entrypoint_call, if_expr, then_expr, else_expr)
+      case opts[:tracked] do
+        :object ->
+          build_tracked(entrypoint_call, if_expr, then_expr, else_expr)
+
+        :array ->
+          build_untracked(entrypoint_call, if_expr, then_expr, else_expr)
+
+        nil ->
+          build_untracked(entrypoint_call, if_expr, then_expr, else_expr)
       end
 
     quote do
@@ -72,7 +77,7 @@ defmodule Exonerate.Combining.If do
 
   defp then_expr(context, authority, parent_pointer, opts) do
     case {context["then"], opts[:tracked]} do
-      {nil, true} ->
+      {nil, :object} ->
         quote do
           {:ok, if_seen}
         end
@@ -102,7 +107,7 @@ defmodule Exonerate.Combining.If do
 
   defp else_expr(context, authority, parent_pointer, opts) do
     case {context["else"], opts[:tracked]} do
-      {nil, true} ->
+      {nil, :object} ->
         quote do
           {:ok, MapSet.new()}
         end

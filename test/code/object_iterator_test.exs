@@ -70,7 +70,10 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
                 visited = false
 
                 with {:ok, new_visited} <-
-                       unquote(:"additional#/patternProperties/:tracked")({key, value}, path),
+                       unquote(:"additional#/patternProperties/:tracked_object")(
+                         {key, value},
+                         path
+                       ),
                      visited = visited or new_visited,
                      false <- visited,
                      :ok <-

@@ -104,13 +104,21 @@ defmodule Exonerate.Tools do
   @spec call(atom, JsonPointer.t(), Keyword.t()) :: atom
   def call(authority, pointer, opts) do
     pointer
-    |> if(Keyword.get(opts, :tracked, false), &JsonPointer.join(&1, ":tracked"))
     |> JsonPointer.to_uri()
     |> struct(path: "#{authority}")
     |> to_string
+    |> append_suffix(opts[:suffix])
+    |> append_tracked(opts[:tracked])
     |> adjust_length
     |> String.to_atom()
   end
+
+  defp append_suffix(path, nil), do: path
+  defp append_suffix(path, suffix), do: Path.join(path, suffix)
+
+  defp append_tracked(path, :object), do: Path.join(path, ":tracked_object")
+  defp append_tracked(path, :array), do: Path.join(path, ":tracked_array")
+  defp append_tracked(path, nil), do: path
 
   # a general strategy to adjust the length of a string that needs to become an atom,
   # works when the string's length is too big.  Assumes that the string is UTF-8 encoded.

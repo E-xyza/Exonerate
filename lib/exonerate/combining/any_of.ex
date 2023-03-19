@@ -25,10 +25,16 @@ defmodule Exonerate.Combining.AnyOf do
 
   defp build_filter({calls, contexts}, authority, pointer, opts) do
     function =
-      if opts[:tracked] do
-        build_tracked(calls, authority, pointer, opts)
-      else
-        build_untracked(calls, authority, pointer, opts)
+      case opts[:tracked] do
+        :object ->
+          build_tracked(calls, authority, pointer, opts)
+
+        :array ->
+          # TODO: really really fix this!
+          build_untracked(calls, authority, pointer, opts)
+
+        nil ->
+          build_untracked(calls, authority, pointer, opts)
       end
 
     quote do

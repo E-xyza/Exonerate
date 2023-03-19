@@ -8,7 +8,7 @@ defmodule ExonerateTest.Code.PropertiesTest do
     test "works" do
       assert_filter(
         quote do
-          defp unquote(:"empty#/properties/:tracked")({"foo", value}, path) do
+          defp unquote(:"empty#/properties/:tracked_object")({"foo", value}, path) do
             require Exonerate.Tools
 
             case unquote(:"empty#/properties/foo")(value, Path.join(path, "foo")) do
@@ -20,7 +20,7 @@ defmodule ExonerateTest.Code.PropertiesTest do
         Properties,
         :empty,
         %{"properties" => %{"foo" => %{"const" => []}}},
-        tracked: true,
+        tracked: :object,
         root: ["properties"]
       )
     end

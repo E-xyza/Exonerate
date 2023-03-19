@@ -272,12 +272,12 @@ defmodule Exonerate.Type.Object.Iterator do
   defp adjust_opts(opts, filter, context) do
     opts
     |> Keyword.delete(:only)
-    |> Tools.if(needs_tracked?(opts, context), &Keyword.put(&1, :tracked, true))
+    |> Tools.if(needs_tracked?(opts, context), &Keyword.put(&1, :tracked, :object))
     |> Tools.if(filter in @no_tracked, &Keyword.delete(&1, :tracked))
   end
 
   defp needs_tracked?(opts, context) do
-    Keyword.get(opts, :tracked, false) or
+    !!Keyword.get(opts, :tracked, false) or
       (is_map_key(context, "additionalProperties") or is_map_key(context, "unevaluatedProperties"))
   end
 end

@@ -204,7 +204,7 @@ defmodule Exonerate.Type.Object.Tracked do
     for filter <- @seen_filters, is_map_key(context, filter) do
       module = @combining_modules[filter]
       pointer = JsonPointer.join(pointer, filter)
-      opts = Keyword.merge(opts, tracked: true, only: "object")
+      opts = Keyword.merge(opts, tracked: :object, only: "object")
 
       quote do
         require unquote(module)
