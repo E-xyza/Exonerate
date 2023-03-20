@@ -68,7 +68,7 @@ defmodule Exonerate.Type.Object.Tracked do
     end
   end
 
-  @seen_filters ~w(allOf anyOf if oneOf)
+  @seen_filters ~w(allOf anyOf if oneOf $ref)
   @unseen_filters @combining_filters -- @seen_filters
 
   defp outer_filters(context, authority, pointer, opts) do

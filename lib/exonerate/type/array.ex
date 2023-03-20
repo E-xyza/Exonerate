@@ -11,10 +11,17 @@ defmodule Exonerate.Type.Array do
   @combining_filters Combining.filters()
 
   defmacro filter(authority, pointer, opts) do
-    __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    if opts[:tracked] do
+      quote do
+        require Exonerate.Type.Array.Tracked
+        Exonerate.Type.Array.Tracked.filter(unquote(authority), unquote(pointer), unquote(opts))
+      end
+    else
+      __CALLER__
+      |> Tools.subschema(authority, pointer)
+      |> build_filter(authority, pointer, opts)
+      |> Tools.maybe_dump(opts)
+    end
   end
 
   def build_filter(context, authority, pointer, opts) do

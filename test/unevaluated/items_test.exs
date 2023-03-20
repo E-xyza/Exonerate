@@ -43,25 +43,25 @@ defmodule ExonerateTest.Unevaluated.ItemsTest do
   end
 
   describe "when used with in-place combiners" do
-    #Exonerate.function_from_string(
-    #  :def,
-    #  :with_all_of,
-    #  """
-    #  {
-    #    "type": "array",
-    #    "allOf": [
-    #      {"prefixItems": [true]},
-    #      {"prefixItems": [true, true]}
-    #    ],
-    #    "unevaluatedItems": {"type": "number"}
-    #  }
-    #  """
-    #)
-#
-    #test "it works with allOf" do
-    #  assert {:error, _} = with_all_of(["42", 42, "42"])
-    #  assert :ok = with_all_of(["47", 47, 47])
-    #end
+    Exonerate.function_from_string(
+      :def,
+      :with_all_of,
+      """
+      {
+        "type": "array",
+        "allOf": [
+          {"prefixItems": [true]},
+          {"prefixItems": [true, true]}
+        ],
+        "unevaluatedItems": {"type": "number"}
+      }
+      """
+    )
+
+    test "it works with allOf" do
+      assert {:error, _} = with_all_of(["42", 42, "42"])
+      assert :ok = with_all_of(["47", 47, 47])
+    end
 
     #    Exonerate.function_from_string(
     #      :def,
