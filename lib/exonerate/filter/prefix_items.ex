@@ -25,7 +25,7 @@ defmodule Exonerate.Filter.PrefixItems do
 
     quote do
       unquote(calls)
-      defp unquote(call)(item, _index, path), do: unquote(additional_items)
+      defp unquote(call)({item, _index}, path), do: unquote(additional_items)
       unquote(filters)
     end
   end
@@ -38,7 +38,7 @@ defmodule Exonerate.Filter.PrefixItems do
 
     {
       quote do
-        defp unquote(call)(item, unquote(index), path) do
+        defp unquote(call)({item, unquote(index)}, path) do
           unquote(item_call)(item, path)
         end
       end,
