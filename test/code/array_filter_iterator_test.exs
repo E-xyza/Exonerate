@@ -345,7 +345,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               {:ok, accumulator} ->
                 {:ok, 0}
 
-              Exonerate.Tools.error_match(error) ->
+              error ->
                 error
             end
           end
@@ -375,10 +375,6 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
-            |> case do
-              {:ok, accumulator} -> {:ok, accumulator}
-              Exonerate.Tools.error_match(error) -> error
-            end
           end
         end,
         FilterIterator,
@@ -411,10 +407,6 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
-            |> case do
-              {:ok, accumulator} -> {:ok, accumulator}
-              Exonerate.Tools.error_match(error) -> error
-            end
           end
         end,
         FilterIterator,
@@ -449,10 +441,6 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
-            |> case do
-              {:ok, accumulator} -> {:ok, accumulator}
-              Exonerate.Tools.error_match(error) -> error
-            end
           end
         end,
         FilterIterator,
@@ -481,7 +469,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
             end)
             |> case do
               {:ok, accumulator} -> {:ok, min(accumulator, 1)}
-              Exonerate.Tools.error_match(error) -> error
+              error -> error
             end
           end
         end,
@@ -516,10 +504,6 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
-            |> case do
-              {:ok, accumulator} -> {:ok, accumulator}
-              Exonerate.Tools.error_match(error) -> error
-            end
           end
         end,
         FilterIterator,
@@ -553,10 +537,6 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
-            |> case do
-              {:ok, accumulator} -> {:ok, accumulator}
-              Exonerate.Tools.error_match(error) -> error
-            end
           end
         end,
         FilterIterator,
@@ -601,10 +581,6 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
-            |> case do
-              {:ok, accumulator} -> {:ok, accumulator}
-              Exonerate.Tools.error_match(error) -> error
-            end
           end
         end,
         FilterIterator,

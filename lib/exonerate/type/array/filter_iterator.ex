@@ -21,42 +21,33 @@ defmodule Exonerate.Type.Array.FilterIterator do
   # the reduce-while operates over the entire array.
 
   defp build_iterator(context, authority, pointer, opts) do
-    if opts[:tracked] do
-      build_tracked(context, authority, pointer, opts)
+    call = Iterator.call(authority, pointer, opts)
+    accumulator = accumulator(context)
+    tracked = !!opts[:tracked]
+    reduction = reduction(context, accumulator, authority, pointer, opts)
+
+    if finalizer = finalizer_for(context, tracked, accumulator, pointer) do
+      quote do
+        defp unquote(call)(unquote_splicing(call_parameters(context))) do
+          unquote(reduction)
+          |> unquote(finalizer)
+        end
+      end
     else
-      build_untracked(context, authority, pointer, opts)
-    end
-  end
-
-  defp build_tracked(context, authority, pointer, opts) do
-    call = Iterator.call(authority, pointer, opts)
-    accumulator = accumulator(context)
-    finalizer = finalizer_for(context, true, accumulator, pointer)
-
-    quote do
-      defp unquote(call)(unquote_splicing(call_parameters(context))) do
-        Enum.reduce_while(array, {:ok, unquote(init(accumulator))}, fn
-          item, {:ok, accumulator} ->
-            unquote(with_statement(context, accumulator, authority, pointer, opts))
-        end)
-        |> unquote(finalizer)
+      quote do
+        defp unquote(call)(unquote_splicing(call_parameters(context))) do
+          unquote(reduction)
+        end
       end
     end
   end
 
-  defp build_untracked(context, authority, pointer, opts) do
-    call = Iterator.call(authority, pointer, opts)
-    accumulator = accumulator(context)
-    finalizer = finalizer_for(context, false, accumulator, pointer)
-
+  defp reduction(context, accumulator, authority, pointer, opts) do
     quote do
-      defp unquote(call)(unquote_splicing(call_parameters(context))) do
-        Enum.reduce_while(array, {:ok, unquote(init(accumulator))}, fn
-          item, {:ok, accumulator} ->
-            unquote(with_statement(context, accumulator, authority, pointer, opts))
-        end)
-        |> unquote(finalizer)
-      end
+      Enum.reduce_while(array, {:ok, unquote(init(accumulator))}, fn
+        item, {:ok, accumulator} ->
+          unquote(with_statement(context, accumulator, authority, pointer, opts))
+      end)
     end
   end
 
@@ -359,19 +350,29 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
+  @accumulator (quote do
+    {:ok, accumulator}
+  end)
+
   defp finalizer_for(subschema, tracked, accumulators, _) do
-    if tracked do
-      quote do
-        # note: we need a no-op that is pipable.  The trivial case statement is a no-op.
-        case do
-          {:ok, accumulator} -> unquote(finalizer_return(subschema, tracked, accumulators))
-          Exonerate.Tools.error_match(error) -> error
+    finalizer_return = finalizer_return(subschema, tracked, accumulators)
+
+    cond do
+      !tracked ->
+        quote do
+          elem(0)
         end
-      end
-    else
-      quote do
-        elem(0)
-      end
+
+      finalizer_return == @accumulator ->
+        nil
+
+      true ->
+        quote do
+          case do
+            {:ok, accumulator} -> unquote(finalizer_return)
+            error -> error
+          end
+        end
     end
   end
 
