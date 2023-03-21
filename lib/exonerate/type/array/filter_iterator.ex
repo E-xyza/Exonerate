@@ -277,11 +277,14 @@ defmodule Exonerate.Type.Array.FilterIterator do
           quote do
             [item, unquote(index(accumulator))]
           end
+
         prefix = context["prefixItems"] ->
           length = length(prefix)
+
           quote do
             [item, unquote(index(accumulator)), max(first_unseen_index, unquote(length))]
           end
+
         true ->
           quote do
             [item, unquote(index(accumulator)), first_unseen_index]
@@ -301,7 +304,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   # TODO: minItems AND contains
 
-  defp finalizer_for(%{"minItems" => min}, tracked, accumulators, pointer) do
+  defp finalizer_for(subschema = %{"minItems" => min}, tracked, accumulators, pointer) do
     minitems_pointer = JsonPointer.join(pointer, "minItems")
 
     index =
@@ -327,7 +330,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
           Exonerate.Tools.mismatch(array, unquote(minitems_pointer), path)
 
         {:ok, accumulator} ->
-          unquote(finalizer_return(tracked, accumulators))
+          unquote(finalizer_return(subschema, tracked, accumulators))
       end
     end
   end
@@ -351,17 +354,18 @@ defmodule Exonerate.Type.Array.FilterIterator do
           Exonerate.Tools.mismatch(array, unquote(mincontains_pointer), path)
 
         {:ok, accumulator} ->
-          unquote(finalizer_return(tracked, accumulators))
+          unquote(finalizer_return(subschema, tracked, accumulators))
       end
     end
   end
 
-  defp finalizer_for(_, tracked, _, _) do
+  defp finalizer_for(subschema, tracked, accumulators, _) do
     if tracked do
       quote do
         # note: we need a no-op that is pipable.  The trivial case statement is a no-op.
         case do
-          result -> result
+          {:ok, accumulator} -> unquote(finalizer_return(subschema, tracked, accumulators))
+          Exonerate.Tools.error_match(error) -> error
         end
       end
     else
@@ -371,20 +375,27 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp finalizer_return(tracked, accumulators) do
-    case {tracked, accumulators} do
-      {true, []} ->
-        quote do
-          {:ok, accumulator}
-        end
+  defp finalizer_return(subschema, tracked, accumulators) do
+    if tracked do
+      cond do
+        is_map_key(subschema, "additionalItems") or is_map_key(subschema, "unevaluatedItems") ->
+          {:ok, index(accumulators)}
 
-      {true, [_ | _]} ->
-        quote do
-          {:ok, accumulator.index + 1}
-        end
+        is_map_key(subschema, "prefixItems") ->
+          length = length(subschema["prefixItems"])
 
-      _ ->
-        :ok
+          min =
+            quote do
+              min(unquote(index(accumulators)), unquote(length))
+            end
+
+          {:ok, min}
+
+        true ->
+          {:ok, 0}
+      end
+    else
+      :ok
     end
   end
 
