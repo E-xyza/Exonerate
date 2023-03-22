@@ -44,15 +44,17 @@ defmodule Exonerate.Type.Array.Iterator do
     ["contains", "minContains", "minItems"]
   ]
 
-  @spec mode(Type.json()) :: FindIterator | FilterIterator | nil
-  def mode(context) do
+  @spec mode(Type.json(), keyword) :: FindIterator | FilterIterator | nil
+  def mode(context, opts) do
+    tracked = opts[:tracked]
+
     context
     |> Map.take(@filters)
     |> Map.keys()
     |> Enum.sort()
     |> case do
       [] -> nil
-      keys when keys in @find_key_sets -> FindIterator
+      keys when keys in @find_key_sets and is_nil(tracked) -> FindIterator
       _ -> FilterIterator
     end
   end
@@ -70,7 +72,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp build_filter(context, authority, pointer, opts) do
     List.wrap(
-      if execution_mode = mode(context) do
+      if execution_mode = mode(context, opts) do
         quote do
           require unquote(execution_mode)
           unquote(execution_mode).filter(unquote(authority), unquote(pointer), unquote(opts))

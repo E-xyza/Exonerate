@@ -11,58 +11,60 @@ defmodule Exonerate.Type.Array do
   @combining_filters Combining.filters()
 
   defmacro filter(authority, pointer, opts) do
-    if opts[:tracked] do
-      quote do
-        require Exonerate.Type.Array.Tracked
-        Exonerate.Type.Array.Tracked.filter(unquote(authority), unquote(pointer), unquote(opts))
-      end
-    else
-      __CALLER__
-      |> Tools.subschema(authority, pointer)
-      |> build_filter(authority, pointer, opts)
-      |> Tools.maybe_dump(opts)
-    end
+    __CALLER__
+    |> Tools.subschema(authority, pointer)
+    |> build_filter(authority, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
   def build_filter(context, authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
 
-    tracked = track_internal?(context) or opts[:tracked]
+    seen = needs_combining_seen?(context)
 
     filter_clauses =
       for filter <- @combining_filters, is_map_key(context, filter), reduce: [] do
-        calls -> calls ++ filter_clauses(authority, pointer, opts, filter, tracked)
+        calls -> calls ++ filter_clauses(authority, pointer, opts, filter, seen)
       end
 
     iterator_clause =
       List.wrap(
-        if Iterator.mode(context) do
-          iterator_clause(authority, pointer, opts, tracked)
+        if Iterator.mode(context, opts) do
+          iterator_clause(authority, pointer, opts, seen)
         end
       )
 
-    if tracked do
-      build_tracked(call, filter_clauses, iterator_clause)
+    if seen or opts[:tracked] do
+      build_seen(call, filter_clauses, iterator_clause, opts)
     else
-      build_untracked(call, filter_clauses, iterator_clause)
+      build_trivial(call, filter_clauses, iterator_clause)
     end
   end
 
-  def build_tracked(call, filter_clauses, iterator_clause) do
+  def build_seen(call, filter_clauses, iterator_clause, opts) do
     clauses = filter_clauses ++ iterator_clause
+
+    return =
+      if opts[:tracked] do
+        quote do
+          {:ok, first_unseen_index}
+        end
+      else
+        :ok
+      end
 
     quote do
       defp unquote(call)(array, path) when is_list(array) do
         first_unseen_index = 0
 
         with unquote_splicing(clauses) do
-          :ok
+          unquote(return)
         end
       end
     end
   end
 
-  def build_untracked(call, filter_clauses, iterator_clause) do
+  def build_trivial(call, filter_clauses, iterator_clause) do
     clauses = filter_clauses ++ iterator_clause
 
     quote do
@@ -76,7 +78,7 @@ defmodule Exonerate.Type.Array do
 
   @seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
 
-  def track_internal?(context) do
+  def needs_combining_seen?(context) do
     is_map_key(context, "unevaluatedItems") and Enum.any?(@seen_filters, &is_map_key(context, &1))
   end
 
@@ -90,8 +92,8 @@ defmodule Exonerate.Type.Array do
 
     quote do
       [
-        {:ok, new_first_unseen_index} <- unquote(filter_call)(array, path),
-        first_unseen_index = max(first_unseen_index, new_first_unseen_index)
+        {:ok, new_index} <- unquote(filter_call)(array, path),
+        first_unseen_index = max(first_unseen_index, new_index)
       ]
     end
   end
@@ -106,24 +108,43 @@ defmodule Exonerate.Type.Array do
     ]
   end
 
-  defp iterator_clause(authority, pointer, opts, true) do
-    iterator_call =
-      Tools.call(
-        authority,
-        JsonPointer.join(pointer, ":iterator"),
+  defp iterator_clause(authority, pointer, opts, needs_combining_seen) do
+    call_opts =
+      if needs_combining_seen do
         Keyword.put(opts, :tracked, :array)
-      )
+      else
+        opts
+      end
 
-    quote do
-      :ok <- unquote(iterator_call)(array, path, first_unseen_index)
-    end
-  end
+    iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), call_opts)
 
-  defp iterator_clause(authority, pointer, opts, _) do
-    iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
+    case {needs_combining_seen, opts[:tracked]} do
+      {true, :array} ->
+        quote do
+          [
+            {:ok, new_index} <- unquote(iterator_call)(array, path, first_unseen_index),
+            first_unseen_index = max(new_index, first_unseen_index)
+          ]
+        end
 
-    quote do
-      :ok <- unquote(iterator_call)(array, path)
+      {true, _} ->
+        quote do
+          {:ok, _} <- unquote(iterator_call)(array, path, first_unseen_index)
+        end
+
+      {false, :array} ->
+        # TODO: the second line could be optimized away!
+        quote do
+          [
+            {:ok, new_index} <- unquote(iterator_call)(array, path),
+            first_unseen_index = max(first_unseen_index, new_index)
+          ]
+        end
+
+      {false, _} ->
+        quote do
+          :ok <- unquote(iterator_call)(array, path)
+        end
     end
   end
 
@@ -136,7 +157,7 @@ defmodule Exonerate.Type.Array do
 
   defp build_accessories(context, authority, pointer, opts) do
     opts =
-      if track_internal?(context) do
+      if needs_combining_seen?(context) do
         Keyword.put(opts, :tracked, :array)
       else
         opts
@@ -159,7 +180,7 @@ defmodule Exonerate.Type.Array do
       end
     ) ++
       List.wrap(
-        if Iterator.mode(context) do
+        if Iterator.mode(context, opts) do
           quote do
             require Exonerate.Type.Array.Iterator
 

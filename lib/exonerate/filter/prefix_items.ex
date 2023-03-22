@@ -4,6 +4,7 @@ defmodule Exonerate.Filter.PrefixItems do
   alias Exonerate.Tools
 
   defmacro filter(authority, pointer, opts) do
+    # TODO: unify opts scrubbing
     parent_pointer = JsonPointer.backtrack!(pointer)
 
     __CALLER__
@@ -34,7 +35,8 @@ defmodule Exonerate.Filter.PrefixItems do
     call = Tools.call(authority, pointer, opts)
 
     item_pointer = JsonPointer.join(pointer, "#{index}")
-    item_call = Tools.call(authority, item_pointer, opts)
+    item_opts = Keyword.drop(opts, [:only, :tracked])
+    item_call = Tools.call(authority, item_pointer, item_opts)
 
     {
       quote do
@@ -44,7 +46,7 @@ defmodule Exonerate.Filter.PrefixItems do
       end,
       quote do
         require Exonerate.Context
-        Exonerate.Context.filter(unquote(authority), unquote(item_pointer), unquote(opts))
+        Exonerate.Context.filter(unquote(authority), unquote(item_pointer), unquote(item_opts))
       end
     }
   end

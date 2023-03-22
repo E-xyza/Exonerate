@@ -13,7 +13,7 @@ defmodule Exonerate.Context do
     call = Tools.call(authority, pointer, opts)
 
     if Cache.register_context(caller.module, call) do
-      __CALLER__
+      caller
       |> Tools.subschema(authority, pointer)
       |> build_filter(authority, pointer, opts)
       |> Tools.maybe_dump(opts)
@@ -180,7 +180,6 @@ defmodule Exonerate.Context do
   # NB: schema should always contain a type field as per Degeneracy.canonicalize/1 called from Tools.subschema/3
   defp build_filter(subschema = %{"type" => types}, authority, pointer, opts) do
     # condition the bindings
-
     filtered_types =
       opts
       |> Keyword.get(:only, @all_types)
@@ -203,6 +202,8 @@ defmodule Exonerate.Context do
          end}
       end)
       |> Enum.unzip()
+
+    # |> Tools.inspect
 
     combining =
       for filter <- @combining_filters, is_map_key(subschema, filter) do

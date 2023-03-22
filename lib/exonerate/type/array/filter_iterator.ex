@@ -351,8 +351,8 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   @accumulator (quote do
-    {:ok, accumulator}
-  end)
+                  {:ok, accumulator}
+                end)
 
   defp finalizer_for(subschema, tracked, accumulators, _) do
     finalizer_return = finalizer_return(subschema, tracked, accumulators)
@@ -364,7 +364,12 @@ defmodule Exonerate.Type.Array.FilterIterator do
         end
 
       finalizer_return == @accumulator ->
-        nil
+        quote do
+          case do
+            {:ok, accumulator} -> unquote(finalizer_return)
+            {error} -> error
+          end
+        end
 
       true ->
         quote do
