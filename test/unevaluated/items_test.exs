@@ -68,12 +68,12 @@ defmodule ExonerateTest.Unevaluated.ItemsTest do
       :with_any_of,
       """
       {
-        "type": "object",
+        "type": "array",
         "anyOf": [
           {"prefixItems": [{"type": "string"}]},
           {"prefixItems": [true, {"type": "string"}]}
         ],
-        "unevaluatedProperties": {"type": "number"}
+        "unevaluatedItems": {"type": "number"}
       }
       """
     )
@@ -91,35 +91,31 @@ defmodule ExonerateTest.Unevaluated.ItemsTest do
       assert :ok = with_any_of(["47", "47", 47])
     end
 
-    #    Exonerate.function_from_string(
-    #      :def,
-    #      :with_one_of,
-    #      """
-    #      {
-    #        "type": "object",
-    #        "oneOf": [
-    #          {"properties": {"foo": {"type": "string"}}, "required": ["foo"]},
-    #          {"properties": {"bar": {"type": "boolean"}}, "required": ["bar"]}
-    #        ],
-    #        "unevaluatedProperties": {"type": "number"}
-    #      }
-    #      """
-    #    )
-    #
-    #    test "it works with oneOf" do
-    #      assert {:error, _} = with_one_of(%{"foo" => "bar", "baz" => "42"})
-    #      assert :ok = with_one_of(%{"foo" => "bar", "baz" => 47})
-    #      assert {:error, _} = with_one_of(%{"bar" => true, "baz" => "42"})
-    #      assert :ok = with_one_of(%{"bar" => true, "baz" => 47})
-    #
-    #      #      cross-evaluation
-    #      assert {:error, _} = with_one_of(%{"foo" => "bar", "bar" => "42"})
-    #      assert :ok = with_one_of(%{"foo" => "bar", "bar" => 47})
-    #
-    #      assert {:error, _} = with_one_of(%{"foo" => "42", "bar" => true})
-    #      assert :ok = with_one_of(%{"foo" => 47, "bar" => true})
-    #    end
-    #
+    Exonerate.function_from_string(
+      :def,
+      :with_one_of,
+      """
+      {
+        "type": "array",
+        "oneOf": [
+          {"prefixItems": [{"type": "string"}]},
+          {"prefixItems": [true, {"type": "string"}]}
+        ],
+        "unevaluatedItems": {"type": "number"}
+      }
+      """
+    )
+
+    test "it works with oneOf" do
+      assert {:error, _} = with_one_of([42, 42])
+      assert :ok = with_one_of(["47", 47])
+      assert :ok = with_one_of([47, "47"])
+
+      #      cross-evaluation
+      assert {:error, _} = with_one_of(["47"])
+      assert {:error, _} = with_one_of(["42", "42"])
+    end
+
     #    # note it's not necessary for unevaluatedProperties to work with "not"
     #
     #    Exonerate.function_from_string(

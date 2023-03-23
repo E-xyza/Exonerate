@@ -30,7 +30,7 @@ defmodule Exonerate.Combining.OneOf do
           build_tracked(calls, authority, pointer, opts)
 
         :array ->
-          build_untracked(calls, authority, pointer, opts)
+          build_tracked(calls, authority, pointer, opts)
 
         nil ->
           build_untracked(calls, authority, pointer, opts)
@@ -87,6 +87,7 @@ defmodule Exonerate.Combining.OneOf do
       end
     end
   end
+
 
   defp build_untracked(calls, authority, pointer, opts) do
     lambdas = Enum.map(calls, &to_lambda/1)
