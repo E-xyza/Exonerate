@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.Contains do
   defp build_filter(authority, pointer, opts) do
     quote do
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(Tools.scrub(opts)))
     end
   end
 end

@@ -4,7 +4,7 @@ defmodule Exonerate.Filter.AdditionalProperties do
   defmacro filter(name, pointer, opts) do
     quote do
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(name), unquote(pointer), unquote(Tools.scrub(opts)))
     end
   end
 end

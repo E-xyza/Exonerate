@@ -138,8 +138,6 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   # CODE BLOCKS
 
-  defp scrub(opts), do: Keyword.drop(opts, [:tracked, :only])
-
   defp with_statement(context, accumulator, authority, pointer, opts) do
     filters =
       context
@@ -158,7 +156,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   defp filter_for({"maxItems", _}, _, accumulator, authority, pointer, opts) do
-    max_items_call = Tools.call(authority, JsonPointer.join(pointer, "maxItems"), scrub(opts))
+    max_items_call = Tools.call(authority, JsonPointer.join(pointer, "maxItems"), opts)
 
     quote do
       :ok <- unquote(max_items_call)(array, unquote(index(accumulator)), path)
@@ -170,7 +168,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     :so_far in accumulator or raise "uniqueItems without :so_far in accumulator"
 
     unique_items_call =
-      Tools.call(authority, JsonPointer.join(pointer, "uniqueItems"), scrub(opts))
+      Tools.call(authority, JsonPointer.join(pointer, "uniqueItems"), opts)
 
     quote do
       :ok <-
@@ -184,7 +182,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   defp filter_for({"prefixItems", _}, _, accumulator, authority, pointer, opts) do
     prefix_items_call =
-      Tools.call(authority, JsonPointer.join(pointer, "prefixItems"), scrub(opts))
+      Tools.call(authority, JsonPointer.join(pointer, "prefixItems"), opts)
 
     quote do
       :ok <-
@@ -198,7 +196,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   defp filter_for({"contains", _}, _, accumulator, authority, pointer, opts) do
     # just a basic assertion here for safety
     :contains in accumulator or raise "contains without :contains in accumulator"
-    contains_call = Tools.call(authority, JsonPointer.join(pointer, "contains"), scrub(opts))
+    contains_call = Tools.call(authority, JsonPointer.join(pointer, "contains"), opts)
 
     quote do
       new_contains =
@@ -215,7 +213,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     :contains in accumulator or raise "maxContains without :contains in accumulator"
 
     max_contains_call =
-      Tools.call(authority, JsonPointer.join(pointer, "maxContains"), scrub(opts))
+      Tools.call(authority, JsonPointer.join(pointer, "maxContains"), opts)
 
     quote do
       :ok <-
@@ -227,7 +225,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
        when is_map(context) or is_boolean(context) do
     # this requires an entry point
     items_call =
-      Tools.call(authority, JsonPointer.join(pointer, ["items", ":entrypoint"]), scrub(opts))
+      Tools.call(authority, JsonPointer.join(pointer, ["items", ":entrypoint"]), opts)
 
     quote do
       :ok <-
@@ -241,7 +239,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   # TODO: items needs to be last.
   defp filter_for({"items", array}, _, accumulator, authority, pointer, opts)
        when is_list(array) do
-    items_call = Tools.call(authority, JsonPointer.join(pointer, "items"), scrub(opts))
+    items_call = Tools.call(authority, JsonPointer.join(pointer, "items"), opts)
 
     quote do
       :ok <-
@@ -257,7 +255,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
       Tools.call(
         authority,
         JsonPointer.join(pointer, ["additionalItems", ":entrypoint"]),
-        scrub(opts)
+        opts
       )
 
     quote do

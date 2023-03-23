@@ -163,6 +163,20 @@ defmodule Exonerate.Tools do
     transformation.(data, pointer, acc)
   end
 
+  # options tools
+
+  @doc """
+  scrubs an options keyword prior to entry into a non-combining context.  The following
+  keywords should be scrubbed:
+
+  - :only
+  - :tracked
+  - :seen
+  """
+  def scrub(opts) do
+    Keyword.drop(opts, ~w(only tracked seen)a)
+  end
+
   # general tools
   @spec if(content, as_boolean(term), (content -> content)) :: content when content: term
   def if(content, as_boolean, predicate) do

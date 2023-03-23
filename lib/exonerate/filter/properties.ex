@@ -33,8 +33,9 @@ defmodule Exonerate.Filter.Properties do
   end
 
   defp filters_for({key, _schema}, main_call, authority, pointer, opts) do
-    key_pointer = JsonPointer.join(pointer, key)
-    key_call = Tools.call(authority, key_pointer, Keyword.delete(opts, :tracked))
+    context_opts = Tools.scrub(opts)
+    context_pointer = JsonPointer.join(pointer, key)
+    context_call = Tools.call(authority, context_pointer, context_opts)
 
     subfilter =
       if opts[:tracked] do
@@ -42,7 +43,7 @@ defmodule Exonerate.Filter.Properties do
           defp unquote(main_call)({unquote(key), value}, path) do
             require Exonerate.Tools
 
-            case unquote(key_call)(value, Path.join(path, unquote(key))) do
+            case unquote(context_call)(value, Path.join(path, unquote(key))) do
               :ok -> {:ok, true}
               Exonerate.Tools.error_match(error) -> error
             end
@@ -51,7 +52,7 @@ defmodule Exonerate.Filter.Properties do
       else
         quote do
           defp unquote(main_call)({unquote(key), value}, path) do
-            unquote(key_call)(value, Path.join(path, unquote(key)))
+            unquote(context_call)(value, Path.join(path, unquote(key)))
           end
         end
       end
@@ -62,8 +63,8 @@ defmodule Exonerate.Filter.Properties do
 
         Exonerate.Context.filter(
           unquote(authority),
-          unquote(key_pointer),
-          unquote(Keyword.delete(opts, :tracked))
+          unquote(context_pointer),
+          unquote(context_opts)
         )
       end
 

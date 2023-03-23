@@ -168,22 +168,24 @@ defmodule Exonerate.Type.Object.Iterator do
           end
         ]
 
-    final_return = if tracked do
-      quote do
-        case do
-          :ok ->
-            {:ok, MapSet.new(Map.keys(object))}
-          error ->
-            error
+    final_return =
+      if tracked do
+        quote do
+          case do
+            :ok ->
+              {:ok, MapSet.new(Map.keys(object))}
+
+            error ->
+              error
+          end
+        end
+      else
+        quote do
+          case do
+            result -> result
+          end
         end
       end
-    else
-      quote do
-        case do
-          result -> result
-        end
-      end
-    end
 
     quote do
       defp unquote(call)(object, path) do

@@ -27,7 +27,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
     context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
 
-    context_opts = Keyword.drop(opts, [:only, :tracked])
+    context_opts = Tools.scrub(opts)
     context_call = Tools.call(authority, context_pointer, context_opts)
 
     case context do
@@ -79,7 +79,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
     context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
 
-    context_opts = Keyword.drop(opts, [:tracked, :only])
+    context_opts = Tools.scrub(opts)
     context_call = Tools.call(authority, context_pointer, context_opts)
 
     case context do

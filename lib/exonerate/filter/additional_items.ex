@@ -16,7 +16,9 @@ defmodule Exonerate.Filter.AdditionalItems do
     entrypoint_pointer = JsonPointer.join(parent_pointer, ["additionalItems", ":entrypoint"])
     entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
     context_pointer = JsonPointer.join(parent_pointer, "additionalItems")
-    context_call = Tools.call(authority, context_pointer, opts)
+
+    context_opts = Tools.scrub(opts)
+    context_call = Tools.call(authority, context_pointer, context_opts)
 
     case context do
       # TODO: add a compiler error if this isn't a list
@@ -32,7 +34,7 @@ defmodule Exonerate.Filter.AdditionalItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
         end
 
       _ ->
@@ -42,7 +44,7 @@ defmodule Exonerate.Filter.AdditionalItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
         end
     end
   end

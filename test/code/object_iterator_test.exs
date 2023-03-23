@@ -40,7 +40,8 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
                 visited = false
 
                 with false <- visited do
-                  {:cont, unquote(:"additional#/additionalProperties")(value, Path.join(path, key))}
+                  {:cont,
+                   unquote(:"additional#/additionalProperties")(value, Path.join(path, key))}
                 else
                   true -> {:cont, :ok}
                   Exonerate.Tools.error_match(error) -> {:halt, error}
@@ -77,7 +78,8 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
                        ),
                      visited = visited or new_visited,
                      false <- visited do
-                  {:cont, unquote(:"additional#/additionalProperties")(value, Path.join(path, key))}
+                  {:cont,
+                   unquote(:"additional#/additionalProperties")(value, Path.join(path, key))}
                 else
                   true -> {:cont, :ok}
                   Exonerate.Tools.error_match(error) -> {:halt, error}

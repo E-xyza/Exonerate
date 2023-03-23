@@ -33,6 +33,22 @@ defmodule Exonerate.Type.Object do
     end
   end
 
+  @empty_map_only [%{"unevaluatedProperties" => false}, %{"additionalProperties" => false}]
+  # empty map optimization
+  defp build_filter(context, authority, pointer, opts) when context in @empty_map_only do
+    pointer = JsonPointer.join(pointer, Map.keys(context))
+    call = Tools.call(authority, pointer, opts)
+
+    quote do
+      defp unquote(call)(object, path) when object === %{}, do: :ok
+
+      defp unquote(call)(object, path) when is_map(object) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(object, unquote(pointer), path)
+      end
+    end
+  end
+
   defp build_filter(context, authority, pointer, opts) do
     filter_clauses =
       outer_filters(context, authority, pointer, opts) ++
@@ -163,6 +179,10 @@ defmodule Exonerate.Type.Object do
       |> build_accessories(authority, pointer, opts)
       |> Tools.maybe_dump(opts)
     end
+  end
+
+  defp build_accessories(context, _, _, _) when context in @empty_map_only do
+    []
   end
 
   defp build_accessories(context, name, pointer, opts) do

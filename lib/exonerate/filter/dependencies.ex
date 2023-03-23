@@ -1,7 +1,5 @@
 defmodule Exonerate.Filter.Dependencies do
   @moduledoc false
-
-  alias Exonerate.Cache
   alias Exonerate.Tools
 
   defmacro filter(authority, pointer, opts) do
@@ -69,17 +67,18 @@ defmodule Exonerate.Filter.Dependencies do
   defp accessory(call, key, schema, authority, pointer, opts)
        when is_map(schema) or is_boolean(schema) do
     pointer = JsonPointer.join(pointer, key)
-    inner_call = Tools.call(authority, pointer, opts)
+    context_opts = Tools.scrub(opts)
+    context_call = Tools.call(authority, pointer, context_opts)
 
     quote do
       defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do
-        unquote(inner_call)(content, path)
+        unquote(context_call)(content, path)
       end
 
       defp unquote(call)(content, path), do: :ok
 
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(context_opts))
     end
   end
 end

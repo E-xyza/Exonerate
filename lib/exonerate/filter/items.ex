@@ -36,8 +36,10 @@ defmodule Exonerate.Filter.Items do
        when is_map(subschema) or is_boolean(subschema) do
     entrypoint_pointer = JsonPointer.join(parent_pointer, ["items", ":entrypoint"])
     entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
+
+    context_opts = Tools.scrub(opts)
     context_pointer = JsonPointer.join(parent_pointer, "items")
-    context_call = Tools.call(authority, context_pointer, opts)
+    context_call = Tools.call(authority, context_pointer, context_opts)
 
     case context do
       %{"prefixItems" => prefix} ->
@@ -52,7 +54,7 @@ defmodule Exonerate.Filter.Items do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
         end
 
       _ ->
@@ -62,22 +64,23 @@ defmodule Exonerate.Filter.Items do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
         end
     end
   end
 
   defp build_filter(_, index, call, authority, pointer, opts) do
-    filter_pointer = JsonPointer.join(pointer, "#{index}")
-    filter_call = Tools.call(authority, filter_pointer, opts)
+    context_pointer = JsonPointer.join(pointer, "#{index}")
+    context_opts = Tools.scrub(opts)
+    context_call = Tools.call(authority, context_pointer, context_opts)
 
     {quote do
        defp unquote(call)({item, unquote(index)}, path) do
-         unquote(filter_call)(item, path)
+         unquote(context_call)(item, path)
        end
      end,
      quote do
-       Exonerate.Context.filter(unquote(authority), unquote(filter_pointer), unquote(opts))
+       Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
      end}
   end
 end

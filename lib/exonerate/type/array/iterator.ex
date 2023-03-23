@@ -81,8 +81,6 @@ defmodule Exonerate.Type.Array.Iterator do
     )
   end
 
-  defp scrub(opts), do: Keyword.drop(opts, [:tracked, :only])
-
   defmacro accessories(authority, pointer, opts) do
     __CALLER__
     |> Tools.subschema(authority, pointer)
@@ -94,8 +92,6 @@ defmodule Exonerate.Type.Array.Iterator do
     for filter <- @filters, is_map_key(context, filter) do
       module = @modules[filter]
       pointer = JsonPointer.join(pointer, filter)
-
-      opts = if filter == "unevaluatedItems", do: opts, else: scrub(opts)
 
       quote do
         require unquote(module)

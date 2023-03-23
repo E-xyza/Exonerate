@@ -1,6 +1,10 @@
 defmodule Exonerate.Filter.MinMaxLength do
   @moduledoc false
 
+  # this module merges minlength and maxlength checking,
+  # so that the system doesn't have to do multiple passes across
+  # the list to validate minlength and maxlength.
+
   alias Exonerate.Tools
 
   defmacro filter(authority, pointer, opts) do

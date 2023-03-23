@@ -81,7 +81,7 @@ defmodule Exonerate.Filter.PatternProperties do
   end
 
   defp filters_for({regex, _}, authority, pointer, opts) do
-    opts = Keyword.delete(opts, :tracked)
+    opts = Tools.scrub(opts)
     pointer = JsonPointer.join(pointer, regex)
     fun = Tools.call(authority, pointer, opts)
 

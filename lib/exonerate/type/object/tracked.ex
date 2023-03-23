@@ -24,6 +24,22 @@ defmodule Exonerate.Type.Object.Tracked do
     |> Tools.maybe_dump(opts)
   end
 
+  @empty_map_only [%{"unevaluatedProperties" => false}, %{"additionalProperties" => false}]
+  # empty map optimization
+  defp build_filter(context, authority, pointer, opts) when context in @empty_map_only do
+    pointer = JsonPointer.join(pointer, Map.keys(context))
+    call = Tools.call(authority, pointer, opts)
+
+    quote do
+      defp unquote(call)(object, path) when object === %{}, do: {:ok, MapSet.new()}
+
+      defp unquote(call)(object, path) when is_map(object) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(object, unquote(pointer), path)
+      end
+    end
+  end
+
   defp build_filter(context, authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
 
@@ -142,18 +158,24 @@ defmodule Exonerate.Type.Object.Tracked do
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_accessories(context, name, pointer, opts) do
-    opts =
-      if is_map_key(context, "unevaluatedProperties") or
-           is_map_key(context, "additionalProperties") do
-        Keyword.delete(opts, :tracked)
-      else
-        opts
-      end
+  defp build_accessories(context, _, _, _) when context in @empty_map_only do
+    []
+  end
 
-    iterator_accessory(context, name, pointer, opts) ++
+  defp build_accessories(context, name, pointer, opts) do
+    # TODO: check the logic on this.
+
+    if is_map_key(context, "unevaluatedProperties") or
+         is_map_key(context, "additionalProperties") do
+      opts = Keyword.delete(opts, :tracked)
+
       filter_accessories(context, name, pointer, opts) ++
-      tracked_accessories(context, name, pointer, opts)
+        tracked_accessories(context, name, pointer, opts)
+    else
+      iterator_accessory(context, name, pointer, opts) ++
+        filter_accessories(context, name, pointer, opts) ++
+        tracked_accessories(context, name, pointer, opts)
+    end
   end
 
   defp iterator_accessory(context, name, pointer, opts) do

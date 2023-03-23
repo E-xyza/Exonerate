@@ -11,7 +11,11 @@ defmodule Exonerate.Filter.PropertyNames do
 
   defp build_filter(authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
-    special_opts = Keyword.put(opts, :only, ["string"])
+
+    # TODO: make sure we don't drop the only if this has been reffed.
+    context_opts = opts
+    |> Tools.scrub
+    |> Keyword.put(:only, ["string"])
 
     subfilter =
       quote do
@@ -29,7 +33,7 @@ defmodule Exonerate.Filter.PropertyNames do
     context =
       quote do
         require Exonerate.Context
-        Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(special_opts))
+        Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(context_opts))
       end
 
     quote do

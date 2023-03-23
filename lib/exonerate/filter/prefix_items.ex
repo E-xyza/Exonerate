@@ -34,19 +34,19 @@ defmodule Exonerate.Filter.PrefixItems do
   defp item_to_filter(_, index, authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
 
-    item_pointer = JsonPointer.join(pointer, "#{index}")
-    item_opts = Keyword.drop(opts, [:only, :tracked])
-    item_call = Tools.call(authority, item_pointer, item_opts)
+    context_pointer = JsonPointer.join(pointer, "#{index}")
+    context_opts = Tools.scrub(opts)
+    context_call = Tools.call(authority, context_pointer, context_opts)
 
     {
       quote do
         defp unquote(call)({item, unquote(index)}, path) do
-          unquote(item_call)(item, path)
+          unquote(context_call)(item, path)
         end
       end,
       quote do
         require Exonerate.Context
-        Exonerate.Context.filter(unquote(authority), unquote(item_pointer), unquote(item_opts))
+        Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
       end
     }
   end

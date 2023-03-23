@@ -3,7 +3,5 @@ defmodule Exonerate.Filter.MinItems do
 
   # minItems filter is handled at the array iterator level.
 
-  defmacro filter(_name, _pointer, _opts) do
-    []
-  end
+  defmacro filter(_name, _pointer, _opts), do: []
 end

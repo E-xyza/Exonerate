@@ -35,8 +35,9 @@ defmodule Exonerate.Filter.DependentSchemas do
   end
 
   defp accessory(call, key, authority, pointer, opts) do
+    context_opts = Tools.scrub(opts)
     pointer = JsonPointer.join(pointer, key)
-    inner_call = Tools.call(authority, pointer, opts)
+    context_call = Tools.call(authority, pointer, context_opts)
 
     fallthrough =
       if opts[:tracked] do
@@ -49,13 +50,13 @@ defmodule Exonerate.Filter.DependentSchemas do
 
     quote do
       defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do
-        unquote(inner_call)(content, path)
+        unquote(context_call)(content, path)
       end
 
       defp unquote(call)(content, path), do: unquote(fallthrough)
 
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(context_opts))
     end
   end
 
