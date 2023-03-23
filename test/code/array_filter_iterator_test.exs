@@ -535,9 +535,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(
-                       :"tracked_prefix_items_items#/items/:entrypoint"
-                     )(
+                     unquote(:"tracked_prefix_items_items#/items/:entrypoint")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),

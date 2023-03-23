@@ -17,6 +17,20 @@ defmodule Exonerate.Type.Array do
     |> Tools.maybe_dump(opts)
   end
 
+  #########################################################
+  # trivial exception
+
+  def build_filter(%{"contains" => false}, authority, pointer, opts) do
+    call = Tools.call(authority, pointer, opts)
+    pointer = JsonPointer.join(pointer, "contains")
+    quote do
+      defp unquote(call)(array, path) when is_list(array) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(array, unquote(pointer), path)
+      end
+    end
+  end
+
   def build_filter(context, authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
 

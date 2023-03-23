@@ -45,7 +45,12 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
+
+          Exonerate.Context.filter(
+            unquote(authority),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
         end
 
       _ ->
@@ -59,7 +64,12 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
+
+          Exonerate.Context.filter(
+            unquote(authority),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
         end
     end
   end
@@ -86,7 +96,12 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
+
+          Exonerate.Context.filter(
+            unquote(authority),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
         end
 
       _ ->
@@ -96,7 +111,12 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
+
+          Exonerate.Context.filter(
+            unquote(authority),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
         end
     end
   end

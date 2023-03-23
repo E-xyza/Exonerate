@@ -298,7 +298,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
         unquote(unevaluated_items_call)(
           {unquote_splicing(tuple_parts)},
           Path.join(path, "#{unquote(index(accumulator))}")
-        ) 
+        )
     end
   end
 
@@ -382,7 +382,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     if tracked do
       cond do
         is_map_key(subschema, "additionalItems") or is_map_key(subschema, "unevaluatedItems") or
-            is_map(subschema["items"]) or is_boolean(subschema["items"]) ->
+          is_map(subschema["items"]) or is_boolean(subschema["items"]) ->
           {:ok, index(accumulators)}
 
         is_list(subschema["items"]) ->
