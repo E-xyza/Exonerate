@@ -39,12 +39,17 @@ defmodule Exonerate.Context do
     call = Tools.call(authority, pointer, opts)
 
     result =
-      if opts[:tracked] do
-        quote do
-          {:ok, MapSet.new()}
-        end
-      else
-        :ok
+      case opts[:tracked] do
+        :object ->
+          quote do
+            {:ok, MapSet.new()}
+          end
+
+        :array ->
+          {:ok, 0}
+
+        nil ->
+          :ok
       end
 
     quote do

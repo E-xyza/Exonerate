@@ -24,6 +24,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     call = Iterator.call(authority, pointer, opts)
     accumulator = accumulator(context)
     tracked = !!opts[:tracked]
+
     reduction = reduction(context, accumulator, authority, pointer, opts)
 
     if finalizer = finalizer_for(context, tracked, accumulator, pointer) do
@@ -137,6 +138,8 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   # CODE BLOCKS
 
+  defp scrub(opts), do: Keyword.drop(opts, [:tracked, :only])
+
   defp with_statement(context, accumulator, authority, pointer, opts) do
     filters =
       context
@@ -155,7 +158,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   defp filter_for({"maxItems", _}, _, accumulator, authority, pointer, opts) do
-    max_items_call = Tools.call(authority, JsonPointer.join(pointer, "maxItems"), opts)
+    max_items_call = Tools.call(authority, JsonPointer.join(pointer, "maxItems"), scrub(opts))
 
     quote do
       :ok <- unquote(max_items_call)(array, unquote(index(accumulator)), path)
@@ -166,7 +169,8 @@ defmodule Exonerate.Type.Array.FilterIterator do
     # just a basic assertion here for safety
     :so_far in accumulator or raise "uniqueItems without :so_far in accumulator"
 
-    unique_items_call = Tools.call(authority, JsonPointer.join(pointer, "uniqueItems"), opts)
+    unique_items_call =
+      Tools.call(authority, JsonPointer.join(pointer, "uniqueItems"), scrub(opts))
 
     quote do
       :ok <-
@@ -179,7 +183,8 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   defp filter_for({"prefixItems", _}, _, accumulator, authority, pointer, opts) do
-    prefix_items_call = Tools.call(authority, JsonPointer.join(pointer, "prefixItems"), opts)
+    prefix_items_call =
+      Tools.call(authority, JsonPointer.join(pointer, "prefixItems"), scrub(opts))
 
     quote do
       :ok <-
@@ -193,7 +198,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   defp filter_for({"contains", _}, _, accumulator, authority, pointer, opts) do
     # just a basic assertion here for safety
     :contains in accumulator or raise "contains without :contains in accumulator"
-    contains_call = Tools.call(authority, JsonPointer.join(pointer, "contains"), opts)
+    contains_call = Tools.call(authority, JsonPointer.join(pointer, "contains"), scrub(opts))
 
     quote do
       new_contains =
@@ -209,7 +214,8 @@ defmodule Exonerate.Type.Array.FilterIterator do
     # NOTE THAT THIS FILTER must come after "contains" filter.
     :contains in accumulator or raise "maxContains without :contains in accumulator"
 
-    max_contains_call = Tools.call(authority, JsonPointer.join(pointer, "maxContains"), opts)
+    max_contains_call =
+      Tools.call(authority, JsonPointer.join(pointer, "maxContains"), scrub(opts))
 
     quote do
       :ok <-
@@ -220,7 +226,8 @@ defmodule Exonerate.Type.Array.FilterIterator do
   defp filter_for({"items", context}, _, accumulator, authority, pointer, opts)
        when is_map(context) or is_boolean(context) do
     # this requires an entry point
-    items_call = Tools.call(authority, JsonPointer.join(pointer, ["items", ":entrypoint"]), opts)
+    items_call =
+      Tools.call(authority, JsonPointer.join(pointer, ["items", ":entrypoint"]), scrub(opts))
 
     quote do
       :ok <-
@@ -234,7 +241,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   # TODO: items needs to be last.
   defp filter_for({"items", array}, _, accumulator, authority, pointer, opts)
        when is_list(array) do
-    items_call = Tools.call(authority, JsonPointer.join(pointer, "items"), opts)
+    items_call = Tools.call(authority, JsonPointer.join(pointer, "items"), scrub(opts))
 
     quote do
       :ok <-
@@ -247,7 +254,11 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   defp filter_for({"additionalItems", _}, _, accumulator, authority, pointer, opts) do
     additional_items_call =
-      Tools.call(authority, JsonPointer.join(pointer, ["additionalItems", ":entrypoint"]), opts)
+      Tools.call(
+        authority,
+        JsonPointer.join(pointer, ["additionalItems", ":entrypoint"]),
+        scrub(opts)
+      )
 
     quote do
       :ok <-
@@ -370,8 +381,19 @@ defmodule Exonerate.Type.Array.FilterIterator do
   defp finalizer_return(subschema, tracked, accumulators) do
     if tracked do
       cond do
-        is_map_key(subschema, "additionalItems") or is_map_key(subschema, "unevaluatedItems") ->
+        is_map_key(subschema, "additionalItems") or is_map_key(subschema, "unevaluatedItems") or
+            is_map(subschema["items"]) ->
           {:ok, index(accumulators)}
+
+        is_list(subschema["items"]) ->
+          length = length(subschema["items"])
+
+          min =
+            quote do
+              min(unquote(index(accumulators)), unquote(length))
+            end
+
+          {:ok, min}
 
         is_map_key(subschema, "prefixItems") ->
           length = length(subschema["prefixItems"])

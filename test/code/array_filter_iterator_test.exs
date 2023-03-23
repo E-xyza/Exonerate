@@ -325,7 +325,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"tracked_noitems#/uniqueItems/:tracked_array")(
+                     unquote(:"tracked_noitems#/uniqueItems")(
                        item,
                        accumulator.so_far,
                        Path.join(path, "#{accumulator.index}")
@@ -345,7 +345,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               {:ok, accumulator} ->
                 {:ok, 0}
 
-              error ->
+              {error} ->
                 error
             end
           end
@@ -366,7 +366,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"tracked_prefix_items#/additionalItems/:entrypoint/:tracked_array")(
+                     unquote(:"tracked_prefix_items#/additionalItems/:entrypoint")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -375,6 +375,10 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
+            |> case do
+              {:ok, accumulator} -> {:ok, accumulator}
+              {error} -> error
+            end
           end
         end,
         FilterIterator,
@@ -407,6 +411,10 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
+            |> case do
+              {:ok, accumulator} -> {:ok, accumulator}
+              {error} -> error
+            end
           end
         end,
         FilterIterator,
@@ -441,6 +449,10 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
+            |> case do
+              {:ok, accumulator} -> {:ok, accumulator}
+              {error} -> error
+            end
           end
         end,
         FilterIterator,
@@ -458,7 +470,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"tracked_prefix_items#/prefixItems/:tracked_array")(
+                     unquote(:"tracked_prefix_items#/prefixItems")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -469,7 +481,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
             end)
             |> case do
               {:ok, accumulator} -> {:ok, min(accumulator, 1)}
-              error -> error
+              {error} -> error
             end
           end
         end,
@@ -488,14 +500,12 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(
-                       :"tracked_prefix_items_additional#/additionalItems/:entrypoint/:tracked_array"
-                     )(
+                     unquote(:"tracked_prefix_items_additional#/additionalItems/:entrypoint")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
-                     unquote(:"tracked_prefix_items_additional#/prefixItems/:tracked_array")(
+                     unquote(:"tracked_prefix_items_additional#/prefixItems")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -504,11 +514,52 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
+            |> case do
+              {:ok, accumulator} -> {:ok, accumulator}
+              {error} -> error
+            end
           end
         end,
         FilterIterator,
         :tracked_prefix_items_additional,
         %{"prefixItems" => [true], "additionalItems" => %{type: "string"}},
+        tracked: :array
+      )
+    end
+
+    test "with prefixItems, with items" do
+      assert_filter(
+        quote do
+          defp unquote(:"tracked_prefix_items_items#/:iterator/:tracked_array")(array, path) do
+            Enum.reduce_while(array, {:ok, 0}, fn item, {:ok, accumulator} ->
+              require Exonerate.Tools
+
+              with :ok <-
+                     unquote(
+                       :"tracked_prefix_items_items#/items/:entrypoint"
+                     )(
+                       {item, accumulator},
+                       Path.join(path, "#{accumulator}")
+                     ),
+                   :ok <-
+                     unquote(:"tracked_prefix_items_items#/prefixItems")(
+                       {item, accumulator},
+                       Path.join(path, "#{accumulator}")
+                     ) do
+                {:cont, {:ok, accumulator + 1}}
+              else
+                Exonerate.Tools.error_match(error) -> {:halt, {error}}
+              end
+            end)
+            |> case do
+              {:ok, accumulator} -> {:ok, accumulator}
+              {error} -> error
+            end
+          end
+        end,
+        FilterIterator,
+        :tracked_prefix_items_items,
+        %{"prefixItems" => [true], "items" => %{type: "string"}},
         tracked: :array
       )
     end
@@ -521,7 +572,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"tracked_prefix_items_unevaluated#/prefixItems/:tracked_array")(
+                     unquote(:"tracked_prefix_items_unevaluated#/prefixItems")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
@@ -537,6 +588,10 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
+            |> case do
+              {:ok, accumulator} -> {:ok, accumulator}
+              {error} -> error
+            end
           end
         end,
         FilterIterator,
@@ -563,9 +618,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(
-                       :"tracked_prefix_items_unevaluated_combining#/prefixItems/:tracked_array"
-                     )(
+                     unquote(:"tracked_prefix_items_unevaluated_combining#/prefixItems")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
@@ -581,6 +634,10 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
                 Exonerate.Tools.error_match(error) -> {:halt, {error}}
               end
             end)
+            |> case do
+              {:ok, accumulator} -> {:ok, accumulator}
+              {error} -> error
+            end
           end
         end,
         FilterIterator,

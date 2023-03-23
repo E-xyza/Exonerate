@@ -114,6 +114,10 @@ defmodule Exonerate.Degeneracy do
       when is_map(items) or is_boolean(items) ->
         canonicalize_purged(context, "additionalItems", opts)
 
+      context = %{"unevaluatedItems" => _, "items" => items}
+      when is_map(items) or is_boolean(items) ->
+        canonicalize_purged(context, "unevaluatedItems", opts)
+
       ### empty filter lists
       context = %{"required" => []} ->
         canonicalize_purged(context, "required", opts)
