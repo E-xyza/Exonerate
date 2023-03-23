@@ -26,7 +26,9 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     entrypoint_pointer = JsonPointer.join(parent_pointer, ["unevaluatedItems", ":entrypoint"])
     entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
     context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
-    context_call = Tools.call(authority, context_pointer, opts)
+
+    context_opts = Keyword.drop(opts, [:only, :tracked])
+    context_call = Tools.call(authority, context_pointer, context_opts)
 
     case context do
       # TODO: add a compiler error if this isn't a list
@@ -43,7 +45,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
         end
 
       _ ->
@@ -57,7 +59,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
         end
     end
   end
@@ -66,7 +68,9 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     entrypoint_pointer = JsonPointer.join(parent_pointer, ["unevaluatedItems", ":entrypoint"])
     entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
     context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
-    context_call = Tools.call(authority, context_pointer, opts)
+
+    context_opts = Keyword.drop(opts, [:tracked, :only])
+    context_call = Tools.call(authority, context_pointer, context_opts)
 
     case context do
       # TODO: add a compiler error if this isn't a list
@@ -82,7 +86,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
         end
 
       _ ->
@@ -92,7 +96,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
         end
     end
   end

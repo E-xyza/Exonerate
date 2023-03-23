@@ -270,7 +270,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   defp filter_for({"unevaluatedItems", _}, context, accumulator, authority, pointer, opts) do
-    additional_items_call =
+    unevaluated_items_call =
       Tools.call(authority, JsonPointer.join(pointer, ["unevaluatedItems", ":entrypoint"]), opts)
 
     tuple_parts =
@@ -295,10 +295,10 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
     quote do
       :ok <-
-        unquote(additional_items_call)(
+        unquote(unevaluated_items_call)(
           {unquote_splicing(tuple_parts)},
           Path.join(path, "#{unquote(index(accumulator))}")
-        )
+        ) 
     end
   end
 
@@ -382,7 +382,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     if tracked do
       cond do
         is_map_key(subschema, "additionalItems") or is_map_key(subschema, "unevaluatedItems") or
-            is_map(subschema["items"]) ->
+            is_map(subschema["items"]) or is_boolean(subschema["items"]) ->
           {:ok, index(accumulators)}
 
         is_list(subschema["items"]) ->
