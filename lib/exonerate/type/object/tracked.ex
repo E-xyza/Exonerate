@@ -133,7 +133,7 @@ defmodule Exonerate.Type.Object.Tracked do
   defp iterator_filter(context, authority, pointer, opts) do
     List.wrap(
       if Iterator.needed?(context) do
-        iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
+        iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":object_iterator"), opts)
 
         if opts[:tracked] do
           quote do

@@ -8,7 +8,7 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
     test "works with properties" do
       assert_filter(
         quote do
-          defp unquote(:"properties#/:iterator")(object, path) do
+          defp unquote(:"properties#/:object_iterator")(object, path) do
             require Exonerate.Tools
 
             Enum.reduce_while(object, :ok, fn
@@ -32,7 +32,7 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
     test "works with additionalProperties alone" do
       assert_filter(
         quote do
-          defp unquote(:"additional#/:iterator")(object, path) do
+          defp unquote(:"additional#/:object_iterator")(object, path) do
             require Exonerate.Tools
 
             Enum.reduce_while(object, :ok, fn
@@ -64,7 +64,7 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
     test "works with patternProperties and additionalProperties" do
       assert_filter(
         quote do
-          defp unquote(:"additional#/:iterator")(object, path) do
+          defp unquote(:"additional#/:object_iterator")(object, path) do
             require Exonerate.Tools
 
             Enum.reduce_while(object, :ok, fn

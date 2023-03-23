@@ -24,7 +24,7 @@ defmodule ExonerateTest.Code.ArrayTest do
       assert_filter(
         quote do
           defp unquote(:"iterated#/")(array, path) when is_list(array) do
-            with :ok <- unquote(:"iterated#/:iterator")(array, path) do
+            with :ok <- unquote(:"iterated#/:array_iterator")(array, path) do
               :ok
             end
           end
@@ -40,7 +40,7 @@ defmodule ExonerateTest.Code.ArrayTest do
         quote do
           defp unquote(:"iterated#/")(array, path) when is_list(array) do
             with :ok <- unquote(:"iterated#/allOf")(array, path),
-                 :ok <- unquote(:"iterated#/:iterator")(array, path) do
+                 :ok <- unquote(:"iterated#/:array_iterator")(array, path) do
               :ok
             end
           end
@@ -61,7 +61,7 @@ defmodule ExonerateTest.Code.ArrayTest do
                    unquote(:"iterated#/allOf/:tracked_array")(array, path),
                  first_unseen_index = max(first_unseen_index, new_index),
                  {:ok, _} <-
-                   unquote(:"iterated#/:iterator/:tracked_array")(array, path, first_unseen_index) do
+                   unquote(:"iterated#/:array_iterator/:tracked_array")(array, path, first_unseen_index) do
               :ok
             end
           end
@@ -99,7 +99,7 @@ defmodule ExonerateTest.Code.ArrayTest do
             first_unseen_index = 0
 
             with {:ok, new_index} <-
-                   unquote(:"tracked_iterated#/:iterator/:tracked_array")(array, path),
+                   unquote(:"tracked_iterated#/:array_iterator/:tracked_array")(array, path),
                  first_unseen_index = max(first_unseen_index, new_index) do
               {:ok, first_unseen_index}
             end

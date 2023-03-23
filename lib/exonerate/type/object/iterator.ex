@@ -40,7 +40,7 @@ defmodule Exonerate.Type.Object.Iterator do
   # RENAME TRACKED TO SEEN
 
   defp build_filter(context, authority, pointer, opts) do
-    call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
+    call = Tools.call(authority, JsonPointer.join(pointer, ":object_iterator"), opts)
     visitor_call = visitor_call(context, authority, pointer, opts)
 
     tracked = needs_tracked?(opts, context)

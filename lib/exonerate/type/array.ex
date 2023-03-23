@@ -131,7 +131,7 @@ defmodule Exonerate.Type.Array do
         opts
       end
 
-    iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), call_opts)
+    iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":array_iterator"), call_opts)
 
     case {needs_combining_seen, opts[:tracked]} do
       {true, :array} ->
@@ -171,6 +171,12 @@ defmodule Exonerate.Type.Array do
   end
 
   defp build_accessories(context, authority, pointer, opts) do
+    opts = if needs_combining_seen?(context) or opts[:tracked] do
+      Keyword.merge(opts, only: ["array"], tracked: :array)
+    else
+      opts
+    end
+
     build_tracked_filters(context, authority, pointer, opts) ++
       build_iterator(context, authority, pointer, opts)
   end
@@ -179,8 +185,7 @@ defmodule Exonerate.Type.Array do
     # if we're tracked, then we need to rebuild all the filters, with the
     # tracked appendage.
     List.wrap(
-      if opts[:tracked] do
-        opts = Keyword.put(opts, :only, ["array"])
+      if needs_combining_seen?(context) or opts[:tracked] do
 
         for filter <- @seen_filters, is_map_key(context, filter) do
           module = @combining_modules[filter]

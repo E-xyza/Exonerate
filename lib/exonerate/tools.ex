@@ -40,8 +40,15 @@ defmodule Exonerate.Tools do
     if filter do
       macro
       |> scrub_macros
-      |> Macro.to_string()
-      |> IO.puts()
+      |> case do
+        [] ->
+          []
+
+        code ->
+          code
+          |> Macro.to_string()
+          |> IO.puts()
+      end
     end
 
     macro
@@ -67,8 +74,18 @@ defmodule Exonerate.Tools do
 
   @drop_macros ~w(filter accessories fallthrough iterator)a
 
+  defp scrub_macros({:__block__, _meta, []}), do: []
+
+  defp scrub_macros(nil), do: []
+
   defp scrub_macros({:__block__, meta, content}) do
-    {:__block__, meta, scrub_macros(content)}
+    case scrub_macros(content) do
+      [] ->
+        []
+
+      scrubbed ->
+        {:__block__, meta, scrubbed}
+    end
   end
 
   defp scrub_macros(content) when is_list(content) do
