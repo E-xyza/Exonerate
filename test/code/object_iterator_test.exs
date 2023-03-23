@@ -39,10 +39,8 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
               {key, value}, :ok ->
                 visited = false
 
-                with false <- visited,
-                     :ok <-
-                       unquote(:"additional#/additionalProperties")(value, Path.join(path, key)) do
-                  {:cont, :ok}
+                with false <- visited do
+                  {:cont, unquote(:"additional#/additionalProperties")(value, Path.join(path, key))}
                 else
                   true -> {:cont, :ok}
                   Exonerate.Tools.error_match(error) -> {:halt, error}
@@ -51,6 +49,9 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
               _, Exonerate.Tools.error_match(error) ->
                 {:halt, error}
             end)
+            |> case do
+              result -> result
+            end
           end
         end,
         Iterator,
@@ -75,10 +76,8 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
                          path
                        ),
                      visited = visited or new_visited,
-                     false <- visited,
-                     :ok <-
-                       unquote(:"additional#/additionalProperties")(value, Path.join(path, key)) do
-                  {:cont, :ok}
+                     false <- visited do
+                  {:cont, unquote(:"additional#/additionalProperties")(value, Path.join(path, key))}
                 else
                   true -> {:cont, :ok}
                   Exonerate.Tools.error_match(error) -> {:halt, error}
@@ -87,6 +86,9 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
               _, Exonerate.Tools.error_match(error) ->
                 {:halt, error}
             end)
+            |> case do
+              result -> result
+            end
           end
         end,
         Iterator,

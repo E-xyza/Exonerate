@@ -37,6 +37,8 @@ defmodule Exonerate.Type.Object.Iterator do
     |> Tools.maybe_dump(opts)
   end
 
+  # RENAME TRACKED TO SEEN
+
   defp build_filter(context, authority, pointer, opts) do
     call = Tools.call(authority, JsonPointer.join(pointer, ":iterator"), opts)
     visitor_call = visitor_call(context, authority, pointer, opts)
@@ -160,21 +162,28 @@ defmodule Exonerate.Type.Object.Iterator do
   defp build_visited(call, visitor_call, filters, tracked) do
     filters =
       filters ++
-        quote do
-          [
-            false <- visited,
-            :ok <- unquote(visitor_call)(value, Path.join(path, key))
-          ]
-        end
+        [
+          quote do
+            false <- visited
+          end
+        ]
 
-    final_return =
-      if tracked do
-        quote do
-          {:ok, MapSet.new(Map.keys(object))}
+    final_return = if tracked do
+      quote do
+        case do
+          :ok ->
+            {:ok, MapSet.new(Map.keys(object))}
+          error ->
+            error
         end
-      else
-        :ok
       end
+    else
+      quote do
+        case do
+          result -> result
+        end
+      end
+    end
 
     quote do
       defp unquote(call)(object, path) do
@@ -185,15 +194,16 @@ defmodule Exonerate.Type.Object.Iterator do
             visited = false
 
             with unquote_splicing(filters) do
-              {:cont, unquote(final_return)}
+              {:cont, unquote(visitor_call)(value, Path.join(path, key))}
             else
-              true -> {:cont, unquote(final_return)}
+              true -> {:cont, :ok}
               Exonerate.Tools.error_match(error) -> {:halt, error}
             end
 
           _, Exonerate.Tools.error_match(error) ->
             {:halt, error}
         end)
+        |> unquote(final_return)
       end
     end
   end

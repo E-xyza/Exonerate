@@ -23,6 +23,7 @@ defmodule Exonerate.Type.Array do
   def build_filter(%{"contains" => false}, authority, pointer, opts) do
     call = Tools.call(authority, pointer, opts)
     pointer = JsonPointer.join(pointer, "contains")
+
     quote do
       defp unquote(call)(array, path) when is_list(array) do
         require Exonerate.Tools
