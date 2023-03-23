@@ -54,7 +54,12 @@ defmodule Exonerate.Filter.Items do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
+
+          Exonerate.Context.filter(
+            unquote(authority),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
         end
 
       _ ->
@@ -64,7 +69,12 @@ defmodule Exonerate.Filter.Items do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
+
+          Exonerate.Context.filter(
+            unquote(authority),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
         end
     end
   end
@@ -80,7 +90,11 @@ defmodule Exonerate.Filter.Items do
        end
      end,
      quote do
-       Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
+       Exonerate.Context.filter(
+         unquote(authority),
+         unquote(context_pointer),
+         unquote(context_opts)
+       )
      end}
   end
 end

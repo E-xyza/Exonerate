@@ -46,7 +46,12 @@ defmodule Exonerate.Filter.PrefixItems do
       end,
       quote do
         require Exonerate.Context
-        Exonerate.Context.filter(unquote(authority), unquote(context_pointer), unquote(context_opts))
+
+        Exonerate.Context.filter(
+          unquote(authority),
+          unquote(context_pointer),
+          unquote(context_opts)
+        )
       end
     }
   end

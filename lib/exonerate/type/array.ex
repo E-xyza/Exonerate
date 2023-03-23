@@ -171,14 +171,13 @@ defmodule Exonerate.Type.Array do
   end
 
   defp build_accessories(context, authority, pointer, opts) do
-    opts =
-      if needs_combining_seen?(context) do
-        Keyword.put(opts, :tracked, :array)
-      else
-        opts
-      end
+    build_tracked_filters(context, authority, pointer, opts) ++
+      build_iterator(context, authority, pointer, opts)
+  end
 
-    # TODO: break this up into two functions
+  defp build_tracked_filters(context, authority, pointer, opts) do
+    # if we're tracked, then we need to rebuild all the filters, with the
+    # tracked appendage.
     List.wrap(
       if opts[:tracked] do
         opts = Keyword.put(opts, :only, ["array"])
@@ -193,25 +192,28 @@ defmodule Exonerate.Type.Array do
           end
         end
       end
-    ) ++
-      List.wrap(
-        if Iterator.mode(context, opts) do
-          quote do
-            require Exonerate.Type.Array.Iterator
+    )
+  end
 
-            Exonerate.Type.Array.Iterator.filter(
-              unquote(authority),
-              unquote(pointer),
-              unquote(opts)
-            )
+  defp build_iterator(context, authority, pointer, opts) do
+    List.wrap(
+      if Iterator.mode(context, opts) do
+        quote do
+          require Exonerate.Type.Array.Iterator
 
-            Exonerate.Type.Array.Iterator.accessories(
-              unquote(authority),
-              unquote(pointer),
-              unquote(opts)
-            )
-          end
+          Exonerate.Type.Array.Iterator.filter(
+            unquote(authority),
+            unquote(pointer),
+            unquote(opts)
+          )
+
+          Exonerate.Type.Array.Iterator.accessories(
+            unquote(authority),
+            unquote(pointer),
+            unquote(opts)
+          )
         end
-      )
+      end
+    )
   end
 end

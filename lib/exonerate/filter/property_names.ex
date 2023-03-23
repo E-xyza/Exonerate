@@ -13,9 +13,10 @@ defmodule Exonerate.Filter.PropertyNames do
     call = Tools.call(authority, pointer, opts)
 
     # TODO: make sure we don't drop the only if this has been reffed.
-    context_opts = opts
-    |> Tools.scrub
-    |> Keyword.put(:only, ["string"])
+    context_opts =
+      opts
+      |> Tools.scrub()
+      |> Keyword.put(:only, ["string"])
 
     subfilter =
       quote do

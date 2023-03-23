@@ -167,8 +167,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     # just a basic assertion here for safety
     :so_far in accumulator or raise "uniqueItems without :so_far in accumulator"
 
-    unique_items_call =
-      Tools.call(authority, JsonPointer.join(pointer, "uniqueItems"), opts)
+    unique_items_call = Tools.call(authority, JsonPointer.join(pointer, "uniqueItems"), opts)
 
     quote do
       :ok <-
@@ -181,8 +180,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   defp filter_for({"prefixItems", _}, _, accumulator, authority, pointer, opts) do
-    prefix_items_call =
-      Tools.call(authority, JsonPointer.join(pointer, "prefixItems"), opts)
+    prefix_items_call = Tools.call(authority, JsonPointer.join(pointer, "prefixItems"), opts)
 
     quote do
       :ok <-
@@ -212,8 +210,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     # NOTE THAT THIS FILTER must come after "contains" filter.
     :contains in accumulator or raise "maxContains without :contains in accumulator"
 
-    max_contains_call =
-      Tools.call(authority, JsonPointer.join(pointer, "maxContains"), opts)
+    max_contains_call = Tools.call(authority, JsonPointer.join(pointer, "maxContains"), opts)
 
     quote do
       :ok <-
@@ -224,8 +221,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   defp filter_for({"items", context}, _, accumulator, authority, pointer, opts)
        when is_map(context) or is_boolean(context) do
     # this requires an entry point
-    items_call =
-      Tools.call(authority, JsonPointer.join(pointer, ["items", ":entrypoint"]), opts)
+    items_call = Tools.call(authority, JsonPointer.join(pointer, ["items", ":entrypoint"]), opts)
 
     quote do
       :ok <-
