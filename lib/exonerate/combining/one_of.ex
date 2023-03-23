@@ -88,7 +88,6 @@ defmodule Exonerate.Combining.OneOf do
     end
   end
 
-
   defp build_untracked(calls, authority, pointer, opts) do
     lambdas = Enum.map(calls, &to_lambda/1)
     call = Tools.call(authority, pointer, opts)

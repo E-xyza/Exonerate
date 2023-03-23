@@ -31,7 +31,7 @@ defmodule Exonerate.Combining.If do
           build_tracked(entrypoint_call, if_expr, then_expr, else_expr)
 
         :array ->
-          build_untracked(entrypoint_call, if_expr, then_expr, else_expr)
+          build_tracked(entrypoint_call, if_expr, then_expr, else_expr)
 
         nil ->
           build_untracked(entrypoint_call, if_expr, then_expr, else_expr)
@@ -85,7 +85,7 @@ defmodule Exonerate.Combining.If do
       {nil, _} ->
         :ok
 
-      {_, true} ->
+      {_, :object} ->
         then = expr("then", authority, parent_pointer, opts)
 
         quote do
@@ -94,6 +94,21 @@ defmodule Exonerate.Combining.If do
           case unquote(then) do
             {:ok, then_seen} ->
               {:ok, MapSet.union(if_seen, then_seen)}
+
+            Exonerate.Tools.error_match(error) ->
+              error
+          end
+        end
+
+      {_, :array} ->
+        then = expr("then", authority, parent_pointer, opts)
+
+        quote do
+          require Exonerate.Tools
+
+          case unquote(then) do
+            {:ok, then_seen} ->
+              {:ok, max(if_seen, then_seen)}
 
             Exonerate.Tools.error_match(error) ->
               error
@@ -111,6 +126,9 @@ defmodule Exonerate.Combining.If do
         quote do
           {:ok, MapSet.new()}
         end
+
+      {nil, :array} ->
+        {:ok, 0}
 
       {nil, _} ->
         :ok
