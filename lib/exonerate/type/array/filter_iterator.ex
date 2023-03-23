@@ -221,7 +221,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   defp filter_for({"items", context}, _, accumulator, authority, pointer, opts)
        when is_map(context) or is_boolean(context) do
     # this requires an entry point
-    items_call = Tools.call(authority, JsonPointer.join(pointer, ["items", ":entrypoint"]), opts)
+    items_call = Tools.call(authority, JsonPointer.join(pointer, "items"), :entrypoint, opts)
 
     quote do
       :ok <-
@@ -265,7 +265,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   defp filter_for({"unevaluatedItems", _}, context, accumulator, authority, pointer, opts) do
     unevaluated_items_call =
-      Tools.call(authority, JsonPointer.join(pointer, ["unevaluatedItems", ":entrypoint"]), opts)
+      Tools.call(authority, JsonPointer.join(pointer, "unevaluatedItems"), :entrypoint, opts)
 
     tuple_parts =
       cond do

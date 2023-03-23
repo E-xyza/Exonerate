@@ -131,7 +131,7 @@ defmodule Exonerate.Type.Array do
         opts
       end
 
-    iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":array_iterator"), call_opts)
+    iterator_call = Tools.call(authority, pointer, :array_iterator, call_opts)
 
     case {needs_combining_seen, opts[:tracked]} do
       {true, :array} ->

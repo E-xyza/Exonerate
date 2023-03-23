@@ -34,8 +34,8 @@ defmodule Exonerate.Filter.Items do
 
   defp build_filter(context = %{"items" => subschema}, authority, parent_pointer, opts)
        when is_map(subschema) or is_boolean(subschema) do
-    entrypoint_pointer = JsonPointer.join(parent_pointer, ["items", ":entrypoint"])
-    entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
+    entrypoint_pointer = JsonPointer.join(parent_pointer, "items")
+    entrypoint_call = Tools.call(authority, entrypoint_pointer, :entrypoint, opts)
 
     context_opts = Tools.scrub(opts)
     context_pointer = JsonPointer.join(parent_pointer, "items")

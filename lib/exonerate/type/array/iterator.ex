@@ -60,7 +60,7 @@ defmodule Exonerate.Type.Array.Iterator do
   end
 
   def call(authority, pointer, opts) do
-    Tools.call(authority, JsonPointer.join(pointer, ":array_iterator"), opts)
+    Tools.call(authority, pointer, :array_iterator, opts)
   end
 
   defmacro filter(authority, pointer, opts) do

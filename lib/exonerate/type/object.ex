@@ -143,14 +143,14 @@ defmodule Exonerate.Type.Object do
     List.wrap(
       case {Iterator.needed?(context), needs_seen?(context)} do
         {true, true} ->
-          iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":object_iterator"), opts)
+          iterator_call = Tools.call(authority, pointer, :object_iterator, opts)
 
           quote do
             :ok <- unquote(iterator_call)(object, path, seen)
           end
 
         {true, _} ->
-          iterator_call = Tools.call(authority, JsonPointer.join(pointer, ":object_iterator"), opts)
+          iterator_call = Tools.call(authority, pointer, :object_iterator, opts)
 
           quote do
             :ok <- unquote(iterator_call)(object, path)

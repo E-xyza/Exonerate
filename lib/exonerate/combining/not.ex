@@ -12,7 +12,7 @@ defmodule Exonerate.Combining.Not do
   defp build_filter(caller, authority, pointer, opts) do
     subschema = Tools.subschema(caller, authority, pointer)
     call = Tools.call(authority, pointer, opts)
-    entrypoint_call = Tools.call(authority, JsonPointer.join(pointer, ":entrypoint"), opts)
+    entrypoint_call = Tools.call(authority, pointer, :entrypoint, opts)
 
     ###############################################################
     # this section for suppressing clause matching compiler warning

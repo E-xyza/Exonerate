@@ -13,8 +13,8 @@ defmodule Exonerate.Filter.AdditionalItems do
   end
 
   defp build_filter(context, authority, parent_pointer, opts) do
-    entrypoint_pointer = JsonPointer.join(parent_pointer, ["additionalItems", ":entrypoint"])
-    entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
+    entrypoint_pointer = JsonPointer.join(parent_pointer, "additionalItems")
+    entrypoint_call = Tools.call(authority, entrypoint_pointer, :entrypoint, opts)
     context_pointer = JsonPointer.join(parent_pointer, "additionalItems")
 
     context_opts = Tools.scrub(opts)

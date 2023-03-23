@@ -23,8 +23,8 @@ defmodule Exonerate.Filter.UnevaluatedItems do
   end
 
   defp build_combining(context, authority, parent_pointer, opts) do
-    entrypoint_pointer = JsonPointer.join(parent_pointer, ["unevaluatedItems", ":entrypoint"])
-    entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
+    entrypoint_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
+    entrypoint_call = Tools.call(authority, entrypoint_pointer, :entrypoint, opts)
     context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
 
     context_opts = Tools.scrub(opts)
@@ -75,8 +75,8 @@ defmodule Exonerate.Filter.UnevaluatedItems do
   end
 
   defp build_trivial(context, authority, parent_pointer, opts) do
-    entrypoint_pointer = JsonPointer.join(parent_pointer, ["unevaluatedItems", ":entrypoint"])
-    entrypoint_call = Tools.call(authority, entrypoint_pointer, opts)
+    entrypoint_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
+    entrypoint_call = Tools.call(authority, entrypoint_pointer, :entrypoint, opts)
     context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
 
     context_opts = Tools.scrub(opts)

@@ -119,19 +119,20 @@ defmodule Exonerate.Tools do
   end
 
   @spec call(atom, JsonPointer.t(), Keyword.t()) :: atom
-  def call(authority, pointer, opts) do
+  @spec call(atom, JsonPointer.t(), atom, Keyword.t()) :: atom
+  def call(authority, pointer, suffix \\ nil, opts) do
     pointer
     |> JsonPointer.to_uri()
     |> struct(path: "#{authority}")
     |> to_string
-    |> append_suffix(opts[:suffix])
+    |> append_suffix(suffix)
     |> append_tracked(opts[:tracked])
     |> adjust_length
     |> String.to_atom()
   end
 
   defp append_suffix(path, nil), do: path
-  defp append_suffix(path, suffix), do: Path.join(path, suffix)
+  defp append_suffix(path, suffix), do: Path.join(path, ":" <> Atom.to_string(suffix))
 
   defp append_tracked(path, :object), do: Path.join(path, ":tracked_object")
   defp append_tracked(path, :array), do: Path.join(path, ":tracked_array")

@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.DependentSchemas do
   end
 
   defp prong_and_accessory({key, _schema}, authority, pointer, opts) do
-    call = Tools.call(authority, JsonPointer.join(pointer, [key, ":entrypoint"]), opts)
+    call = Tools.call(authority, JsonPointer.join(pointer, key), :entrypoint, opts)
 
     prong =
       if opts[:tracked] do

@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.Dependencies do
   end
 
   defp make_dependencies({key, schema}, authority, pointer, opts) do
-    call = Tools.call(authority, JsonPointer.join(pointer, [key, ":entrypoint"]), opts)
+    call = Tools.call(authority, JsonPointer.join(pointer, key), :entrypoint, opts)
 
     prong =
       quote do
