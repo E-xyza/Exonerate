@@ -171,11 +171,12 @@ defmodule Exonerate.Type.Array do
   end
 
   defp build_accessories(context, authority, pointer, opts) do
-    opts = if needs_combining_seen?(context) or opts[:tracked] do
-      Keyword.merge(opts, only: ["array"], tracked: :array)
-    else
-      opts
-    end
+    opts =
+      if needs_combining_seen?(context) or opts[:tracked] do
+        Keyword.merge(opts, only: ["array"], tracked: :array)
+      else
+        opts
+      end
 
     build_tracked_filters(context, authority, pointer, opts) ++
       build_iterator(context, authority, pointer, opts)
@@ -186,7 +187,6 @@ defmodule Exonerate.Type.Array do
     # tracked appendage.
     List.wrap(
       if needs_combining_seen?(context) or opts[:tracked] do
-
         for filter <- @seen_filters, is_map_key(context, filter) do
           module = @combining_modules[filter]
           pointer = JsonPointer.join(pointer, filter)

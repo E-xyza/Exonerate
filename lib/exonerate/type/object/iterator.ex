@@ -137,24 +137,43 @@ defmodule Exonerate.Type.Object.Iterator do
 
         Enum.reduce_while(object, :ok, fn
           {key, value}, :ok ->
-            visited = false
-
-            with unquote_splicing(filters) do
-              result =
-                if key in seen or visited do
-                  :ok
-                else
-                  unquote(visitor_call)(value, Path.join(path, key))
-                end
-
-              {:cont, result}
-            else
-              Exonerate.Tools.error_match(error) -> {:halt, error}
-            end
+            unquote(with_expression(filters, visitor_call))
 
           _, Exonerate.Tools.error_match(error) ->
             {:halt, error}
         end)
+      end
+    end
+  end
+
+  defp with_expression([], visitor_call) do
+    quote do
+      result =
+        if key in seen do
+          :ok
+        else
+          unquote(visitor_call)(value, Path.join(path, key))
+        end
+
+      {:cont, result}
+    end
+  end
+
+  defp with_expression(filters, visitor_call) do
+    quote do
+      visited = false
+
+      with unquote_splicing(filters) do
+        result =
+          if key in seen or visited do
+            :ok
+          else
+            unquote(visitor_call)(value, Path.join(path, key))
+          end
+
+        {:cont, result}
+      else
+        Exonerate.Tools.error_match(error) -> {:halt, error}
       end
     end
   end

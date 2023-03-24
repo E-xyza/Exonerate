@@ -61,7 +61,11 @@ defmodule ExonerateTest.Code.ArrayTest do
                    unquote(:"iterated#/allOf/:tracked_array")(array, path),
                  first_unseen_index = max(first_unseen_index, new_index),
                  {:ok, _} <-
-                   unquote(:"iterated#/:array_iterator/:tracked_array")(array, path, first_unseen_index) do
+                   unquote(:"iterated#/:array_iterator/:tracked_array")(
+                     array,
+                     path,
+                     first_unseen_index
+                   ) do
               :ok
             end
           end
