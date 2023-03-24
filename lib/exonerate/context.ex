@@ -22,16 +22,6 @@ defmodule Exonerate.Context do
     end
   end
 
-  @filter_map %{
-    "array" => Exonerate.Type.Array,
-    "boolean" => Exonerate.Type.Boolean,
-    "integer" => Exonerate.Type.Integer,
-    "null" => Exonerate.Type.Null,
-    "number" => Exonerate.Type.Number,
-    "object" => Exonerate.Type.Object,
-    "string" => Exonerate.Type.String
-  }
-
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
 

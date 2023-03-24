@@ -7,7 +7,6 @@ defmodule Exonerate.Type.Number do
   # it will implement both Number and Integer, this is handled at the Context level.
 
   alias Exonerate.Combining
-  alias Exonerate.Draft
   alias Exonerate.Tools
 
   @modules Combining.merge(%{

@@ -2,6 +2,7 @@ defmodule Exonerate.Combining.Ref do
   @moduledoc false
 
   alias Exonerate.Cache
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
 
   defmacro filter(authority, pointer, opts) do
@@ -16,13 +17,13 @@ defmodule Exonerate.Combining.Ref do
     __CALLER__
     |> Tools.subschema(authority, pointer)
     |> URI.parse()
-    |> build_filter(__CALLER__.module, authority, pointer, opts)
+    |> build_filter(__CALLER__, authority, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   defp build_filter(
          %{host: nil, path: nil, fragment: fragment},
-         _module,
+         caller,
          authority,
          call_pointer,
          opts
@@ -35,35 +36,19 @@ defmodule Exonerate.Combining.Ref do
 
     opts = Keyword.delete(opts, :id)
 
-    ref_call = Tools.call(authority, ref_pointer, opts)
+    ref = Tools.call(authority, ref_pointer, opts)
 
-    quote do
-      @compile {:inline, [{unquote(call), 2}]}
-      defp unquote(call)(content, path) do
-        case unquote(ref_call)(content, path) do
-          {:error, error} ->
-            ref_trace = Keyword.get(error, :ref_trace, [])
-            new_error = Keyword.put(error, :ref_trace, [unquote(call_path) | ref_trace])
-            {:error, new_error}
-
-          ok ->
-            ok
-        end
-      end
-
-      require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(ref_pointer), unquote(opts))
-    end
+    filter(call, ref, call_path, caller, authority, ref_pointer, opts)
   end
 
-  defp build_filter(%{host: nil, path: path}, module, authority, call_pointer, opts) do
+  defp build_filter(%{host: nil, path: path}, caller, authority, call_pointer, opts) do
     ref_pointer =
       opts
       |> Keyword.fetch!(:id)
       |> URI.parse()
       |> Map.replace!(:path, "/" <> path)
       |> to_string()
-      |> Cache.get_id(module)
+      |> Cache.get_id(caller.module)
 
     opts = Keyword.delete(opts, :id)
 
@@ -71,22 +56,51 @@ defmodule Exonerate.Combining.Ref do
     ref = Tools.call(authority, ref_pointer, opts)
     call_path = JsonPointer.to_path(call_pointer)
 
-    quote do
-      @compile {:inline, [{unquote(call), 2}]}
-      defp unquote(call)(content, path) do
-        case unquote(ref)(content, path) do
-          :ok ->
-            :ok
+    filter(call, ref, call_path, caller, authority, ref_pointer, opts)
+  end
 
-          {:error, error} ->
-            ref_trace = Keyword.get(error, :ref_trace, [])
-            new_error = Keyword.put(error, :ref_trace, [unquote(call_path) | ref_trace])
-            {:error, new_error}
+  defp filter(call, ref, call_path, caller, authority, ref_pointer, opts) do
+    caller
+    |> Tools.subschema(authority, ref_pointer)
+    |> Degeneracy.class()
+    |> case do
+      :ok ->
+        quote do
+          @compile {:inline, [{unquote(call), 2}]}
+          defp unquote(call)(_content, _path), do: :ok
         end
-      end
 
-      require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(ref_pointer), unquote(opts))
+      :error ->
+        # in this case we still need to regenerate the context because the degeneracy
+        # failure is stored in the remote call.
+
+        quote do
+          @compile {:inline, [{unquote(call), 2}]}
+          defp unquote(call)(content, path) do
+            unquote(ref)(content, path)
+          end
+
+          require Exonerate.Context
+          Exonerate.Context.filter(unquote(authority), unquote(ref_pointer), unquote(opts))
+        end
+
+      :unknown ->
+        quote do
+          defp unquote(call)(content, path) do
+            case unquote(ref)(content, path) do
+              {:error, error} ->
+                ref_trace = Keyword.get(error, :ref_trace, [])
+                new_error = Keyword.put(error, :ref_trace, [unquote(call_path) | ref_trace])
+                {:error, new_error}
+
+              ok ->
+                ok
+            end
+          end
+
+          require Exonerate.Context
+          Exonerate.Context.filter(unquote(authority), unquote(ref_pointer), unquote(opts))
+        end
     end
   end
 end

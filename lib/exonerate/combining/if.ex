@@ -1,5 +1,6 @@
 defmodule Exonerate.Combining.If do
   @moduledoc false
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
 
   defmacro filter(authority, pointer, opts) do
@@ -19,27 +20,50 @@ defmodule Exonerate.Combining.If do
     then_expr = then_expr(context, authority, parent_pointer, opts)
     else_expr = else_expr(context, authority, parent_pointer, opts)
 
+    {function, context_names} =
+      case {Degeneracy.class(context["if"]), opts[:tracked]} do
+        {:ok, _} ->
+          {build_then(entrypoint_call, then_expr), ["then"]}
+
+        {:error, _} ->
+          {build_else(entrypoint_call, else_expr), ["else"]}
+
+        {:unknown, :object} ->
+          {build_tracked(entrypoint_call, if_expr, then_expr, else_expr), ["if", "then", "else"]}
+
+        {:unknown, :array} ->
+          {build_tracked(entrypoint_call, if_expr, then_expr, else_expr), ["if", "then", "else"]}
+
+        {:unknown, nil} ->
+          {build_untracked(entrypoint_call, if_expr, then_expr, else_expr),
+           ["if", "then", "else"]}
+      end
+
     contexts =
       Enum.flat_map(
-        ["if", "then", "else"],
+        context_names,
         &List.wrap(if is_map_key(context, &1), do: context(&1, authority, parent_pointer, opts))
       )
-
-    function =
-      case opts[:tracked] do
-        :object ->
-          build_tracked(entrypoint_call, if_expr, then_expr, else_expr)
-
-        :array ->
-          build_tracked(entrypoint_call, if_expr, then_expr, else_expr)
-
-        nil ->
-          build_untracked(entrypoint_call, if_expr, then_expr, else_expr)
-      end
 
     quote do
       unquote(function)
       unquote(contexts)
+    end
+  end
+
+  defp build_then(entrypoint_call, then_expr) do
+    quote do
+      defp unquote(entrypoint_call)(content, path) do
+        unquote(then_expr)
+      end
+    end
+  end
+
+  defp build_else(entrypoint_call, else_expr) do
+    quote do
+      defp unquote(entrypoint_call)(content, path) do
+        unquote(else_expr)
+      end
     end
   end
 
