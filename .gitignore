@@ -9,3 +9,6 @@ deps
 automated
 
 /test/one_test.exs
+
+# don't commit schemas fetched for testing
+/priv

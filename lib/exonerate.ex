@@ -92,6 +92,12 @@ defmodule Exonerate do
   - `:draft`: specifies any special draft information.  Defaults to "2020", which is intercompatible
     with `"2019"`.  `"4"`, `"6"`, and `"7"` are also supported.  Note: Validation is NOT performed on
     the schema, so intermingling draft components is possible (but not recommended).
+
+  - `:cache_app`: specifies the otp app whose priv directory cached remote JSONs are stored.
+    Defaults to `:exonerate`.
+
+  - `:cache_path`: specifies the subdirectory of priv where cached remote JSONs are stored.
+    Defaults to `/`.
   """
 
   alias Exonerate.Cache

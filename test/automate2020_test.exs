@@ -11,8 +11,6 @@ omit_describes = [
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},
   {"multipleOf.json", 3},
-  # no support for external uri's
-  {"ref.json", 6},
   # no support for relative uri (for now)
   {"ref.json", 11},
   # currently no support for unevaluated

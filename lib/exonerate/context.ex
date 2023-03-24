@@ -63,9 +63,15 @@ defmodule Exonerate.Context do
   end
 
   defp build_filter(subschema = %{"id" => id}, authority, pointer, opts) do
-    subschema
+    rest = subschema
     |> Map.delete("id")
-    |> build_filter(authority, pointer, Keyword.put(opts, :id, id))
+    |> build_filter(authority, pointer, opts)
+
+    quote do
+      defp unquote(Tools.call(authority, pointer, opts))(:id, _), do: unquote(id)
+
+      unquote(rest)
+    end
   end
 
   # metadata
@@ -173,7 +179,7 @@ defmodule Exonerate.Context do
   @all_types Type.all()
 
   # NB: schema should always contain a type field as per Degeneracy.canonicalize/1 called from Tools.subschema/3
-  defp build_filter(subschema = %{"type" => types}, authority, pointer, opts) do
+  defp build_filter(schema = %{"type" => types}, authority, pointer, opts) do
     # condition the bindings
     filtered_types =
       opts
@@ -201,7 +207,7 @@ defmodule Exonerate.Context do
     # |> Tools.inspect
 
     combining =
-      for filter <- @combining_filters, is_map_key(subschema, filter) do
+      for filter <- @combining_filters, is_map_key(schema, filter) do
         combining_module = @combining_modules[filter]
         combining_pointer = JsonPointer.join(pointer, filter)
 

@@ -41,6 +41,8 @@ defmodule Exonerate.MixProject do
       {:jason, "~> 1.4.0"},
       {:dialyxir, "~> 1.2.0", only: :dev, runtime: false},
       {:match_spec, "~> 0.3.1"},
+      {:req, "~> 0.3", optional: true},
+      {:finch, "~> 0.15", optional: true},
       {:ex_json_schema, "~> 0.9.2", only: :bench},
       {:benchee, "~> 1.1.0", only: :bench}
     ]
