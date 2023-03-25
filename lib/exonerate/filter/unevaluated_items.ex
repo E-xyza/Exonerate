@@ -3,32 +3,32 @@ defmodule Exonerate.Filter.UnevaluatedItems do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     parent_pointer = JsonPointer.backtrack!(pointer)
 
     __CALLER__
-    |> Tools.subschema(authority, parent_pointer)
-    |> build_filter(authority, parent_pointer, opts)
+    |> Tools.subschema(resource, parent_pointer)
+    |> build_filter(resource, parent_pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   @seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
 
-  defp build_filter(context, authority, parent_pointer, opts) do
+  defp build_filter(context, resource, parent_pointer, opts) do
     if Enum.any?(@seen_filters, &is_map_key(context, &1)) do
-      build_combining(context, authority, parent_pointer, opts)
+      build_combining(context, resource, parent_pointer, opts)
     else
-      build_trivial(context, authority, parent_pointer, opts)
+      build_trivial(context, resource, parent_pointer, opts)
     end
   end
 
-  defp build_combining(context, authority, parent_pointer, opts) do
+  defp build_combining(context, resource, parent_pointer, opts) do
     entrypoint_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
-    entrypoint_call = Tools.call(authority, entrypoint_pointer, :entrypoint, opts)
+    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
     context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
 
     context_opts = Tools.scrub(opts)
-    context_call = Tools.call(authority, context_pointer, context_opts)
+    context_call = Tools.call(resource, context_pointer, context_opts)
 
     case context do
       # TODO: add a compiler error if this isn't a list
@@ -47,7 +47,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           require Exonerate.Context
 
           Exonerate.Context.filter(
-            unquote(authority),
+            unquote(resource),
             unquote(context_pointer),
             unquote(context_opts)
           )
@@ -66,7 +66,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           require Exonerate.Context
 
           Exonerate.Context.filter(
-            unquote(authority),
+            unquote(resource),
             unquote(context_pointer),
             unquote(context_opts)
           )
@@ -74,13 +74,13 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     end
   end
 
-  defp build_trivial(context, authority, parent_pointer, opts) do
+  defp build_trivial(context, resource, parent_pointer, opts) do
     entrypoint_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
-    entrypoint_call = Tools.call(authority, entrypoint_pointer, :entrypoint, opts)
+    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
     context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
 
     context_opts = Tools.scrub(opts)
-    context_call = Tools.call(authority, context_pointer, context_opts)
+    context_call = Tools.call(resource, context_pointer, context_opts)
 
     case context do
       # TODO: add a compiler error if this isn't a list
@@ -98,7 +98,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           require Exonerate.Context
 
           Exonerate.Context.filter(
-            unquote(authority),
+            unquote(resource),
             unquote(context_pointer),
             unquote(context_opts)
           )
@@ -113,7 +113,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           require Exonerate.Context
 
           Exonerate.Context.filter(
-            unquote(authority),
+            unquote(resource),
             unquote(context_pointer),
             unquote(context_opts)
           )

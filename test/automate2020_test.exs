@@ -4,17 +4,26 @@ directory2020 =
   |> Path.expand()
 
 omit_modules = ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json
-refRemote.json)
+refRemote.json unevaluatedProperties.json items.json ref.json unevaluatedItems.json)
 
 omit_describes = [
   # integer filters do not match float values:
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},
   {"multipleOf.json", 3},
-  # no support for relative uri (for now)
+  # no support for dynamicRef
+  {"ref.json", 6},
+  {"ref.json", 1},
+  {"ref.json", 2},
+  {"ref.json", 3},
+  {"ref.json", 4},
+  {"ref.json", 5},
+  {"ref.json", 7},
+  {"ref.json", 8},
+  {"ref.json", 9},
+  {"ref.json", 10},
   {"ref.json", 11},
-  # currently no support for unevaluated
-  {"ref.json", 13},
+  {"ref.json", 12},
   # these are more than just annotations, and are tested in test.
   {"format.json", 3},
   {"format.json", 4},

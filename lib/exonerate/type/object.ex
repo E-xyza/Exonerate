@@ -19,25 +19,25 @@ defmodule Exonerate.Type.Object do
 
   @combining_filters Combining.filters() ++ ["dependentSchemas"]
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     if opts[:tracked] do
       quote do
         require Exonerate.Type.Object.Tracked
-        Exonerate.Type.Object.Tracked.filter(unquote(authority), unquote(pointer), unquote(opts))
+        Exonerate.Type.Object.Tracked.filter(unquote(resource), unquote(pointer), unquote(opts))
       end
     else
       __CALLER__
-      |> Tools.subschema(authority, pointer)
-      |> build_filter(authority, pointer, opts)
+      |> Tools.subschema(resource, pointer)
+      |> build_filter(resource, pointer, opts)
       |> Tools.maybe_dump(opts)
     end
   end
 
   @empty_map_only [%{"unevaluatedProperties" => false}, %{"additionalProperties" => false}]
   # empty map optimization
-  defp build_filter(context, authority, pointer, opts) when context in @empty_map_only do
+  defp build_filter(context, resource, pointer, opts) when context in @empty_map_only do
     pointer = JsonPointer.join(pointer, Map.keys(context))
-    call = Tools.call(authority, pointer, opts)
+    call = Tools.call(resource, pointer, opts)
 
     quote do
       defp unquote(call)(object, path) when object === %{}, do: :ok
@@ -49,16 +49,16 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  defp build_filter(context, authority, pointer, opts) do
+  defp build_filter(context, resource, pointer, opts) do
     filter_clauses =
-      outer_filters(context, authority, pointer, opts) ++
-        seen_filters(context, authority, pointer, opts) ++
-        unseen_filters(context, authority, pointer, opts) ++
-        iterator_filter(context, authority, pointer, opts)
+      outer_filters(context, resource, pointer, opts) ++
+        seen_filters(context, resource, pointer, opts) ++
+        unseen_filters(context, resource, pointer, opts) ++
+        iterator_filter(context, resource, pointer, opts)
 
     if needs_seen?(context) do
       quote do
-        defp unquote(Tools.call(authority, pointer, opts))(object, path) when is_map(object) do
+        defp unquote(Tools.call(resource, pointer, opts))(object, path) when is_map(object) do
           seen = MapSet.new()
 
           with unquote_splicing(filter_clauses) do
@@ -68,7 +68,7 @@ defmodule Exonerate.Type.Object do
       end
     else
       quote do
-        defp unquote(Tools.call(authority, pointer, opts))(object, path) when is_map(object) do
+        defp unquote(Tools.call(resource, pointer, opts))(object, path) when is_map(object) do
           with unquote_splicing(filter_clauses) do
             :ok
           end
@@ -85,10 +85,10 @@ defmodule Exonerate.Type.Object do
       Enum.any?(@seen_filters, &is_map_key(context, &1))
   end
 
-  defp outer_filters(context, authority, pointer, opts) do
+  defp outer_filters(context, resource, pointer, opts) do
     for filter <- @outer_filters, is_map_key(context, filter) do
       filter_call =
-        Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
       quote do
         :ok <- unquote(filter_call)(object, path)
@@ -96,7 +96,7 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  defp seen_filters(context, authority, pointer, opts) do
+  defp seen_filters(context, resource, pointer, opts) do
     needs_seen = needs_seen?(context)
 
     opts =
@@ -108,7 +108,7 @@ defmodule Exonerate.Type.Object do
 
     for filter <- @seen_filters, is_map_key(context, filter) do
       filter_call =
-        Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
       if needs_seen do
         quote do
@@ -128,10 +128,10 @@ defmodule Exonerate.Type.Object do
     |> Enum.flat_map(&Function.identity/1)
   end
 
-  defp unseen_filters(context, authority, pointer, opts) do
+  defp unseen_filters(context, resource, pointer, opts) do
     for filter <- @unseen_filters, is_map_key(context, filter) do
       filter_call =
-        Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
       quote do
         :ok <- unquote(filter_call)(object, path)
@@ -139,18 +139,18 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  defp iterator_filter(context, authority, pointer, opts) do
+  defp iterator_filter(context, resource, pointer, opts) do
     List.wrap(
       case {Iterator.needed?(context), needs_seen?(context)} do
         {true, true} ->
-          iterator_call = Tools.call(authority, pointer, :object_iterator, opts)
+          iterator_call = Tools.call(resource, pointer, :object_iterator, opts)
 
           quote do
             :ok <- unquote(iterator_call)(object, path, seen)
           end
 
         {true, _} ->
-          iterator_call = Tools.call(authority, pointer, :object_iterator, opts)
+          iterator_call = Tools.call(resource, pointer, :object_iterator, opts)
 
           quote do
             :ok <- unquote(iterator_call)(object, path)
@@ -162,21 +162,21 @@ defmodule Exonerate.Type.Object do
     )
   end
 
-  defmacro accessories(authority, pointer, opts) do
+  defmacro accessories(resource, pointer, opts) do
     if opts[:tracked] do
       quote do
         require Exonerate.Type.Object.Tracked
 
         Exonerate.Type.Object.Tracked.accessories(
-          unquote(authority),
+          unquote(resource),
           unquote(pointer),
           unquote(opts)
         )
       end
     else
       __CALLER__
-      |> Tools.subschema(authority, pointer)
-      |> build_accessories(authority, pointer, opts)
+      |> Tools.subschema(resource, pointer)
+      |> build_accessories(resource, pointer, opts)
       |> Tools.maybe_dump(opts)
     end
   end

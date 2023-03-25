@@ -3,16 +3,16 @@ defmodule Exonerate.Filter.UniqueItems do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(true, authority, pointer, opts) do
+  defp build_filter(true, resource, pointer, opts) do
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(item, so_far, path) do
+      defp unquote(Tools.call(resource, pointer, opts))(item, so_far, path) do
         if item in so_far do
           require Exonerate.Tools
           Exonerate.Tools.mismatch(item, unquote(pointer), path)

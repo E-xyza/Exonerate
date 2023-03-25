@@ -105,25 +105,25 @@ defmodule Exonerate.Tools do
   # SUBSCHEMA MANIPULATION
 
   @spec subschema(Macro.Env.t(), atom, JsonPointer.t()) :: Type.json()
-  def subschema(caller, authority, pointer) do
+  def subschema(caller, resource, pointer) do
     caller.module
-    |> Cache.fetch_schema!(authority)
+    |> Cache.fetch_schema!(resource)
     |> JsonPointer.resolve_json!(pointer)
   end
 
   @spec parent(Macro.Env.t(), atom, JsonPointer.t()) :: Type.json()
-  def parent(caller, authority, pointer) do
+  def parent(caller, resource, pointer) do
     caller.module
-    |> Cache.fetch_schema!(authority)
+    |> Cache.fetch_schema!(resource)
     |> JsonPointer.resolve_json!(JsonPointer.backtrack!(pointer))
   end
 
   @spec call(atom, JsonPointer.t(), Keyword.t()) :: atom
   @spec call(atom, JsonPointer.t(), atom, Keyword.t()) :: atom
-  def call(authority, pointer, suffix \\ nil, opts) do
+  def call(resource, pointer, suffix \\ nil, opts) do
     pointer
     |> JsonPointer.to_uri()
-    |> struct(path: "#{authority}")
+    |> struct(path: "#{resource}")
     |> to_string
     |> append_suffix(suffix)
     |> append_tracked(opts[:tracked])
@@ -193,6 +193,12 @@ defmodule Exonerate.Tools do
   """
   def scrub(opts) do
     Keyword.drop(opts, ~w(only tracked seen)a)
+  end
+
+  # URI tools
+  @spec uri_to_resource(URI.t()) :: atom
+  def uri_to_resource(uri) do
+    :"#{%{uri | fragment: nil}}"
   end
 
   # general tools

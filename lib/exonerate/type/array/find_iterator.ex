@@ -10,10 +10,10 @@ defmodule Exonerate.Type.Array.FindIterator do
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_iterator(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_iterator(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
@@ -26,13 +26,13 @@ defmodule Exonerate.Type.Array.FindIterator do
 
   defp build_iterator(
          context = %{"contains" => _, "minItems" => length},
-         authority,
+         resource,
          pointer,
          opts
        ) do
-    call = Iterator.call(authority, pointer, opts)
+    call = Iterator.call(resource, pointer, opts)
     contains_pointer = JsonPointer.join(pointer, "contains")
-    contains_call = Tools.call(authority, contains_pointer, opts)
+    contains_call = Tools.call(resource, contains_pointer, opts)
     needed = Map.get(context, "minContains", 1)
 
     quote do
@@ -83,10 +83,10 @@ defmodule Exonerate.Type.Array.FindIterator do
   end
 
   # contains-only case
-  defp build_iterator(schema = %{"contains" => _}, authority, pointer, opts) do
-    call = Iterator.call(authority, pointer, opts)
+  defp build_iterator(schema = %{"contains" => _}, resource, pointer, opts) do
+    call = Iterator.call(resource, pointer, opts)
     contains_pointer = JsonPointer.join(pointer, "contains")
-    contains_call = Tools.call(authority, contains_pointer, opts)
+    contains_call = Tools.call(resource, contains_pointer, opts)
     needed = Map.get(schema, "minContains", 1)
 
     quote do
@@ -118,8 +118,8 @@ defmodule Exonerate.Type.Array.FindIterator do
 
   # minItems-only case
 
-  defp build_iterator(%{"minItems" => length}, authority, pointer, opts) do
-    call = Iterator.call(authority, pointer, opts)
+  defp build_iterator(%{"minItems" => length}, resource, pointer, opts) do
+    call = Iterator.call(resource, pointer, opts)
 
     quote do
       defp unquote(call)(content, path) do

@@ -2,28 +2,28 @@ defmodule Exonerate.Filter.Dependencies do
   @moduledoc false
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> Enum.map(&make_dependencies(&1, authority, pointer, opts))
+    |> Tools.subschema(resource, pointer)
+    |> Enum.map(&make_dependencies(&1, resource, pointer, opts))
     |> Enum.unzip()
-    |> build_filter(authority, pointer, opts)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp make_dependencies({key, schema}, authority, pointer, opts) do
-    call = Tools.call(authority, JsonPointer.join(pointer, key), :entrypoint, opts)
+  defp make_dependencies({key, schema}, resource, pointer, opts) do
+    call = Tools.call(resource, JsonPointer.join(pointer, key), :entrypoint, opts)
 
     prong =
       quote do
         :ok <- unquote(call)(content, path)
       end
 
-    {prong, accessory(call, key, schema, authority, pointer, opts)}
+    {prong, accessory(call, key, schema, resource, pointer, opts)}
   end
 
-  defp build_filter({prongs, accessories}, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter({prongs, accessories}, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
     quote do
       defp unquote(call)(content, path) do
@@ -64,11 +64,11 @@ defmodule Exonerate.Filter.Dependencies do
     end
   end
 
-  defp accessory(call, key, schema, authority, pointer, opts)
+  defp accessory(call, key, schema, resource, pointer, opts)
        when is_map(schema) or is_boolean(schema) do
     pointer = JsonPointer.join(pointer, key)
     context_opts = Tools.scrub(opts)
-    context_call = Tools.call(authority, pointer, context_opts)
+    context_call = Tools.call(resource, pointer, context_opts)
 
     quote do
       defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do
@@ -78,7 +78,7 @@ defmodule Exonerate.Filter.Dependencies do
       defp unquote(call)(content, path), do: :ok
 
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(context_opts))
+      Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(context_opts))
     end
   end
 end

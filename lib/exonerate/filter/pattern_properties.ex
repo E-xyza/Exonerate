@@ -2,17 +2,17 @@ defmodule Exonerate.Filter.PatternProperties do
   @moduledoc false
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(subschema, authority, pointer, opts) do
+  defp build_filter(subschema, resource, pointer, opts) do
     {subfilters, contexts} =
       subschema
-      |> Enum.map(&filters_for(&1, authority, pointer, opts))
+      |> Enum.map(&filters_for(&1, resource, pointer, opts))
       |> Enum.unzip()
 
     init =
@@ -57,7 +57,7 @@ defmodule Exonerate.Filter.PatternProperties do
       end
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))({key, value}, path) do
+      defp unquote(Tools.call(resource, pointer, opts))({key, value}, path) do
         require Exonerate.Tools
 
         Enum.reduce_while(unquote(subfilters), unquote(init), fn
@@ -80,10 +80,10 @@ defmodule Exonerate.Filter.PatternProperties do
     end
   end
 
-  defp filters_for({regex, _}, authority, pointer, opts) do
+  defp filters_for({regex, _}, resource, pointer, opts) do
     opts = Tools.scrub(opts)
     pointer = JsonPointer.join(pointer, regex)
-    fun = Tools.call(authority, pointer, opts)
+    fun = Tools.call(resource, pointer, opts)
 
     {quote do
        {sigil_r(<<unquote(regex)>>, []), &(unquote({fun, [], Elixir}) / 2)}
@@ -92,7 +92,7 @@ defmodule Exonerate.Filter.PatternProperties do
        require Exonerate.Context
 
        Exonerate.Context.filter(
-         unquote(authority),
+         unquote(resource),
          unquote(pointer),
          unquote(opts)
        )

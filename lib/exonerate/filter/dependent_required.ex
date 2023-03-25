@@ -6,17 +6,17 @@ defmodule Exonerate.Filter.DependentRequired do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> Enum.map(&make_prong_and_accessory(&1, authority, pointer, opts))
+    |> Tools.subschema(resource, pointer)
+    |> Enum.map(&make_prong_and_accessory(&1, resource, pointer, opts))
     |> Enum.unzip()
-    |> build_filter(authority, pointer, opts)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp make_prong_and_accessory({key, schema}, authority, pointer, opts) do
-    call = Tools.call(authority, JsonPointer.join(pointer, key), :entrypoint, opts)
+  defp make_prong_and_accessory({key, schema}, resource, pointer, opts) do
+    call = Tools.call(resource, JsonPointer.join(pointer, key), :entrypoint, opts)
 
     prong =
       quote do
@@ -28,8 +28,8 @@ defmodule Exonerate.Filter.DependentRequired do
     {prong, accessory}
   end
 
-  defp build_filter({prongs, accessories}, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter({prongs, accessories}, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
     quote do
       defp unquote(call)(content, path) do

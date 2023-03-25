@@ -2,15 +2,15 @@ defmodule Exonerate.Filter.Pattern do
   @moduledoc false
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(pattern, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter(pattern, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
     quote do
       defp unquote(call)(string, path) do

@@ -3,26 +3,26 @@ defmodule Exonerate.Filter.PrefixItems do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     # TODO: unify opts scrubbing
     parent_pointer = JsonPointer.backtrack!(pointer)
 
     __CALLER__
-    |> Tools.subschema(authority, parent_pointer)
-    |> build_filter(authority, parent_pointer, opts)
+    |> Tools.subschema(resource, parent_pointer)
+    |> build_filter(resource, parent_pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(parent = %{"prefixItems" => subschema}, authority, parent_pointer, opts) do
+  defp build_filter(parent = %{"prefixItems" => subschema}, resource, parent_pointer, opts) do
     pointer = JsonPointer.join(parent_pointer, "prefixItems")
-    call = Tools.call(authority, pointer, opts)
+    call = Tools.call(resource, pointer, opts)
 
     {calls, filters} =
       subschema
-      |> Enum.with_index(&item_to_filter(&1, &2, authority, pointer, opts))
+      |> Enum.with_index(&item_to_filter(&1, &2, resource, pointer, opts))
       |> Enum.unzip()
 
-    additional_items = additional_items_for(parent, authority, parent_pointer, opts)
+    additional_items = additional_items_for(parent, resource, parent_pointer, opts)
 
     quote do
       unquote(calls)
@@ -31,12 +31,12 @@ defmodule Exonerate.Filter.PrefixItems do
     end
   end
 
-  defp item_to_filter(_, index, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp item_to_filter(_, index, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
     context_pointer = JsonPointer.join(pointer, "#{index}")
     context_opts = Tools.scrub(opts)
-    context_call = Tools.call(authority, context_pointer, context_opts)
+    context_call = Tools.call(resource, context_pointer, context_opts)
 
     {
       quote do
@@ -48,7 +48,7 @@ defmodule Exonerate.Filter.PrefixItems do
         require Exonerate.Context
 
         Exonerate.Context.filter(
-          unquote(authority),
+          unquote(resource),
           unquote(context_pointer),
           unquote(context_opts)
         )
@@ -56,10 +56,10 @@ defmodule Exonerate.Filter.PrefixItems do
     }
   end
 
-  defp additional_items_for(parent, authority, parent_pointer, opts) do
+  defp additional_items_for(parent, resource, parent_pointer, opts) do
     case parent do
       %{"items" => object} when is_map(object) ->
-        additional_call = Tools.call(authority, JsonPointer.join(parent_pointer, "items"), opts)
+        additional_call = Tools.call(resource, JsonPointer.join(parent_pointer, "items"), opts)
 
         quote do
           unquote(additional_call)(item, path)

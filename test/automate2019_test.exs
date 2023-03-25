@@ -3,16 +3,15 @@ directory2019 =
   |> Path.join("_draft2019-09")
   |> Path.expand()
 
-omit_modules = ~w(refRemote.json anchor.json dynamicRef.json defs.json id.json
-  format.json)
+omit_modules =
+  ~w(refRemote.json anchor.json dynamicRef.json defs.json id.json
+  format.json ref.json infinite-loop-detection.json unevaluatedProperties.json items.json unevaluatedItems.json)
 
 omit_describes = [
   # no external URIs.
   {"ref.json", 6},
   # no support for relative uri (for now)
   {"ref.json", 11},
-  # currently no support for unevaluated
-  {"ref.json", 13},
   # no floating point multiples
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},

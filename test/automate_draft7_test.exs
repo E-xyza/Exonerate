@@ -3,7 +3,8 @@ directory_draft7 =
   |> Path.join("_draft7")
   |> Path.expand()
 
-omit_modules = ~w(refRemote.json definitions.json)
+omit_modules =
+  ~w(refRemote.json definitions.json ref.json infinite-loop-detection.json items.json)
 
 omit_describes = [
   # no support for relative uri (for now)

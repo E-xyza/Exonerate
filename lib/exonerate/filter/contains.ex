@@ -3,16 +3,16 @@ defmodule Exonerate.Filter.Contains do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
-    authority
+  defmacro filter(resource, pointer, opts) do
+    resource
     |> build_filter(pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(authority, pointer, opts) do
+  defp build_filter(resource, pointer, opts) do
     quote do
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(Tools.scrub(opts)))
+      Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(Tools.scrub(opts)))
     end
   end
 end

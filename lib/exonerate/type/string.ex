@@ -16,29 +16,29 @@ defmodule Exonerate.Type.String do
 
   @filters Map.keys(@modules)
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(schema = %{"format" => "binary"}, authority, pointer, opts) do
-    filters = build_filter_with_clause(schema, authority, pointer, opts)
+  defp build_filter(schema = %{"format" => "binary"}, resource, pointer, opts) do
+    filters = build_filter_with_clause(schema, resource, pointer, opts)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(string, path) when is_binary(string) do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) when is_binary(string) do
         unquote(filters)
       end
     end
   end
 
-  defp build_filter(schema, authority, pointer, opts) do
-    filters = build_filter_with_clause(schema, authority, pointer, opts)
+  defp build_filter(schema, resource, pointer, opts) do
+    filters = build_filter_with_clause(schema, resource, pointer, opts)
     non_utf_error_pointer = JsonPointer.join(pointer, "type")
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(string, path) when is_binary(string) do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) when is_binary(string) do
         if String.valid?(string) do
           unquote(filters)
         else
@@ -49,10 +49,10 @@ defmodule Exonerate.Type.String do
     end
   end
 
-  defp build_filter_with_clause(schema, authority, pointer, opts) do
+  defp build_filter_with_clause(schema, resource, pointer, opts) do
     filter_clauses =
       for filter <- @filters, is_map_key(schema, filter) do
-        call = Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        call = Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
           :ok <- unquote(call)(string, path)
@@ -66,21 +66,21 @@ defmodule Exonerate.Type.String do
     end
   end
 
-  defmacro accessories(authority, pointer, opts) do
+  defmacro accessories(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_accessories(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_accessories(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_accessories(context, authority, pointer, opts) do
+  defp build_accessories(context, resource, pointer, opts) do
     for filter <- @filters, is_map_key(context, filter), not Combining.filter?(filter) do
       module = @modules[filter]
       pointer = JsonPointer.join(pointer, filter)
 
       quote do
         require unquote(module)
-        unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+        unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
       end
     end
   end

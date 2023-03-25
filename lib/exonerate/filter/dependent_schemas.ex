@@ -6,17 +6,17 @@ defmodule Exonerate.Filter.DependentSchemas do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> Enum.map(&prong_and_accessory(&1, authority, pointer, opts))
+    |> Tools.subschema(resource, pointer)
+    |> Enum.map(&prong_and_accessory(&1, resource, pointer, opts))
     |> Enum.unzip()
-    |> build_filter(authority, pointer, opts)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp prong_and_accessory({key, _schema}, authority, pointer, opts) do
-    call = Tools.call(authority, JsonPointer.join(pointer, key), :entrypoint, opts)
+  defp prong_and_accessory({key, _schema}, resource, pointer, opts) do
+    call = Tools.call(resource, JsonPointer.join(pointer, key), :entrypoint, opts)
 
     prong =
       if opts[:tracked] do
@@ -29,15 +29,15 @@ defmodule Exonerate.Filter.DependentSchemas do
         end
       end
 
-    accessory = accessory(call, key, authority, pointer, opts)
+    accessory = accessory(call, key, resource, pointer, opts)
 
     {prong, accessory}
   end
 
-  defp accessory(call, key, authority, pointer, opts) do
+  defp accessory(call, key, resource, pointer, opts) do
     context_opts = Tools.scrub(opts)
     pointer = JsonPointer.join(pointer, key)
-    context_call = Tools.call(authority, pointer, context_opts)
+    context_call = Tools.call(resource, pointer, context_opts)
 
     fallthrough =
       if opts[:tracked] do
@@ -56,12 +56,12 @@ defmodule Exonerate.Filter.DependentSchemas do
       defp unquote(call)(content, path), do: unquote(fallthrough)
 
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(context_opts))
+      Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(context_opts))
     end
   end
 
-  defp build_filter({prongs, accessories}, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter({prongs, accessories}, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
     prongs = Enum.flat_map(prongs, &Function.identity/1)
 
     if opts[:tracked] do

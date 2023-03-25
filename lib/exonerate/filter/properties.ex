@@ -3,19 +3,19 @@ defmodule Exonerate.Filter.Properties do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(subschema, authority, pointer, opts) do
-    main_call = Tools.call(authority, pointer, opts)
+  defp build_filter(subschema, resource, pointer, opts) do
+    main_call = Tools.call(resource, pointer, opts)
 
     {subfilters, contexts} =
       subschema
-      |> Enum.map(&filters_for(&1, main_call, authority, pointer, opts))
+      |> Enum.map(&filters_for(&1, main_call, resource, pointer, opts))
       |> Enum.unzip()
 
     negative =
@@ -32,10 +32,10 @@ defmodule Exonerate.Filter.Properties do
     end
   end
 
-  defp filters_for({key, _schema}, main_call, authority, pointer, opts) do
+  defp filters_for({key, _schema}, main_call, resource, pointer, opts) do
     context_opts = Tools.scrub(opts)
     context_pointer = JsonPointer.join(pointer, key)
-    context_call = Tools.call(authority, context_pointer, context_opts)
+    context_call = Tools.call(resource, context_pointer, context_opts)
 
     subfilter =
       if opts[:tracked] do
@@ -62,7 +62,7 @@ defmodule Exonerate.Filter.Properties do
         require Exonerate.Context
 
         Exonerate.Context.filter(
-          unquote(authority),
+          unquote(resource),
           unquote(context_pointer),
           unquote(context_opts)
         )

@@ -104,6 +104,7 @@ defmodule Exonerate do
   alias Exonerate.Degeneracy
   alias Exonerate.Id
   alias Exonerate.Tools
+  alias Exonerate.Schema
 
   @common_defaults [
     format: %{},
@@ -115,48 +116,43 @@ defmodule Exonerate do
 
   Note that the `schema` parameter must be a string literal.
   """
-  defmacro function_from_string(type, authority, schema_ast, opts \\ []) do
+  defmacro function_from_string(type, function_name, schema_ast, opts \\ []) do
     # prewalk the schema text
 
     root_pointer = JsonPointer.from_uri("/")
-    module = __CALLER__.module
+
+    # TODO: also attempt to obtain this from the schema.
+    draft = Keyword.get(opts, :draft, "2020-12")
+    opts = Keyword.put(opts, :draft, draft)
 
     schema =
       schema_ast
       |> Macro.expand(__CALLER__)
-      |> Jason.decode!()
-      |> then(fn schema ->
-        refs = Tools.scan(schema, [], &scan_refs/3)
-        draft = Keyword.get(opts, :draft, "2020-12")
+      |> Schema.ingest(__CALLER__, function_name, opts)
 
-        Degeneracy.canonicalize(schema, refs: refs, draft: draft)
-      end)
-      |> Id.prescan(module)
+    resource = if id = id_from(schema), do: :"#{id}", else: function_name
 
-    Cache.put_schema(module, authority, schema)
+    call = Tools.call(resource, root_pointer, opts)
 
-    call = Tools.call(authority, root_pointer, opts)
-    {schema_str, id} = if is_map(schema), do: {schema["$schema"], schema["$id"]}, else: {nil, nil}
+    {schema_str, id} =
+      if is_map(schema), do: {schema["$schema"], id_from(schema)}, else: {nil, nil}
 
     Tools.maybe_dump(
       quote do
         require Exonerate.Context
-        Exonerate.schema(unquote(type), unquote(authority), unquote(schema_str))
-        Exonerate.id(unquote(type), unquote(authority), unquote(id))
+        Exonerate.schema(unquote(type), unquote(function_name), unquote(schema_str))
+        Exonerate.id(unquote(type), unquote(function_name), unquote(id))
 
-        unquote(type)(unquote(authority)(value), do: unquote(call)(value, "/"))
-        Exonerate.Context.filter(unquote(authority), unquote(root_pointer), unquote(opts))
+        unquote(type)(unquote(function_name)(value), do: unquote(call)(value, "/"))
+
+        Exonerate.Context.filter(unquote(resource), unquote(root_pointer), unquote(opts))
       end,
       opts
     )
   end
 
-  @spec scan_refs(Type.json(), JsonPointer.t(), [JsonPointer.t()]) :: [JsonPointer.t()]
-  defp scan_refs(%{"$ref" => pointer}, _pointer, so_far) when is_binary(pointer) do
-    [JsonPointer.from_uri(pointer) | so_far]
-  end
-
-  defp scan_refs(_, _, so_far), do: so_far
+  defp id_from(schema) when is_map(schema), do: schema["$id"] || schema["id"]
+  defp id_from(_), do: nil
 
   @doc """
   generates a series of functions that validates a JSONschema in a file at
@@ -164,13 +160,13 @@ defmodule Exonerate do
 
   Note that the `path` parameter must be a string literal.
   """
-  defmacro function_from_file(type, authority, path, opts \\ [])
+  defmacro function_from_file(type, resource, path, opts \\ [])
 
-  defmacro function_from_file(type, authority, path, opts) do
+  defmacro function_from_file(type, resource, path, opts) do
     raise "not yet"
     # opts =
     #  opts
-    #  |> Keyword.merge(authority: Atom.to_string(name))
+    #  |> Keyword.merge(resource: Atom.to_string(name))
     #  |> resolve_opts(__CALLER__, @common_defaults)
     #
     # {schema, extra} =
@@ -201,20 +197,20 @@ defmodule Exonerate do
 
   @doc false
   # private api.  Causes the $schema metadata to be accessible by passing the `:schema` atom.
-  defmacro schema(type, authority, schema) do
+  defmacro schema(type, function, schema) do
     if schema do
       quote do
-        unquote(type)(unquote(authority)(:schema), do: unquote(schema))
+        unquote(type)(unquote(function)(:schema), do: unquote(schema))
       end
     end
   end
 
   @doc false
   # private api.  Causes the $id metadata to be accessible by passing the `:id` atom.
-  defmacro id(type, authority, id) do
+  defmacro id(type, function, id) do
     if id do
       quote do
-        unquote(type)(unquote(authority)(:id), do: unquote(id))
+        unquote(type)(unquote(function)(:id), do: unquote(id))
       end
     end
   end

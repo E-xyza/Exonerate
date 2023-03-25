@@ -41,7 +41,6 @@ defmodule Exonerate.Degeneracy do
     draft = Keyword.get(opts, :draft)
 
     context
-    |> canonicalize_refs(refs)
     |> canonicalize_recursive(opts)
     |> case do
       ## very trivial
@@ -153,15 +152,6 @@ defmodule Exonerate.Degeneracy do
         context
     end
     |> canonicalize_finalize
-  end
-
-  defp canonicalize_refs(context, []), do: context
-
-  defp canonicalize_refs(context, refs) do
-    Enum.reduce(refs, context, fn
-      ref, context ->
-        JsonPointer.update_json!(context, ref, &canonicalize(&1, []))
-    end)
   end
 
   defp canonicalize_purged(context, what, opts) when is_binary(what) do

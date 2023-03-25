@@ -7,21 +7,21 @@ defmodule Exonerate.Filter.MinMaxLength do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     binary_mode =
       __CALLER__
-      |> Tools.parent(authority, pointer)
+      |> Tools.parent(resource, pointer)
       |> Map.get("format")
       |> Kernel.===("binary")
 
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, binary_mode, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, binary_mode, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter([min, max], authority, pointer, true, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter([min, max], resource, pointer, true, opts) do
+    call = Tools.call(resource, pointer, opts)
     parent_pointer = JsonPointer.backtrack!(pointer)
 
     quote do
@@ -49,8 +49,8 @@ defmodule Exonerate.Filter.MinMaxLength do
     end
   end
 
-  defp build_filter([min, max], authority, pointer, false, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter([min, max], resource, pointer, false, opts) do
+    call = Tools.call(resource, pointer, opts)
     parent_pointer = JsonPointer.backtrack!(pointer)
 
     quote do

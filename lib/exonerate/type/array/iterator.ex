@@ -59,43 +59,43 @@ defmodule Exonerate.Type.Array.Iterator do
     end
   end
 
-  def call(authority, pointer, opts) do
-    Tools.call(authority, pointer, :array_iterator, opts)
+  def call(resource, pointer, opts) do
+    Tools.call(resource, pointer, :array_iterator, opts)
   end
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(context, authority, pointer, opts) do
+  defp build_filter(context, resource, pointer, opts) do
     List.wrap(
       if execution_mode = mode(context, opts) do
         quote do
           require unquote(execution_mode)
-          unquote(execution_mode).filter(unquote(authority), unquote(pointer), unquote(opts))
+          unquote(execution_mode).filter(unquote(resource), unquote(pointer), unquote(opts))
         end
       end
     )
   end
 
-  defmacro accessories(authority, pointer, opts) do
+  defmacro accessories(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_accessories(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_accessories(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_accessories(context, authority, pointer, opts) do
+  defp build_accessories(context, resource, pointer, opts) do
     for filter <- @filters, is_map_key(context, filter) do
       module = @modules[filter]
       pointer = JsonPointer.join(pointer, filter)
 
       quote do
         require unquote(module)
-        unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+        unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
       end
     end
   end

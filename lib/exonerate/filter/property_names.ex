@@ -3,14 +3,14 @@ defmodule Exonerate.Filter.PropertyNames do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
-    authority
+  defmacro filter(resource, pointer, opts) do
+    resource
     |> build_filter(pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter(resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
     # TODO: make sure we don't drop the only if this has been reffed.
     context_opts =
@@ -34,7 +34,7 @@ defmodule Exonerate.Filter.PropertyNames do
     context =
       quote do
         require Exonerate.Context
-        Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(context_opts))
+        Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(context_opts))
       end
 
     quote do

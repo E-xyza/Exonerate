@@ -10,22 +10,22 @@ defmodule Exonerate.Type.Array.FilterIterator do
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_iterator(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_iterator(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   # at its core, the iterator is a reduce-while that encapsulates a with statement.
   # the reduce-while operates over the entire array.
 
-  defp build_iterator(context, authority, pointer, opts) do
-    call = Iterator.call(authority, pointer, opts)
+  defp build_iterator(context, resource, pointer, opts) do
+    call = Iterator.call(resource, pointer, opts)
     accumulator = accumulator(context)
     tracked = !!opts[:tracked]
 
-    reduction = reduction(context, accumulator, authority, pointer, opts)
+    reduction = reduction(context, accumulator, resource, pointer, opts)
 
     if finalizer = finalizer_for(context, tracked, accumulator, pointer) do
       quote do
@@ -43,11 +43,11 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp reduction(context, accumulator, authority, pointer, opts) do
+  defp reduction(context, accumulator, resource, pointer, opts) do
     quote do
       Enum.reduce_while(array, {:ok, unquote(init(accumulator))}, fn
         item, {:ok, accumulator} ->
-          unquote(with_statement(context, accumulator, authority, pointer, opts))
+          unquote(with_statement(context, accumulator, resource, pointer, opts))
       end)
     end
   end
@@ -138,11 +138,11 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   # CODE BLOCKS
 
-  defp with_statement(context, accumulator, authority, pointer, opts) do
+  defp with_statement(context, accumulator, resource, pointer, opts) do
     filters =
       context
       |> Enum.sort()
-      |> Enum.flat_map(&List.wrap(filter_for(&1, context, accumulator, authority, pointer, opts)))
+      |> Enum.flat_map(&List.wrap(filter_for(&1, context, accumulator, resource, pointer, opts)))
 
     quote do
       require Exonerate.Tools
@@ -155,19 +155,19 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp filter_for({"maxItems", _}, _, accumulator, authority, pointer, opts) do
-    max_items_call = Tools.call(authority, JsonPointer.join(pointer, "maxItems"), opts)
+  defp filter_for({"maxItems", _}, _, accumulator, resource, pointer, opts) do
+    max_items_call = Tools.call(resource, JsonPointer.join(pointer, "maxItems"), opts)
 
     quote do
       :ok <- unquote(max_items_call)(array, unquote(index(accumulator)), path)
     end
   end
 
-  defp filter_for({"uniqueItems", true}, _, accumulator, authority, pointer, opts) do
+  defp filter_for({"uniqueItems", true}, _, accumulator, resource, pointer, opts) do
     # just a basic assertion here for safety
     :so_far in accumulator or raise "uniqueItems without :so_far in accumulator"
 
-    unique_items_call = Tools.call(authority, JsonPointer.join(pointer, "uniqueItems"), opts)
+    unique_items_call = Tools.call(resource, JsonPointer.join(pointer, "uniqueItems"), opts)
 
     quote do
       :ok <-
@@ -179,8 +179,8 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp filter_for({"prefixItems", _}, _, accumulator, authority, pointer, opts) do
-    prefix_items_call = Tools.call(authority, JsonPointer.join(pointer, "prefixItems"), opts)
+  defp filter_for({"prefixItems", _}, _, accumulator, resource, pointer, opts) do
+    prefix_items_call = Tools.call(resource, JsonPointer.join(pointer, "prefixItems"), opts)
 
     quote do
       :ok <-
@@ -191,10 +191,10 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp filter_for({"contains", _}, _, accumulator, authority, pointer, opts) do
+  defp filter_for({"contains", _}, _, accumulator, resource, pointer, opts) do
     # just a basic assertion here for safety
     :contains in accumulator or raise "contains without :contains in accumulator"
-    contains_call = Tools.call(authority, JsonPointer.join(pointer, "contains"), opts)
+    contains_call = Tools.call(resource, JsonPointer.join(pointer, "contains"), opts)
 
     quote do
       new_contains =
@@ -204,13 +204,13 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp filter_for({"maxContains", _}, _, accumulator, authority, pointer, opts) do
+  defp filter_for({"maxContains", _}, _, accumulator, resource, pointer, opts) do
     # just a basic assertion here for safety
 
     # NOTE THAT THIS FILTER must come after "contains" filter.
     :contains in accumulator or raise "maxContains without :contains in accumulator"
 
-    max_contains_call = Tools.call(authority, JsonPointer.join(pointer, "maxContains"), opts)
+    max_contains_call = Tools.call(resource, JsonPointer.join(pointer, "maxContains"), opts)
 
     quote do
       :ok <-
@@ -218,10 +218,10 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp filter_for({"items", context}, _, accumulator, authority, pointer, opts)
+  defp filter_for({"items", context}, _, accumulator, resource, pointer, opts)
        when is_map(context) or is_boolean(context) do
     # this requires an entry point
-    items_call = Tools.call(authority, JsonPointer.join(pointer, "items"), :entrypoint, opts)
+    items_call = Tools.call(resource, JsonPointer.join(pointer, "items"), :entrypoint, opts)
 
     quote do
       :ok <-
@@ -233,9 +233,9 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   # TODO: items needs to be last.
-  defp filter_for({"items", array}, _, accumulator, authority, pointer, opts)
+  defp filter_for({"items", array}, _, accumulator, resource, pointer, opts)
        when is_list(array) do
-    items_call = Tools.call(authority, JsonPointer.join(pointer, "items"), opts)
+    items_call = Tools.call(resource, JsonPointer.join(pointer, "items"), opts)
 
     quote do
       :ok <-
@@ -246,10 +246,10 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp filter_for({"additionalItems", _}, _, accumulator, authority, pointer, opts) do
+  defp filter_for({"additionalItems", _}, _, accumulator, resource, pointer, opts) do
     additional_items_call =
       Tools.call(
-        authority,
+        resource,
         JsonPointer.join(pointer, ["additionalItems", ":entrypoint"]),
         opts
       )
@@ -263,9 +263,9 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp filter_for({"unevaluatedItems", _}, context, accumulator, authority, pointer, opts) do
+  defp filter_for({"unevaluatedItems", _}, context, accumulator, resource, pointer, opts) do
     unevaluated_items_call =
-      Tools.call(authority, JsonPointer.join(pointer, "unevaluatedItems"), :entrypoint, opts)
+      Tools.call(resource, JsonPointer.join(pointer, "unevaluatedItems"), :entrypoint, opts)
 
     tuple_parts =
       cond do

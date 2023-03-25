@@ -3,22 +3,22 @@ defmodule Exonerate.Filter.AdditionalItems do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     parent_pointer = JsonPointer.backtrack!(pointer)
 
     __CALLER__
-    |> Tools.subschema(authority, parent_pointer)
-    |> build_filter(authority, parent_pointer, opts)
+    |> Tools.subschema(resource, parent_pointer)
+    |> build_filter(resource, parent_pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(context, authority, parent_pointer, opts) do
+  defp build_filter(context, resource, parent_pointer, opts) do
     entrypoint_pointer = JsonPointer.join(parent_pointer, "additionalItems")
-    entrypoint_call = Tools.call(authority, entrypoint_pointer, :entrypoint, opts)
+    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
     context_pointer = JsonPointer.join(parent_pointer, "additionalItems")
 
     context_opts = Tools.scrub(opts)
-    context_call = Tools.call(authority, context_pointer, context_opts)
+    context_call = Tools.call(resource, context_pointer, context_opts)
 
     case context do
       # TODO: add a compiler error if this isn't a list
@@ -36,7 +36,7 @@ defmodule Exonerate.Filter.AdditionalItems do
           require Exonerate.Context
 
           Exonerate.Context.filter(
-            unquote(authority),
+            unquote(resource),
             unquote(context_pointer),
             unquote(context_opts)
           )
@@ -51,7 +51,7 @@ defmodule Exonerate.Filter.AdditionalItems do
           require Exonerate.Context
 
           Exonerate.Context.filter(
-            unquote(authority),
+            unquote(resource),
             unquote(context_pointer),
             unquote(context_opts)
           )

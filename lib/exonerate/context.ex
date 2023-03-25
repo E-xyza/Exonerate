@@ -8,14 +8,14 @@ defmodule Exonerate.Context do
   alias Exonerate.Tools
   alias Exonerate.Type
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     caller = __CALLER__
-    call = Tools.call(authority, pointer, opts)
+    call = Tools.call(resource, pointer, opts)
 
     if Cache.register_context(caller.module, call) do
       caller
-      |> Tools.subschema(authority, pointer)
-      |> build_filter(authority, pointer, opts)
+      |> Tools.subschema(resource, pointer)
+      |> build_filter(resource, pointer, opts)
       |> Tools.maybe_dump(opts)
     else
       []
@@ -25,8 +25,8 @@ defmodule Exonerate.Context do
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
 
-  defp build_filter(true, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter(true, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
     result =
       case opts[:tracked] do
@@ -50,8 +50,8 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp build_filter(false, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter(false, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
     quote do
       @compile {:inline, [{unquote(call), 2}]}
@@ -62,84 +62,85 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp build_filter(subschema = %{"id" => id}, authority, pointer, opts) do
-    rest = subschema
-    |> Map.delete("id")
-    |> build_filter(authority, pointer, opts)
+  defp build_filter(subschema = %{"id" => id}, resource, pointer, opts) do
+    rest =
+      subschema
+      |> Map.delete("id")
+      |> build_filter(resource, pointer, opts)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(:id, _), do: unquote(id)
+      defp unquote(Tools.call(resource, pointer, opts))(:id, _), do: unquote(id)
 
       unquote(rest)
     end
   end
 
   # metadata
-  defp build_filter(schema = %{"title" => title}, authority, pointer, opts) do
+  defp build_filter(schema = %{"title" => title}, resource, pointer, opts) do
     rest =
       schema
       |> Map.delete("title")
-      |> build_filter(authority, pointer, opts)
+      |> build_filter(resource, pointer, opts)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(:title, _), do: unquote(title)
+      defp unquote(Tools.call(resource, pointer, opts))(:title, _), do: unquote(title)
 
       unquote(rest)
     end
   end
 
-  defp build_filter(schema = %{"description" => title}, authority, pointer, opts) do
+  defp build_filter(schema = %{"description" => title}, resource, pointer, opts) do
     rest =
       schema
       |> Map.delete("description")
-      |> build_filter(authority, pointer, opts)
+      |> build_filter(resource, pointer, opts)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(:description, _), do: unquote(title)
+      defp unquote(Tools.call(resource, pointer, opts))(:description, _), do: unquote(title)
 
       unquote(rest)
     end
   end
 
-  defp build_filter(schema = %{"examples" => title}, authority, pointer, opts) do
+  defp build_filter(schema = %{"examples" => title}, resource, pointer, opts) do
     rest =
       schema
       |> Map.delete("examples")
-      |> build_filter(authority, pointer, opts)
+      |> build_filter(resource, pointer, opts)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(:examples, _), do: unquote(title)
+      defp unquote(Tools.call(resource, pointer, opts))(:examples, _), do: unquote(title)
 
       unquote(rest)
     end
   end
 
-  defp build_filter(schema = %{"default" => title}, authority, pointer, opts) do
+  defp build_filter(schema = %{"default" => title}, resource, pointer, opts) do
     rest =
       schema
       |> Map.delete("default")
-      |> build_filter(authority, pointer, opts)
+      |> build_filter(resource, pointer, opts)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(:default, _), do: unquote(title)
+      defp unquote(Tools.call(resource, pointer, opts))(:default, _), do: unquote(title)
 
       unquote(rest)
     end
   end
 
   # intercept consts
-  defp build_filter(schema = %{"const" => const}, authority, pointer, opts) do
+  defp build_filter(schema = %{"const" => const}, resource, pointer, opts) do
     const_pointer = JsonPointer.join(pointer, "const")
 
     rest_filter =
       schema
       |> Map.delete("const")
-      |> build_filter(authority, pointer, Keyword.merge(opts, type: Type.of(const)))
+      |> build_filter(resource, pointer, Keyword.merge(opts, type: Type.of(const)))
 
     value = Macro.escape(const)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(content, path)
+      defp unquote(Tools.call(resource, pointer, opts))(content, path)
            when content != unquote(value) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(const_pointer), path)
@@ -150,7 +151,7 @@ defmodule Exonerate.Context do
   end
 
   # intercept enums
-  defp build_filter(schema = %{"enum" => enum}, authority, pointer, opts) do
+  defp build_filter(schema = %{"enum" => enum}, resource, pointer, opts) do
     enum_pointer = JsonPointer.join(pointer, "enum")
 
     types =
@@ -161,12 +162,12 @@ defmodule Exonerate.Context do
     rest_filter =
       schema
       |> Map.delete("enum")
-      |> build_filter(authority, pointer, Keyword.merge(opts, type: types))
+      |> build_filter(resource, pointer, Keyword.merge(opts, type: types))
 
     values = Macro.escape(enum)
 
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(content, path)
+      defp unquote(Tools.call(resource, pointer, opts))(content, path)
            when content not in unquote(values) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(enum_pointer), path)
@@ -178,8 +179,8 @@ defmodule Exonerate.Context do
 
   @all_types Type.all()
 
-  # NB: schema should always contain a type field as per Degeneracy.canonicalize/1 called from Tools.subschema/3
-  defp build_filter(schema = %{"type" => types}, authority, pointer, opts) do
+  # NB: schema should always contain a type field as per Degeneracy.canonicalize/2 called from Tools.subschema/3
+  defp build_filter(schema = %{"type" => types}, resource, pointer, opts) do
     # condition the bindings
     filtered_types =
       opts
@@ -196,10 +197,10 @@ defmodule Exonerate.Context do
 
         {quote do
            require unquote(module)
-           unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+           unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
          end,
          quote do
-           unquote(module).accessories(unquote(authority), unquote(pointer), unquote(opts))
+           unquote(module).accessories(unquote(resource), unquote(pointer), unquote(opts))
          end}
       end)
       |> Enum.unzip()
@@ -215,7 +216,7 @@ defmodule Exonerate.Context do
           require unquote(combining_module)
 
           unquote(combining_module).filter(
-            unquote(authority),
+            unquote(resource),
             unquote(combining_pointer),
             unquote(opts)
           )
@@ -224,18 +225,18 @@ defmodule Exonerate.Context do
 
     quote do
       unquote(filters)
-      Exonerate.Context.fallthrough(unquote(authority), unquote(pointer), unquote(opts))
+      Exonerate.Context.fallthrough(unquote(resource), unquote(pointer), unquote(opts))
       unquote(combining)
       unquote(accessories)
     end
   end
 
-  defmacro fallthrough(authority, pointer, opts) do
+  defmacro fallthrough(resource, pointer, opts) do
     type_failure_pointer = JsonPointer.join(pointer, "type")
 
     Tools.maybe_dump(
       quote do
-        defp unquote(Tools.call(authority, pointer, opts))(content, path) do
+        defp unquote(Tools.call(resource, pointer, opts))(content, path) do
           require Exonerate.Tools
           Exonerate.Tools.mismatch(content, unquote(type_failure_pointer), path)
         end

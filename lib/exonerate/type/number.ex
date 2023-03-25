@@ -18,28 +18,28 @@ defmodule Exonerate.Type.Number do
 
   @filters Map.keys(@modules)
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(context, authority, pointer, opts) do
+  defp build_filter(context, resource, pointer, opts) do
     # TODO: make sure that this actually detects the draft version before
     # attempting to adjust the draft
 
     filter_clauses =
       for filter <- @filters, is_map_key(context, filter) do
         filter_call =
-          Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+          Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
           :ok <- unquote(filter_call)(float, path)
         end
       end
 
-    call = Tools.call(authority, pointer, opts)
+    call = Tools.call(resource, pointer, opts)
 
     quote do
       defp unquote(call)(float, path) when is_float(float) do

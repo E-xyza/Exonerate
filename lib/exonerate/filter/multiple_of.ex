@@ -5,16 +5,16 @@ defmodule Exonerate.Filter.MultipleOf do
 
   # TODO: reenable the decision to force use with floats.
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(divisor, authority, pointer, opts) do
+  defp build_filter(divisor, resource, pointer, opts) do
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(integer, path) do
+      defp unquote(Tools.call(resource, pointer, opts))(integer, path) do
         case integer do
           value when rem(value, unquote(divisor)) === 0 ->
             :ok

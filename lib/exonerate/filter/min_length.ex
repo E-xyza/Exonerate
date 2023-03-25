@@ -3,17 +3,17 @@ defmodule Exonerate.Filter.MinLength do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(__CALLER__, authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(__CALLER__, resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(min, caller, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter(min, caller, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
-    case Tools.parent(caller, authority, pointer) do
+    case Tools.parent(caller, resource, pointer) do
       %{"format" => "binary"} ->
         quote do
           defp unquote(call)(string, path) when byte_size(string) < unquote(min) do

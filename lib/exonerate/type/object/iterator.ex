@@ -30,18 +30,18 @@ defmodule Exonerate.Type.Object.Iterator do
     Enum.any?(@filters, &is_map_key(context, &1))
   end
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   # RENAME TRACKED TO SEEN
 
-  defp build_filter(context, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, :object_iterator, opts)
-    visitor_call = visitor_call(context, authority, pointer, opts)
+  defp build_filter(context, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, :object_iterator, opts)
+    visitor_call = visitor_call(context, resource, pointer, opts)
 
     tracked = needs_tracked?(opts, context)
 
@@ -50,7 +50,7 @@ defmodule Exonerate.Type.Object.Iterator do
         acc ->
           opts = adjust_opts(opts, filter, context)
 
-          filter_call = Tools.call(authority, JsonPointer.join(pointer, filter), opts)
+          filter_call = Tools.call(resource, JsonPointer.join(pointer, filter), opts)
 
           if filter in @visited and (tracked or visitor_call) do
             acc ++
@@ -83,13 +83,13 @@ defmodule Exonerate.Type.Object.Iterator do
     end
   end
 
-  defp visitor_call(context, authority, pointer, opts) do
+  defp visitor_call(context, resource, pointer, opts) do
     case context do
       %{"additionalProperties" => _} ->
-        Tools.call(authority, JsonPointer.join(pointer, "additionalProperties"), opts)
+        Tools.call(resource, JsonPointer.join(pointer, "additionalProperties"), opts)
 
       %{"unevaluatedProperties" => _} ->
-        Tools.call(authority, JsonPointer.join(pointer, "unevaluatedProperties"), opts)
+        Tools.call(resource, JsonPointer.join(pointer, "unevaluatedProperties"), opts)
 
       _ ->
         nil
@@ -276,15 +276,15 @@ defmodule Exonerate.Type.Object.Iterator do
     end
   end
 
-  defmacro accessories(authority, pointer, opts) do
-    context = Tools.subschema(__CALLER__, authority, pointer)
+  defmacro accessories(resource, pointer, opts) do
+    context = Tools.subschema(__CALLER__, resource, pointer)
 
     context
-    |> build_accessories(authority, pointer, opts)
+    |> build_accessories(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_accessories(context, authority, pointer, opts) do
+  defp build_accessories(context, resource, pointer, opts) do
     for filter <- @filters, is_map_key(context, filter) do
       module = @modules[filter]
       pointer = JsonPointer.join(pointer, filter)
@@ -293,7 +293,7 @@ defmodule Exonerate.Type.Object.Iterator do
 
       quote do
         require unquote(module)
-        unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+        unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
       end
     end
   end

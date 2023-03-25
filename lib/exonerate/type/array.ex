@@ -10,18 +10,18 @@ defmodule Exonerate.Type.Array do
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   #########################################################
   # trivial exception
 
-  def build_filter(%{"contains" => false}, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  def build_filter(%{"contains" => false}, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
     pointer = JsonPointer.join(pointer, "contains")
 
     quote do
@@ -32,20 +32,20 @@ defmodule Exonerate.Type.Array do
     end
   end
 
-  def build_filter(context, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  def build_filter(context, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
     seen = needs_combining_seen?(context)
 
     filter_clauses =
       for filter <- @combining_filters, is_map_key(context, filter), reduce: [] do
-        calls -> calls ++ filter_clauses(authority, pointer, opts, filter, seen)
+        calls -> calls ++ filter_clauses(resource, pointer, opts, filter, seen)
       end
 
     iterator_clause =
       List.wrap(
         if Iterator.mode(context, opts) do
-          iterator_clause(authority, pointer, opts, seen)
+          iterator_clause(resource, pointer, opts, seen)
         end
       )
 
@@ -97,10 +97,10 @@ defmodule Exonerate.Type.Array do
     is_map_key(context, "unevaluatedItems") and Enum.any?(@seen_filters, &is_map_key(context, &1))
   end
 
-  defp filter_clauses(authority, pointer, opts, filter, true) when filter in @seen_filters do
+  defp filter_clauses(resource, pointer, opts, filter, true) when filter in @seen_filters do
     filter_call =
       Tools.call(
-        authority,
+        resource,
         JsonPointer.join(pointer, Combining.adjust(filter)),
         Keyword.put(opts, :tracked, :array)
       )
@@ -113,8 +113,8 @@ defmodule Exonerate.Type.Array do
     end
   end
 
-  defp filter_clauses(authority, pointer, opts, filter, _) do
-    filter_call = Tools.call(authority, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+  defp filter_clauses(resource, pointer, opts, filter, _) do
+    filter_call = Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
     [
       quote do
@@ -123,7 +123,7 @@ defmodule Exonerate.Type.Array do
     ]
   end
 
-  defp iterator_clause(authority, pointer, opts, needs_combining_seen) do
+  defp iterator_clause(resource, pointer, opts, needs_combining_seen) do
     call_opts =
       if needs_combining_seen do
         Keyword.put(opts, :tracked, :array)
@@ -131,7 +131,7 @@ defmodule Exonerate.Type.Array do
         opts
       end
 
-    iterator_call = Tools.call(authority, pointer, :array_iterator, call_opts)
+    iterator_call = Tools.call(resource, pointer, :array_iterator, call_opts)
 
     case {needs_combining_seen, opts[:tracked]} do
       {true, :array} ->
@@ -163,14 +163,14 @@ defmodule Exonerate.Type.Array do
     end
   end
 
-  defmacro accessories(authority, pointer, opts) do
+  defmacro accessories(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_accessories(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_accessories(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_accessories(context, authority, pointer, opts) do
+  defp build_accessories(context, resource, pointer, opts) do
     opts =
       if needs_combining_seen?(context) or opts[:tracked] do
         Keyword.merge(opts, only: ["array"], tracked: :array)
@@ -178,11 +178,11 @@ defmodule Exonerate.Type.Array do
         opts
       end
 
-    build_tracked_filters(context, authority, pointer, opts) ++
-      build_iterator(context, authority, pointer, opts)
+    build_tracked_filters(context, resource, pointer, opts) ++
+      build_iterator(context, resource, pointer, opts)
   end
 
-  defp build_tracked_filters(context, authority, pointer, opts) do
+  defp build_tracked_filters(context, resource, pointer, opts) do
     # if we're tracked, then we need to rebuild all the filters, with the
     # tracked appendage.
     List.wrap(
@@ -193,27 +193,27 @@ defmodule Exonerate.Type.Array do
 
           quote do
             require unquote(module)
-            unquote(module).filter(unquote(authority), unquote(pointer), unquote(opts))
+            unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
           end
         end
       end
     )
   end
 
-  defp build_iterator(context, authority, pointer, opts) do
+  defp build_iterator(context, resource, pointer, opts) do
     List.wrap(
       if Iterator.mode(context, opts) do
         quote do
           require Exonerate.Type.Array.Iterator
 
           Exonerate.Type.Array.Iterator.filter(
-            unquote(authority),
+            unquote(resource),
             unquote(pointer),
             unquote(opts)
           )
 
           Exonerate.Type.Array.Iterator.accessories(
-            unquote(authority),
+            unquote(resource),
             unquote(pointer),
             unquote(opts)
           )

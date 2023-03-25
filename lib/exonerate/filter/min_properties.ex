@@ -2,16 +2,16 @@ defmodule Exonerate.Filter.MinProperties do
   @moduledoc false
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(minimum, authority, pointer, opts) do
+  defp build_filter(minimum, resource, pointer, opts) do
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(object, path) do
+      defp unquote(Tools.call(resource, pointer, opts))(object, path) do
         case object do
           object when map_size(object) >= unquote(minimum) ->
             :ok

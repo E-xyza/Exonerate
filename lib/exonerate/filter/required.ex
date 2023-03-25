@@ -3,16 +3,16 @@ defmodule Exonerate.Filter.Required do
 
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(required_list, authority, pointer, opts) do
+  defp build_filter(required_list, resource, pointer, opts) do
     quote do
-      defp unquote(Tools.call(authority, pointer, opts))(object, path) do
+      defp unquote(Tools.call(resource, pointer, opts))(object, path) do
         unquote(required_list)
         |> Enum.reduce_while({:ok, 0}, fn
           required_field, {:ok, index} when is_map_key(object, required_field) ->

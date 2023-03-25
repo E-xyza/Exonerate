@@ -3,10 +3,11 @@ defmodule Exonerate.Combining.Ref do
 
   alias Exonerate.Cache
   alias Exonerate.Degeneracy
+  alias Exonerate.Id
   alias Exonerate.Remote
   alias Exonerate.Tools
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     # a ref might be:
 
     # - reference to something local (usually starts with #)
@@ -16,62 +17,75 @@ defmodule Exonerate.Combining.Ref do
     # condition the options to accept unevaluatedProperties
 
     __CALLER__
-    |> Tools.subschema(authority, pointer)
+    |> Tools.subschema(resource, pointer)
     |> URI.parse()
-    |> build_filter(__CALLER__, authority, pointer, opts)
+    |> build_filter(__CALLER__, resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   defp build_filter(
-         %{host: nil, path: nil, fragment: fragment},
+         %{scheme: nil, userinfo: nil, host: nil, path: nil, query: nil, fragment: fragment},
          caller,
-         authority,
+         resource,
          call_pointer,
          opts
        ) do
     ref_pointer = JsonPointer.from_uri(fragment)
-    call = Tools.call(authority, call_pointer, opts)
-    call_path = JsonPointer.to_path(call_pointer)
+    call = Tools.call(resource, call_pointer, opts)
+    call_path = {resource, JsonPointer.to_path(call_pointer)}
     opts = Keyword.delete(opts, :id)
-    ref = Tools.call(authority, ref_pointer, opts)
+    ref = Tools.call(resource, ref_pointer, opts)
 
-    filter(call, ref, call_path, caller, authority, ref_pointer, opts)
+    filter(call, ref, call_path, caller, resource, ref_pointer, opts)
   end
 
-  defp build_filter(%{host: nil, path: path, fragment: fragment}, caller, authority, call_pointer, opts) do
+  defp build_filter(
+         %{
+           scheme: nil,
+           userinfo: nil,
+           host: nil,
+           port: nil,
+           path: path,
+           query: query,
+           fragment: fragment
+         },
+         caller,
+         resource,
+         call_pointer,
+         opts
+       ) do
+    base_uri = resource |> to_string |> URI.parse()
 
-    {path, fragment} |> dbg(limit: 25)
-    raise "aaa"
-    #ref_pointer =
-    #  opts
-    #  |> Keyword.fetch!(:id)
-    #  |> URI.parse()
-    #  |> Map.replace!(:path, "/" <> path)
-    #  |> to_string()
-    #  |> Cache.get_id(caller.module)
-#
-    #call = Tools.call(authority, call_pointer, opts)
-    #ref = Tools.call(authority, ref_pointer, opts)
-    #call_path = JsonPointer.to_path(call_pointer)
-#
-    #filter(call, ref, call_path, caller, authority, ref_pointer, opts)
+    call_resource =
+      %{base_uri | path: absolute(path), query: query}
+      |> to_string
+      |> String.to_atom()
+
+    ref_pointer = JsonPointer.from_path(fragment)
+
+    call = Tools.call(resource, call_pointer, opts)
+    call_path = {resource, call_pointer}
+
+    ref = Tools.call(call_resource, ref_pointer, opts)
+
+    filter(call, ref, call_path, caller, call_resource, ref_pointer, opts)
   end
 
-  defp build_filter(uri, caller, authority, call_pointer, opts) do
-    call = Tools.call(authority, call_pointer, opts)
-    ref_pointer = JsonPointer.from_uri(uri) # only takes the fragment
+  defp build_filter(uri, caller, resource, call_pointer, opts) do
+    call = Tools.call(resource, call_pointer, opts)
+    # only takes the fragment
+    ref_pointer = JsonPointer.from_uri(uri)
+    resource = Tools.uri_to_resource(uri)
 
-    authority = :"#{%{uri | fragment: nil}}"
-    Remote.ensure_authority_loaded!(caller, authority, opts)
-    ref = Tools.call(authority, ref_pointer, opts)
-    call_path = JsonPointer.to_path(call_pointer)
+    ref = Tools.call(resource, ref_pointer, opts)
+    call_path = {resource, JsonPointer.to_path(call_pointer)}
 
-    filter(call, ref, call_path, caller, authority, ref_pointer, opts)
+    filter(call, ref, call_path, caller, resource, ref_pointer, opts)
   end
 
-  defp filter(call, ref, call_path, caller, ref_authority, ref_pointer, opts) do
+  defp filter(call, ref, call_path, caller, ref_resource, ref_pointer, opts) do
     caller
-    |> Tools.subschema(ref_authority, ref_pointer)
+    |> Tools.subschema(ref_resource, ref_pointer)
     |> Degeneracy.class()
     |> case do
       :ok ->
@@ -91,7 +105,7 @@ defmodule Exonerate.Combining.Ref do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(ref_authority), unquote(ref_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(ref_resource), unquote(ref_pointer), unquote(opts))
         end
 
       :unknown ->
@@ -109,8 +123,11 @@ defmodule Exonerate.Combining.Ref do
           end
 
           require Exonerate.Context
-          Exonerate.Context.filter(unquote(ref_authority), unquote(ref_pointer), unquote(opts))
+          Exonerate.Context.filter(unquote(ref_resource), unquote(ref_pointer), unquote(opts))
         end
     end
   end
+
+  defp absolute(path = "/" <> _), do: path
+  defp absolute(path), do: "/" <> path
 end

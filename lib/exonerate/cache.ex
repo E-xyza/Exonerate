@@ -46,9 +46,22 @@ defmodule Exonerate.Cache do
     end
   end
 
-  @spec put_schema(module, authority :: atom, schema :: Type.json()) :: :ok
-  def put_schema(module, authority, schema) when is_atom(authority) do
-    :ets.insert(get_table(), {{module, authority}, schema})
+  @spec put_schema(module, resource :: atom, schema :: Type.json()) :: :ok
+  def put_schema(module, resource, schema) when is_atom(resource) do
+    :ets.insert(get_table(), {{module, resource}, schema})
+    :ok
+  end
+
+  @spec update_schema!(module, resource :: atom, JsonPointer.t(), (Type.json() -> Type.json())) ::
+          :ok
+  def update_schema!(module, resource, pointer, transformation) do
+    new_schema =
+      module
+      |> fetch_schema!(resource)
+      |> JsonPointer.update_json!(pointer, transformation)
+
+    put_schema(module, resource, new_schema)
+
     :ok
   end
 
@@ -81,5 +94,11 @@ defmodule Exonerate.Cache do
       [] -> nil
       [pointer] -> pointer
     end
+  end
+
+  require MatchSpec
+  @all MatchSpec.fun2ms(fn any -> any end)
+  def dump do
+    :ets.select(get_table(), @all)
   end
 end

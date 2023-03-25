@@ -3,16 +3,16 @@ defmodule Exonerate.Combining.Not do
   alias Exonerate.Tools
   alias Exonerate.Degeneracy
 
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> build_filter(authority, pointer, opts)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(caller, authority, pointer, opts) do
-    subschema = Tools.subschema(caller, authority, pointer)
-    call = Tools.call(authority, pointer, opts)
-    entrypoint_call = Tools.call(authority, pointer, :entrypoint, opts)
+  defp build_filter(caller, resource, pointer, opts) do
+    subschema = Tools.subschema(caller, resource, pointer)
+    call = Tools.call(resource, pointer, opts)
+    entrypoint_call = Tools.call(resource, pointer, :entrypoint, opts)
 
     ###############################################################
     # this section for suppressing clause matching compiler warning
@@ -48,7 +48,7 @@ defmodule Exonerate.Combining.Not do
       end
 
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(authority), unquote(pointer), unquote(opts))
+      Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(opts))
     end
   end
 end

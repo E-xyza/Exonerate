@@ -4,20 +4,20 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
   alias Exonerate.Tools
 
   # TODO: figure out draft-4 stuff
-  defmacro filter(authority, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Tools.subschema(authority, pointer)
-    |> build_filter(__CALLER__, authority, pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(__CALLER__, resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(true, caller, authority, pointer, opts) do
+  defp build_filter(true, caller, resource, pointer, opts) do
     # TODO: include a draft-4 warning
-    call = Tools.call(authority, pointer, opts)
+    call = Tools.call(resource, pointer, opts)
 
     maximum =
       caller
-      |> Tools.parent(authority, pointer)
+      |> Tools.parent(resource, pointer)
       |> Map.fetch!("maximum")
 
     quote do
@@ -30,8 +30,8 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
     end
   end
 
-  defp build_filter(maximum, _caller, authority, pointer, opts) do
-    call = Tools.call(authority, pointer, opts)
+  defp build_filter(maximum, _caller, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
     quote do
       defp unquote(call)(number, path) do
