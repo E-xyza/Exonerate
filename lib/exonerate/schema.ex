@@ -57,7 +57,8 @@ defmodule Exonerate.Schema do
           resource =
             resource_map
             |> Id.find_resource(pointer)
-            |> Map.merge(%{path: path, query: query})
+            |> Tools.if(path || query, &Map.merge(&1, %{path: path, query: query}))
+            |> Map.merge(%{fragment: fragment})
             |> Tools.uri_to_resource()
 
           {resource, JsonPointer.from_path(fragment)}
