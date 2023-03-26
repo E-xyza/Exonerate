@@ -60,14 +60,14 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
 
       assert_filter(
         quote do
-          defp unquote(:"untracked_noitems#/:array_iterator")(array, path) do
+          defp unquote(:"function://untracked_noitems/#/:array_iterator")(array, path) do
             Enum.reduce_while(array, {:ok, %{index: 0, so_far: MapSet.new()}}, fn item,
                                                                                   {:ok,
                                                                                    accumulator} ->
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"untracked_noitems#/uniqueItems")(
+                     unquote(:"function://untracked_noitems/#/uniqueItems")(
                        item,
                        accumulator.so_far,
                        Path.join(path, "#{accumulator.index}")
@@ -96,12 +96,12 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       #  no special iteration, just return :ok
       assert_filter(
         quote do
-          defp unquote(:"untracked_prefix_items#/:array_iterator")(array, path) do
+          defp unquote(:"function://untracked_prefix_items/#/:array_iterator")(array, path) do
             Enum.reduce_while(array, {:ok, 0}, fn item, {:ok, accumulator} ->
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"untracked_prefix_items#/additionalItems/:entrypoint")(
+                     unquote(:"function://untracked_prefix_items/#/additionalItems/:entrypoint")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -123,7 +123,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       #  no special iteration, just return :ok
       assert_filter(
         quote do
-          defp unquote(:"untracked_no_prefix_items_unevaluatedItems#/:array_iterator")(
+          defp unquote(:"function://untracked_no_prefix_items_unevaluatedItems/#/:array_iterator")(
                  array,
                  path
                ) do
@@ -132,7 +132,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
 
               with :ok <-
                      unquote(
-                       :"untracked_no_prefix_items_unevaluatedItems#/unevaluatedItems/:entrypoint"
+                       :"function://untracked_no_prefix_items_unevaluatedItems/#/unevaluatedItems/:entrypoint"
                      )(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
@@ -156,7 +156,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       # include the last index in the entrypoint tuple
       assert_filter(
         quote do
-          defp unquote(:"untracked_no_prefix_items_unevaluatedItems#/:array_iterator")(
+          defp unquote(:"function://untracked_no_prefix_items_unevaluatedItems/#/:array_iterator")(
                  array,
                  path,
                  first_unseen_index
@@ -166,7 +166,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
 
               with :ok <-
                      unquote(
-                       :"untracked_no_prefix_items_unevaluatedItems#/unevaluatedItems/:entrypoint"
+                       :"function://untracked_no_prefix_items_unevaluatedItems/#/unevaluatedItems/:entrypoint"
                      )(
                        {item, accumulator, first_unseen_index},
                        Path.join(path, "#{accumulator}")
@@ -189,12 +189,12 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       #  no special iteration, just return :ok
       assert_filter(
         quote do
-          defp unquote(:"untracked_prefix_items#/:array_iterator")(array, path) do
+          defp unquote(:"function://untracked_prefix_items/#/:array_iterator")(array, path) do
             Enum.reduce_while(array, {:ok, 0}, fn item, {:ok, accumulator} ->
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"untracked_prefix_items#/prefixItems")(
+                     unquote(:"function://untracked_prefix_items/#/prefixItems")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -216,17 +216,17 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       #  no special iteration, just return :ok
       assert_filter(
         quote do
-          defp unquote(:"untracked_prefix_items_additional#/:array_iterator")(array, path) do
+          defp unquote(:"function://untracked_prefix_items_additional/#/:array_iterator")(array, path) do
             Enum.reduce_while(array, {:ok, 0}, fn item, {:ok, accumulator} ->
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"untracked_prefix_items_additional#/additionalItems/:entrypoint")(
+                     unquote(:"function://untracked_prefix_items_additional/#/additionalItems/:entrypoint")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
-                     unquote(:"untracked_prefix_items_additional#/prefixItems")(
+                     unquote(:"function://untracked_prefix_items_additional/#/prefixItems")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -248,17 +248,17 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       #  no special iteration, just return :ok
       assert_filter(
         quote do
-          defp unquote(:"untracked_prefix_items_unevaluated#/:array_iterator")(array, path) do
+          defp unquote(:"function://untracked_prefix_items_unevaluated/#/:array_iterator")(array, path) do
             Enum.reduce_while(array, {:ok, 0}, fn item, {:ok, accumulator} ->
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"untracked_prefix_items_unevaluated#/prefixItems")(
+                     unquote(:"function://untracked_prefix_items_unevaluated/#/prefixItems")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
-                     unquote(:"untracked_prefix_items_unevaluated#/unevaluatedItems/:entrypoint")(
+                     unquote(:"function://untracked_prefix_items_unevaluated/#/unevaluatedItems/:entrypoint")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -280,7 +280,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       #  no special iteration, just return {:ok, 0}
       assert_filter(
         quote do
-          defp unquote(:"untracked_prefix_items_unevaluated_combining#/:array_iterator")(
+          defp unquote(:"function://untracked_prefix_items_unevaluated_combining/#/:array_iterator")(
                  array,
                  path,
                  first_unseen_index
@@ -289,13 +289,13 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"untracked_prefix_items_unevaluated_combining#/prefixItems")(
+                     unquote(:"function://untracked_prefix_items_unevaluated_combining/#/prefixItems")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
                      unquote(
-                       :"untracked_prefix_items_unevaluated_combining#/unevaluatedItems/:entrypoint"
+                       :"function://untracked_prefix_items_unevaluated_combining/#/unevaluatedItems/:entrypoint"
                      )(
                        {item, accumulator, max(first_unseen_index, 1)},
                        Path.join(path, "#{accumulator}")
@@ -321,14 +321,14 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
 
       assert_filter(
         quote do
-          defp unquote(:"tracked_noitems#/:array_iterator/:tracked_array")(array, path) do
+          defp unquote(:"function://tracked_noitems/#/:array_iterator/:tracked_array")(array, path) do
             Enum.reduce_while(array, {:ok, %{index: 0, so_far: MapSet.new()}}, fn item,
                                                                                   {:ok,
                                                                                    accumulator} ->
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"tracked_noitems#/uniqueItems/:tracked_array")(
+                     unquote(:"function://tracked_noitems/#/uniqueItems/:tracked_array")(
                        item,
                        accumulator.so_far,
                        Path.join(path, "#{accumulator.index}")
@@ -364,12 +364,12 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       #  returns {:ok, index}
       assert_filter(
         quote do
-          defp unquote(:"tracked_prefix_items#/:array_iterator/:tracked_array")(array, path) do
+          defp unquote(:"function://tracked_prefix_items/#/:array_iterator/:tracked_array")(array, path) do
             Enum.reduce_while(array, {:ok, 0}, fn item, {:ok, accumulator} ->
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"tracked_prefix_items#/additionalItems/:entrypoint/:tracked_array")(
+                     unquote(:"function://tracked_prefix_items/#/additionalItems/:entrypoint/:tracked_array")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -396,7 +396,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       assert_filter(
         quote do
           defp unquote(
-                 :"tracked_no_prefix_items_unevaluatedItems#/:array_iterator/:tracked_array"
+                 :"function://tracked_no_prefix_items_unevaluatedItems/#/:array_iterator/:tracked_array"
                )(
                  array,
                  path
@@ -406,7 +406,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
 
               with :ok <-
                      unquote(
-                       :"tracked_no_prefix_items_unevaluatedItems#/unevaluatedItems/:entrypoint/:tracked_array"
+                       :"function://tracked_no_prefix_items_unevaluatedItems/#/unevaluatedItems/:entrypoint/:tracked_array"
                      )(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
@@ -435,7 +435,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       assert_filter(
         quote do
           defp unquote(
-                 :"tracked_no_prefix_items_unevaluatedItems#/:array_iterator/:tracked_array"
+                 :"function://tracked_no_prefix_items_unevaluatedItems/#/:array_iterator/:tracked_array"
                )(
                  array,
                  path,
@@ -446,7 +446,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
 
               with :ok <-
                      unquote(
-                       :"tracked_no_prefix_items_unevaluatedItems#/unevaluatedItems/:entrypoint/:tracked_array"
+                       :"function://tracked_no_prefix_items_unevaluatedItems/#/unevaluatedItems/:entrypoint/:tracked_array"
                      )(
                        {item, accumulator, first_unseen_index},
                        Path.join(path, "#{accumulator}")
@@ -472,12 +472,12 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
     test "with prefixItems, no additionalItems or unevaluatedItems" do
       assert_filter(
         quote do
-          defp unquote(:"tracked_prefix_items#/:array_iterator/:tracked_array")(array, path) do
+          defp unquote(:"function://tracked_prefix_items/#/:array_iterator/:tracked_array")(array, path) do
             Enum.reduce_while(array, {:ok, 0}, fn item, {:ok, accumulator} ->
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"tracked_prefix_items#/prefixItems/:tracked_array")(
+                     unquote(:"function://tracked_prefix_items/#/prefixItems/:tracked_array")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -502,7 +502,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
     test "with prefixItems, with additionalItems" do
       assert_filter(
         quote do
-          defp unquote(:"tracked_prefix_items_additional#/:array_iterator/:tracked_array")(
+          defp unquote(:"function://tracked_prefix_items_additional/#/:array_iterator/:tracked_array")(
                  array,
                  path
                ) do
@@ -511,13 +511,13 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
 
               with :ok <-
                      unquote(
-                       :"tracked_prefix_items_additional#/additionalItems/:entrypoint/:tracked_array"
+                       :"function://tracked_prefix_items_additional/#/additionalItems/:entrypoint/:tracked_array"
                      )(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
-                     unquote(:"tracked_prefix_items_additional#/prefixItems/:tracked_array")(
+                     unquote(:"function://tracked_prefix_items_additional/#/prefixItems/:tracked_array")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -542,17 +542,17 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
     test "with prefixItems, with items" do
       assert_filter(
         quote do
-          defp unquote(:"tracked_prefix_items_items#/:array_iterator/:tracked_array")(array, path) do
+          defp unquote(:"function://tracked_prefix_items_items/#/:array_iterator/:tracked_array")(array, path) do
             Enum.reduce_while(array, {:ok, 0}, fn item, {:ok, accumulator} ->
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"tracked_prefix_items_items#/items/:entrypoint/:tracked_array")(
+                     unquote(:"function://tracked_prefix_items_items/#/items/:entrypoint/:tracked_array")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
-                     unquote(:"tracked_prefix_items_items#/prefixItems/:tracked_array")(
+                     unquote(:"function://tracked_prefix_items_items/#/prefixItems/:tracked_array")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ) do
@@ -577,7 +577,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
     test "with prefixItems, with unevaluatedItems" do
       assert_filter(
         quote do
-          defp unquote(:"tracked_prefix_items_unevaluated#/:array_iterator/:tracked_array")(
+          defp unquote(:"function://tracked_prefix_items_unevaluated/#/:array_iterator/:tracked_array")(
                  array,
                  path
                ) do
@@ -585,13 +585,13 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
               require Exonerate.Tools
 
               with :ok <-
-                     unquote(:"tracked_prefix_items_unevaluated#/prefixItems/:tracked_array")(
+                     unquote(:"function://tracked_prefix_items_unevaluated/#/prefixItems/:tracked_array")(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
                      unquote(
-                       :"tracked_prefix_items_unevaluated#/unevaluatedItems/:entrypoint/:tracked_array"
+                       :"function://tracked_prefix_items_unevaluated/#/unevaluatedItems/:entrypoint/:tracked_array"
                      )(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
@@ -623,7 +623,7 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       assert_filter(
         quote do
           defp unquote(
-                 :"tracked_prefix_items_unevaluated_combining#/:array_iterator/:tracked_array"
+                 :"function://tracked_prefix_items_unevaluated_combining/#/:array_iterator/:tracked_array"
                )(
                  array,
                  path,
@@ -634,14 +634,14 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
 
               with :ok <-
                      unquote(
-                       :"tracked_prefix_items_unevaluated_combining#/prefixItems/:tracked_array"
+                       :"function://tracked_prefix_items_unevaluated_combining/#/prefixItems/:tracked_array"
                      )(
                        {item, accumulator},
                        Path.join(path, "#{accumulator}")
                      ),
                    :ok <-
                      unquote(
-                       :"tracked_prefix_items_unevaluated_combining#/unevaluatedItems/:entrypoint/:tracked_array"
+                       :"function://tracked_prefix_items_unevaluated_combining/#/unevaluatedItems/:entrypoint/:tracked_array"
                      )(
                        {item, accumulator, max(first_unseen_index, 1)},
                        Path.join(path, "#{accumulator}")

@@ -8,7 +8,7 @@ defmodule ExonerateTest.Code.ArrayTest do
     test "trivial array works" do
       assert_filter(
         quote do
-          defp unquote(:"empty#/")(array, path) when is_list(array) do
+          defp unquote(:"function://empty/#/")(array, path) when is_list(array) do
             with do
               :ok
             end
@@ -23,8 +23,8 @@ defmodule ExonerateTest.Code.ArrayTest do
     test "when you need an iterator it works" do
       assert_filter(
         quote do
-          defp unquote(:"iterated#/")(array, path) when is_list(array) do
-            with :ok <- unquote(:"iterated#/:array_iterator")(array, path) do
+          defp unquote(:"function://iterated/#/")(array, path) when is_list(array) do
+            with :ok <- unquote(:"function://iterated/#/:array_iterator")(array, path) do
               :ok
             end
           end
@@ -38,30 +38,30 @@ defmodule ExonerateTest.Code.ArrayTest do
     test "when you need an combining function it works" do
       assert_filter(
         quote do
-          defp unquote(:"iterated#/")(array, path) when is_list(array) do
-            with :ok <- unquote(:"iterated#/allOf")(array, path),
-                 :ok <- unquote(:"iterated#/:array_iterator")(array, path) do
+          defp unquote(:"function://iterated_combining/#/")(array, path) when is_list(array) do
+            with :ok <- unquote(:"function://iterated_combining/#/allOf")(array, path),
+                 :ok <- unquote(:"function://iterated_combining/#/:array_iterator")(array, path) do
               :ok
             end
           end
         end,
         Array,
-        :iterated,
+        :iterated_combining,
         %{"allOf" => [%{"type" => "array"}], "prefixItems" => [true]}
       )
     end
 
-    test "when you need an combining function and an iterator it works" do
+    test "when you need an combining function and an tracking combining function it works" do
       assert_filter(
         quote do
-          defp unquote(:"iterated#/")(array, path) when is_list(array) do
+          defp unquote(:"function://tracked_combining/#/")(array, path) when is_list(array) do
             first_unseen_index = 0
 
             with {:ok, new_index} <-
-                   unquote(:"iterated#/allOf/:tracked_array")(array, path),
+                   unquote(:"function://tracked_combining/#/allOf/:tracked_array")(array, path),
                  first_unseen_index = max(first_unseen_index, new_index),
                  {:ok, _} <-
-                   unquote(:"iterated#/:array_iterator/:tracked_array")(
+                   unquote(:"function://tracked_combining/#/:array_iterator/:tracked_array")(
                      array,
                      path,
                      first_unseen_index
@@ -71,7 +71,7 @@ defmodule ExonerateTest.Code.ArrayTest do
           end
         end,
         Array,
-        :iterated,
+        :tracked_combining,
         %{"allOf" => [%{"type" => "array"}], "unevaluatedItems" => [true]}
       )
     end
@@ -81,7 +81,7 @@ defmodule ExonerateTest.Code.ArrayTest do
     test "trivial array" do
       assert_filter(
         quote do
-          defp unquote(:"tracked#/:tracked_array")(array, path) when is_list(array) do
+          defp unquote(:"function://tracked/#/:tracked_array")(array, path) when is_list(array) do
             first_unseen_index = 0
 
             with do
@@ -99,11 +99,11 @@ defmodule ExonerateTest.Code.ArrayTest do
     test "when you need an iterator it works" do
       assert_filter(
         quote do
-          defp unquote(:"tracked_iterated#/:tracked_array")(array, path) when is_list(array) do
+          defp unquote(:"function://tracked_iterated/#/:tracked_array")(array, path) when is_list(array) do
             first_unseen_index = 0
 
             with {:ok, new_index} <-
-                   unquote(:"tracked_iterated#/:array_iterator/:tracked_array")(array, path),
+                   unquote(:"function://tracked_iterated/#/:array_iterator/:tracked_array")(array, path),
                  first_unseen_index = max(first_unseen_index, new_index) do
               {:ok, first_unseen_index}
             end

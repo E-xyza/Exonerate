@@ -8,7 +8,7 @@ defmodule ExonerateTest.Code.ObjectTest do
     test "works" do
       assert_filter(
         quote do
-          defp unquote(:"empty#/")(object, path) when is_map(object) do
+          defp unquote(:"function://empty/#/")(object, path) when is_map(object) do
             with do
               :ok
             end

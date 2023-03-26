@@ -220,8 +220,12 @@ defmodule Exonerate.Context do
   defp id_swap_with(subschema, id, resource, pointer, opts) do
     this_call = Tools.call(resource, pointer, opts)
 
-    updated_resource = update_resource(id, resource)
+    updated_resource = id
+    |> update_resource_uri(resource)
+    |> Tools.uri_to_resource()
+
     updated_pointer = JsonPointer.from_path("/")
+
     updated_call = Tools.call(updated_resource, updated_pointer, opts)
 
     rest = build_filter(subschema, updated_resource, updated_pointer, opts)
@@ -239,21 +243,15 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp update_resource(id, resource) do
+  defp update_resource_uri(id, current_resource) do
     case URI.parse(id) do
       %{fragment: fragment} when not is_nil(fragment) ->
         raise ArgumentError, "id cannot contain a fragment (contained #{id})"
 
-      %{scheme: nil, userinfo: nil, host: nil, path: path = "/" <> _, query: query} ->
-        old_uri = URI.parse("#{resource}")
-        :"#{%{old_uri | path: path, query: query}}"
-
-      %{scheme: nil, userinfo: nil, host: nil, path: path, query: query} ->
-        old_uri = URI.parse("#{resource}")
-        :"#{%{old_uri | path: Path.join(old_uri.path || "/", path || ""), query: query}}"
-
-      full_uri ->
-        :"#{full_uri}"
+      non_fragment_uri ->
+        "#{current_resource}"
+        |> URI.parse
+        |> Tools.uri_merge(non_fragment_uri)
     end
   end
 end

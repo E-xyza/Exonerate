@@ -121,9 +121,9 @@ defmodule Exonerate.Tools do
   @spec call(atom, JsonPointer.t(), Keyword.t()) :: atom
   @spec call(atom, JsonPointer.t(), atom, Keyword.t()) :: atom
   def call(resource, pointer, suffix \\ nil, opts) do
-    pointer
-    |> JsonPointer.to_uri()
-    |> struct(path: "#{resource}")
+    "#{resource}"
+    |> URI.parse
+    |> uri_merge(JsonPointer.to_uri(pointer))
     |> to_string
     |> append_suffix(suffix)
     |> append_tracked(opts[:tracked])
@@ -199,6 +199,31 @@ defmodule Exonerate.Tools do
   @spec uri_to_resource(URI.t()) :: atom
   def uri_to_resource(uri) do
     :"#{%{uri | fragment: nil}}"
+  end
+
+  @spec uri_merge(URI.t, URI.t) :: URI.t
+  @doc """
+  extends the standard library URI.merge to also be able to merge a relative URI
+  """
+  def uri_merge(base = %{scheme: nil, userinfo: nil, host: nil, port: nil, path: path}, target) do
+    case target do
+      # target is relative.
+      %{scheme: nil, userinfo: nil, host: nil, port: nil} ->
+        base_path = path || "/"
+        dest_path = target.path || ""
+
+        if String.ends_with?(path, "/") do
+          %URI{path: Path.join(base_path, dest_path), query: target.query, fragment: target.fragment}
+        else
+          %URI{path: Path.join(Path.dirname(base_path), dest_path), query: target.query, fragment: target.fragment}
+        end
+      # target is absolute.
+      _ ->
+        target
+    end
+  end
+  def uri_merge(base, rel) do
+    URI.merge(base, rel)
   end
 
   # general tools

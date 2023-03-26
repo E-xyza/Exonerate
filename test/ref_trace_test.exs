@@ -21,7 +21,7 @@ defmodule ExonerateTest.RefTraceTest do
     assert [
              error_value: "baz",
              json_pointer: "/bar",
-             ref_trace: [ref1: "/properties/bar/$ref"],
+             ref_trace: ["function://ref1/": "/properties/bar/$ref"],
              schema_pointer: "/properties/foo/type"
            ] = Enum.sort(error)
   end
@@ -42,7 +42,7 @@ defmodule ExonerateTest.RefTraceTest do
     assert [
              error_value: "quux",
              json_pointer: "/baz",
-             ref_trace: [ref2: "/properties/baz/$ref", ref2: "/properties/bar/$ref"],
+             ref_trace: ["function://ref2/": "/properties/baz/$ref", "function://ref2/": "/properties/bar/$ref"],
              schema_pointer: "/properties/foo/type"
            ] = Enum.sort(error)
   end

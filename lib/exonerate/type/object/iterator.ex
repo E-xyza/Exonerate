@@ -277,9 +277,8 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defmacro accessories(resource, pointer, opts) do
-    context = Tools.subschema(__CALLER__, resource, pointer)
-
-    context
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
     |> build_accessories(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end

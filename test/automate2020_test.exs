@@ -3,15 +3,16 @@ directory2020 =
   |> Path.join("_draft2020-12")
   |> Path.expand()
 
-omit_modules = ~w(defs.json anchor.json dynamicRef.json id.json ref.json)
+omit_modules = ~w(defs.json anchor.json dynamicRef.json id.json)
 
 omit_describes = [
   # integer filters do not match float values:
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},
   {"multipleOf.json", 3},
-  # references the openAPI schema document, which contains unparseable filters.
+  # references the openAPI schema document, which contains currently unparseable filters.
   {"ref.json", 6},
+  {"ref.json", 11},
   # these are more than just annotations, and are tested in test.
   {"format.json", 3},
   {"format.json", 4},
@@ -19,7 +20,7 @@ omit_describes = [
   {"format.json", 8},
   {"format.json", 9},
   {"format.json", 17},
-  # {"refRemote.json", 3},
+  {"refRemote.json", 3},
   {"refRemote.json", 4},
   {"refRemote.json", 5},
   {"refRemote.json", 6}

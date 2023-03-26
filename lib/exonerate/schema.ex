@@ -39,28 +39,8 @@ defmodule Exonerate.Schema do
     {ref_resource_uri, ref_pointer} = Id.find_resource_uri(resource_map, pointer)
 
     new_uri =
-      ref
-      |> URI.parse()
-      |> case do
-        # path query, fragment only
-        %{
-          scheme: nil,
-          userinfo: nil,
-          host: nil,
-          port: nil,
-          path: path,
-          query: query,
-          fragment: fragment
-        } ->
-          ref_resource_uri
-          |> merge_path_query(path, query)
-          |> normalize_path
-          |> Map.merge(%{fragment: fragment})
-
-        # full uri
-        uri ->
-          uri
-      end
+      ref_resource_uri
+      |> Tools.uri_merge(URI.parse(ref))
       |> Remote.ensure_resource_loaded!(caller, opts)
 
     tgt_resource = Tools.uri_to_resource(new_uri)
@@ -87,24 +67,4 @@ defmodule Exonerate.Schema do
   end
 
   defp ref_walk(_, _, _, resource_map, _), do: resource_map
-
-  defp merge_path_query(uri, nil, nil), do: uri
-
-  defp merge_path_query(uri = %{path: nil}, path, query) do
-    %{uri | path: path, query: query}
-  end
-
-  defp merge_path_query(uri, path = "/" <> _, query) do
-    %{uri | path: path, query: query}
-  end
-
-  defp merge_path_query(uri = %{path: base}, path, query) do
-    new_path = Path.join(base || "/", path || "")
-
-    %{uri | path: new_path, query: query}
-  end
-
-  defp normalize_path(uri = %{host: nil}), do: uri
-  defp normalize_path(uri = %{path: "/" <> _}), do: uri
-  defp normalize_path(uri = %{path: path}), do: %{uri | path: "/" <> path}
 end

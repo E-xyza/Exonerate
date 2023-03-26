@@ -5,12 +5,12 @@ defmodule Exonerate.Combining.Not do
 
   defmacro filter(resource, pointer, opts) do
     __CALLER__
+    |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(caller, resource, pointer, opts) do
-    subschema = Tools.subschema(caller, resource, pointer)
+  defp build_filter(context, resource, pointer, opts) do
     call = Tools.call(resource, pointer, opts)
     entrypoint_call = Tools.call(resource, pointer, :entrypoint, opts)
 
@@ -18,7 +18,7 @@ defmodule Exonerate.Combining.Not do
     # this section for suppressing clause matching compiler warning
 
     switch =
-      case Degeneracy.class(subschema) do
+      case Degeneracy.class(context) do
         :unknown ->
           quote do
             case unquote(call)(value, path) do
