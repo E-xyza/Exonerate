@@ -35,14 +35,19 @@ defmodule Exonerate.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, "~> 0.24", only: :dev},
-      {:yaml_elixir, "~> 2.7", only: :test},
+      {:match_spec, "~> 0.3.1"},
       {:json_ptr, "~> 0.5"},
       {:jason, "~> 1.4.0"},
-      {:dialyxir, "~> 1.2.0", only: :dev, runtime: false},
-      {:match_spec, "~> 0.3.1"},
+      # optional dependencies
       {:req, "~> 0.3", optional: true},
       {:finch, "~> 0.15", optional: true},
+      {:yaml_elixir, "~> 2.7", optional: true},
+      # dev tools
+      {:ex_doc, "~> 0.24", only: :dev},
+      {:dialyxir, "~> 1.2.0", only: :dev, runtime: false},
+      # test
+      {:bandit, "~> 0.7", only: :test},
+      # benchmarking tools
       {:ex_json_schema, "~> 0.9.2", only: :bench},
       {:benchee, "~> 1.1.0", only: :bench}
     ]

@@ -8,6 +8,8 @@ includes =
     |> String.to_atom()
   end)
 
+Bandit.start_link(plug: ExonerateTest.FilePlug, scheme: :http, options: [port: 1234])
+
 ExUnit.configuration()
 |> Keyword.put(:include, includes)
 |> ExUnit.start()

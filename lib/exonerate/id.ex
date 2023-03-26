@@ -54,27 +54,47 @@ defmodule Exonerate.Id do
           query: query,
           fragment: _
         } ->
-          base = find_resource(resource_map, pointer)
-          %{base | path: path, query: query}
+          {base, _} = find_resource_uri(resource_map, pointer)
+          %{base | path: splice_path(base.path, path), query: query}
 
         new_uri ->
           new_uri
       end
 
-    resource = %{new_uri | fragment: nil}
+    resource_uri = adjust_path(%{new_uri | fragment: nil})
 
     # we have to canonicalize this, because it's possible this content
     # is not reached from the main canonicalization effort.
     schema = Degeneracy.canonicalize(schema, opts)
+    resource = :"#{resource_uri}"
 
-    Cache.put_schema(module, :"#{resource}", schema)
+    Cache.put_schema(module, resource, schema)
 
-    Map.put(resource_map, pointer, resource)
+    Map.put(resource_map, pointer, resource_uri)
   end
 
-  @spec find_resource(resource_map, JsonPointer.t()) :: URI.t()
+  @spec find_resource_uri(resource_map, JsonPointer.t()) :: {URI.t(), JsonPointer.t()}
+  @doc """
+  given a resource map and pointer, find the resource that matches the jsonpointer.
 
-  def find_resource(map, pointer) when is_map_key(map, pointer), do: map[pointer]
+  Note that resource map is a map of JsonPointer -> URI.
 
-  def find_resource(map, pointer), do: find_resource(map, JsonPointer.backtrack!(pointer))
+  This function proceeds by reveres induction over JsonPointer.  The execution time
+  might be very bad, but this function should be called rarely.
+  """
+  def find_resource_uri(map, pointer) when is_map_key(map, pointer),
+    do: {map[pointer], JsonPointer.from_path("/")}
+
+  def find_resource_uri(map, pointer) do
+    {prev, leaf} = JsonPointer.pop(pointer)
+    {resource_uri, root} = find_resource_uri(map, prev)
+    {resource_uri, JsonPointer.join(root, leaf)}
+  end
+
+  defp splice_path(nil, path), do: path
+  defp splice_path(base, path), do: Path.join(base, path)
+
+  defp adjust_path(uri = %{host: nil}), do: uri
+  defp adjust_path(uri = %{path: "/" <> _}), do: uri
+  defp adjust_path(uri = %{path: path}), do: %{uri | path: "/" <> path}
 end

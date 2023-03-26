@@ -62,70 +62,42 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp build_filter(subschema = %{"id" => id}, resource, pointer, opts) do
-    rest =
-      subschema
-      |> Map.delete("id")
-      |> build_filter(resource, pointer, opts)
-
-    quote do
-      defp unquote(Tools.call(resource, pointer, opts))(:id, _), do: unquote(id)
-
-      unquote(rest)
-    end
-  end
-
   # metadata
-  defp build_filter(schema = %{"title" => title}, resource, pointer, opts) do
-    rest =
-      schema
-      |> Map.delete("title")
-      |> build_filter(resource, pointer, opts)
-
-    quote do
-      defp unquote(Tools.call(resource, pointer, opts))(:title, _), do: unquote(title)
-
-      unquote(rest)
-    end
+  defp build_filter(schema = %{"title" => _}, resource, pointer, opts) do
+    schema
+    |> Map.delete("title")
+    |> build_filter(resource, pointer, opts)
   end
 
-  defp build_filter(schema = %{"description" => title}, resource, pointer, opts) do
-    rest =
-      schema
-      |> Map.delete("description")
-      |> build_filter(resource, pointer, opts)
-
-    quote do
-      defp unquote(Tools.call(resource, pointer, opts))(:description, _), do: unquote(title)
-
-      unquote(rest)
-    end
+  defp build_filter(schema = %{"description" => _}, resource, pointer, opts) do
+    schema
+    |> Map.delete("description")
+    |> build_filter(resource, pointer, opts)
   end
 
-  defp build_filter(schema = %{"examples" => title}, resource, pointer, opts) do
-    rest =
-      schema
-      |> Map.delete("examples")
-      |> build_filter(resource, pointer, opts)
-
-    quote do
-      defp unquote(Tools.call(resource, pointer, opts))(:examples, _), do: unquote(title)
-
-      unquote(rest)
-    end
+  defp build_filter(schema = %{"examples" => _}, resource, pointer, opts) do
+    schema
+    |> Map.delete("examples")
+    |> build_filter(resource, pointer, opts)
   end
 
-  defp build_filter(schema = %{"default" => title}, resource, pointer, opts) do
-    rest =
-      schema
-      |> Map.delete("default")
-      |> build_filter(resource, pointer, opts)
+  defp build_filter(schema = %{"default" => _}, resource, pointer, opts) do
+    schema
+    |> Map.delete("default")
+    |> build_filter(resource, pointer, opts)
+  end
 
-    quote do
-      defp unquote(Tools.call(resource, pointer, opts))(:default, _), do: unquote(title)
+  # ID-swapping
+  defp build_filter(subschema = %{"id" => id}, resource, pointer, opts) do
+    subschema
+    |> Map.delete("id")
+    |> id_swap_with(id, resource, pointer, opts)
+  end
 
-      unquote(rest)
-    end
+  defp build_filter(subschema = %{"$id" => id}, resource, pointer, opts) do
+    subschema
+    |> Map.delete("$id")
+    |> id_swap_with(id, resource, pointer, opts)
   end
 
   # intercept consts
@@ -243,5 +215,45 @@ defmodule Exonerate.Context do
       end,
       opts
     )
+  end
+
+  defp id_swap_with(subschema, id, resource, pointer, opts) do
+    this_call = Tools.call(resource, pointer, opts)
+
+    updated_resource = update_resource(id, resource)
+    updated_pointer = JsonPointer.from_path("/")
+    updated_call = Tools.call(updated_resource, updated_pointer, opts)
+
+    rest = build_filter(subschema, updated_resource, updated_pointer, opts)
+
+    if updated_call === this_call do
+      rest
+    else
+      quote do
+        defp unquote(this_call)(content, path) do
+          unquote(updated_call)(content, path)
+        end
+
+        unquote(rest)
+      end
+    end
+  end
+
+  defp update_resource(id, resource) do
+    case URI.parse(id) do
+      %{fragment: fragment} when not is_nil(fragment) ->
+        raise ArgumentError, "id cannot contain a fragment (contained #{id})"
+
+      %{scheme: nil, userinfo: nil, host: nil, path: path = "/" <> _, query: query} ->
+        old_uri = URI.parse("#{resource}")
+        :"#{%{old_uri | path: path, query: query}}"
+
+      %{scheme: nil, userinfo: nil, host: nil, path: path, query: query} ->
+        old_uri = URI.parse("#{resource}")
+        :"#{%{old_uri | path: Path.join(old_uri.path || "/", path || ""), query: query}}"
+
+      full_uri ->
+        :"#{full_uri}"
+    end
   end
 end

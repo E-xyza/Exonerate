@@ -9,18 +9,15 @@ Currently supports JSONSchema drafts 4, 6, 7, 2019, 2020.  *except:*
 elixir does not support a floating point remainder guard, and also
 because it is impossible for a floating point to guarantee sane results
 (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
-- currently remoteref is not supported.
 - 'definitions' is disabled in pre-draft-7, for now.  Please use absolute refs.
 
 Works in progress:
 
-- support for remoteref
-- support for unevaluatedItems, unevaluatedProperties
+- support for dynamicRef, dynamicAnchor
 - support for contentMediaType
 - support for contentEncoding
 - support for named anchors
 - better uri support
-- support for function_from_map
 - support for more formatted strings
 
 Note:

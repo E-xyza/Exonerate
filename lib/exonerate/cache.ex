@@ -22,27 +22,29 @@ defmodule Exonerate.Cache do
     end
   end
 
-  @type cache_id :: atom | {:file, Path.t()}
+  @type resource :: atom | {:file, Path.t()}
 
-  @spec fetch_schema(module, cache_id) :: {:ok, Type.json()} | :error
-  def fetch_schema(module, cache_id) do
-    case :ets.lookup(get_table(), {module, cache_id}) do
+  # SCHEMAS
+
+  @spec fetch_schema(module, resource) :: {:ok, Type.json()} | :error
+  def fetch_schema(module, resource) do
+    case :ets.lookup(get_table(), {module, resource}) do
       [] -> :error
-      [{{^module, ^cache_id}, {:cached, id}}] when is_atom(id) -> fetch_schema(module, id)
-      [{{^module, ^cache_id}, json}] -> {:ok, json}
+      [{{^module, ^resource}, {:cached, id}}] when is_atom(id) -> fetch_schema(module, id)
+      [{{^module, ^resource}, json}] -> {:ok, json}
     end
   end
 
-  @spec fetch_schema!(module, cache_id) :: Type.json()
-  def fetch_schema!(module, cache_id) do
-    case fetch_schema(module, cache_id) do
+  @spec fetch_schema!(module, resource) :: Type.json()
+  def fetch_schema!(module, resource) do
+    case fetch_schema(module, resource) do
       {:ok, json} ->
         json
 
       :error ->
         raise KeyError,
           message:
-            "key `#{cache_id}` not found in the exonerate cache for the module #{inspect(module)}"
+            "key `#{resource}` not found in the exonerate cache for the module #{inspect(module)}"
     end
   end
 
@@ -65,6 +67,39 @@ defmodule Exonerate.Cache do
     :ok
   end
 
+  @spec has_schema?(module, resource :: atom) :: boolean
+  def has_schema?(module, resource) do
+    case :ets.lookup(get_table(), {module, resource}) do
+      [] -> false
+      [_] -> true
+    end
+  end
+
+  # REFERENCES
+
+  defmatchspecp get_ref_ms(module, ref_resource, ref_pointer) do
+    {{:ref, {^module, ^ref_resource, ^ref_pointer}}, {^module, tgt_resource, tgt_pointer}} ->
+      {tgt_resource, tgt_pointer}
+  end
+
+  def register_ref(module, ref_resource, ref_pointer, tgt_resource, tgt_pointer) do
+    :ets.insert(
+      get_table(),
+      {{:ref, {module, ref_resource, ref_pointer}}, {module, tgt_resource, tgt_pointer}}
+    )
+
+    :ok
+  end
+
+  def traverse_ref!(module, ref_resource, ref_pointer) do
+    case :ets.select(get_table(), get_ref_ms(module, ref_resource, ref_pointer)) do
+      [] -> raise "ref not found"
+      [ref] -> ref
+    end
+  end
+
+  # CONTEXTS
+
   def register_context(module, call) when is_atom(call) do
     if has_context?(module, call) do
       false
@@ -81,24 +116,14 @@ defmodule Exonerate.Cache do
     end
   end
 
-  def register_id(id, module, pointer) do
-    :ets.insert(get_table(), {{:id, id, module}, pointer})
-  end
-
-  defmatchspecp get_id_ms(id, module) do
-    {{:id, ^id, ^module}, pointer} -> pointer
-  end
-
-  def get_id(id, module) do
-    case :ets.select(get_table(), get_id_ms(id, module)) do
-      [] -> nil
-      [pointer] -> pointer
-    end
-  end
-
   require MatchSpec
   @all MatchSpec.fun2ms(fn any -> any end)
   def dump do
     :ets.select(get_table(), @all)
+  end
+
+  @refs MatchSpec.fun2ms(fn result = {{:ref, _}, _} -> result end)
+  def dump(:refs) do
+    :ets.select(get_table(), @refs)
   end
 end

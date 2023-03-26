@@ -3,34 +3,26 @@ directory2020 =
   |> Path.join("_draft2020-12")
   |> Path.expand()
 
-omit_modules = ~w(defs.json anchor.json dynamicRef.json id.json infinite-loop-detection.json
-refRemote.json unevaluatedProperties.json items.json ref.json unevaluatedItems.json)
+omit_modules = ~w(defs.json anchor.json dynamicRef.json id.json ref.json)
 
 omit_describes = [
   # integer filters do not match float values:
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},
   {"multipleOf.json", 3},
-  # no support for dynamicRef
+  # references the openAPI schema document, which contains unparseable filters.
   {"ref.json", 6},
-  {"ref.json", 1},
-  {"ref.json", 2},
-  {"ref.json", 3},
-  {"ref.json", 4},
-  {"ref.json", 5},
-  {"ref.json", 7},
-  {"ref.json", 8},
-  {"ref.json", 9},
-  {"ref.json", 10},
-  {"ref.json", 11},
-  {"ref.json", 12},
   # these are more than just annotations, and are tested in test.
   {"format.json", 3},
   {"format.json", 4},
   {"format.json", 7},
   {"format.json", 8},
   {"format.json", 9},
-  {"format.json", 17}
+  {"format.json", 17},
+  # {"refRemote.json", 3},
+  {"refRemote.json", 4},
+  {"refRemote.json", 5},
+  {"refRemote.json", 6}
 ]
 
 omit_tests = [
@@ -45,5 +37,8 @@ ExonerateTest.Automate.directory(
   prefix: D2020,
   omit_modules: omit_modules,
   omit_describes: omit_describes,
-  omit_tests: omit_tests
+  omit_tests: omit_tests,
+  proxy: [{"http://localhost:1234", "http://localhost:1234/_draft2020-12/remotes"}],
+  force_remote: true,
+  cache: false
 )

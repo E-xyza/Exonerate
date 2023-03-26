@@ -60,7 +60,8 @@ defmodule Exonerate do
 
   The following options are available:
 
-  - `:format`: a map of JSONpointers to tags with corresponding `{"format" => "..."}` filters.
+  - `:format`: a map of JSONpointers to tags with corresponding
+    `{"format" => "..."}` filters.
 
     Exonerate ships with filters for the following default content:
     - `date-time`
@@ -69,47 +70,62 @@ defmodule Exonerate do
     - `ipv4`
     - `ipv6`
 
-    To disable these filters, pass `false` to the path, e.g. `%{"/" => false}` or `%{"/foo/bar/" => false}`.
-    To specify a custom format filter, pass either function/args or mfa to the path, e.g.
-    `%{"/path/to/fun" => {Module, :fun, [123]}}` or if you want the f/a or mfa to apply to all tags of a
-    given format string, create use the atom of the type name as the key for your map.
+    To disable these filters, pass `false` to the path, e.g.
+    `%{"/" => false}` or `%{"/foo/bar/" => false}`. To specify a custom format
+    filter, pass either function/args or mfa to the path, e.g.
+    `%{"/path/to/fun" => {Module, :fun, [123]}}` or if you want the f/a or mfa
+    to apply to all tags of a given format string, create use the atom of the
+    type name as the key for your map.
 
-    The corresponding function will be called with thue candidate formatted string as the first argument
-    and the supplied arguments after.  If you use the function/args (e.g. `{:private_function, [123]}`)
-    it may be a private function in the same module.  The custom function should return `true` on
+    The corresponding function will be called with thue candidate formatted
+    string as the first argument and the supplied arguments after.  If you use
+    the function/args (e.g. `{:private_function, [123]}`) it may be a private
+    function in the same module.  The custom function should return `true` on
     successful validation and `false` on failure.
 
-    `date-time` ships with the parameter `:utc` which you may pass as `%{"/path/to/date-time/" => [:utc]}` that
-    forces the date-time to be an ISO-8601 datetime string.
+    `date-time` ships with the parameter `:utc` which you may pass as
+    `%{"/path/to/date-time/" => [:utc]}` that forces the date-time to be an
+    ISO-8601 datetime string.
 
-  - `:entrypoint`: a JSONpointer to the internal location inside of a json document where you would like to start
-    the JSONschema.  This should be in JSONPointer form.  See https://datatracker.ietf.org/doc/html/rfc6901 for
+  - `:entrypoint`: a JSONpointer to the internal location inside of a json
+    document where you would like to start the JSONschema.  This should be in
+    JSONPointer form.  See https://datatracker.ietf.org/doc/html/rfc6901 for
     more information about JSONPointer
 
-  - `:decoder`: specify `{module, function}` to use as the decoder for the text that turns into JSON
-    (e.g. YAML instead of JSON)
+  - `:decoder`: specify `{module, function}` to use as the decoder for the text
+    that turns into JSON (e.g. YAML instead of JSON)
 
-  - `:draft`: specifies any special draft information.  Defaults to "2020", which is intercompatible
-    with `"2019"`.  `"4"`, `"6"`, and `"7"` are also supported.  Note: Validation is NOT performed on
-    the schema, so intermingling draft components is possible (but not recommended).
+  - `:draft`: specifies any special draft information.  Defaults to "2020",
+    which is intercompatible with `"2019"`.  `"4"`, `"6"`, and `"7"` are also
+    supported.  Note: Validation is NOT performed on the schema, so
+    intermingling draft components is possible (but not recommended).
 
-  - `:cache_app`: specifies the otp app whose priv directory cached remote JSONs are stored.
-    Defaults to `:exonerate`.
+  ### remoteRef schema retrieval
 
-  - `:cache_path`: specifies the subdirectory of priv where cached remote JSONs are stored.
-    Defaults to `/`.
+  - `:force_remote`: bypasses the manual prompt confirming if remote resources
+    should be downoladed.  Use with caution!  Defaults to `false`.
+
+  - `:cache`: if remote JSONs should be cached to the local filesystem.
+    Defaults to `false`
+
+  - `:cache_app`: specifies the otp app whose priv directory cached remote
+    JSONs are stored. Defaults to `:exonerate`.
+
+  - `:cache_path`: specifies the subdirectory of priv where cached remote JSONs
+    are stored.  Defaults to `/`.
+
+  - `:proxy`: a string proplist which describes string substitution of url
+    resources for proxied remote content.
+
+    ##### Example
+
+    ``` elixir
+    [proxy: [{"https://my.remote.resource/", "http://localhost:4000"}]]
+    ```
   """
 
-  alias Exonerate.Cache
-  alias Exonerate.Degeneracy
-  alias Exonerate.Id
   alias Exonerate.Tools
   alias Exonerate.Schema
-
-  @common_defaults [
-    format: %{},
-    decoder: {Jason, :decode!}
-  ]
 
   @doc """
   generates a series of functions that validates a provided JSONSchema.

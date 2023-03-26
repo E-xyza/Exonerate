@@ -4,9 +4,10 @@ defmodule Exonerate.Remote do
   # management of connection to remote schemata.
 
   alias Exonerate.Cache
-  alias Exonerate.Degeneracy
+  alias Exonerate.Tools
+  alias Exonerate.Schema
 
-  @spec ensure_resource_loaded!(Env.t(), URI.t(), keyword) :: :ok
+  @spec ensure_resource_loaded!(URI.t(), Env.t(), keyword) :: URI.t()
   @doc """
   Ensures the resource represented by the URI exists in the cache.
 
@@ -35,12 +36,14 @@ defmodule Exonerate.Remote do
 
     Defaults to `#{__MODULE__}`.
   """
-  def ensure_resource_loaded!(caller, uri, opts) do
-    if Cache.has_context?(caller.module, Tools.uri_to_resource(uri)) do
+  def ensure_resource_loaded!(uri, caller, opts) do
+    if Cache.has_schema?(caller.module, Tools.uri_to_resource(uri)) do
       :ok
     else
       load_cache(caller, uri, opts)
     end
+
+    uri
   end
 
   defp load_cache(caller, uri, opts) do
@@ -53,35 +56,43 @@ defmodule Exonerate.Remote do
         Schema.ingest(binary, caller, resource, opts)
 
       {:error, :enoent} ->
-        guard_fetch!(uri)
+        proxied_uri = maybe_proxy(uri, opts)
+        guard_fetch!(proxied_uri, opts)
         ensure_priv_directory!(opts)
 
-        body = remote_fetch_adapter.fetch_remote_cache!(uri, opts)
+        body = remote_fetch_adapter.fetch_remote_cache!(proxied_uri, opts)
 
-        uri
-        |> path_for(opts)
-        |> File.write!(body)
+        if Keyword.get(opts, :cache, true) do
+          uri
+          |> path_for(opts)
+          |> File.write!(body)
 
-        load_cache(caller, resource, opts)
+          load_cache(caller, resource, opts)
+        else
+          Schema.ingest(body, caller, resource, opts)
+        end
     end
 
     :ok
   end
 
-  defp guard_fetch!(resource) do
-    response =
-      IO.gets(
-        IO.ANSI.yellow() <>
-          "Exonerate would like to fetch a schema from #{resource}" <>
-          IO.ANSI.reset() <> "\nOk? (y/n) "
-      )
+  defp guard_fetch!(resource, opts) do
+    unless opts[:force_remote] do
+      response =
+        IO.gets(
+          IO.ANSI.yellow() <>
+            "Exonerate would like to fetch a schema from #{resource}" <>
+            IO.ANSI.reset() <> "\nOk? (y/n) "
+        )
 
-    case response do
-      <<yes, _::binary>> when yes in ~C'Yy' ->
-        :ok
+      case response do
+        <<yes, _::binary>> when yes in ~C'Yy' ->
+          :ok
 
-      _ ->
-        raise IO.ANSI.red() <> "fetch rejected for online content #{resource}" <> IO.ANSI.reset()
+        _ ->
+          raise IO.ANSI.red() <>
+                  "fetch rejected for online content #{resource}" <> IO.ANSI.reset()
+      end
     end
   end
 
@@ -99,6 +110,25 @@ defmodule Exonerate.Remote do
   end
 
   # utilities
+
+  defp maybe_proxy(uri, opts) do
+    if proxy_mapping = opts[:proxy] do
+      proxy_mapping
+      |> Enum.reduce_while(
+        to_string(uri),
+        fn {from, to}, uri_string ->
+          if String.starts_with?(uri_string, from) do
+            {:halt, String.replace_prefix(uri_string, from, to)}
+          else
+            {:cont, uri_string}
+          end
+        end
+      )
+      |> URI.parse()
+    else
+      uri
+    end
+  end
 
   defp priv_dir(opts) do
     opts
