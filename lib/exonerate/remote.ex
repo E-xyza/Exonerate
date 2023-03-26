@@ -46,6 +46,10 @@ defmodule Exonerate.Remote do
     uri
   end
 
+  defp load_cache(_, uri = %{scheme: "function"}, _) do
+    raise "function resources can't loaded, (tried to load #{uri})"
+  end
+
   defp load_cache(caller, uri, opts) do
     remote_fetch_adapter = Keyword.get(opts, :remote_fetch_adapter, __MODULE__)
     resource = Tools.uri_to_resource(uri)

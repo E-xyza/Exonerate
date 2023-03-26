@@ -3,8 +3,7 @@ directory_draft6 =
   |> Path.join("_draft6")
   |> Path.expand()
 
-omit_modules =
-  ~w(refRemote.json definitions.json ref.json)
+omit_modules = ~w(refRemote.json definitions.json ref.json)
 
 omit_describes = [
   # references the openAPI schema document, which contains currently unparseable filters.

@@ -18,7 +18,7 @@ defmodule Exonerate.Combining.Ref do
     {ref_resource_uri, ref_pointer} =
       Cache.traverse_ref!(__CALLER__.module, resource, parent_pointer)
 
-    ref_resource = :"#{ref_resource_uri}"
+    ref_resource = to_string(ref_resource_uri)
 
     __CALLER__
     |> Tools.subschema(ref_resource, ref_pointer)
@@ -28,7 +28,13 @@ defmodule Exonerate.Combining.Ref do
 
   defp build_filter(context, resource, pointer, ref_resource, ref_pointer, opts) do
     call = Tools.call(resource, pointer, opts)
-    call_path = {resource, JsonPointer.to_path(pointer)}
+
+    call_path =
+      if String.starts_with?(resource, "function://") do
+        JsonPointer.to_path(pointer)
+      else
+        {resource, JsonPointer.to_path(pointer)}
+      end
 
     ref_call = Tools.call(ref_resource, ref_pointer, opts)
 

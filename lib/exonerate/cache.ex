@@ -30,7 +30,7 @@ defmodule Exonerate.Cache do
   def fetch_schema(module, resource) do
     case :ets.lookup(get_table(), {module, resource}) do
       [] -> :error
-      [{{^module, ^resource}, {:cached, id}}] when is_atom(id) -> fetch_schema(module, id)
+      [{{^module, ^resource}, {:cached, id}}] when is_binary(id) -> fetch_schema(module, id)
       [{{^module, ^resource}, json}] -> {:ok, json}
     end
   end
@@ -49,7 +49,7 @@ defmodule Exonerate.Cache do
   end
 
   @spec put_schema(module, resource :: atom, schema :: Type.json()) :: :ok
-  def put_schema(module, resource, schema) when is_atom(resource) do
+  def put_schema(module, resource, schema) do
     :ets.insert(get_table(), {{module, resource}, schema})
     :ok
   end

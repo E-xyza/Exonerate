@@ -12,7 +12,7 @@ omit_describes = [
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},
   {"multipleOf.json", 3},
-  {"refRemote.json", 4},
+  {"refRemote.json", 4}
 ]
 
 omit_tests = [

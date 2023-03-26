@@ -3,8 +3,7 @@ directory_draft4 =
   |> Path.join("_draft4")
   |> Path.expand()
 
-omit_modules =
-  ~w(refRemote.json definitions.json ref.json)
+omit_modules = ~w(refRemote.json definitions.json ref.json)
 
 omit_describes = [
   # no support for relative uri (for now)
@@ -17,7 +16,7 @@ omit_describes = [
   # no floating point multiples
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},
-  {"multipleOf.json", 3},
+  {"multipleOf.json", 3}
 ]
 
 omit_tests = [

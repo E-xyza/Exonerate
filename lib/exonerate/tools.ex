@@ -118,10 +118,10 @@ defmodule Exonerate.Tools do
     |> JsonPointer.resolve_json!(JsonPointer.backtrack!(pointer))
   end
 
-  @spec call(atom, JsonPointer.t(), Keyword.t()) :: atom
-  @spec call(atom, JsonPointer.t(), atom, Keyword.t()) :: atom
-  def call(resource, pointer, suffix \\ nil, opts) do
-    "#{resource}"
+  @spec call(String.t(), JsonPointer.t(), Keyword.t()) :: atom
+  @spec call(String.t(), JsonPointer.t(), atom, Keyword.t()) :: atom
+  def call(resource, pointer, suffix \\ nil, opts) when is_binary(resource) do
+    resource
     |> URI.parse()
     |> uri_merge(JsonPointer.to_uri(pointer))
     |> to_string
@@ -198,7 +198,7 @@ defmodule Exonerate.Tools do
   # URI tools
   @spec uri_to_resource(URI.t()) :: atom
   def uri_to_resource(uri) do
-    :"#{%{uri | fragment: nil}}"
+    to_string(%{uri | fragment: nil})
   end
 
   @spec uri_merge(URI.t(), URI.t()) :: URI.t()

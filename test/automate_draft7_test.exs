@@ -3,8 +3,7 @@ directory_draft7 =
   |> Path.join("_draft7")
   |> Path.expand()
 
-omit_modules =
-  ~w(refRemote.json definitions.json ref.json)
+omit_modules = ~w(refRemote.json definitions.json ref.json)
 
 omit_describes = [
   # references the openAPI schema document, which contains currently unparseable filters.
@@ -12,7 +11,7 @@ omit_describes = [
   # no floating point multiples
   {"multipleOf.json", 1},
   {"multipleOf.json", 2},
-  {"multipleOf.json", 3},
+  {"multipleOf.json", 3}
 ]
 
 omit_tests = [

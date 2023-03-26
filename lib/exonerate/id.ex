@@ -58,7 +58,7 @@ defmodule Exonerate.Id do
     # we have to canonicalize this, because it's possible this content
     # is not reached from the main canonicalization effort.
     schema = Degeneracy.canonicalize(schema, opts)
-    resource = :"#{new_uri}"
+    resource = to_string(new_uri)
 
     Cache.put_schema(module, resource, schema)
 
