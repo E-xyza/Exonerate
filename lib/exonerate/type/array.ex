@@ -11,7 +11,7 @@ defmodule Exonerate.Type.Array do
   @combining_filters Combining.filters()
 
   defmacro filter(resource, pointer, opts) do
-        __CALLER__
+    __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)

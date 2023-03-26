@@ -142,22 +142,24 @@ defmodule Exonerate do
     draft = Keyword.get(opts, :draft, "2020-12")
     opts = Keyword.put(opts, :draft, draft)
 
-    function_resource = %URI{scheme: "function", host: "#{function_name}", path: "/"}
-    |> to_string
-    |> String.to_atom
+    function_resource =
+      %URI{scheme: "function", host: "#{function_name}", path: "/"}
+      |> to_string
+      |> String.to_atom()
 
     schema =
       schema_ast
       |> Macro.expand(__CALLER__)
       |> Schema.ingest(__CALLER__, function_resource, opts)
 
-    resource = if id = id_from(schema) do
-      resource = :"#{id}"
-      Cache.put_schema(__CALLER__.module, resource, schema)
-      resource
-    else
-      function_resource
-    end
+    resource =
+      if id = id_from(schema) do
+        resource = :"#{id}"
+        Cache.put_schema(__CALLER__.module, resource, schema)
+        resource
+      else
+        function_resource
+      end
 
     call = Tools.call(resource, root_pointer, opts)
 

@@ -41,7 +41,10 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
 
                 with false <- visited do
                   {:cont,
-                   unquote(:"function://additional/#/additionalProperties")(value, Path.join(path, key))}
+                   unquote(:"function://additional/#/additionalProperties")(
+                     value,
+                     Path.join(path, key)
+                   )}
                 else
                   true -> {:cont, :ok}
                   Exonerate.Tools.error_match(error) -> {:halt, error}
@@ -72,14 +75,19 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
                 visited = false
 
                 with {:ok, new_visited} <-
-                       unquote(:"function://additional_pattern/#/patternProperties/:tracked_object")(
+                       unquote(
+                         :"function://additional_pattern/#/patternProperties/:tracked_object"
+                       )(
                          {key, value},
                          path
                        ),
                      visited = visited or new_visited,
                      false <- visited do
                   {:cont,
-                   unquote(:"function://additional_pattern/#/additionalProperties")(value, Path.join(path, key))}
+                   unquote(:"function://additional_pattern/#/additionalProperties")(
+                     value,
+                     Path.join(path, key)
+                   )}
                 else
                   true -> {:cont, :ok}
                   Exonerate.Tools.error_match(error) -> {:halt, error}

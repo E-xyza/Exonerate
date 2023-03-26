@@ -99,11 +99,15 @@ defmodule ExonerateTest.Code.ArrayTest do
     test "when you need an iterator it works" do
       assert_filter(
         quote do
-          defp unquote(:"function://tracked_iterated/#/:tracked_array")(array, path) when is_list(array) do
+          defp unquote(:"function://tracked_iterated/#/:tracked_array")(array, path)
+               when is_list(array) do
             first_unseen_index = 0
 
             with {:ok, new_index} <-
-                   unquote(:"function://tracked_iterated/#/:array_iterator/:tracked_array")(array, path),
+                   unquote(:"function://tracked_iterated/#/:array_iterator/:tracked_array")(
+                     array,
+                     path
+                   ),
                  first_unseen_index = max(first_unseen_index, new_index) do
               {:ok, first_unseen_index}
             end

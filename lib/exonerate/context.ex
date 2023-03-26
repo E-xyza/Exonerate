@@ -220,9 +220,10 @@ defmodule Exonerate.Context do
   defp id_swap_with(subschema, id, resource, pointer, opts) do
     this_call = Tools.call(resource, pointer, opts)
 
-    updated_resource = id
-    |> update_resource_uri(resource)
-    |> Tools.uri_to_resource()
+    updated_resource =
+      id
+      |> update_resource_uri(resource)
+      |> Tools.uri_to_resource()
 
     updated_pointer = JsonPointer.from_path("/")
 
@@ -250,7 +251,7 @@ defmodule Exonerate.Context do
 
       non_fragment_uri ->
         "#{current_resource}"
-        |> URI.parse
+        |> URI.parse()
         |> Tools.uri_merge(non_fragment_uri)
     end
   end

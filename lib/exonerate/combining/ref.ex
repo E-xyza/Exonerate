@@ -14,7 +14,10 @@ defmodule Exonerate.Combining.Ref do
 
     # condition the options to accept unevaluatedProperties
     {parent_pointer, "$ref"} = JsonPointer.pop(pointer)
-    {ref_resource_uri, ref_pointer} = Cache.traverse_ref!(__CALLER__.module, resource, parent_pointer)
+
+    {ref_resource_uri, ref_pointer} =
+      Cache.traverse_ref!(__CALLER__.module, resource, parent_pointer)
+
     ref_resource = :"#{ref_resource_uri}"
 
     __CALLER__
