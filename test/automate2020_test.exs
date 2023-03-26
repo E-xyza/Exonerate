@@ -12,18 +12,7 @@ omit_describes = [
   {"multipleOf.json", 3},
   # references the openAPI schema document, which contains currently unparseable filters.
   {"ref.json", 6},
-  {"ref.json", 11},
-  # these are more than just annotations, and are tested in test.
-  {"format.json", 3},
-  {"format.json", 4},
-  {"format.json", 7},
-  {"format.json", 8},
-  {"format.json", 9},
-  {"format.json", 17},
-  {"refRemote.json", 3},
   {"refRemote.json", 4},
-  {"refRemote.json", 5},
-  {"refRemote.json", 6}
 ]
 
 omit_tests = [
