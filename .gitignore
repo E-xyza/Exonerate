@@ -3,6 +3,7 @@ _build
 deps
 /docs/
 /doc/
+/bench/results
 
 # don't get the automated tests
 
