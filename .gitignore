@@ -1,4 +1,5 @@
 .elixir_ls
+.envrc
 _build
 deps
 /docs/
