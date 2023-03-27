@@ -54,8 +54,9 @@ defmodule Mix.Tasks.BenchLib do
     |> Map.put_new("ExJsonSchema", nil)
     |> Map.put_new("Exonerate", nil)
     |> Map.put_new("JsonXema", nil)
-    |> Map.put("complexity", Complexity.measure(test.schema))  # TODO: measure complexity of uploaded modules?
+    |> Map.put("complexity", Complexity.measure(Jason.decode!(test.schema)))  # TODO: measure complexity of uploaded modules?
     |> Map.put("valid_input", test.valid)
+    |> IO.inspect
 
     bin = :erlang.term_to_binary(encoded_result)
     File.write!("bench/results/#{test.module}.bin", bin)
