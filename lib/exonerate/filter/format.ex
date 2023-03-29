@@ -1,26 +1,81 @@
 defmodule Exonerate.Filter.Format do
   @moduledoc false
 
-  @defaults %{
-    "date-time" => {:__datetime_validate, :datetime, [:any]},
-    "date" => {:__date_validate, :date, []},
-    "time" => {:__time_validate, :time, []},
-    "ipv4" => {:__ipv4_validate, :ipv4, []},
-    "ipv6" => {:__ipv6_validate, :ipv6, []},
-    "uuid" => {:__annotate, nil, []},
-    "uri-template" => {:__annotate, nil, []},
-    "json-pointer" => {:__annotate, nil, []},
-    "relative-json-pointer" => {:__annotate, nil, []},
-    "regex" => {:__annotate, nil, []},
-    "uri" => {:__annotate, nil, []},
-    "uri-reference" => {:__annotate, nil, []},
-    "iri" => {:__annotate, nil, []},
-    "iri-reference" => {:__annotate, nil, []},
-    "hostname" => {:__annotate, nil, []},
-    "idn-hostname" => {:__annotate, nil, []},
-    "email" => {:__annotate, nil, []},
-    "idn-email" => {:__annotate, nil, []}
-  }
+  alias Exonerate.Tools
 
-  def format, do: @defaults
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Exonerate.Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Exonerate.Tools.maybe_dump(opts)
+  end
+
+  def should_format?(_resource, _pointer, format, opts) do
+    opts = Keyword.get(opts, :format)
+
+    cond do
+      format === "binary" -> false
+      !opts -> false
+      opts === true -> true
+      # TODO: delete this.
+      true -> false
+    end
+  end
+
+  # privileged formats
+  defp build_filter("date-time", resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case NaiveDateTime.from_iso8601(string) do
+          {:ok, _} -> :ok
+          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        end
+      end
+    end
+  end
+
+  defp build_filter("date", resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case Date.from_iso8601(string) do
+          {:ok, _} -> :ok
+          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        end
+      end
+    end
+  end
+
+  defp build_filter("time", resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case Time.from_iso8601(string) do
+          {:ok, _} -> :ok
+          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        end
+      end
+    end
+  end
+
+  defp build_filter("duration", resource, pointer, opts) do
+    quote do
+      require Exonerate.Filter.Duration
+      Exonerate.Filter.Duration.filter()
+
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        if unquote(:"~duration?")(string) do
+          :ok
+        else
+          Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        end
+      end
+    end
+  end
 end

@@ -139,12 +139,11 @@ defmodule Benchmark.Library do
   end
 
   @results_file __DIR__
-  |> Path.join("../results")
-  |> Path.expand()
+                |> Path.join("../results")
+                |> Path.expand()
 
   def save_results(results, description) do
     file = Path.join(@results_file, "#{description}.bin")
-    results |> dbg(limit: 25)
 
     raise "not implemented"
   end

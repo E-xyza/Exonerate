@@ -6,11 +6,13 @@ defmodule Exonerate.Type.String do
   # alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Combining
+  alias Exonerate.Filter.Format
 
   @modules Combining.merge(%{
              "minLength" => Exonerate.Filter.MinLength,
              "maxLength" => Exonerate.Filter.MaxLength,
              "min-max-length" => Exonerate.Filter.MinMaxLength,
+             "format" => Exonerate.Filter.Format,
              "pattern" => Exonerate.Filter.Pattern
            })
 
@@ -51,7 +53,9 @@ defmodule Exonerate.Type.String do
 
   defp build_filter_with_clause(schema, resource, pointer, opts) do
     filter_clauses =
-      for filter <- @filters, is_map_key(schema, filter) do
+      for filter <- @filters,
+          is_map_key(schema, filter),
+          reject_format(schema, filter, resource, pointer, opts) do
         call = Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
@@ -66,6 +70,12 @@ defmodule Exonerate.Type.String do
     end
   end
 
+  defp reject_format(schema, "format", resource, pointer, opts) do
+    Format.should_format?(resource, pointer, schema["format"], opts)
+  end
+
+  defp reject_format(_schema, _, _, _, _), do: true
+
   defmacro accessories(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
@@ -74,7 +84,10 @@ defmodule Exonerate.Type.String do
   end
 
   defp build_accessories(context, resource, pointer, opts) do
-    for filter <- @filters, is_map_key(context, filter), not Combining.filter?(filter) do
+    for filter <- @filters,
+        is_map_key(context, filter),
+        reject_format(context, filter, resource, pointer, opts),
+        not Combining.filter?(filter) do
       module = @modules[filter]
       pointer = JsonPointer.join(pointer, filter)
 
