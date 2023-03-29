@@ -17,7 +17,7 @@ defmodule Exonerate.MixProject do
       ],
       source_url: "https://github.com/ityonemo/exonerate/",
       docs: [main: "Exonerate"],
-      preferred_cli_env: [bench_lib: :bench]
+      preferred_cli_env: [bench_lib: :bench, gpt4_helper: :bench, bench_gpt: :bench]
     ]
   end
 
@@ -46,7 +46,7 @@ defmodule Exonerate.MixProject do
       {:ex_doc, "~> 0.24", only: :dev},
       {:dialyxir, "~> 1.2.0", only: :dev, runtime: false},
       # test
-      {:bandit, "~> 0.7", only: :test},
+      {:bandit, "~> 0.7", only: [:test, :bench]},
       # benchmarking tools
       {:ex_json_schema, "~> 0.9.2", only: :bench},
       {:json_xema, "~> 0.3", only: :bench},

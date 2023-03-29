@@ -4,6 +4,8 @@ _build
 deps
 /docs/
 /doc/
+
+# cached benchmark assets
 /bench/results
 
 # don't get the automated tests
