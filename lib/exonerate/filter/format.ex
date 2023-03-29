@@ -64,16 +64,37 @@ defmodule Exonerate.Filter.Format do
 
   defp build_filter("duration", resource, pointer, opts) do
     quote do
-      require Exonerate.Filter.Duration
-      Exonerate.Filter.Duration.filter()
+      require Exonerate.Formats.Duration
+      Exonerate.Formats.Duration.filter()
 
       defp unquote(Tools.call(resource, pointer, opts))(string, path) do
         require Exonerate.Tools
 
-        if unquote(:"~duration?")(string) do
-          :ok
-        else
-          Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        case unquote(:"~duration?")(string) do
+          tuple when elem(tuple, 0) == :ok ->
+            :ok
+
+          tuple when elem(tuple, 0) == :error ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
+        end
+      end
+    end
+  end
+
+  defp build_filter("email", resource, pointer, opts) do
+    quote do
+      require Exonerate.Formats.Email
+      Exonerate.Formats.Email.filter()
+
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case unquote(:"~email?")(string) do
+          tuple when elem(tuple, 0) == :ok ->
+            :ok
+
+          tuple when elem(tuple, 0) == :error ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
         end
       end
     end

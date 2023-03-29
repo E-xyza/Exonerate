@@ -39,6 +39,7 @@ defmodule Exonerate.MixProject do
       {:json_ptr, "~> 0.5"},
       {:jason, "~> 1.4.0"},
       # optional dependencies
+      {:pegasus, "~> 0.2.2", optional: true},
       {:req, "~> 0.3", optional: true},
       {:finch, "~> 0.15", optional: true},
       {:yaml_elixir, "~> 2.7", optional: true},

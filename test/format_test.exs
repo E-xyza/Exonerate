@@ -50,8 +50,17 @@ defmodule ExonerateTest.FormatTest do
       assert :ok == duration("PT10M10S")
       assert :ok == duration("PT10S")
 
-      assert {:error, _} = duration("P10Y10Y")
+      assert {:error, _} = duration("P10Y10Y10")
       assert {:error, _} = duration("foobar")
+    end
+
+    Exonerate.function_from_string(:def, :email, ~s({"type": "string", "format": "email"}),
+      format: true
+    )
+
+    test "email" do
+      assert :ok == email("foo@ba")
+      assert {:error, _} = email("foobar")
     end
   end
 
