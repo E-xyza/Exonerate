@@ -62,6 +62,34 @@ defmodule Exonerate.Filter.Format do
     end
   end
 
+  defp build_filter("ipv4", resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        # NB ipv4strict means no "shortened ipv4 addresses"
+        case :inet.parse_ipv4strict_address(to_charlist(string)) do
+          {:ok, _} -> :ok
+          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        end
+      end
+    end
+  end
+
+  defp build_filter("ipv6", resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        # NB ipv6strict means "no ipv4 addresses"
+        case :inet.parse_ipv6strict_address(to_charlist(string)) do
+          {:ok, _} -> :ok
+          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        end
+      end
+    end
+  end
+
   defp build_filter("duration", resource, pointer, opts) do
     quote do
       require Exonerate.Formats.Duration
@@ -147,6 +175,44 @@ defmodule Exonerate.Filter.Format do
         require Exonerate.Tools
 
         case unquote(:"~idn-hostname?")(string) do
+          tuple when elem(tuple, 0) == :ok ->
+            :ok
+
+          tuple when elem(tuple, 0) == :error ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
+        end
+      end
+    end
+  end
+
+  defp build_filter("uri", resource, pointer, opts) do
+    quote do
+      require Exonerate.Formats.Uri
+      Exonerate.Formats.Uri.filter()
+
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case unquote(:"~uri?")(string) do
+          tuple when elem(tuple, 0) == :ok ->
+            :ok
+
+          tuple when elem(tuple, 0) == :error ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
+        end
+      end
+    end
+  end
+
+  defp build_filter("uri-reference", resource, pointer, opts) do
+    quote do
+      require Exonerate.Formats.UriReference
+      Exonerate.Formats.UriReference.filter()
+
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case unquote(:"~uri-reference?")(string) do
           tuple when elem(tuple, 0) == :ok ->
             :ok
 

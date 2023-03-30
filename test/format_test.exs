@@ -99,6 +99,58 @@ defmodule ExonerateTest.FormatTest do
       assert :ok == idn_hostname("ಡೇಟಾಮೇಲ್.ಭಾರತ")
       assert {:error, _} = idn_hostname("ಡೇಟಾ!ಮೇಲ್.ಭಾರತ")
     end
+
+    Exonerate.function_from_string(
+      :def,
+      :ipv4,
+      ~s({"type": "string", "format": "ipv4"}),
+      format: true
+    )
+
+    test "ipv4" do
+      assert :ok == ipv4("127.0.0.1")
+      assert {:error, _} = ipv4("foo.bar")
+    end
+
+    Exonerate.function_from_string(
+      :def,
+      :ipv6,
+      ~s({"type": "string", "format": "ipv6"}),
+      format: true
+    )
+
+    test "ipv6" do
+      assert :ok == ipv6("::1")
+      assert :ok == ipv6("0:0:0:0:0:0:0:1")
+      assert {:error, _} = ipv6("foo.bar")
+      assert {:error, _} = ipv6("127.0.0.1")
+    end
+
+    Exonerate.function_from_string(
+      :def,
+      :uri,
+      ~s({"type": "string", "format": "uri"}),
+      format: true
+    )
+
+    test "uri" do
+      assert :ok == uri("http://foo.bar/baz#quux")
+      assert {:error, _} = uri("/baz#quux")
+      assert {:error, _} = uri("foo.bar")
+    end
+
+    Exonerate.function_from_string(
+      :def,
+      :uri_reference,
+      ~s({"type": "string", "format": "uri-reference"}),
+      format: true
+    )
+
+    test "uri_reference" do
+      assert :ok == uri_reference("http://foo.bar/baz#quux")
+      assert {:error, _} = uri_reference("/baz#quux")
+      assert {:error, _} = uri_reference("foo.bar")
+    end
   end
 
   # special extra formats.
