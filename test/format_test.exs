@@ -86,6 +86,19 @@ defmodule ExonerateTest.FormatTest do
       assert :ok == hostname("foo.bar")
       assert {:error, _} = hostname("character!notallowed.foo")
     end
+
+    Exonerate.function_from_string(
+      :def,
+      :idn_hostname,
+      ~s({"type": "string", "format": "idn-hostname"}),
+      format: true
+    )
+
+    test "idn-hostname" do
+      assert :ok == idn_hostname("foo.bar")
+      assert :ok == idn_hostname("ಡೇಟಾಮೇಲ್.ಭಾರತ")
+      assert {:error, _} = idn_hostname("ಡೇಟಾ!ಮೇಲ್.ಭಾರತ")
+    end
   end
 
   # special extra formats.
