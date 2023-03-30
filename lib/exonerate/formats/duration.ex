@@ -19,17 +19,17 @@ defmodule Exonerate.Formats.Duration do
         import NimbleParsec
 
         Pegasus.parser_from_string("""
-        DIGIT <- [0-9]
-        DIGITS <- DIGIT+
+        DUR_DIGIT <- [0-9]
+        DUR_DIGITS <- DUR_DIGIT+
 
-        second <- DIGITS "S"
-        minute <- DIGITS "M" second?
-        hour   <- DIGITS "H" minute?
+        second <- DUR_DIGITS "S"
+        minute <- DUR_DIGITS "M" second?
+        hour   <- DUR_DIGITS "H" minute?
         time   <- "T" (hour / minute / second)
-        day    <- DIGITS "D"
-        week   <- DIGITS "W"
-        month  <- DIGITS "M" day?
-        year   <- DIGITS "Y" month?
+        day    <- DUR_DIGITS "D"
+        week   <- DUR_DIGITS "W"
+        month  <- DUR_DIGITS "M" day?
+        year   <- DUR_DIGITS "Y" month?
         date   <- (day / month / year) time?
 
         duration   <- "P" (date / time / week)

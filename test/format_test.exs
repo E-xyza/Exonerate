@@ -62,6 +62,18 @@ defmodule ExonerateTest.FormatTest do
       assert :ok == email("foo@ba")
       assert {:error, _} = email("foobar")
     end
+
+    Exonerate.function_from_string(
+      :def,
+      :idn_email,
+      ~s({"type": "string", "format": "idn-email"}),
+      format: true
+    )
+
+    test "idn-email" do
+      assert :ok == idn_email("ಬೆಂಬಲ@ಡೇಟಾಮೇಲ್.ಭಾರತ")
+      assert {:error, _} = idn_email("ಭಾರತ")
+    end
   end
 
   # special extra formats.

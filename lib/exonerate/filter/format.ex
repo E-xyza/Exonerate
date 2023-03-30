@@ -99,4 +99,23 @@ defmodule Exonerate.Filter.Format do
       end
     end
   end
+
+  defp build_filter("idn-email", resource, pointer, opts) do
+    quote do
+      require Exonerate.Formats.IdnEmail
+      Exonerate.Formats.IdnEmail.filter()
+
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case unquote(:"~idn-email?")(string) do
+          tuple when elem(tuple, 0) == :ok ->
+            :ok
+
+          tuple when elem(tuple, 0) == :error ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
+        end
+      end
+    end
+  end
 end

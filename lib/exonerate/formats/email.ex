@@ -19,70 +19,70 @@ defmodule Exonerate.Formats.Email do
         import NimbleParsec
 
         Pegasus.parser_from_string(~S"""
-        DIGIT <- [0-9]
-        HEXDIG <- [0-9A-Fa-f]
-        ALPHA <- [A-Za-z]
+        EM_DIGIT <- [0-9]
+        EM_HEXDIG <- [0-9A-Fa-f]
+        EM_ALPHA <- [A-Za-z]
 
-        Snum <-  DIGIT DIGIT DIGIT
+        EM_Snum <-  EM_DIGIT EM_DIGIT EM_DIGIT
 
-        IPv4_address_literal <- Snum "." Snum "." Snum "." Snum
+        EM_IPv4_address_literal <- EM_Snum "." EM_Snum "." EM_Snum "." EM_Snum
 
-        IPv6_address_literal <- "IPv6:" IPv6_addr
+        EM_IPv6_address_literal <- "IPv6:" EM_IPv6_addr
 
-        IPv6_addr <- IPv6_full / IPv6_comp / IPv6v4_full / IPv6v4_comp
+        EM_IPv6_addr <- EM_IPv6_full / EM_IPv6_comp / EM_IPv6v4_full / EM_IPv6v4_comp
 
-        IPv6_hex <- HEXDIG HEXDIG HEXDIG HEXDIG
+        EM_IPv6_hex <- EM_HEXDIG EM_HEXDIG EM_HEXDIG EM_HEXDIG
 
-        IPv6_full <- IPv6_hex ":" IPv6_hex  ":" IPv6_hex  ":" IPv6_hex  ":" IPv6_hex  ":" IPv6_hex  ":" IPv6_hex  ":" IPv6_hex
+        EM_IPv6_full <- EM_IPv6_hex ":" EM_IPv6_hex  ":" EM_IPv6_hex  ":" EM_IPv6_hex  ":" EM_IPv6_hex  ":" EM_IPv6_hex  ":" EM_IPv6_hex  ":" EM_IPv6_hex
 
-        IPv6_comp <- (IPv6_hex (":" IPv6_hex)? (":" IPv6_hex)? (":" IPv6_hex)? (":" IPv6_hex)? (":" IPv6_hex)?)? "::"
-                  (IPv6_hex (":" IPv6_hex)? (":" IPv6_hex)? (":" IPv6_hex)? (":" IPv6_hex)? (":" IPv6_hex)?)?
+        EM_IPv6_comp <- (EM_IPv6_hex (":" EM_IPv6_hex)? (":" EM_IPv6_hex)? (":" EM_IPv6_hex)? (":" EM_IPv6_hex)? (":" EM_IPv6_hex)?)? "::"
+                  (EM_IPv6_hex (":" EM_IPv6_hex)? (":" EM_IPv6_hex)? (":" EM_IPv6_hex)? (":" EM_IPv6_hex)? (":" EM_IPv6_hex)?)?
 
-        IPv6v4_full <- IPv6_hex ":" IPv6_hex ":" IPv6_hex ":" IPv6_hex ":" IPv6_hex ":" IPv6_hex ":" IPv4_address_literal
+        EM_IPv6v4_full <- EM_IPv6_hex ":" EM_IPv6_hex ":" EM_IPv6_hex ":" EM_IPv6_hex ":" EM_IPv6_hex ":" EM_IPv6_hex ":" EM_IPv4_address_literal
 
-        IPv6v4_comp <- (IPv6_hex (":" IPv6_hex)? (":" IPv6_hex)? (":" IPv6_hex)?)? "::"
-                  (IPv6_hex (":" IPv6_hex)? (":" IPv6_hex)? (":" IPv6_hex)? ":")?
-                  IPv4_address_literal
+        EM_IPv6v4_comp <- (EM_IPv6_hex (":" EM_IPv6_hex)? (":" EM_IPv6_hex)? (":" EM_IPv6_hex)?)? "::"
+                  (EM_IPv6_hex (":" EM_IPv6_hex)? (":" EM_IPv6_hex)? (":" EM_IPv6_hex)? ":")?
+                  EM_IPv4_address_literal
 
-        Let_dig <- ALPHA / DIGIT
+        EM_Let_dig <- EM_ALPHA / EM_DIGIT
 
-        Ldh_str <- ("\-" Ldh_str) / Let_dig
+        EM_Ldh_str <- ("\-" EM_Ldh_str) / EM_Let_dig
 
-        Standardized_tag <- Ldh_str
+        EM_Standardized_tag <- EM_Ldh_str
 
-        dcontent <- [!-Z^-~]
+        EM_dcontent <- [!-Z^-~]
 
-        General_address_literal <- Standardized_tag ":" dcontent?
+        EM_General_address_literal <- EM_Standardized_tag ":" EM_dcontent?
 
-        sub_domain <- Let_dig Ldh_str?
+        EM_sub_domain <- EM_Let_dig EM_Ldh_str?
 
-        Domain <- sub_domain ("." sub_domain)*
+        EM_Domain <- EM_sub_domain ("." EM_sub_domain)*
 
-        address_literal  <- "[" ( IPv4_address_literal /
-                                      IPv6_address_literal /
-                                      General_address_literal ) "]"
+        EM_address_literal  <- "[" ( EM_IPv4_address_literal /
+                                      EM_IPv6_address_literal /
+                                      EM_General_address_literal ) "]"
 
 
-        atext <-   ALPHA / DIGIT / "!" / "#" /  "$" / "%" /  "&" / "'" / "*" / "+" / "-" / "/" / "=" / "?" / "^" / "_" / "`" / "{" / "|" / "}" / "~"
+        EM_atext <-   EM_ALPHA / EM_DIGIT / "!" / "#" /  "$" / "%" /  "&" / "'" / "*" / "+" / "-" / "/" / "=" / "?" / "^" / "_" / "`" / "{" / "|" / "}" / "~"
 
-        Atom           <- atext+
+        EM_Atom           <- EM_atext+
 
-        Dot_string <- Atom ("." Atom)*
+        EM_Dot_string <- EM_Atom ("." EM_Atom)*
 
-        quoted_pairSMTP  <- "foo" # "\92" [\32-\126]
+        EM_quoted_pairSMTP  <- "\134" [\40-\176]
 
-        qtextSMTP      <- "bar" # [\32-\33] / [\35-\91] / [\93-\126]
+        EM_qtextSMTP      <- [\40-\41] / [\43-\133] / [\135-\176]
 
-        QcontentSMTP   <- qtextSMTP / quoted_pairSMTP
+        EM_QcontentSMTP   <- EM_qtextSMTP / EM_quoted_pairSMTP
 
-        Quoted_string  <- "\"" QcontentSMTP* "\""
+        EM_Quoted_string  <- "\"" EM_QcontentSMTP* "\""
 
-        Local_part <- Dot_string
+        EM_Local_part <- EM_Dot_string
 
-        Mailbox  <-  Local_part "@" ( Domain / address_literal )
+        EM_Mailbox  <-  EM_Local_part "@" ( EM_Domain / EM_address_literal )
         """)
 
-        defparsec(:"~email?", parsec(:Mailbox) |> eos)
+        defparsec(:"~email?", parsec(:EM_Mailbox) |> eos)
       end
     end
   end
