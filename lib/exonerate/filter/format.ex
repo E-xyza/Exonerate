@@ -28,7 +28,10 @@ defmodule Exonerate.Filter.Format do
       defp unquote(Tools.call(resource, pointer, opts))(string, path) do
         require Exonerate.Tools
 
-        case NaiveDateTime.from_iso8601(string) do
+        string
+        |> String.upcase
+        |> NaiveDateTime.from_iso8601
+        |> case do
           {:ok, _} -> :ok
           {:error, _} -> Exonerate.Tools.mismatch(string, unquote(pointer), path)
         end
@@ -212,16 +215,34 @@ defmodule Exonerate.Filter.Format do
   end
 
   defp build_filter("hostname", resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
     quote do
       require Exonerate.Formats.Hostname
       Exonerate.Formats.Hostname.filter()
 
-      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+      defp unquote(call)(string, path) when byte_size(string) > 253 do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: "exceeds hostname length limit")
+      end
+
+      defp unquote(call)(string, path) do
         require Exonerate.Tools
 
         case unquote(:"~hostname?")(string) do
           tuple when elem(tuple, 0) == :ok ->
-            :ok
+
+            string
+            |> String.split(".")
+            |> Enum.reduce_while(:ok, fn
+              "", :ok ->
+                {:halt, Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: "empty hostname label")}
+
+              part, :ok when byte_size(part) > 63 ->
+                {:halt, Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: "exceeds hostname label length limit")}
+
+              _part, :ok ->
+                {:cont, :ok}
+            end)
 
           tuple when elem(tuple, 0) == :error ->
             Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
