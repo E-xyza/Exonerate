@@ -151,6 +151,18 @@ defmodule ExonerateTest.FormatTest do
       assert {:error, _} = uri_reference("/baz#quux")
       assert {:error, _} = uri_reference("foo.bar")
     end
+
+    Exonerate.function_from_string(
+      :def,
+      :uuid,
+      ~s({"type": "string", "format": "uuid"}),
+      format: true
+    )
+
+    test "uuid" do
+      assert :ok == uuid("123e4567-e89b-12d3-a456-426614174000")
+      assert {:error, _} = uuid("foo.bar")
+    end
   end
 
   # special extra formats.

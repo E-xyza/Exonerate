@@ -90,6 +90,70 @@ defmodule Exonerate.Filter.Format do
     end
   end
 
+  defp build_filter("uuid", resource, pointer, opts) do
+    quote do
+      require Exonerate.Formats.Hex
+      Exonerate.Formats.Hex.guard()
+
+      defp unquote(Tools.call(resource, pointer, opts))(
+             <<
+               a0,
+               a1,
+               a2,
+               a3,
+               a4,
+               a5,
+               a6,
+               a7,
+               ?-,
+               b0,
+               b1,
+               b2,
+               b3,
+               ?-,
+               c0,
+               c1,
+               c2,
+               c3,
+               ?-,
+               d0,
+               d1,
+               d2,
+               d3,
+               ?-,
+               e0,
+               e1,
+               e2,
+               e3,
+               e4,
+               e5,
+               e6,
+               e7,
+               e8,
+               e9,
+               e10,
+               e11
+             >>,
+             _path
+           )
+           when is_hex(a0) and is_hex(a1) and is_hex(a2) and is_hex(a3) and is_hex(a4) and
+                  is_hex(a5) and is_hex(a6) and is_hex(a7) and
+                  is_hex(b0) and is_hex(b1) and is_hex(b2) and is_hex(b3) and
+                  is_hex(c0) and is_hex(c1) and is_hex(c2) and is_hex(c3) and
+                  is_hex(d0) and is_hex(d1) and is_hex(d2) and is_hex(d3) and
+                  is_hex(e0) and is_hex(e1) and is_hex(e2) and is_hex(e3) and is_hex(e4) and
+                  is_hex(e5) and is_hex(e6) and is_hex(e7) and
+                  is_hex(e8) and is_hex(e9) and is_hex(e10) and is_hex(e11) do
+        :ok
+      end
+
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(string, unquote(pointer), path)
+      end
+    end
+  end
+
   defp build_filter("duration", resource, pointer, opts) do
     quote do
       require Exonerate.Formats.Duration
