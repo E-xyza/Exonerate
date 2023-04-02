@@ -22,11 +22,10 @@ defmodule Exonerate.Formats.IdnHostname do
 
         Pegasus.parser_from_string(~S"""
         IDN_HN_LetDig <- [a-zA-Z0-9] / IDN_HN_UTF8_non_ascii
-        IDN_HN_LetDigHypEnd <- (IDN_HN_LetDig IDN_HN_LetDigHypEnd) / ("-" IDN_HN_LetDigHypEnd) / IDN_HN_LetDig
+        IDN_HN_LetDigHypEnd <- (IDN_HN_LetDig IDN_HN_LetDigHypEnd) / ("-" IDN_HN_LetDig IDN_HN_LetDigHypEnd) / IDN_HN_LetDig
 
         IDN_HN_name  <- IDN_HN_LetDig IDN_HN_LetDigHypEnd?
         IDN_HN_hname <- IDN_HN_name ("." IDN_HN_name)*
-
         """)
 
         defparsec(:IDN_HN_UTF8_non_ascii, utf8_char(not: 0..127))
@@ -48,9 +47,9 @@ defmodule Exonerate.Formats.IdnHostname do
           case Enum.reduce_while(
                  segments,
                  {:ok, [], 0},
-                 &unquote(:"~idn-hostname:punycode-segment")(&1, &2, nil)
+                 fn a, b -> unquote(:"~idn-hostname:punycode-segment")(a, b) end
                ) do
-            {:ok, unicode_rev, length} -> {:ok, Enum.reverse(unicode_rev)}
+            {:ok, unicode_rev, _length} -> {:ok, Enum.reverse(unicode_rev)}
             error -> error
           end
         end
@@ -58,27 +57,61 @@ defmodule Exonerate.Formats.IdnHostname do
         @__punycode_prefixes ~w(xn-- XN-- Xn-- xN--)
         defp unquote(:"~idn-hostname:punycode-segment")(
                full_string = <<prefix::binary-size(4), segment::binary>>,
-               {:ok, so_far, size_so_far},
-               nil
+               {:ok, so_far, size_so_far}
              )
              when prefix in @__punycode_prefixes do
-
           string_size = byte_size(full_string)
 
           case string_size do
-            size when size > 63 ->
+            this_size when this_size > 63 ->
               {:halt, {:error, "exceeds hostname label length limit"}}
-            size when size + size_so_far > 253 ->
+
+            this_size when this_size + size_so_far > 253 ->
               {:halt, {:error, "exceeds hostname length limit"}}
 
-            _ ->
+            this_size ->
               try do
                 unicode = :punycode.decode(String.to_charlist(segment))
-                {:cont, {:ok, [List.to_string(unicode) | so_far], size_so_far + byte_size(full_string)}}
+
+                {:cont, {:ok, [List.to_string(unicode) | so_far], size_so_far + this_size}}
               catch
                 _, what ->
                   {:halt, {:error, "invalid punycode content: #{segment}"}}
               end
+          end
+        end
+
+        defp unquote(:"~idn-hostname:punycode-segment")(full_string, {:ok, so_far, size_so_far}) do
+          # check to see if there are any non-ascii characters in our string.
+          string_size =
+            if unquote(:"~idn-hostname:all-ascii?")(full_string) do
+              byte_size(full_string)
+            else
+              # this is inefficient, we could do this in a single pass also without actually
+              # performing a full decode.
+              full_string
+              |> String.to_charlist()
+              |> :punycode.encode()
+              |> Enum.count()
+            end
+
+          case string_size do
+            this_size when this_size > 63 ->
+              {:halt, {:error, "exceeds hostname label length limit"}}
+
+            this_size when this_size + size_so_far > 253 ->
+              {:halt, {:error, "exceeds hostname length limit"}}
+
+            this_size ->
+              {:cont, {:ok, [full_string | so_far], this_size + size_so_far}}
+          end
+        end
+
+        defp unquote(:"~idn-hostname:all-ascii?")(string) do
+          case string do
+            <<>> -> true
+            <<x, rest::binary>> when x < 128 -> unquote(:"~idn-hostname:all-ascii?")(rest)
+            _ -> false
           end
         end
       end
