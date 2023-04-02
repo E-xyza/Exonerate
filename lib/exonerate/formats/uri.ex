@@ -47,7 +47,7 @@ defmodule Exonerate.Formats.Uri do
 
         URI_IPv6address <- URI_IPv6_full / URI_IPv6_comp / URI_IPv6v4_full / URI_IPv6v4_comp
 
-        URI_IPv6_hex <- URI_HEXDIG URI_HEXDIG URI_HEXDIG URI_HEXDIG
+        URI_IPv6_hex <- URI_HEXDIG URI_HEXDIG? URI_HEXDIG? URI_HEXDIG?
 
         URI_IPv6_full <- URI_IPv6_hex ":" URI_IPv6_hex  ":" URI_IPv6_hex  ":" URI_IPv6_hex  ":" URI_IPv6_hex  ":" URI_IPv6_hex  ":" URI_IPv6_hex  ":" URI_IPv6_hex
 

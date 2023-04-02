@@ -31,7 +31,7 @@ defmodule Exonerate.Formats.IdnEmail do
 
         IDN_EM_IPv6_addr <- IDN_EM_IPv6_full / IDN_EM_IPv6_comp / IDN_EM_IPv6v4_full / IDN_EM_IPv6v4_comp
 
-        IDN_EM_IPv6_hex <- IDN_EM_HEXDIG IDN_EM_HEXDIG IDN_EM_HEXDIG IDN_EM_HEXDIG
+        IDN_EM_IPv6_hex <- IDN_EM_HEXDIG IDN_EM_HEXDIG? IDN_EM_HEXDIG? IDN_EM_HEXDIG?
 
         IDN_EM_IPv6_full <- IDN_EM_IPv6_hex ":" IDN_EM_IPv6_hex  ":" IDN_EM_IPv6_hex  ":" IDN_EM_IPv6_hex  ":" IDN_EM_IPv6_hex  ":" IDN_EM_IPv6_hex  ":" IDN_EM_IPv6_hex  ":" IDN_EM_IPv6_hex
 
@@ -72,9 +72,9 @@ defmodule Exonerate.Formats.IdnEmail do
 
         IDN_EM_Dot_string <- IDN_EM_Atom ("." IDN_EM_Atom)*
 
-        IDN_EM_quoted_pairSMTP  <- "\134" [\40-\176]
+        IDN_EM_quoted_pairSMTP  <- "\\" / " " / [!-~]
 
-        IDN_EM_qtextSMTP      <- [\40-\41] / [\43-\133] / [\135-\176] / IDN_EM_UTF8_non_ascii
+        IDN_EM_qtextSMTP      <- " " / "!" / [#-Z] / "[" / "]" /  [^-~] / IDN_EM_UTF8_non_ascii
 
         IDN_EM_QcontentSMTP   <- IDN_EM_qtextSMTP / IDN_EM_quoted_pairSMTP
 
