@@ -43,29 +43,41 @@ defmodule ExonerateTest.IdnHostnameTest do
   describe "the idna/punycode library can" do
     for {unicode, {punycode, testdesc}} <- @tests do
       test "decode #{testdesc}" do
-        assert String.to_charlist(unquote(unicode)) == :punycode.decode(String.to_charlist(unquote(punycode)))
+        assert String.to_charlist(unquote(unicode)) ==
+                 :punycode.decode(String.to_charlist(unquote(punycode)))
       end
     end
 
     for {unicode, {punycode, testdesc}} <- @tests do
       test "encode #{testdesc}" do
-        assert String.to_charlist(unquote(punycode)) == :punycode.encode(String.to_charlist(unquote(unicode)))
+        assert String.to_charlist(unquote(punycode)) ==
+                 :punycode.encode(String.to_charlist(unquote(unicode)))
       end
     end
   end
 
-  # describe "punycode segment analysis" do
-  #  defp segment(string, acc, state),
-  #    do: unquote(:"~idn-hostname:punycode-setgment")(string, acc, state)
-  #
-  #    # test that the punycode prefix testing works
-  #
-  #    for {unicode, {punycode, testdesc}} in @tests do
-  #      test "segment characterization for #{unquote(testdesc)}" do
-  #        size = byte_size(unquote(punycode))
-  #        {:ok, [unquote(unicode)], } = segment("xn--" <> unquote(punycode), {:ok, [], 0}, nil)}
-  #      end
-  #    end
-  #  end
-  # end
+  describe "punycode segment analysis" do
+    defp segment(string, acc, state),
+      do: unquote(:"~idn-hostname:punycode-segment")(string, acc, state)
+
+    # test that the punycode prefix testing works
+    for {unicode, {punycode, testdesc}} <- @tests do
+      test "segment characterization for #{testdesc}" do
+        size = byte_size(unquote(punycode)) + 4
+        {:cont, {:ok, [unquote(unicode)], ^size}} = segment("xn--" <> unquote(punycode), {:ok, [], 0}, nil)
+      end
+    end
+
+    test "fails when punycode contains non-ascii character" do
+      {:halt, {:error, "invalid punycode content" <> _}} = segment("xn--😉", {:ok, [], 0}, nil)
+    end
+
+    test "fails when punycode length is greater than segment size" do
+      {:halt, {:error, "exceeds hostname label length limit"}} = segment("xn--abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh-", {:ok, [], 0}, nil)
+    end
+
+    test "" do
+      {:halt, {:error, "exceeds hostname length limit"}} = segment("xn--a", {:ok, [], 252}, nil)
+    end
+  end
 end

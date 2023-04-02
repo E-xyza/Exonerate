@@ -50,20 +50,36 @@ defmodule Exonerate.Formats.IdnHostname do
                  {:ok, [], 0},
                  &unquote(:"~idn-hostname:punycode-segment")(&1, &2, nil)
                ) do
-            {:ok, _, length} when length >= 253 -> {:error, "exceeds hostname length limit"}
-            {:ok, unicode_rev, length} -> Enum.reverse(unicode_rev)
+            {:ok, unicode_rev, length} -> {:ok, Enum.reverse(unicode_rev)}
             error -> error
           end
         end
 
         @__punycode_prefixes ~w(xn-- XN-- Xn-- xN--)
-
         defp unquote(:"~idn-hostname:punycode-segment")(
-               <<prefix::binary-size(4), segment::binary>>,
-               {:ok, so_far, 0},
+               full_string = <<prefix::binary-size(4), segment::binary>>,
+               {:ok, so_far, size_so_far},
                nil
              )
              when prefix in @__punycode_prefixes do
+
+          string_size = byte_size(full_string)
+
+          case string_size do
+            size when size > 63 ->
+              {:halt, {:error, "exceeds hostname label length limit"}}
+            size when size + size_so_far > 253 ->
+              {:halt, {:error, "exceeds hostname length limit"}}
+
+            _ ->
+              try do
+                unicode = :punycode.decode(String.to_charlist(segment))
+                {:cont, {:ok, [List.to_string(unicode) | so_far], size_so_far + byte_size(full_string)}}
+              catch
+                _, what ->
+                  {:halt, {:error, "invalid punycode content: #{segment}"}}
+              end
+          end
         end
       end
     end
