@@ -29,8 +29,8 @@ defmodule Exonerate.Filter.Format do
         require Exonerate.Tools
 
         string
-        |> String.upcase
-        |> NaiveDateTime.from_iso8601
+        |> String.upcase()
+        |> NaiveDateTime.from_iso8601()
         |> case do
           {:ok, _} -> :ok
           {:error, _} -> Exonerate.Tools.mismatch(string, unquote(pointer), path)
@@ -84,10 +84,19 @@ defmodule Exonerate.Filter.Format do
       defp unquote(Tools.call(resource, pointer, opts))(string, path) do
         require Exonerate.Tools
 
-        # NB ipv6strict means "no ipv4 addresses"
-        case :inet.parse_ipv6strict_address(to_charlist(string)) do
-          {:ok, _} -> :ok
-          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        # NB :inet.parse_ipv6strict_address accepts ipv6 zone id's.  We need to reject these.
+        with [_] <- String.split(string, "%"),
+             # NB ipv6strict means "no ipv4 addresses"
+             {:ok, _} <- :inet.parse_ipv6strict_address(to_charlist(string)) do
+          :ok
+        else
+          [_ | _] ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path,
+              reason: "ipv6 addresses can't contain zone ids"
+            )
+
+          _ ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path)
         end
       end
     end
@@ -157,152 +166,35 @@ defmodule Exonerate.Filter.Format do
     end
   end
 
-  defp build_filter("duration", resource, pointer, opts) do
-    quote do
-      require Exonerate.Formats.Duration
-      Exonerate.Formats.Duration.filter()
+  @format_filters %{
+    "duration" => Exonerate.Formats.Duration,
+    "email" => Exonerate.Formats.Email,
+    "idn-email" => Exonerate.Formats.IdnEmail,
+    "hostname" => Exonerate.Formats.Hostname,
+    "idn-hostname" => Exonerate.Formats.IdnHostname,
+    "uri" => Exonerate.Formats.Uri,
+    "uri-reference" => Exonerate.Formats.UriReference
+  }
 
-      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
-        require Exonerate.Tools
+  for {filter, module} <- @format_filters do
+    defp build_filter(unquote(filter), resource, pointer, opts) do
+      call = :"~#{unquote(filter)}"
+      mod = unquote(module)
 
-        case unquote(:"~duration?")(string) do
-          tuple when elem(tuple, 0) == :ok ->
-            :ok
+      quote do
+        require unquote(mod)
+        unquote(mod).filter()
 
-          tuple when elem(tuple, 0) == :error ->
-            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
-        end
-      end
-    end
-  end
+        defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+          require Exonerate.Tools
 
-  defp build_filter("email", resource, pointer, opts) do
-    quote do
-      require Exonerate.Formats.Email
-      Exonerate.Formats.Email.filter()
+          case unquote(call)(string) do
+            tuple when elem(tuple, 0) == :ok ->
+              :ok
 
-      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
-        require Exonerate.Tools
-
-        case unquote(:"~email?")(string) do
-          tuple when elem(tuple, 0) == :ok ->
-            :ok
-
-          tuple when elem(tuple, 0) == :error ->
-            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
-        end
-      end
-    end
-  end
-
-  defp build_filter("idn-email", resource, pointer, opts) do
-    quote do
-      require Exonerate.Formats.IdnEmail
-      Exonerate.Formats.IdnEmail.filter()
-
-      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
-        require Exonerate.Tools
-
-        case unquote(:"~idn-email?")(string) do
-          tuple when elem(tuple, 0) == :ok ->
-            :ok
-
-          tuple when elem(tuple, 0) == :error ->
-            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
-        end
-      end
-    end
-  end
-
-  defp build_filter("hostname", resource, pointer, opts) do
-    call = Tools.call(resource, pointer, opts)
-    quote do
-      require Exonerate.Formats.Hostname
-      Exonerate.Formats.Hostname.filter()
-
-      defp unquote(call)(string, path) when byte_size(string) > 253 do
-        require Exonerate.Tools
-        Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: "exceeds hostname length limit")
-      end
-
-      defp unquote(call)(string, path) do
-        require Exonerate.Tools
-
-        case unquote(:"~hostname?")(string) do
-          tuple when elem(tuple, 0) == :ok ->
-
-            string
-            |> String.split(".")
-            |> Enum.reduce_while(:ok, fn
-              "", :ok ->
-                {:halt, Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: "empty hostname label")}
-
-              part, :ok when byte_size(part) > 63 ->
-                {:halt, Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: "exceeds hostname label length limit")}
-
-              _part, :ok ->
-                {:cont, :ok}
-            end)
-
-          tuple when elem(tuple, 0) == :error ->
-            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
-        end
-      end
-    end
-  end
-
-  defp build_filter("idn-hostname", resource, pointer, opts) do
-    quote do
-      require Exonerate.Formats.IdnHostname
-      Exonerate.Formats.IdnHostname.filter()
-
-      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
-        require Exonerate.Tools
-
-        case unquote(:"~idn-hostname?")(string) do
-          tuple when elem(tuple, 0) == :ok ->
-            :ok
-
-          tuple when elem(tuple, 0) == :error ->
-            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
-        end
-      end
-    end
-  end
-
-  defp build_filter("uri", resource, pointer, opts) do
-    quote do
-      require Exonerate.Formats.Uri
-      Exonerate.Formats.Uri.filter()
-
-      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
-        require Exonerate.Tools
-
-        case unquote(:"~uri?")(string) do
-          tuple when elem(tuple, 0) == :ok ->
-            :ok
-
-          tuple when elem(tuple, 0) == :error ->
-            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
-        end
-      end
-    end
-  end
-
-  defp build_filter("uri-reference", resource, pointer, opts) do
-    quote do
-      require Exonerate.Formats.UriReference
-      Exonerate.Formats.UriReference.filter()
-
-      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
-        require Exonerate.Tools
-
-        case unquote(:"~uri-reference?")(string) do
-          tuple when elem(tuple, 0) == :ok ->
-            :ok
-
-          tuple when elem(tuple, 0) == :error ->
-            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
+            tuple when elem(tuple, 0) == :error ->
+              Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: elem(tuple, 1))
+          end
         end
       end
     end

@@ -15,7 +15,7 @@ defmodule Exonerate.Formats.Hostname do
   alias Exonerate.Cache
 
   defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~hostname?") do
+    if Cache.register_context(__CALLER__.module, :"~hostname") do
       quote do
         require Pegasus
         import NimbleParsec
@@ -26,10 +26,34 @@ defmodule Exonerate.Formats.Hostname do
 
         HN_name  <- HN_LetDig HN_LetDigHypEnd?
         HN_hname <- HN_name ("." HN_name)*
-
         """)
 
-        defparsec(:"~hostname?", parsec(:HN_hname) |> eos)
+        defparsec(:"~hostname:entrypoint", parsec(:HN_hname) |> eos)
+
+        defp unquote(:"~hostname")(string) when byte_size(string) > 253 do
+          {:error, "exceeds hostname length limit"}
+        end
+
+        defp unquote(:"~hostname")(string) do
+          case unquote(:"~hostname:entrypoint")(string) do
+            tuple when elem(tuple, 0) === :ok ->
+              string
+              |> String.split(".")
+              |> Enum.reduce_while({:ok, []}, fn
+                "", {:ok, []} ->
+                  {:halt, {:error, "empty hostname label"}}
+
+                part, {:ok, []} when byte_size(part) > 63 ->
+                  {:halt, {:error, "exceeds hostname label length limit"}}
+
+                part, {:ok, []} ->
+                  {:cont, {:ok, []}}
+              end)
+
+            tuple when elem(tuple, 0) === :error ->
+              tuple
+          end
+        end
       end
     end
   end

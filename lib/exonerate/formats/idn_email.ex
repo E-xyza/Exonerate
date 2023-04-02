@@ -13,7 +13,7 @@ defmodule Exonerate.Formats.IdnEmail do
   alias Exonerate.Cache
 
   defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~idn-email?") do
+    if Cache.register_context(__CALLER__.module, :"~idn-email") do
       quote do
         require Pegasus
         import NimbleParsec
@@ -86,7 +86,7 @@ defmodule Exonerate.Formats.IdnEmail do
         """)
 
         defparsec(:IDN_EM_UTF8_non_ascii, utf8_char(not: 0..127))
-        defparsec(:"~idn-email?", parsec(:IDN_EM_Mailbox))
+        defparsec(:"~idn-email", parsec(:IDN_EM_Mailbox))
       end
     end
   end

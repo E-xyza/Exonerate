@@ -13,7 +13,7 @@ defmodule Exonerate.Formats.Email do
   alias Exonerate.Cache
 
   defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~email?") do
+    if Cache.register_context(__CALLER__.module, :"~email") do
       quote do
         require Pegasus
         import NimbleParsec
@@ -46,7 +46,7 @@ defmodule Exonerate.Formats.Email do
 
         EM_Let_dig <- EM_ALPHA / EM_DIGIT
 
-        EM_Ldh_str <- ("\-" EM_Ldh_str) / EM_Let_dig
+        EM_Ldh_str <- EM_Let_dig EM_Ldh_str / "-" EM_Ldh_str / EM_Let_dig
 
         EM_Standardized_tag <- EM_Ldh_str
 
@@ -61,7 +61,6 @@ defmodule Exonerate.Formats.Email do
         EM_address_literal  <- "[" ( EM_IPv4_address_literal /
                                       EM_IPv6_address_literal /
                                       EM_General_address_literal ) "]"
-
 
         EM_atext <-   EM_ALPHA / EM_DIGIT / "!" / "#" /  "$" / "%" /  "&" / "'" / "*" / "+" / "-" / "/" / "=" / "?" / "^" / "_" / "`" / "{" / "|" / "}" / "~"
 
@@ -82,7 +81,10 @@ defmodule Exonerate.Formats.Email do
         EM_Mailbox  <-  EM_Local_part "@" ( EM_Domain / EM_address_literal )
         """)
 
-        defparsec(:"~email?", parsec(:EM_Mailbox) |> eos)
+        defparsec(:"~email", parsec(:EM_Mailbox) |> eos)
+
+        defparsec(:testy, parsec(:EM_Mailbox) |> eos)
+        defparsec(:test2, parsec(:EM_Ldh_str) |> eos)
       end
     end
   end

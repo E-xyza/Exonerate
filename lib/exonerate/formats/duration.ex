@@ -3,7 +3,7 @@ defmodule Exonerate.Formats.Duration do
 
   # provides special code for a duration filter.  This only needs to be
   # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~duration?"
+  # be created more than once or not.  Creates a function "~duration"
   # which returns a boolean depending on whether the string is a valid
   # duration.
 
@@ -13,7 +13,7 @@ defmodule Exonerate.Formats.Duration do
   alias Exonerate.Cache
 
   defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~duration?") do
+    if Cache.register_context(__CALLER__.module, :"~duration") do
       quote do
         require Pegasus
         import NimbleParsec
@@ -35,7 +35,7 @@ defmodule Exonerate.Formats.Duration do
         duration   <- "P" (date / time / week)
         """)
 
-        defparsec(:"~duration?", parsec(:duration) |> eos)
+        defparsec(:"~duration", parsec(:duration) |> eos)
       end
     end
   end

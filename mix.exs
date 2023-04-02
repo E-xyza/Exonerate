@@ -43,6 +43,7 @@ defmodule Exonerate.MixProject do
       {:req, "~> 0.3", optional: true},
       {:finch, "~> 0.15", optional: true},
       {:yaml_elixir, "~> 2.7", optional: true},
+      {:idna, "~> 6.1.1", optional: true},
       # dev tools
       {:ex_doc, "~> 0.24", only: :dev},
       {:dialyxir, "~> 1.2.0", only: :dev, runtime: false},

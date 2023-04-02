@@ -15,7 +15,7 @@ defmodule Exonerate.Formats.IdnHostname do
   alias Exonerate.Cache
 
   defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~idn-hostname?") do
+    if Cache.register_context(__CALLER__.module, :"~idn-hostname") do
       quote do
         require Pegasus
         import NimbleParsec
@@ -30,7 +30,41 @@ defmodule Exonerate.Formats.IdnHostname do
         """)
 
         defparsec(:IDN_HN_UTF8_non_ascii, utf8_char(not: 0..127))
-        defparsec(:"~idn-hostname?", parsec(:IDN_HN_hname) |> eos)
+        defparsec(:"~idn-hostname:entrypoint", parsec(:IDN_HN_hname) |> eos)
+
+        defp unquote(:"~idn-hostname")(string) when byte_size(string) > 253 do
+          {:error, "exceeds hostname length limit"}
+        end
+
+        defp unquote(:"~idn-hostname")(string) do
+          segments = String.split(string, ".")
+
+          with {:ok, unicode} <- unquote(:"~idn-hostname:punycode-normalize")(segments) do
+            unquote(:"~idn-hostname:entrypoint")(IO.iodata_to_binary(unicode))
+          end
+        end
+
+        defp unquote(:"~idn-hostname:punycode-normalize")(segments) do
+          case Enum.reduce_while(
+                 segments,
+                 {:ok, [], 0},
+                 &unquote(:"~idn-hostname:punycode-segment")(&1, &2, nil)
+               ) do
+            {:ok, _, length} when length >= 253 -> {:error, "exceeds hostname length limit"}
+            {:ok, unicode_rev, length} -> Enum.reverse(unicode_rev)
+            error -> error
+          end
+        end
+
+        @__punycode_prefixes ~w(xn-- XN-- Xn-- xN--)
+
+        defp unquote(:"~idn-hostname:punycode-segment")(
+               <<prefix::binary-size(4), segment::binary>>,
+               {:ok, so_far, 0},
+               nil
+             )
+             when prefix in @__punycode_prefixes do
+        end
       end
     end
   end
