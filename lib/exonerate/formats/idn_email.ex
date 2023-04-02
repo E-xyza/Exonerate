@@ -85,7 +85,7 @@ defmodule Exonerate.Formats.IdnEmail do
         IDN_EM_Mailbox  <-  IDN_EM_Local_part "@" ( IDN_EM_Domain / IDN_EM_address_literal )
         """)
 
-        defparsec(:IDN_EM_UTF8_non_ascii, utf8_char(not: 0..127))
+        defcombinatorp(:IDN_EM_UTF8_non_ascii, utf8_char(not: 0..127))
         defparsec(:"~idn-email", parsec(:IDN_EM_Mailbox))
       end
     end

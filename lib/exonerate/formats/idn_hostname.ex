@@ -28,7 +28,7 @@ defmodule Exonerate.Formats.IdnHostname do
         IDN_HN_hname <- IDN_HN_name ("." IDN_HN_name)*
         """)
 
-        defparsec(:IDN_HN_UTF8_non_ascii, utf8_char(not: 0..127))
+        defcombinatorp(:IDN_HN_UTF8_non_ascii, utf8_char(not: 0..127))
         defparsec(:"~idn-hostname:entrypoint", parsec(:IDN_HN_hname) |> eos)
 
         defp unquote(:"~idn-hostname")(string) when byte_size(string) > 253 do
