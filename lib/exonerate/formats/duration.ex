@@ -4,7 +4,7 @@ defmodule Exonerate.Formats.Duration do
   # provides special code for a duration filter.  This only needs to be
   # dropped in once.  The macro uses the cache to track if it needs to
   # be created more than once or not.  Creates a function "~duration"
-  # which returns a boolean depending on whether the string is a valid
+  # which returns `:ok` or `{:error, reason}` if it is a valid
   # duration.
 
   # the format is governed by appendix A of RFC 3339:

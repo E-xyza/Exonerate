@@ -4,7 +4,7 @@ format_directory =
   |> Path.expand()
 
 omit_modules =
-  ~w(iri-reference.json uri-template.json uri-reference.json regex.json relative-json-pointer.json json-pointer.json)
+  ~w(uri-template.json regex.json relative-json-pointer.json json-pointer.json)
 
 omit_tests = [
   # elixir's Time admits all of ISO8601, not RFC3339 (as specified by spec)

@@ -3,9 +3,9 @@ defmodule Exonerate.Formats.IdnEmail do
 
   # provides special code for an idn-email filter.  This only needs to be
   # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~email?"
-  # which returns a boolean depending on whether the string is a valid
-  # email.
+  # be created more than once or not.  Creates a function "~idn-email"
+  # which returns `:ok` or `{:error, reason}` if it is a valid
+  # idn-email.
 
   # the format is governed by section 3.3 of RFC 6531:
   # https://www.rfc-editor.org/rfc/rfc6531.txt

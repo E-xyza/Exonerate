@@ -3,8 +3,8 @@ defmodule Exonerate.Formats.Hostname do
 
   # provides special code for an hostname filter.  This only needs to be
   # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~hostname?"
-  # which returns a boolean depending on whether the string is a valid
+  # be created more than once or not.  Creates a function "~hostname"
+  # which returns `:ok` or `{:error, reason}` if it is a valid
   # hostname.
 
   # the format is governed by section 2.1 of RFC 1123, which
@@ -21,11 +21,11 @@ defmodule Exonerate.Formats.Hostname do
         import NimbleParsec
 
         Pegasus.parser_from_string(~S"""
-        HN_LetDig <- [a-zA-Z0-9]
+        HN_LetDig       <- [a-zA-Z0-9]
         HN_LetDigHypEnd <- (HN_LetDig HN_LetDigHypEnd) / ("-" HN_LetDigHypEnd) / HN_LetDig
 
-        HN_name  <- HN_LetDig HN_LetDigHypEnd?
-        HN_hname <- HN_name ("." HN_name)*
+        HN_name         <- HN_LetDig HN_LetDigHypEnd?
+        HN_hname        <- HN_name ("." HN_name)*
         """)
 
         defparsec(:"~hostname:entrypoint", parsec(:HN_hname) |> eos)

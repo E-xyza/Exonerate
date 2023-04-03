@@ -3,8 +3,8 @@ defmodule Exonerate.Formats.Email do
 
   # provides special code for an email filter.  This only needs to be
   # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~email?"
-  # which returns a boolean depending on whether the string is a valid
+  # be created more than once or not.  Creates a function "~email
+  # which returns `:ok` or `{:error, reason}` if it is a valid
   # email.
 
   # the format is governed by section 4.1.2 of RFC 5321:
@@ -68,10 +68,10 @@ defmodule Exonerate.Formats.Email do
 
         EM_Dot_string <- EM_Atom ("." EM_Atom)*
 
-        EM_quoted_pairSMTP  <- "\134" [\40-\176]
+        EM_quoted_pairSMTP  <- "\\" / " " / [!-~]
 
-        EM_qtextSMTP      <- [\40-\41] / [\43-\133] / [\135-\176]
-
+        EM_qtextSMTP      <- " " / "!" / [#-Z] / "[" / "]" /  [^-~]
+        
         EM_QcontentSMTP   <- EM_qtextSMTP / EM_quoted_pairSMTP
 
         EM_Quoted_string  <- "\"" EM_QcontentSMTP* "\""

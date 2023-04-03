@@ -3,9 +3,9 @@ defmodule Exonerate.Formats.IdnHostname do
 
   # provides special code for an idn hostname filter.  This only needs to be
   # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~idn-hostname?"
-  # which returns a boolean depending on whether the string is a valid
-  # hostname.
+  # be created more than once or not.  Creates a function "~idn-hostname"
+  # which returns `:ok` or `{:error, reason}` if it is a valid
+  # idn hostname.
 
   # the format is governed by section 2.1 of RFC 1123, which
   # modifies RFC 952:
@@ -21,11 +21,11 @@ defmodule Exonerate.Formats.IdnHostname do
         import NimbleParsec
 
         Pegasus.parser_from_string(~S"""
-        IDN_HN_LetDig <- [a-zA-Z0-9] / IDN_HN_UTF8_non_ascii
+        IDN_HN_LetDig       <- [a-zA-Z0-9] / IDN_HN_UTF8_non_ascii
         IDN_HN_LetDigHypEnd <- (IDN_HN_LetDig IDN_HN_LetDigHypEnd) / ("-" IDN_HN_LetDig IDN_HN_LetDigHypEnd) / IDN_HN_LetDig
 
-        IDN_HN_name  <- IDN_HN_LetDig IDN_HN_LetDigHypEnd?
-        IDN_HN_hname <- IDN_HN_name ("." IDN_HN_name)*
+        IDN_HN_name         <- IDN_HN_LetDig IDN_HN_LetDigHypEnd?
+        IDN_HN_hname        <- IDN_HN_name ("." IDN_HN_name)*
         """)
 
         defcombinatorp(:IDN_HN_UTF8_non_ascii, utf8_char(not: 0..127))
