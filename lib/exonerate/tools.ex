@@ -5,32 +5,36 @@ defmodule Exonerate.Tools do
   alias Exonerate.Type
 
   # GENERAL-USE MACROS
-  defmacro mismatch(error_value, schema_pointer, json_pointer, opts \\ [])
+  defmacro mismatch(error_value, absolute_keyword_location, json_pointer, opts \\ [])
 
-  defmacro mismatch(error_value, {schema_pointer, extras}, json_pointer, opts) do
-    primary = Keyword.take(binding(), ~w(error_value json_pointer)a)
-    schema_pointer = JsonPointer.to_path(schema_pointer)
+  defmacro mismatch(error_value, {absolute_keyword_location, extras}, instance_location, opts) do
+    primary = Keyword.take(binding(), ~w(error_value instance_location)a)
+    absolute_keyword_location = JsonPointer.to_path(absolute_keyword_location)
 
-    schema_pointer = [
-      schema_pointer:
+    absolute_keyword_location = [
+      absolute_keyword_location:
         quote do
-          Path.join(unquote(schema_pointer), unquote(extras))
+          Path.join(unquote(absolute_keyword_location), unquote(extras))
         end
     ]
 
-    extras = Keyword.take(opts, ~w(reason failures matches required)a)
+    extras = Keyword.take(opts, ~w(reason errors matches required)a)
 
-    quote bind_quoted: [error_params: primary ++ schema_pointer ++ extras] do
+    quote bind_quoted: [error_params: primary ++ absolute_keyword_location ++ extras] do
       {:error, error_params}
     end
   end
 
-  defmacro mismatch(error_value, schema_pointer, json_pointer, opts) do
-    primary = Keyword.take(binding(), ~w(error_value json_pointer)a)
-    schema_pointer = [schema_pointer: JsonPointer.to_path(schema_pointer)]
-    extras = Keyword.take(opts, ~w(reason failures matches required)a)
+  defmacro mismatch(error_value, absolute_keyword_location, instance_location, opts) do
+    primary = Keyword.take(binding(), ~w(error_value instance_location)a)
 
-    quote bind_quoted: [error_params: primary ++ schema_pointer ++ extras] do
+    absolute_keyword_location = [
+      absolute_keyword_location: JsonPointer.to_path(absolute_keyword_location)
+    ]
+
+    extras = Keyword.take(opts, ~w(reason errors matches required)a)
+
+    quote bind_quoted: [error_params: primary ++ absolute_keyword_location ++ extras] do
       {:error, error_params}
     end
   end
@@ -203,8 +207,12 @@ defmodule Exonerate.Tools do
 
   def decode!(string, opts) do
     case Keyword.get(opts, :decoder, Jason) do
-      Jason -> Jason.decode!(string)
-      YamlElixir -> YamlElixir.read_from_string!(string)
+      Jason ->
+        Jason.decode!(string)
+
+      YamlElixir ->
+        YamlElixir.read_from_string!(string)
+
       {module, function} ->
         apply(module, function, [string])
     end

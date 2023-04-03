@@ -88,9 +88,9 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       propdependency2 = Jason.decode!(@propdependency2)
       assert {:error, list} = PropertyDependencies.dependency1(propdependency2)
 
-      assert list[:schema_pointer] == "/dependencies/credit_card/0"
+      assert list[:absolute_keyword_location] == "/dependencies/credit_card/0"
       assert list[:error_value] == propdependency2
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
 
     test "no dependency doesn't need to be met" do
@@ -113,18 +113,18 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       propdependency2 = Jason.decode!(@propdependency2)
       assert {:error, list} = PropertyDependencies.dependency2(propdependency2)
 
-      assert list[:schema_pointer] == "/dependencies/credit_card/0"
+      assert list[:absolute_keyword_location] == "/dependencies/credit_card/0"
       assert list[:error_value] == propdependency2
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
 
     test "dependency is now two-way" do
       propdependency4 = Jason.decode!(@propdependency4)
       assert {:error, list} = PropertyDependencies.dependency2(propdependency4)
 
-      assert list[:schema_pointer] == "/dependencies/billing_address/0"
+      assert list[:absolute_keyword_location] == "/dependencies/billing_address/0"
       assert list[:error_value] == propdependency4
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -196,9 +196,9 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
       schemadependency2 = Jason.decode!(@schemadependency2)
       assert {:error, list} = SchemaDependencies.schemadependency(schemadependency2)
 
-      assert list[:schema_pointer] == "/dependencies/credit_card/required/0"
+      assert list[:absolute_keyword_location] == "/dependencies/credit_card/required/0"
       assert list[:error_value] == %{"credit_card" => 5_555_555_555_555_555, "name" => "John Doe"}
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
 
     test "omitting a trigger works" do

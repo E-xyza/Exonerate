@@ -35,9 +35,9 @@ defmodule ExonerateTest.Tutorial.StringTest do
     test "number mismatches a string" do
       assert {:error, list} = String.string(42)
 
-      assert list[:schema_pointer] == "/type"
+      assert list[:absolute_keyword_location] == "/type"
       assert list[:error_value] == 42
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -71,15 +71,15 @@ defmodule ExonerateTest.Tutorial.StringTest do
     test "string of incorrect sizes don't match" do
       assert {:error, list} = Length.string("A")
 
-      assert list[:schema_pointer] == "/minLength"
+      assert list[:absolute_keyword_location] == "/minLength"
       assert list[:error_value] == "A"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
 
       assert {:error, list} = Length.string("ABCD")
 
-      assert list[:schema_pointer] == "/maxLength"
+      assert list[:absolute_keyword_location] == "/maxLength"
       assert list[:error_value] == "ABCD"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -108,15 +108,15 @@ defmodule ExonerateTest.Tutorial.StringTest do
     test "string of incorrect patterns don't match" do
       assert {:error, list} = Pattern.string("(888)555-1212 ext. 532")
 
-      assert list[:schema_pointer] == "/pattern"
+      assert list[:absolute_keyword_location] == "/pattern"
       assert list[:error_value] == "(888)555-1212 ext. 532"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
 
       assert {:error, list} = Pattern.string("(800)FLOWERS")
 
-      assert list[:schema_pointer] == "/pattern"
+      assert list[:absolute_keyword_location] == "/pattern"
       assert list[:error_value] == "(800)FLOWERS"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 end

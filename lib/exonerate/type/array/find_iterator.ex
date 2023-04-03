@@ -55,7 +55,7 @@ defmodule Exonerate.Type.Array.FindIterator do
                   {:cont, {:error, error_so_far}, index + 1, count + 1}
 
                 Exonerate.Tools.error_match(error) ->
-                  new_params = Keyword.update(error_so_far, :failures, [error], &[error | &1])
+                  new_params = Keyword.update(error_so_far, :errors, [error], &[error | &1])
                   {:cont, {{:error, error_so_far}, index + 1}}
               end
           end
@@ -106,7 +106,7 @@ defmodule Exonerate.Type.Array.FindIterator do
                   {:halt, {:ok}}
 
                 Exonerate.Tools.error_match(error) ->
-                  new_params = Keyword.update(params, :failures, [error], &[error | &1])
+                  new_params = Keyword.update(params, :errors, [error], &[error | &1])
                   {:cont, {{:error, params}, index + 1, count}}
               end
           end

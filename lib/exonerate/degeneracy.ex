@@ -43,119 +43,120 @@ defmodule Exonerate.Degeneracy do
 
     opts = Keyword.delete(opts, :entrypoint)
 
-    canonicalized = source
-    |> JsonPointer.resolve_json!(entrypoint)
-    |> canonicalize_recursive(opts)
-    |> case do
-      ## very trivial
-      context when context === %{} ->
-        true
+    canonicalized =
+      source
+      |> JsonPointer.resolve_json!(entrypoint)
+      |> canonicalize_recursive(opts)
+      |> case do
+        ## very trivial
+        context when context === %{} ->
+          true
 
-      ## redundant filters
-      %{"$ref" => ref} when draft in @ref_override_drafts ->
-        # ref overrides all other filters in draft <= 7
-        %{"$ref" => ref, "type" => @all_types}
+        ## redundant filters
+        %{"$ref" => ref} when draft in @ref_override_drafts ->
+          # ref overrides all other filters in draft <= 7
+          %{"$ref" => ref, "type" => @all_types}
 
-      context = %{"maximum" => max, "exclusiveMaximum" => emax}
-      when is_number(emax) and max >= emax ->
-        canonicalize_purged(context, "maximum", opts)
+        context = %{"maximum" => max, "exclusiveMaximum" => emax}
+        when is_number(emax) and max >= emax ->
+          canonicalize_purged(context, "maximum", opts)
 
-      context = %{"minimum" => min, "exclusiveMinimum" => emin}
-      when is_number(emin) and min <= emin ->
-        canonicalize_purged(context, "minimum", opts)
+        context = %{"minimum" => min, "exclusiveMinimum" => emin}
+        when is_number(emin) and min <= emin ->
+          canonicalize_purged(context, "minimum", opts)
 
-      context = %{"maxContains" => _} when not is_map_key(context, "contains") ->
-        canonicalize_purged(context, "maxContains", opts)
+        context = %{"maxContains" => _} when not is_map_key(context, "contains") ->
+          canonicalize_purged(context, "maxContains", opts)
 
-      context = %{"minContains" => _} when not is_map_key(context, "contains") ->
-        canonicalize_purged(context, "minContains", opts)
+        context = %{"minContains" => _} when not is_map_key(context, "contains") ->
+          canonicalize_purged(context, "minContains", opts)
 
-      context = %{"if" => _}
-      when not is_map_key(context, "then") and not is_map_key(context, "else") ->
-        canonicalize_purged(context, "if", opts)
+        context = %{"if" => _}
+        when not is_map_key(context, "then") and not is_map_key(context, "else") ->
+          canonicalize_purged(context, "if", opts)
 
-      context = %{"exclusiveMinimum" => true} when not is_map_key(context, "minimum") ->
-        canonicalize_purged(context, "exclusiveMinimum", opts)
+        context = %{"exclusiveMinimum" => true} when not is_map_key(context, "minimum") ->
+          canonicalize_purged(context, "exclusiveMinimum", opts)
 
-      context = %{"exclusiveMaximum" => true} when not is_map_key(context, "maximum") ->
-        canonicalize_purged(context, "exclusiveMaximum", opts)
+        context = %{"exclusiveMaximum" => true} when not is_map_key(context, "maximum") ->
+          canonicalize_purged(context, "exclusiveMaximum", opts)
 
-      ## degenerate-OK filters
-      context = %{"exclusiveMinimum" => false} ->
-        canonicalize_purged(context, "exclusiveMinimum", opts)
+        ## degenerate-OK filters
+        context = %{"exclusiveMinimum" => false} ->
+          canonicalize_purged(context, "exclusiveMinimum", opts)
 
-      context = %{"exclusiveMaximum" => false} ->
-        canonicalize_purged(context, "exclusiveMaximum", opts)
+        context = %{"exclusiveMaximum" => false} ->
+          canonicalize_purged(context, "exclusiveMaximum", opts)
 
-      context = %{"propertyNames" => true} ->
-        canonicalize_purged(context, "propertyNames", opts)
+        context = %{"propertyNames" => true} ->
+          canonicalize_purged(context, "propertyNames", opts)
 
-      context = %{"uniqueItems" => false} ->
-        canonicalize_purged(context, "uniqueItems", opts)
+        context = %{"uniqueItems" => false} ->
+          canonicalize_purged(context, "uniqueItems", opts)
 
-      context = %{"minLength" => 0} ->
-        canonicalize_purged(context, "minLength", opts)
+        context = %{"minLength" => 0} ->
+          canonicalize_purged(context, "minLength", opts)
 
-      context = %{"minItems" => 0} ->
-        canonicalize_purged(context, "minItems", opts)
+        context = %{"minItems" => 0} ->
+          canonicalize_purged(context, "minItems", opts)
 
-      context = %{"minProperties" => 0} ->
-        canonicalize_purged(context, "minProperties", opts)
+        context = %{"minProperties" => 0} ->
+          canonicalize_purged(context, "minProperties", opts)
 
-      context = %{"minContains" => 0, "contains" => _}
-      when not is_map_key(context, "maxContains") ->
-        canonicalize_purged(context, ["minContains", "contains"], opts)
+        context = %{"minContains" => 0, "contains" => _}
+        when not is_map_key(context, "maxContains") ->
+          canonicalize_purged(context, ["minContains", "contains"], opts)
 
-      context = %{"pattern" => regex_all} when regex_all in @regex_all ->
-        # this is not comprehensive, but it's good enough for a first pass.
-        canonicalize_purged(context, "pattern", opts)
+        context = %{"pattern" => regex_all} when regex_all in @regex_all ->
+          # this is not comprehensive, but it's good enough for a first pass.
+          canonicalize_purged(context, "pattern", opts)
 
-      context = %{"additionalItems" => _} when not is_map_key(context, "items") ->
-        canonicalize_purged(context, "additionalItems", opts)
+        context = %{"additionalItems" => _} when not is_map_key(context, "items") ->
+          canonicalize_purged(context, "additionalItems", opts)
 
-      context = %{"additionalItems" => _, "items" => items}
-      when is_map(items) or is_boolean(items) ->
-        canonicalize_purged(context, "additionalItems", opts)
+        context = %{"additionalItems" => _, "items" => items}
+        when is_map(items) or is_boolean(items) ->
+          canonicalize_purged(context, "additionalItems", opts)
 
-      context = %{"unevaluatedItems" => _, "items" => items}
-      when is_map(items) or is_boolean(items) ->
-        canonicalize_purged(context, "unevaluatedItems", opts)
+        context = %{"unevaluatedItems" => _, "items" => items}
+        when is_map(items) or is_boolean(items) ->
+          canonicalize_purged(context, "unevaluatedItems", opts)
 
-      ### empty filter lists
-      context = %{"required" => []} ->
-        canonicalize_purged(context, "required", opts)
+        ### empty filter lists
+        context = %{"required" => []} ->
+          canonicalize_purged(context, "required", opts)
 
-      context = %{"allOf" => []} ->
-        canonicalize_purged(context, "allOf", opts)
+        context = %{"allOf" => []} ->
+          canonicalize_purged(context, "allOf", opts)
 
-      # combine minLength and maxLength
-      context = %{"minLength" => min, "maxLength" => max} ->
-        # note the min-max-length string doesn't look like a normal JsonSchema filter.
-        context
-        |> Map.put("min-max-length", [min, max])
-        |> canonicalize_purged(["minLength", "maxLength"], opts)
-
-      ## type normalization
-      context = %{"type" => type} when is_binary(type) ->
-        context
-        |> Map.put("type", [type])
-        |> canonicalize(opts)
-
-      context when not is_map_key(context, "type") ->
-        canonicalize_no_type(context, opts)
-
-      ## const and enum normalization
-      context = %{"const" => const, "enum" => enum} ->
-        if const in enum do
-          canonicalize_purged(context, "enum", opts)
-        else
+        # combine minLength and maxLength
+        context = %{"minLength" => min, "maxLength" => max} ->
+          # note the min-max-length string doesn't look like a normal JsonSchema filter.
           context
-        end
+          |> Map.put("min-max-length", [min, max])
+          |> canonicalize_purged(["minLength", "maxLength"], opts)
 
-      context ->
-        context
-    end
-    |> canonicalize_finalize
+        ## type normalization
+        context = %{"type" => type} when is_binary(type) ->
+          context
+          |> Map.put("type", [type])
+          |> canonicalize(opts)
+
+        context when not is_map_key(context, "type") ->
+          canonicalize_no_type(context, opts)
+
+        ## const and enum normalization
+        context = %{"const" => const, "enum" => enum} ->
+          if const in enum do
+            canonicalize_purged(context, "enum", opts)
+          else
+            context
+          end
+
+        context ->
+          context
+      end
+      |> canonicalize_finalize
 
     JsonPointer.update_json!(source, entrypoint, fn _ -> canonicalized end)
   end

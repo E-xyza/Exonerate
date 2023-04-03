@@ -42,15 +42,15 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "things that match none don't match" do
       assert {:error, list} = Combining.combining("too long")
 
-      assert list[:schema_pointer] == "/anyOf"
+      assert list[:absolute_keyword_location] == "/anyOf"
       assert list[:error_value] == "too long"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
 
       assert {:error, list} = Combining.combining(-5)
 
-      assert list[:schema_pointer] == "/anyOf"
+      assert list[:absolute_keyword_location] == "/anyOf"
       assert list[:error_value] == -5
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -93,9 +93,9 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "things that mismatch one don't match" do
       assert {:error, list} = AllOf.allof("too long")
 
-      assert list[:schema_pointer] == "/allOf/1/maxLength"
+      assert list[:absolute_keyword_location] == "/allOf/1/maxLength"
       assert list[:error_value] == "too long"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -103,15 +103,15 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "are possible of allof" do
       assert {:error, list} = AllOf.impossible("No way")
 
-      assert list[:schema_pointer] == "/allOf/1/type"
+      assert list[:absolute_keyword_location] == "/allOf/1/type"
       assert list[:error_value] == "No way"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
 
       assert {:error, list} = AllOf.impossible(-1)
 
-      assert list[:schema_pointer] == "/allOf/0/type"
+      assert list[:absolute_keyword_location] == "/allOf/0/type"
       assert list[:error_value] == -1
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -142,9 +142,9 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "things that mismatch one don't match" do
       assert {:error, list} = AnyOf.anyof(%{"Not a" => "string or number"})
 
-      assert list[:schema_pointer] == "/anyOf"
+      assert list[:absolute_keyword_location] == "/anyOf"
       assert list[:error_value] == %{"Not a" => "string or number"}
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -185,17 +185,17 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "multiples of neither don't" do
       assert {:error, list} = OneOf.oneof(2)
 
-      assert list[:schema_pointer] == "/oneOf"
+      assert list[:absolute_keyword_location] == "/oneOf"
       assert list[:error_value] == 2
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
 
     test "multiples of both don't" do
       assert {:error, list} = OneOf.oneof(15)
 
-      assert list[:schema_pointer] == "/oneOf"
+      assert list[:absolute_keyword_location] == "/oneOf"
       assert list[:error_value] == 15
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
       assert list[:matches] == ["/oneOf/0", "/oneOf/1"]
     end
   end
@@ -209,17 +209,17 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "multiples of neither don't" do
       assert {:error, list} = OneOf.factorout(2)
 
-      assert list[:schema_pointer] == "/oneOf"
+      assert list[:absolute_keyword_location] == "/oneOf"
       assert list[:error_value] == 2
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
 
     test "multiples of both don't" do
       assert {:error, list} = OneOf.factorout(15)
 
-      assert list[:schema_pointer] == "/oneOf"
+      assert list[:absolute_keyword_location] == "/oneOf"
       assert list[:error_value] == 15
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -245,9 +245,9 @@ defmodule ExonerateTest.Tutorial.CompositionTest do
     test "things that mismatch one don't match" do
       assert {:error, list} = Not.no("I am a string")
 
-      assert list[:schema_pointer] == "/not"
+      assert list[:absolute_keyword_location] == "/not"
       assert list[:error_value] == "I am a string"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 end

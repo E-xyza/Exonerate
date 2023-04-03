@@ -34,15 +34,15 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     test "integer mismatches a float or string" do
       assert {:error, list} = Integer.integer(3.1415926)
 
-      assert list[:schema_pointer] == "/type"
+      assert list[:absolute_keyword_location] == "/type"
       assert list[:error_value] == 3.1415926
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
 
       assert {:error, list} = Integer.integer("42")
 
-      assert list[:schema_pointer] == "/type"
+      assert list[:absolute_keyword_location] == "/type"
       assert list[:error_value] == "42"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -69,9 +69,9 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     test "number mismatches a string" do
       assert {:error, list} = Number.number("42")
 
-      assert list[:schema_pointer] == "/type"
+      assert list[:absolute_keyword_location] == "/type"
       assert list[:error_value] == "42"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -99,9 +99,9 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     test "multiple mismatches noninteger" do
       assert {:error, list} = Multiple.integer(23)
 
-      assert list[:schema_pointer] == "/multipleOf"
+      assert list[:absolute_keyword_location] == "/multipleOf"
       assert list[:error_value] == 23
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -138,22 +138,22 @@ defmodule ExonerateTest.Tutorial.NumericTest do
     test "outside values mismatch" do
       assert {:error, list} = Range.number(-1)
 
-      assert list[:schema_pointer] == "/minimum"
+      assert list[:absolute_keyword_location] == "/minimum"
       assert list[:error_value] == -1
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
 
       # exclusive maximum
       assert {:error, list} = Range.number(100)
 
-      assert list[:schema_pointer] == "/exclusiveMaximum"
+      assert list[:absolute_keyword_location] == "/exclusiveMaximum"
       assert list[:error_value] == 100
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
 
       assert {:error, list} = Range.number(101)
 
-      assert list[:schema_pointer] == "/exclusiveMaximum"
+      assert list[:absolute_keyword_location] == "/exclusiveMaximum"
       assert list[:error_value] == 101
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 end

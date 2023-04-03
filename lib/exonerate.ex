@@ -34,12 +34,32 @@ defmodule Exonerate do
   end
   ```
 
-  The above module generates a function `MyModule.function_name/1` that takes an erlang JSON term
+  The above module generates a function `MyModule.function_name/1` that takes an BEAM JSON term
   (`string | number | array | map | bool | nil`) and validates it based on the the JSONschema.  If
   the term validates, it produces `:ok`.  If the term fails to validate, it produces
-  `{:error, keyword}`, where the key `:json_pointer` and points to the error location in the passed
+  `{:error, keyword}`, where the key `:instance_location` and points to the error location in the passed
   parameter, the `:schema_pointers` points to the validation that failed, and `error_value` is the
   failing inner term.
+
+  ## Error keywords
+
+  The following error keywords conform to the JSONSchema spec
+  (https://json-schema.org/draft/2020-12/json-schema-core.html#name-format):
+
+  - `:absolute_keyword_location`: a JSON pointer to the keyword in the schema that failed.
+  - `:instance_location`: a JSON pointer to the location in the instance that failed.
+  - `:errors`: a list of errors generated when a combining filter fails to match.
+
+  The following error keywords are not standard and are specific to Exonerate:
+
+  - `:error_value`: the innermost term that failed to validate.
+  - `:matches`: a list of JSON pointers to the keywords that matched a combining filter.
+  - `:reason`: a string describing the error, when the failing filter can fail for nonobvious
+    reasons.  For example `oneOf` will fail with the reason "no matches" when none of the
+    child schemas match; but it will fail with the reason "multiple matches" when more than
+    of the child schemas match.
+  - `:required`: a list of object keys that were required but missing.
+  - `:ref_trace`: a list of `$ref` keywords that were followed to get to the failing keyword.
 
   ## Options
 

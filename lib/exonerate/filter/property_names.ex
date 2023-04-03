@@ -26,7 +26,7 @@ defmodule Exonerate.Filter.PropertyNames do
               :ok
 
             {:error, errors} ->
-              {:error, Keyword.update!(errors, :json_pointer, &Path.join(&1, key))}
+              {:error, Keyword.update!(errors, :instance_location, &Path.join(&1, key))}
           end
         end
       end

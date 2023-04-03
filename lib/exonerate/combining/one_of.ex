@@ -61,7 +61,7 @@ defmodule Exonerate.Combining.OneOf do
 
                 Exonerate.Tools.error_match(error) ->
                   {:cont,
-                   {{:error, Keyword.update(opts, :failures, [error], &[error | &1])}, index + 1}}
+                   {{:error, Keyword.update(opts, :errors, [error], &[error | &1])}, index + 1}}
               end
 
             fun, {ok = {:ok, _seen}, last, index} ->
@@ -107,7 +107,7 @@ defmodule Exonerate.Combining.OneOf do
 
                 Exonerate.Tools.error_match(error) ->
                   {:cont,
-                   {{:error, Keyword.update(opts, :failures, [error], &[error | &1])}, index + 1}}
+                   {{:error, Keyword.update(opts, :errors, [error], &[error | &1])}, index + 1}}
               end
 
             fun, {:ok, last, index} ->

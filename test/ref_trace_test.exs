@@ -19,10 +19,10 @@ defmodule ExonerateTest.RefTraceTest do
     assert {:error, error} = ref1(%{"bar" => "baz"})
 
     assert [
+             absolute_keyword_location: "/properties/foo/type",
              error_value: "baz",
-             json_pointer: "/bar",
+             instance_location: "/bar",
              ref_trace: ["/properties/bar/$ref"],
-             schema_pointer: "/properties/foo/type"
            ] = Enum.sort(error)
   end
 
@@ -40,13 +40,13 @@ defmodule ExonerateTest.RefTraceTest do
     assert {:error, error} = ref2(%{"baz" => "quux"})
 
     assert [
+             absolute_keyword_location: "/properties/foo/type",
              error_value: "quux",
-             json_pointer: "/baz",
+             instance_location: "/baz",
              ref_trace: [
                "/properties/baz/$ref",
                "/properties/bar/$ref"
-             ],
-             schema_pointer: "/properties/foo/type"
+             ]
            ] = Enum.sort(error)
   end
 

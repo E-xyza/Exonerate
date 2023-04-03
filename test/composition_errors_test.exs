@@ -15,35 +15,35 @@ defmodule ExonerateTest.CompositionTest do
   describe "oneOf" do
     test "reports failures when there are multiple failures" do
       assert {:error, list} = one_of("foobarbaz")
-      assert "/oneOf" = list[:schema_pointer]
+      assert "/oneOf" = list[:absolute_keyword_location]
 
       assert [
                {:error,
                 [
                   error_value: "foobarbaz",
-                  json_pointer: "/",
-                  schema_pointer: "/oneOf/2/type"
+                  instance_location: "/",
+                  absolute_keyword_location: "/oneOf/2/type"
                 ]},
                {:error,
                 [
                   error_value: "foobarbaz",
-                  json_pointer: "/",
-                  schema_pointer: "/oneOf/1/type"
+                  instance_location: "/",
+                  absolute_keyword_location: "/oneOf/1/type"
                 ]},
                {:error,
                 [
                   error_value: "foobarbaz",
-                  json_pointer: "/",
-                  schema_pointer: "/oneOf/0/type"
+                  instance_location: "/",
+                  absolute_keyword_location: "/oneOf/0/type"
                 ]}
-             ] = list[:failures]
+             ] = list[:errors]
 
       assert "no matches" == list[:reason]
     end
 
-    test "reports multiple failures" do
+    test "reports multiple matches" do
       assert {:error, list} = one_of(15)
-      assert "/oneOf" = list[:schema_pointer]
+      assert "/oneOf" = list[:absolute_keyword_location]
 
       assert ["/oneOf/0", "/oneOf/1"] == list[:matches]
 
@@ -63,22 +63,22 @@ defmodule ExonerateTest.CompositionTest do
   describe "anyOf" do
     test "reports all failures when there are multiple failures" do
       assert {:error, list} = any_of("foobarbaz")
-      assert "/anyOf" = list[:schema_pointer]
+      assert "/anyOf" = list[:absolute_keyword_location]
 
       assert [
                {:error,
                 [
                   error_value: "foobarbaz",
-                  json_pointer: "/",
-                  schema_pointer: "/anyOf/1/type"
+                  instance_location: "/",
+                  absolute_keyword_location: "/anyOf/1/type"
                 ]},
                {:error,
                 [
                   error_value: "foobarbaz",
-                  json_pointer: "/",
-                  schema_pointer: "/anyOf/0/maxLength"
+                  instance_location: "/",
+                  absolute_keyword_location: "/anyOf/0/maxLength"
                 ]}
-             ] = list[:failures]
+             ] = list[:errors]
     end
   end
 end

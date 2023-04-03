@@ -67,16 +67,16 @@ defmodule SchemaModule do
   """)
 end
 ```
+
 ```
 iex> SchemaModule.validate_input("some string")
-{:error, schema_pointer: "#", error_value: "some string", json_pointer: "#/parameter"}}
+{:error, absolute_keyword_location: "#", error_value: "some string", absolute_keyword_location: "#/parameter"}
 
 iex> SchemaModule.validate_input(%{"parameter" => "2"})
-{:error, schema_pointer: "#/properties/parameter", error_value: "2", json_pointer: "#/parameter"}}
+{:error, absolute_keyword_location: "#/properties/parameter", error_value: "2", absolute_keyword_location: "#/parameter"}
 
 iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok
-
 ```
 
 ## Licensing notes

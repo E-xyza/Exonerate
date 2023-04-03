@@ -64,7 +64,8 @@ defmodule ExonerateTest.DecoderTest do
     nonsense
     """,
     entrypoint: "/foo/bar",
-    decoder: {Custom, :generate!}  # note this is an alias!
+    # note this is an alias!
+    decoder: {Custom, :generate!}
   )
 
   test "custom" do
