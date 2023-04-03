@@ -21,9 +21,9 @@ defmodule Exonerate.Combining.Not do
       case Degeneracy.class(context) do
         :unknown ->
           quote do
-            case unquote(call)(value, path) do
+            case unquote(call)(data, path) do
               :ok ->
-                Exonerate.Tools.mismatch(value, unquote(pointer), path)
+                Exonerate.Tools.mismatch(data, unquote(pointer), path)
 
               {:error, _} ->
                 :ok
@@ -32,7 +32,7 @@ defmodule Exonerate.Combining.Not do
 
         :ok ->
           quote do
-            Exonerate.Tools.mismatch(value, unquote(pointer), path)
+            Exonerate.Tools.mismatch(data, unquote(pointer), path)
           end
 
         :error ->
@@ -42,7 +42,7 @@ defmodule Exonerate.Combining.Not do
     #############################################################
 
     quote do
-      defp unquote(entrypoint_call)(value, path) do
+      defp unquote(entrypoint_call)(data, path) do
         require Exonerate.Tools
         unquote(switch)
       end

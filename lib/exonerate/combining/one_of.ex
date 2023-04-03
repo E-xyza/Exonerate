@@ -15,8 +15,8 @@ defmodule Exonerate.Combining.OneOf do
     call = Tools.call(resource, pointer, opts)
 
     quote do
-      defp unquote(call)(value, path) do
-        unquote(all_of_call)(value, path)
+      defp unquote(call)(data, path) do
+        unquote(all_of_call)(data, path)
       end
 
       unquote(context)
@@ -47,15 +47,15 @@ defmodule Exonerate.Combining.OneOf do
     call = Tools.call(resource, pointer, opts)
 
     quote do
-      defp unquote(call)(value, path) do
+      defp unquote(call)(data, path) do
         require Exonerate.Tools
 
         unquote(lambdas)
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(value, unquote(pointer), path, reason: "no matches"), 0},
+          {Exonerate.Tools.mismatch(data, unquote(pointer), path, reason: "no matches"), 0},
           fn
             fun, {{:error, opts}, index} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 ok = {:ok, _seen} ->
                   {:cont, {ok, index, index + 1}}
 
@@ -65,7 +65,7 @@ defmodule Exonerate.Combining.OneOf do
               end
 
             fun, {ok = {:ok, _seen}, last, index} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 {:ok, _} ->
                   matches =
                     Enum.map([last, index], fn slot ->
@@ -73,7 +73,7 @@ defmodule Exonerate.Combining.OneOf do
                     end)
 
                   {:halt,
-                   {Exonerate.Tools.mismatch(value, unquote(pointer), path,
+                   {Exonerate.Tools.mismatch(data, unquote(pointer), path,
                       matches: matches,
                       reason: "multiple matches"
                     )}}
@@ -93,15 +93,15 @@ defmodule Exonerate.Combining.OneOf do
     call = Tools.call(resource, pointer, opts)
 
     quote do
-      defp unquote(call)(value, path) do
+      defp unquote(call)(data, path) do
         require Exonerate.Tools
 
         unquote(lambdas)
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(value, unquote(pointer), path, reason: "no matches"), 0},
+          {Exonerate.Tools.mismatch(data, unquote(pointer), path, reason: "no matches"), 0},
           fn
             fun, {{:error, opts}, index} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 :ok ->
                   {:cont, {:ok, index, index + 1}}
 
@@ -111,7 +111,7 @@ defmodule Exonerate.Combining.OneOf do
               end
 
             fun, {:ok, last, index} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 :ok ->
                   matches =
                     Enum.map([last, index], fn slot ->
@@ -119,7 +119,7 @@ defmodule Exonerate.Combining.OneOf do
                     end)
 
                   {:halt,
-                   {Exonerate.Tools.mismatch(value, unquote(pointer), path,
+                   {Exonerate.Tools.mismatch(data, unquote(pointer), path,
                       matches: matches,
                       reason: "multiple matches"
                     )}}

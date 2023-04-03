@@ -109,11 +109,11 @@ defmodule Exonerate.Context do
       |> Map.delete("const")
       |> build_filter(resource, pointer, Keyword.merge(opts, type: Type.of(const)))
 
-    value = Macro.escape(const)
+    const = Macro.escape(const)
 
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(content, path)
-           when content != unquote(value) do
+           when content != unquote(const) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(const_pointer), path)
       end

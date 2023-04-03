@@ -363,9 +363,9 @@ defmodule Exonerate.Degeneracy do
 
   def class(_), do: :unknown
 
-  defp matches(value, rest_schema) do
+  defp matches(data, rest_schema) do
     case class(rest_schema) do
-      ^value -> value
+      ^data -> data
       _ -> :unknown
     end
   end

@@ -20,13 +20,13 @@ defmodule Exonerate.Type do
   def all, do: @all
 
   @spec of(json) :: String.t()
-  def of(value) when is_binary(value), do: "string"
-  def of(value) when is_map(value), do: "object"
-  def of(value) when is_list(value), do: "array"
-  def of(value) when is_integer(value), do: "integer"
-  def of(value) when is_float(value), do: "number"
-  def of(value) when is_boolean(value), do: "boolean"
-  def of(value) when is_nil(value), do: "null"
+  def of(json) when is_binary(json), do: "string"
+  def of(json) when is_map(json), do: "object"
+  def of(json) when is_list(json), do: "array"
+  def of(json) when is_integer(json), do: "integer"
+  def of(json) when is_float(json), do: "number"
+  def of(json) when is_boolean(json), do: "boolean"
+  def of(json) when is_nil(json), do: "null"
 
   @macrocallback filter(resource :: String.t(), JsonPointer.t(), keyword) :: Macro.t()
   @macrocallback accessories(resource :: String.t(), JsonPointer.t(), keyword) :: Macro.t()

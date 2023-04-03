@@ -15,8 +15,8 @@ defmodule Exonerate.Combining.AllOf do
     call = Tools.call(resource, pointer, opts)
 
     quote do
-      defp unquote(call)(value, path) do
-        unquote(all_of_call)(value, path)
+      defp unquote(call)(data, path) do
+        unquote(all_of_call)(data, path)
       end
 
       unquote(context)
@@ -41,7 +41,7 @@ defmodule Exonerate.Combining.AllOf do
 
   defp build_tracked_object(call, lambdas, contexts) do
     quote do
-      defp unquote(call)(value, path) do
+      defp unquote(call)(data, path) do
         require Exonerate.Tools
 
         Enum.reduce_while(
@@ -49,7 +49,7 @@ defmodule Exonerate.Combining.AllOf do
           {:ok, MapSet.new()},
           fn
             fun, {:ok, seen} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 {:ok, new_seen} ->
                   {:cont, {:ok, MapSet.union(seen, new_seen)}}
 
@@ -66,7 +66,7 @@ defmodule Exonerate.Combining.AllOf do
 
   defp build_tracked_array(call, lambdas, contexts) do
     quote do
-      defp unquote(call)(value, path) do
+      defp unquote(call)(data, path) do
         require Exonerate.Tools
 
         Enum.reduce_while(
@@ -74,7 +74,7 @@ defmodule Exonerate.Combining.AllOf do
           {:ok, 0},
           fn
             fun, {:ok, first_unseen_index} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 {:ok, new_index} ->
                   {:cont, {:ok, max(first_unseen_index, new_index)}}
 
@@ -91,7 +91,7 @@ defmodule Exonerate.Combining.AllOf do
 
   defp build_untracked(call, lambdas, contexts) do
     quote do
-      defp unquote(call)(value, path) do
+      defp unquote(call)(data, path) do
         require Exonerate.Tools
 
         Enum.reduce_while(
@@ -99,7 +99,7 @@ defmodule Exonerate.Combining.AllOf do
           :ok,
           fn
             fun, :ok ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 :ok ->
                   {:cont, :ok}
 

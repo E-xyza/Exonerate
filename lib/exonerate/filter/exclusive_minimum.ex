@@ -35,7 +35,7 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
     quote do
       defp unquote(call)(number, path) do
         case number do
-          value when value > unquote(minimum) ->
+          number when number > unquote(minimum) ->
             :ok
 
           _ ->

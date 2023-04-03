@@ -36,7 +36,7 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
     quote do
       defp unquote(call)(number, path) do
         case number do
-          value when value < unquote(maximum) ->
+          number when number < unquote(maximum) ->
             :ok
 
           _ ->

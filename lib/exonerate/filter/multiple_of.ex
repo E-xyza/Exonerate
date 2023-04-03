@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.MultipleOf do
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(integer, path) do
         case integer do
-          value when rem(value, unquote(divisor)) === 0 ->
+          number when rem(number, unquote(divisor)) === 0 ->
             :ok
 
           _ ->

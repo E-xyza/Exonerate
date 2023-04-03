@@ -16,8 +16,8 @@ defmodule Exonerate.Combining.AnyOf do
     call = Tools.call(resource, pointer, opts)
 
     quote do
-      defp unquote(call)(value, path) do
-        unquote(any_of_call)(value, path)
+      defp unquote(call)(data, path) do
+        unquote(any_of_call)(data, path)
       end
 
       unquote(context)
@@ -51,15 +51,15 @@ defmodule Exonerate.Combining.AnyOf do
     call = Tools.call(resource, pointer, opts)
 
     quote do
-      defp unquote(call)(value, path) do
+      defp unquote(call)(data, path) do
         require Exonerate.Tools
 
         Enum.reduce(
           unquote(lambdas),
-          Exonerate.Tools.mismatch(value, unquote(pointer), path),
+          Exonerate.Tools.mismatch(data, unquote(pointer), path),
           fn
             fun, {:error, opts} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 ok = {:ok, _seen} ->
                   ok
 
@@ -68,7 +68,7 @@ defmodule Exonerate.Combining.AnyOf do
               end
 
             fun, {:ok, seen} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 ok = {:ok, new_seen} ->
                   {:ok, MapSet.union(seen, new_seen)}
 
@@ -89,15 +89,15 @@ defmodule Exonerate.Combining.AnyOf do
     call = Tools.call(resource, pointer, opts)
 
     quote do
-      defp unquote(call)(value, path) do
+      defp unquote(call)(data, path) do
         require Exonerate.Tools
 
         Enum.reduce(
           unquote(lambdas),
-          Exonerate.Tools.mismatch(value, unquote(pointer), path),
+          Exonerate.Tools.mismatch(data, unquote(pointer), path),
           fn
             fun, {:error, opts} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 ok = {:ok, _seen} ->
                   ok
 
@@ -106,7 +106,7 @@ defmodule Exonerate.Combining.AnyOf do
               end
 
             fun, {:ok, first_unseen_index} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 ok = {:ok, new_index} ->
                   {:ok, max(first_unseen_index, new_index)}
 
@@ -124,15 +124,15 @@ defmodule Exonerate.Combining.AnyOf do
     call = Tools.call(resource, pointer, opts)
 
     quote do
-      defp unquote(call)(value, path) do
+      defp unquote(call)(data, path) do
         require Exonerate.Tools
 
         Enum.reduce_while(
           unquote(lambdas),
-          Exonerate.Tools.mismatch(value, unquote(pointer), path),
+          Exonerate.Tools.mismatch(data, unquote(pointer), path),
           fn
             fun, {:error, opts} ->
-              case fun.(value, path) do
+              case fun.(data, path) do
                 :ok ->
                   {:halt, :ok}
 

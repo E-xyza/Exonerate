@@ -283,7 +283,7 @@ defmodule Exonerate do
           unquote(opts)
         )
 
-        unquote(type)(unquote(function_name)(value), do: unquote(call)(value, "/"))
+        unquote(type)(unquote(function_name)(data), do: unquote(call)(data, "/"))
 
         require Exonerate.Context
         Exonerate.Context.filter(unquote(resource), unquote(root_pointer), unquote(opts))
