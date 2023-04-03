@@ -3,8 +3,6 @@ format_directory =
   |> Path.join("_draft2020-12/optional/format")
   |> Path.expand()
 
-omit_modules = []
-
 omit_tests = [
   # elixir's Time admits all of ISO8601, not RFC3339 (as specified by spec)
   {"time.json", {0, 2}},
@@ -36,7 +34,6 @@ omit_tests = [
 ExonerateTest.Automate.directory(
   format_directory,
   prefix: Format,
-  omit_modules: omit_modules,
   omit_tests: omit_tests,
   format: true
 )
