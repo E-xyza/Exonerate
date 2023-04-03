@@ -177,6 +177,7 @@ defmodule Exonerate.Filter.Format do
     "iri" => Exonerate.Formats.Iri,
     "iri-reference" => Exonerate.Formats.IriReference,
     "uri-template" => Exonerate.Formats.UriTemplate,
+    "json-pointer" => Exonerate.Formats.JsonPointer
   }
 
   for {filter, module} <- @format_filters do
