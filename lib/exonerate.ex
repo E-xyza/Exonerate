@@ -160,8 +160,8 @@ defmodule Exonerate do
 
   - `:entrypoint`: a JSONpointer to the internal location inside of a json
     document where you would like to start the JSONschema.  This should be in
-    JSONPointer form.  See https://datatracker.ietf.org/doc/html/rfc6901 for
-    more information about JSONPointer
+    JSONPointer form (not URI form).  See https://datatracker.ietf.org/doc/html/rfc6901
+    for more information about JSONPointer
 
   - `:decoder`: specify `{module, function}` to use as the decoder for the text
     that turns into JSON (e.g. YAML instead of JSON)
@@ -189,7 +189,7 @@ defmodule Exonerate do
   - `:proxy`: a string proplist which describes string substitution of url
     resources for proxied remote content.
 
-    ##### Example
+    #### Example
 
     ``` elixir
     [proxy: [{"https://my.remote.resource/", "http://localhost:4000"}]]
@@ -209,7 +209,7 @@ defmodule Exonerate do
   defmacro function_from_string(type, function_name, schema_ast, opts \\ []) do
     # prewalk the schema text
 
-    root_pointer = JsonPointer.from_uri("/")
+    root_pointer = Tools.entrypoint(opts)
 
     # TODO: also attempt to obtain this from the schema.
     draft = Keyword.get(opts, :draft, "2020-12")

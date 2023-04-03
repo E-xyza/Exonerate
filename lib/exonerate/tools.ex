@@ -195,6 +195,12 @@ defmodule Exonerate.Tools do
     Keyword.drop(opts, ~w(only tracked seen)a)
   end
 
+  def entrypoint(opts) do
+    opts
+    |> Keyword.get(:entrypoint, "/")
+    |> JsonPointer.from_path()
+  end
+
   # URI tools
   @spec uri_to_resource(URI.t()) :: String.t()
   def uri_to_resource(uri) do

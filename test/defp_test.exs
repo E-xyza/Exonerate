@@ -14,4 +14,9 @@ defmodule ExonerateTest.DefpTest do
   test "bar" do
     assert :ok == bar("bar")
   end
+
+  test "not exported" do
+    refute function_exported?(__MODULE__, :foo, 1)
+    refute function_exported?(__MODULE__, :bar, 1)
+  end
 end

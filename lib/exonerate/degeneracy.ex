@@ -3,7 +3,7 @@ defmodule Exonerate.Degeneracy do
 
   # module with code that deals with degenerate subschemas, as well as code that can be safely deleted.
 
-  alias Exonerate.Cache
+  alias Exonerate.Tools
   alias Exonerate.Type
 
   @all_types Type.all()
@@ -36,11 +36,15 @@ defmodule Exonerate.Degeneracy do
 
   def canonicalize(boolean, _opts) when is_boolean(boolean), do: boolean
 
-  def canonicalize(context, opts) do
-    {refs, opts} = Keyword.pop(opts, :refs, [])
+  def canonicalize(source, opts) do
     draft = Keyword.get(opts, :draft)
 
-    context
+    entrypoint = Tools.entrypoint(opts)
+
+    opts = Keyword.delete(opts, :entrypoint)
+
+    canonicalized = source
+    |> JsonPointer.resolve_json!(entrypoint)
     |> canonicalize_recursive(opts)
     |> case do
       ## very trivial
@@ -152,6 +156,8 @@ defmodule Exonerate.Degeneracy do
         context
     end
     |> canonicalize_finalize
+
+    JsonPointer.update_json!(source, entrypoint, fn _ -> canonicalized end)
   end
 
   defp canonicalize_purged(context, what, opts) when is_binary(what) do
