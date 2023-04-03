@@ -35,5 +35,5 @@ ExonerateTest.Automate.directory(
   format_directory,
   prefix: Format,
   omit_tests: omit_tests,
-  format: true
+  format: :default
 )

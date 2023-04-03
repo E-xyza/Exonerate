@@ -104,14 +104,14 @@ defmodule Exonerate.Tools do
 
   # SUBSCHEMA MANIPULATION
 
-  @spec subschema(Macro.Env.t(), atom, JsonPointer.t()) :: Type.json()
+  @spec subschema(Macro.Env.t(), String.t(), JsonPointer.t()) :: Type.json()
   def subschema(caller, resource, pointer) do
     caller.module
     |> Cache.fetch_schema!(resource)
     |> JsonPointer.resolve_json!(pointer)
   end
 
-  @spec parent(Macro.Env.t(), atom, JsonPointer.t()) :: Type.json()
+  @spec parent(Macro.Env.t(), String.t(), JsonPointer.t()) :: Type.json()
   def parent(caller, resource, pointer) do
     caller.module
     |> Cache.fetch_schema!(resource)
@@ -196,7 +196,7 @@ defmodule Exonerate.Tools do
   end
 
   # URI tools
-  @spec uri_to_resource(URI.t()) :: atom
+  @spec uri_to_resource(URI.t()) :: String.t()
   def uri_to_resource(uri) do
     to_string(%{uri | fragment: nil})
   end
@@ -237,7 +237,12 @@ defmodule Exonerate.Tools do
   end
 
   # general tools
-  @spec if(content, as_boolean(term), (content -> content)) :: content when content: term
+  @spec if(content, as_boolean(term) | (content -> boolean), (content -> content)) :: content
+        when content: term
+  def if(content, function, predicate) when is_function(function, 1) do
+    if function.(content), do: predicate.(content), else: content
+  end
+
   def if(content, as_boolean, predicate) do
     if as_boolean, do: predicate.(content), else: content
   end

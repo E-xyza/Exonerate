@@ -55,7 +55,7 @@ defmodule Exonerate.Type.String do
     filter_clauses =
       for filter <- @filters,
           is_map_key(schema, filter),
-          reject_format(schema, filter, resource, pointer, opts) do
+          accept_format?(schema, filter, resource, pointer, opts) do
         call = Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
@@ -70,11 +70,11 @@ defmodule Exonerate.Type.String do
     end
   end
 
-  defp reject_format(schema, "format", resource, pointer, opts) do
-    Format.should_format?(resource, pointer, schema["format"], opts)
+  defp accept_format?(schema, "format", resource, pointer, opts) do
+    Format.should_format?(schema["format"], resource, JsonPointer.join(pointer, "format"), opts)
   end
 
-  defp reject_format(_schema, _, _, _, _), do: true
+  defp accept_format?(_schema, _, _, _, _), do: true
 
   defmacro accessories(resource, pointer, opts) do
     __CALLER__
@@ -86,7 +86,7 @@ defmodule Exonerate.Type.String do
   defp build_accessories(context, resource, pointer, opts) do
     for filter <- @filters,
         is_map_key(context, filter),
-        reject_format(context, filter, resource, pointer, opts),
+        accept_format?(context, filter, resource, pointer, opts),
         not Combining.filter?(filter) do
       module = @modules[filter]
       pointer = JsonPointer.join(pointer, filter)

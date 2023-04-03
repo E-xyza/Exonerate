@@ -28,6 +28,6 @@ defmodule Exonerate.Type do
   def of(value) when is_boolean(value), do: "boolean"
   def of(value) when is_nil(value), do: "null"
 
-  @macrocallback filter(resource :: atom, JsonPointer.t(), keyword) :: Macro.t()
-  @macrocallback accessories(resource :: atom, JsonPointer.t(), keyword) :: Macro.t()
+  @macrocallback filter(resource :: String.t(), JsonPointer.t(), keyword) :: Macro.t()
+  @macrocallback accessories(resource :: String.t(), JsonPointer.t(), keyword) :: Macro.t()
 end

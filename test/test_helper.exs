@@ -10,6 +10,8 @@ includes =
 
 Bandit.start_link(plug: ExonerateTest.FilePlug, scheme: :http, options: [port: 1234])
 
+Calendar.put_time_zone_database(Tzdata.TimeZoneDatabase)
+
 ExUnit.configuration()
 |> Keyword.put(:include, includes)
 |> ExUnit.start()

@@ -255,14 +255,6 @@ defmodule Exonerate.Degeneracy do
     |> Enum.sort()
   end
 
-  @spec class(module, atom, JsonPointer.t()) :: :ok | :error | :unknown
-  def class(module, name, pointer) do
-    module
-    |> Cache.fetch!(name)
-    |> JsonPointer.resolve_json!(pointer)
-    |> class
-  end
-
   @spec class(Type.json()) :: :ok | :error | :unknown
   def class(true), do: :ok
   def class(false), do: :error

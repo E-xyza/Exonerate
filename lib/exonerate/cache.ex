@@ -22,7 +22,7 @@ defmodule Exonerate.Cache do
     end
   end
 
-  @type resource :: atom | {:file, Path.t()}
+  @type resource :: String.t() | {:file, Path.t()}
 
   # SCHEMAS
 
@@ -48,13 +48,18 @@ defmodule Exonerate.Cache do
     end
   end
 
-  @spec put_schema(module, resource :: atom, schema :: Type.json()) :: :ok
+  @spec put_schema(module, resource :: String.t(), schema :: Type.json()) :: :ok
   def put_schema(module, resource, schema) do
     :ets.insert(get_table(), {{module, resource}, schema})
     :ok
   end
 
-  @spec update_schema!(module, resource :: atom, JsonPointer.t(), (Type.json() -> Type.json())) ::
+  @spec update_schema!(
+          module,
+          resource :: String.t(),
+          JsonPointer.t(),
+          (Type.json() -> Type.json())
+        ) ::
           :ok
   def update_schema!(module, resource, pointer, transformation) do
     new_schema =
@@ -67,7 +72,7 @@ defmodule Exonerate.Cache do
     :ok
   end
 
-  @spec has_schema?(module, resource :: atom) :: boolean
+  @spec has_schema?(module, resource :: String.t()) :: boolean
   def has_schema?(module, resource) do
     case :ets.lookup(get_table(), {module, resource}) do
       [] -> false

@@ -3,6 +3,22 @@ defmodule Exonerate.Filter.Format do
 
   alias Exonerate.Tools
 
+  @format_filters %{
+    "duration" => Exonerate.Formats.Duration,
+    "email" => Exonerate.Formats.Email,
+    "idn-email" => Exonerate.Formats.IdnEmail,
+    "hostname" => Exonerate.Formats.Hostname,
+    "idn-hostname" => Exonerate.Formats.IdnHostname,
+    "uri" => Exonerate.Formats.Uri,
+    "uri-reference" => Exonerate.Formats.UriReference,
+    "iri" => Exonerate.Formats.Iri,
+    "iri-reference" => Exonerate.Formats.IriReference,
+    "uri-template" => Exonerate.Formats.UriTemplate,
+    "json-pointer" => Exonerate.Formats.JsonPointer,
+    "relative-json-pointer" => Exonerate.Formats.RelativeJsonPointer,
+    "regex" => Exonerate.Formats.Regex
+  }
+
   defmacro filter(resource, pointer, opts) do
     __CALLER__
     |> Exonerate.Tools.subschema(resource, pointer)
@@ -10,20 +26,38 @@ defmodule Exonerate.Filter.Format do
     |> Exonerate.Tools.maybe_dump(opts)
   end
 
-  def should_format?(_resource, _pointer, format, opts) do
-    opts = Keyword.get(opts, :format)
+  @default_filters Map.keys(@format_filters) ++
+                     ~w(date-time date-time-utc date-time-tz date time ipv4 ipv6 uuid)
+
+  def should_format?(format, resource, pointer, opts) do
+    format_opts = format_opts(opts)
 
     cond do
       format === "binary" -> false
-      !opts -> false
-      opts === true -> true
-      # TODO: delete this.
+      format in @default_filters and format_opts[:default] -> true
+      find_type_override(format, format_opts) -> true
+      find_at_override(resource, pointer, format_opts) -> true
       true -> false
     end
   end
 
+  defp build_filter(format, resource, pointer, opts) do
+    format_opts = format_opts(opts)
+    # check to see if the opts is a kwl and if it's a kwl, extract the
+    cond do
+      custom = find_at_override(resource, pointer, format_opts) ->
+        build_custom(custom, resource, pointer, opts)
+
+      custom = find_type_override(format, format_opts) ->
+        build_custom(custom, resource, pointer, opts)
+
+      format in @default_filters and format_opts[:default] ->
+        build_default(format, resource, pointer, opts)
+    end
+  end
+
   # privileged formats
-  defp build_filter("date-time", resource, pointer, opts) do
+  defp build_default("date-time", resource, pointer, opts) do
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(string, path) do
         require Exonerate.Tools
@@ -39,7 +73,47 @@ defmodule Exonerate.Filter.Format do
     end
   end
 
-  defp build_filter("date", resource, pointer, opts) do
+  defp build_default("date-time-utc", resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        string
+        |> String.upcase()
+        |> DateTime.from_iso8601()
+        |> case do
+          {:ok, _, 0} ->
+            :ok
+
+          {:ok, _, offset} ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path,
+              reason: "timezone must be 0, got #{offset / 3600} hours"
+            )
+
+          {:error, _} ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        end
+      end
+    end
+  end
+
+  defp build_default("date-time-tz", resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        string
+        |> String.upcase()
+        |> DateTime.from_iso8601()
+        |> case do
+          {:ok, %{utc_offset: _}, _} -> :ok
+          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(pointer), path)
+        end
+      end
+    end
+  end
+
+  defp build_default("date", resource, pointer, opts) do
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(string, path) do
         require Exonerate.Tools
@@ -52,7 +126,7 @@ defmodule Exonerate.Filter.Format do
     end
   end
 
-  defp build_filter("time", resource, pointer, opts) do
+  defp build_default("time", resource, pointer, opts) do
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(string, path) do
         require Exonerate.Tools
@@ -65,7 +139,7 @@ defmodule Exonerate.Filter.Format do
     end
   end
 
-  defp build_filter("ipv4", resource, pointer, opts) do
+  defp build_default("ipv4", resource, pointer, opts) do
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(string, path) do
         require Exonerate.Tools
@@ -79,7 +153,7 @@ defmodule Exonerate.Filter.Format do
     end
   end
 
-  defp build_filter("ipv6", resource, pointer, opts) do
+  defp build_default("ipv6", resource, pointer, opts) do
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(string, path) do
         require Exonerate.Tools
@@ -102,7 +176,7 @@ defmodule Exonerate.Filter.Format do
     end
   end
 
-  defp build_filter("uuid", resource, pointer, opts) do
+  defp build_default("uuid", resource, pointer, opts) do
     quote do
       require Exonerate.Formats.Hex
       Exonerate.Formats.Hex.guard()
@@ -166,24 +240,8 @@ defmodule Exonerate.Filter.Format do
     end
   end
 
-  @format_filters %{
-    "duration" => Exonerate.Formats.Duration,
-    "email" => Exonerate.Formats.Email,
-    "idn-email" => Exonerate.Formats.IdnEmail,
-    "hostname" => Exonerate.Formats.Hostname,
-    "idn-hostname" => Exonerate.Formats.IdnHostname,
-    "uri" => Exonerate.Formats.Uri,
-    "uri-reference" => Exonerate.Formats.UriReference,
-    "iri" => Exonerate.Formats.Iri,
-    "iri-reference" => Exonerate.Formats.IriReference,
-    "uri-template" => Exonerate.Formats.UriTemplate,
-    "json-pointer" => Exonerate.Formats.JsonPointer,
-    "relative-json-pointer" => Exonerate.Formats.RelativeJsonPointer,
-    "regex" => Exonerate.Formats.Regex
-  }
-
   for {filter, module} <- @format_filters do
-    defp build_filter(unquote(filter), resource, pointer, opts) do
+    defp build_default(unquote(filter), resource, pointer, opts) do
       call = :"~#{unquote(filter)}"
       mod = unquote(module)
 
@@ -204,5 +262,124 @@ defmodule Exonerate.Filter.Format do
         end
       end
     end
+  end
+
+  defp build_default(filter, resource, pointer, opts) do
+    opts = Keyword.get(opts, :format)
+
+    if is_list(opts) do
+      types = List.wrap(if is_list(opts), do: opts[:types])
+      pointers = List.wrap(if is_list(opts), do: opts[:at])
+
+      uri =
+        pointer
+        |> JsonPointer.to_uri()
+        |> to_string
+        |> Tools.if(
+          String.starts_with?(resource, "function://"),
+          &String.replace_leading(&1, resource, "")
+        )
+
+      cond do
+        {_, spec} = List.keyfind(types, filter, 0) ->
+          build_custom(spec, resource, pointer, opts)
+
+        {_, spec} = List.keyfind(pointers, uri, 0) ->
+          build_custom(spec, resource, pointer, opts)
+
+        true ->
+          []
+      end
+    else
+      []
+    end
+  end
+
+  defp build_custom({:{}, _, [m, f, a]}, resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case apply(unquote(m), unquote(f), [string | unquote(a)]) do
+          :ok ->
+            :ok
+
+          {:error, reason} ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: reason)
+        end
+      end
+    end
+  end
+
+  defp build_custom({m, f}, resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case apply(unquote(m), unquote(f), [string]) do
+          :ok ->
+            :ok
+
+          {:error, reason} ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: reason)
+        end
+      end
+    end
+  end
+
+  defp build_custom(m, resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) do
+        require Exonerate.Tools
+
+        case apply(unquote(m), :validate, [string]) do
+          :ok ->
+            :ok
+
+          {:error, reason} ->
+            Exonerate.Tools.mismatch(string, unquote(pointer), path, reason: reason)
+        end
+      end
+    end
+  end
+
+  defp format_opts(opts) do
+    case Keyword.get(opts, :format) do
+      nil -> []
+      :default -> [default: true]
+      opts when is_list(opts) -> opts
+    end
+  end
+
+  defp find_type_override(format, format_opts) do
+    kv =
+      format_opts
+      |> Keyword.get(:types, [])
+      |> List.keyfind(format, 0)
+
+    if kv, do: elem(kv, 1)
+  end
+
+  defp find_at_override(resource, pointer, format_opts) do
+    prefix =
+      if String.starts_with?(resource, "function://") do
+        ""
+      else
+        resource
+      end
+
+    selector =
+      pointer
+      |> JsonPointer.backtrack!()
+      |> JsonPointer.to_uri()
+      |> to_string
+      |> String.replace_prefix("", prefix)
+
+    kv =
+      format_opts
+      |> Keyword.get(:at, [])
+      |> List.keyfind(selector, 0)
+
+    if kv, do: elem(kv, 1)
   end
 end
