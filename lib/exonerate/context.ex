@@ -63,49 +63,49 @@ defmodule Exonerate.Context do
   end
 
   # metadata
-  defp build_filter(schema = %{"title" => _}, resource, pointer, opts) do
-    schema
+  defp build_filter(context = %{"title" => _}, resource, pointer, opts) do
+    context
     |> Map.delete("title")
     |> build_filter(resource, pointer, opts)
   end
 
-  defp build_filter(schema = %{"description" => _}, resource, pointer, opts) do
-    schema
+  defp build_filter(context = %{"description" => _}, resource, pointer, opts) do
+    context
     |> Map.delete("description")
     |> build_filter(resource, pointer, opts)
   end
 
-  defp build_filter(schema = %{"examples" => _}, resource, pointer, opts) do
-    schema
+  defp build_filter(context = %{"examples" => _}, resource, pointer, opts) do
+    context
     |> Map.delete("examples")
     |> build_filter(resource, pointer, opts)
   end
 
-  defp build_filter(schema = %{"default" => _}, resource, pointer, opts) do
-    schema
+  defp build_filter(context = %{"default" => _}, resource, pointer, opts) do
+    context
     |> Map.delete("default")
     |> build_filter(resource, pointer, opts)
   end
 
   # ID-swapping
-  defp build_filter(subschema = %{"id" => id}, resource, pointer, opts) do
-    subschema
+  defp build_filter(context = %{"id" => id}, resource, pointer, opts) do
+    context
     |> Map.delete("id")
     |> id_swap_with(id, resource, pointer, opts)
   end
 
-  defp build_filter(subschema = %{"$id" => id}, resource, pointer, opts) do
-    subschema
+  defp build_filter(context = %{"$id" => id}, resource, pointer, opts) do
+    context
     |> Map.delete("$id")
     |> id_swap_with(id, resource, pointer, opts)
   end
 
   # intercept consts
-  defp build_filter(schema = %{"const" => const}, resource, pointer, opts) do
+  defp build_filter(context = %{"const" => const}, resource, pointer, opts) do
     const_pointer = JsonPointer.join(pointer, "const")
 
     rest_filter =
-      schema
+      context
       |> Map.delete("const")
       |> build_filter(resource, pointer, Keyword.merge(opts, type: Type.of(const)))
 
@@ -123,7 +123,7 @@ defmodule Exonerate.Context do
   end
 
   # intercept enums
-  defp build_filter(schema = %{"enum" => enum}, resource, pointer, opts) do
+  defp build_filter(context = %{"enum" => enum}, resource, pointer, opts) do
     enum_pointer = JsonPointer.join(pointer, "enum")
 
     types =
@@ -132,7 +132,7 @@ defmodule Exonerate.Context do
       |> Enum.uniq()
 
     rest_filter =
-      schema
+      context
       |> Map.delete("enum")
       |> build_filter(resource, pointer, Keyword.merge(opts, type: types))
 
@@ -151,8 +151,8 @@ defmodule Exonerate.Context do
 
   @all_types Type.all()
 
-  # NB: schema should always contain a type field as per Degeneracy.canonicalize/2 called from Tools.subschema/3
-  defp build_filter(schema = %{"type" => types}, resource, pointer, opts) do
+  # NB: context should always contain a type field as per Degeneracy.canonicalize/2 called from Tools.subschema/3
+  defp build_filter(context = %{"type" => types}, resource, pointer, opts) do
     # condition the bindings
     filtered_types =
       opts
@@ -180,7 +180,7 @@ defmodule Exonerate.Context do
     # |> Tools.inspect
 
     combining =
-      for filter <- @combining_filters, is_map_key(schema, filter) do
+      for filter <- @combining_filters, is_map_key(context, filter) do
         combining_module = @combining_modules[filter]
         combining_pointer = JsonPointer.join(pointer, filter)
 
@@ -217,7 +217,7 @@ defmodule Exonerate.Context do
     )
   end
 
-  defp id_swap_with(subschema, id, resource, pointer, opts) do
+  defp id_swap_with(context, id, resource, pointer, opts) do
     this_call = Tools.call(resource, pointer, opts)
 
     updated_resource =
@@ -229,7 +229,7 @@ defmodule Exonerate.Context do
 
     updated_call = Tools.call(updated_resource, updated_pointer, opts)
 
-    rest = build_filter(subschema, updated_resource, updated_pointer, opts)
+    rest = build_filter(context, updated_resource, updated_pointer, opts)
 
     if updated_call === this_call do
       rest

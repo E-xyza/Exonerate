@@ -25,8 +25,8 @@ defmodule Exonerate.Type.String do
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(schema = %{"format" => "binary"}, resource, pointer, opts) do
-    filters = build_filter_with_clause(schema, resource, pointer, opts)
+  defp build_filter(context = %{"format" => "binary"}, resource, pointer, opts) do
+    filters = build_filter_with_clause(context, resource, pointer, opts)
 
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(string, path) when is_binary(string) do
@@ -35,8 +35,8 @@ defmodule Exonerate.Type.String do
     end
   end
 
-  defp build_filter(schema, resource, pointer, opts) do
-    filters = build_filter_with_clause(schema, resource, pointer, opts)
+  defp build_filter(context, resource, pointer, opts) do
+    filters = build_filter_with_clause(context, resource, pointer, opts)
     non_utf_error_pointer = JsonPointer.join(pointer, "type")
 
     quote do
@@ -51,11 +51,11 @@ defmodule Exonerate.Type.String do
     end
   end
 
-  defp build_filter_with_clause(schema, resource, pointer, opts) do
+  defp build_filter_with_clause(context, resource, pointer, opts) do
     filter_clauses =
       for filter <- @filters,
-          is_map_key(schema, filter),
-          accept_format?(schema, filter, resource, pointer, opts) do
+          is_map_key(context, filter),
+          accept_format?(context, filter, resource, pointer, opts) do
         call = Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
@@ -70,11 +70,11 @@ defmodule Exonerate.Type.String do
     end
   end
 
-  defp accept_format?(schema, "format", resource, pointer, opts) do
-    Format.should_format?(schema["format"], resource, JsonPointer.join(pointer, "format"), opts)
+  defp accept_format?(context, "format", resource, pointer, opts) do
+    Format.should_format?(context["format"], resource, JsonPointer.join(pointer, "format"), opts)
   end
 
-  defp accept_format?(_schema, _, _, _, _), do: true
+  defp accept_format?(_context, _, _, _, _), do: true
 
   defmacro accessories(resource, pointer, opts) do
     __CALLER__

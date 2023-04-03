@@ -266,9 +266,9 @@ defmodule Exonerate.Degeneracy do
   def class(true), do: :ok
   def class(false), do: :error
 
-  def class(subschema = %{"type" => t}) do
+  def class(context = %{"type" => t}) do
     if Enum.sort(List.wrap(t)) in @all_types do
-      subschema
+      context
       |> Map.delete("type")
       |> class()
       |> matches(true)
@@ -277,9 +277,9 @@ defmodule Exonerate.Degeneracy do
     end
   end
 
-  def class(subschema = %{"not" => not_schema}) do
+  def class(context = %{"not" => not_schema}) do
     rest =
-      subschema
+      context
       |> Map.delete("not")
       |> class
 
@@ -290,9 +290,9 @@ defmodule Exonerate.Degeneracy do
     end
   end
 
-  def class(subschema = %{"allOf" => list}) do
+  def class(context = %{"allOf" => list}) do
     rest_degeneracy =
-      subschema
+      context
       |> Map.delete("allOf")
       |> class
 
@@ -314,9 +314,9 @@ defmodule Exonerate.Degeneracy do
     end
   end
 
-  def class(subschema = %{"anyOf" => list}) do
+  def class(context = %{"anyOf" => list}) do
     rest_degeneracy =
-      subschema
+      context
       |> Map.delete("anyOf")
       |> class
 
@@ -339,20 +339,20 @@ defmodule Exonerate.Degeneracy do
     end
   end
 
-  def class(subschema = %{"minItems" => 0}) do
-    subschema
+  def class(context = %{"minItems" => 0}) do
+    context
     |> Map.delete("minItems")
     |> class
   end
 
-  def class(subschema = %{"minProperties" => 0}) do
-    subschema
+  def class(context = %{"minProperties" => 0}) do
+    context
     |> Map.delete("minProperties")
     |> class
   end
 
-  def class(subschema = %{"minContains" => 0}) do
-    subschema
+  def class(context = %{"minContains" => 0}) do
+    context
     |> Map.delete("minContains")
     |> class
   end

@@ -11,7 +11,7 @@ defmodule Exonerate.Filter.Dependencies do
     |> Tools.maybe_dump(opts)
   end
 
-  defp make_dependencies({key, schema}, resource, pointer, opts) do
+  defp make_dependencies({key, subschema}, resource, pointer, opts) do
     call = Tools.call(resource, JsonPointer.join(pointer, key), :entrypoint, opts)
 
     prong =
@@ -19,7 +19,7 @@ defmodule Exonerate.Filter.Dependencies do
         :ok <- unquote(call)(content, path)
       end
 
-    {prong, accessory(call, key, schema, resource, pointer, opts)}
+    {prong, accessory(call, key, subschema, resource, pointer, opts)}
   end
 
   defp build_filter({prongs, accessories}, resource, pointer, opts) do
@@ -36,9 +36,9 @@ defmodule Exonerate.Filter.Dependencies do
     end
   end
 
-  defp accessory(call, key, schema, _name, pointer, _opts) when is_list(schema) do
+  defp accessory(call, key, deps_list, _name, pointer, _opts) when is_list(deps_list) do
     prongs =
-      Enum.with_index(schema, fn
+      Enum.with_index(deps_list, fn
         dependent_key, index ->
           schema_pointer = JsonPointer.join(pointer, [key, "#{index}"])
 
@@ -64,8 +64,8 @@ defmodule Exonerate.Filter.Dependencies do
     end
   end
 
-  defp accessory(call, key, schema, resource, pointer, opts)
-       when is_map(schema) or is_boolean(schema) do
+  defp accessory(call, key, subschema, resource, pointer, opts)
+       when is_map(subschema) or is_boolean(subschema) do
     pointer = JsonPointer.join(pointer, key)
     context_opts = Tools.scrub(opts)
     context_call = Tools.call(resource, pointer, context_opts)

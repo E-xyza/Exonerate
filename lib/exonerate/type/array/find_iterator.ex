@@ -83,11 +83,11 @@ defmodule Exonerate.Type.Array.FindIterator do
   end
 
   # contains-only case
-  defp build_iterator(schema = %{"contains" => _}, resource, pointer, opts) do
+  defp build_iterator(context = %{"contains" => _}, resource, pointer, opts) do
     call = Iterator.call(resource, pointer, opts)
     contains_pointer = JsonPointer.join(pointer, "contains")
     contains_call = Tools.call(resource, contains_pointer, opts)
-    needed = Map.get(schema, "minContains", 1)
+    needed = Map.get(context, "minContains", 1)
 
     quote do
       defp unquote(call)(content, path) do

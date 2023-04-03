@@ -300,7 +300,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   # TODO: minItems AND contains
 
-  defp finalizer_for(subschema = %{"minItems" => min}, tracked, accumulators, pointer) do
+  defp finalizer_for(context = %{"minItems" => min}, tracked, accumulators, pointer) do
     minitems_pointer = JsonPointer.join(pointer, "minItems")
 
     index =
@@ -326,15 +326,15 @@ defmodule Exonerate.Type.Array.FilterIterator do
           Exonerate.Tools.mismatch(array, unquote(minitems_pointer), path)
 
         {:ok, accumulator} ->
-          unquote(finalizer_return(subschema, tracked, accumulators))
+          unquote(finalizer_return(context, tracked, accumulators))
       end
     end
   end
 
-  defp finalizer_for(subschema = %{"contains" => _}, tracked, accumulators, pointer) do
+  defp finalizer_for(context = %{"contains" => _}, tracked, accumulators, pointer) do
     contains_pointer = JsonPointer.join(pointer, "contains")
     mincontains_pointer = JsonPointer.join(pointer, "minContains")
-    mincontains = Map.get(subschema, "minContains", 1)
+    mincontains = Map.get(context, "minContains", 1)
 
     quote do
       case do
@@ -350,13 +350,13 @@ defmodule Exonerate.Type.Array.FilterIterator do
           Exonerate.Tools.mismatch(array, unquote(mincontains_pointer), path)
 
         {:ok, accumulator} ->
-          unquote(finalizer_return(subschema, tracked, accumulators))
+          unquote(finalizer_return(context, tracked, accumulators))
       end
     end
   end
 
-  defp finalizer_for(subschema, tracked, accumulators, _) do
-    finalizer_return = finalizer_return(subschema, tracked, accumulators)
+  defp finalizer_for(context, tracked, accumulators, _) do
+    finalizer_return = finalizer_return(context, tracked, accumulators)
 
     if tracked do
       quote do
@@ -372,15 +372,15 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp finalizer_return(subschema, tracked, accumulators) do
+  defp finalizer_return(context, tracked, accumulators) do
     if tracked do
       cond do
-        is_map_key(subschema, "additionalItems") or is_map_key(subschema, "unevaluatedItems") or
-          is_map(subschema["items"]) or is_boolean(subschema["items"]) ->
+        is_map_key(context, "additionalItems") or is_map_key(context, "unevaluatedItems") or
+          is_map(context["items"]) or is_boolean(context["items"]) ->
           {:ok, index(accumulators)}
 
-        is_list(subschema["items"]) ->
-          length = length(subschema["items"])
+        is_list(context["items"]) ->
+          length = length(context["items"])
 
           min =
             quote do
@@ -389,8 +389,8 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
           {:ok, min}
 
-        is_map_key(subschema, "prefixItems") ->
-          length = length(subschema["prefixItems"])
+        is_map_key(context, "prefixItems") ->
+          length = length(context["prefixItems"])
 
           min =
             quote do

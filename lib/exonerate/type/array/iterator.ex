@@ -32,8 +32,8 @@ defmodule Exonerate.Type.Array.Iterator do
   def filter_modules, do: @modules
   def filters, do: @filters
 
-  def needed?(schema) do
-    Enum.any?(@filters, &is_map_key(schema, &1))
+  def needed?(context) do
+    Enum.any?(@filters, &is_map_key(context, &1))
   end
 
   @find_key_sets [
