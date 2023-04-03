@@ -148,8 +148,8 @@ defmodule ExonerateTest.FormatTest do
 
     test "uri_reference" do
       assert :ok == uri_reference("http://foo.bar/baz#quux")
-      assert {:error, _} = uri_reference("/baz#quux")
-      assert {:error, _} = uri_reference("foo.bar")
+      assert :ok = uri_reference("/baz#quux")
+      assert {:error, _} = uri_reference("/foo.bar#aaa#bbb")
     end
 
     Exonerate.function_from_string(

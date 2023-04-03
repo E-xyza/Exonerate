@@ -175,7 +175,8 @@ defmodule Exonerate.Filter.Format do
     "uri" => Exonerate.Formats.Uri,
     "uri-reference" => Exonerate.Formats.UriReference,
     "iri" => Exonerate.Formats.Iri,
-    "iri-reference" => Exonerate.Formats.IriReference
+    "iri-reference" => Exonerate.Formats.IriReference,
+    "uri-template" => Exonerate.Formats.UriTemplate,
   }
 
   for {filter, module} <- @format_filters do
