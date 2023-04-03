@@ -5,6 +5,9 @@ deps
 /docs/
 /doc/
 
+# coverage results
+/cover/
+
 # cached benchmark assets
 /bench/results
 

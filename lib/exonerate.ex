@@ -165,12 +165,19 @@ defmodule Exonerate do
 
     Tools.maybe_dump(
       quote do
-        require Exonerate.Context
-        Exonerate.schema(unquote(type), unquote(function_name), unquote(schema_str))
-        Exonerate.id(unquote(type), unquote(function_name), unquote(id))
+        require Exonerate.Metadata
+
+        Exonerate.Metadata.functions(
+          unquote(type),
+          unquote(function_name),
+          unquote(resource),
+          unquote(root_pointer),
+          unquote(opts)
+        )
 
         unquote(type)(unquote(function_name)(value), do: unquote(call)(value, "/"))
 
+        require Exonerate.Context
         Exonerate.Context.filter(unquote(resource), unquote(root_pointer), unquote(opts))
       end,
       opts
@@ -219,25 +226,5 @@ defmodule Exonerate do
     #  end,
     #  opts
     # )
-  end
-
-  @doc false
-  # private api.  Causes the $schema metadata to be accessible by passing the `:schema` atom.
-  defmacro schema(type, function, schema) do
-    if schema do
-      quote do
-        unquote(type)(unquote(function)(:schema), do: unquote(schema))
-      end
-    end
-  end
-
-  @doc false
-  # private api.  Causes the $id metadata to be accessible by passing the `:id` atom.
-  defmacro id(type, function, id) do
-    if id do
-      quote do
-        unquote(type)(unquote(function)(:id), do: unquote(id))
-      end
-    end
   end
 end

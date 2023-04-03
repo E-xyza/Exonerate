@@ -86,13 +86,14 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     Exonerate.function_from_string(
       :def,
       :schema,
-      ~s({"$schema": "http://json-schema.org/schema#"})
+      ~s({"$schema": "http://json-schema.org/schema#"}),
+      metadata: true
     )
   end
 
   describe "the schema keyword test" do
     test "schema can be retrieved" do
-      assert "http://json-schema.org/schema#" = JsonSchema.schema(:schema)
+      assert "http://json-schema.org/schema#" = JsonSchema.schema(:schema_id)
     end
   end
 
@@ -107,7 +108,8 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
     Exonerate.function_from_string(
       :def,
       :id,
-      ~s({"$id": "http://yourdomain.com/schemas/myschema.json"})
+      ~s({"$id": "http://yourdomain.com/schemas/myschema.json"}),
+      metadata: true
     )
   end
 

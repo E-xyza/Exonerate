@@ -29,7 +29,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
         4035
       ]
     }
-    """)
+    """, metadata: true)
   end
 
   describe "metadata are stored" do

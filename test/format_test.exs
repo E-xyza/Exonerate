@@ -345,7 +345,10 @@ defmodule ExonerateTest.FormatTest do
         }
       }
       """,
-      format: [at: [{"http://localhost:6666/my-schema.json#/properties/foo", Custom}], default: true]
+      format: [
+        at: [{"http://localhost:6666/my-schema.json#/properties/foo", Custom}],
+        default: true
+      ]
     )
 
     test "using id'd path" do
