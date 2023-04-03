@@ -19,17 +19,22 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :metadata, """
-    {
-      "title" : "Match anything",
-      "description" : "This is a schema that matches anything.",
-      "default" : "Default value",
-      "examples" : [
-        "Anything",
-        4035
-      ]
-    }
-    """, metadata: true)
+    Exonerate.function_from_string(
+      :def,
+      :metadata,
+      """
+      {
+        "title" : "Match anything",
+        "description" : "This is a schema that matches anything.",
+        "default" : "Default value",
+        "examples" : [
+          "Anything",
+          4035
+        ]
+      }
+      """,
+      metadata: true
+    )
   end
 
   describe "metadata are stored" do

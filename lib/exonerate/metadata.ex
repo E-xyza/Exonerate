@@ -3,17 +3,34 @@ defmodule Exonerate.Metadata do
 
   alias Exonerate.Tools
 
+  # defp functions can't create metadata.
+  defmacro functions(:defp, _, _, _), do: nil
+
   defmacro functions(type, function_name, resource, pointer, opts) do
-    if metadatas = normalize_opts(opts) do
-      __CALLER__
-      |> Tools.subschema(resource, pointer)
-      |> build_functions(type, function_name, metadatas)
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_functions(type, function_name, metadatas(opts))
+  end
+
+  def schema(_, :defp, _), do: nil
+
+  def schema(schema_str, type, function_name, opts) do
+    metadata_opts = List.wrap(opts[:metadata])
+    schema_value = Jason.decode!(schema_str)
+
+    if metadata_opts == [true] or :schema in metadata_opts do
+      quote do
+        unquote(type)(unquote(function_name)(:schema), do: unquote(Macro.escape(schema_value)))
+      end
     end
   end
 
-  @all_metadata [:schema, :id, :schema_id, :title, :description, :examples, :default]
+  # note that the schema metadata isn't here because this function would pull the
+  # degeneracy-optimized schema from the cache, which is not what we want.  Instead,
+  # we generate schema metadata at the callsite using the above ast function.
+  @all_metadata [:id, :schema_id, :title, :description, :examples, :default]
 
-  defp normalize_opts(opts) do
+  defp metadatas(opts) do
     case opts[:metadata] do
       true -> @all_metadata
       nil_or_list -> List.wrap(nil_or_list)
@@ -24,21 +41,12 @@ defmodule Exonerate.Metadata do
 
   defp build_functions(schema, type, function_name, metadatas) do
     quote do
-      unquote(schema(schema, type, function_name, metadatas))
       unquote(id(schema, type, function_name, metadatas))
       unquote(schema_id(schema, type, function_name, metadatas))
       unquote(title(schema, type, function_name, metadatas))
       unquote(description(schema, type, function_name, metadatas))
       unquote(examples(schema, type, function_name, metadatas))
       unquote(default(schema, type, function_name, metadatas))
-    end
-  end
-
-  defp schema(schema, type, function_name, metadatas) do
-    if :schema in metadatas do
-      quote do
-        unquote(type)(unquote(function_name)(:schema), do: unquote(Macro.escape(schema)))
-      end
     end
   end
 

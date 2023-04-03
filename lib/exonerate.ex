@@ -41,51 +41,122 @@ defmodule Exonerate do
   parameter, the `:schema_pointers` points to the validation that failed, and `error_value` is the
   failing inner term.
 
-  ## Metadata
-
-  The following metadata are accessible for the entrypoint in the jsonschema, by passing the corresponding
-  atom.  Note this is only activated for `def` functions, and will not be available
-  for `defp` functions.
-
-  | JSONschema tag | atom parameter |
-  |----------------|----------------|
-  | $id            | `:id`          |
-  | $schema        | `:schema`      |
-  | default        | `:default`     |
-  | examples       | `:examples`    |
-  | description    | `:description` |
-  | title          | `:title`       |
-
   ## Options
 
   The following options are available:
 
-  - `:format`: a map of JSONpointers to tags with corresponding
-    `{"format" => "..."}` filters.
+  - `:metadata`: `true` to enable all metadata decorator functions or a list of
+    atoms parameters to enable.  The following metadata are accessible by passing
+    the corresponding atom to the generated function in lieu of a JSON term to
+    validate.
 
-    Exonerate ships with filters for the following default content:
-    - `date-time`
-    - `date`
-    - `time`
-    - `ipv4`
-    - `ipv6`
+    | JSONschema tag  | atom parameter |
+    |-----------------|----------------|
+    | $id or id       | `:id`          |
+    | $schema         | `:schema_id`   |
+    | default         | `:default`     |
+    | examples        | `:examples`    |
+    | description     | `:description` |
+    | title           | `:title`       |
+    | <entire schema> | `:schema`      |
 
-    To disable these filters, pass `false` to the path, e.g.
-    `%{"/" => false}` or `%{"/foo/bar/" => false}`. To specify a custom format
-    filter, pass either function/args or mfa to the path, e.g.
-    `%{"/path/to/fun" => {Module, :fun, [123]}}` or if you want the f/a or mfa
-    to apply to all tags of a given format string, create use the atom of the
-    type name as the key for your map.
+  - `:format`: instructions for using (optional) format filters.  This should be
+    either `true` or a keyword list.
 
-    The corresponding function will be called with thue candidate formatted
-    string as the first argument and the supplied arguments after.  If you use
-    the function/args (e.g. `{:private_function, [123]}`) it may be a private
-    function in the same module.  The custom function should return `true` on
-    successful validation and `false` on failure.
+    - `true`: shorthand for `[default: true]`
+    - keywords:
+      - `:at`: a list of `{<json pointer>, <filter-spec>}` tuples to apply
+        format filters in specific locations in the schema.  This can be used
+        to specify custom filters for non-default format types.  It can also be
+        used to override default formatting.  `<json pointer>` should be a
+        string which may be relative if no `"id"` or `"$id"` metadata are
+        present in the parents of the location.  Otherwise, the pointer must
+        the a uri of the nearest parent containing `"id"` or `"$id" metadata,
+        with the relative pointer applied as the fragment of the uri.
+      - `:type`: a list of `{<format-type>, <filter-spec>}` to apply across
+        the schema whenever `<format-type>` is encountered.  This can be used
+        to specify custom filters for non-default format types.  It can also
+        be used to override default formatting.
+      - `:default`: `true` to enable all default filters or a list of strings
+        specifying the default format types to enable.  The following format
+        types are available:
+        - `"date-time"`: enables the default date-time filter for all
+          `{"format": "date-time"}` contexts.  This uses Elixir's
+          `NaiveDateTime.from_iso8601/1` parser.
+        - `"date-time-utc"`: enables the default date-time-utc filter for all
+          `{"format": "date-time-utc"}` contexts.  This uses Elixir's
+          `DateTime.from_iso8601/1` parser, and requires the offset to be
+          0 from UTC.
+        - `"date-time-tz"`: enables the default date-time filter for all
+          `{"format": "date-time-tz"}` context strings.  This uses Elixir's
+          `DateTime.from_iso8601/1` parser, which requires an offset to
+          be specified.
+        - `"date"`: enables the default date filter for all `{"format": "date"}`
+          context strings.  This uses Elixir's `Date.from_iso8601/1` parser.
+        - `"time"`: enables the default time filter for all `{"format": "time"}`
+          context strings.  This uses Elixir's `Time.from_iso8601/1` parser.
+        - `"duration": enables the default duration filter for all
+          `{"format": "duration"}` context strings.  This uses a custom ABNF
+          filter that matches Appendix A of RFC 3339: https://www.rfc-editor.org/rfc/rfc3339.txt
+        - `"ipv4"`: enables the default ipv4 filter for all `{"format": "ipv4"}`
+          context strings.  This uses Erlang's `:inet.parse_ipv4strict_address/1`
+          parser.
+        - `"ipv6"`: enables the default ipv6 filter for all `{"format": "ipv6"}`
+          context strings.  This uses Erlang's `:inet.parse_ipv6strict_address/1`
+          parser.
+        - `"uuid"`: enables the default uuid filter for all `{"format": "uuid"}`
+          context strings.
+        - `"email"`: enables the default email filter for all `{"format": "email"}`
+          context strings.  This uses a custom ABNF filter that matches section 4.1.2
+          of RFC 5322: https://www.rfc-editor.org/rfc/rfc5322.txt
+        - `"idn-email"`: enables the default idn-email (i18n email address)
+          filter for all `{"format": "idn-email"}` context strings.  This uses a
+          custom ABNF filter that matches section 3.3 of RFC 6531:
+          https://www.rfc-editor.org/rfc/rfc5322.txt
+        - `"hostname"`: enables the default hostname filter for all
+          `{"format": "hostname"}` context strings.  This uses a custom ABNF
+          filter that matches section 2.1 of RFC 1123:
+          https://www.rfc-editor.org/rfc/rfc1123.txt
+        - `"idn-hostname"`: enables the default idn-hostname (i18n hostname)
+          filter for all `{"format": "idn-hostname"}` context strings.
 
-    `date-time` ships with the parameter `:utc` which you may pass as
-    `%{"/path/to/date-time/" => [:utc]}` that forces the date-time to be an
-    ISO-8601 datetime string.
+          Note that in order to use this filter, you must add the
+          `:idna` library to your dependencies.
+        - `"uri"`: enables the default uri filter for all `{"format": "uri"}`
+          context strings.  This uses a custom ABNF filter that matches section
+          3 of RFC 3986: https://www.rfc-editor.org/rfc/rfc3986.txt.  Note that
+          a these uris must be absolute, i.e. they must contain a scheme, host,
+          and path.
+        - `"uri-reference"`: enables the default uri-reference filter for all
+          `{"format": "uri-reference"}` context strings.  This uses a custom ABNF
+          filter that matches section 3 of RFC 3986:
+          https://www.rfc-editor.org/rfc/rfc3986.txt.  Note that a these uris
+          may be relative, i.e. do not need to contain a scheme, host, and path.
+        - `"iri"`: enables the default iri (i18n uri) filter for all
+          `{"format": "iri"}` context strings.  This uses a custom ABNF filter
+          that matches section 2.2 of RFC 3987: https://www.rfc-editor.org/rfc/rfc3987.txt.
+          Note that a these iris must be absolute, i.e. they must contain a
+          scheme, host, and path.
+        - `"iri-reference"`: enables the default iri-reference (i18n uri) for all
+          `{"format": "iri-reference"}` context strings.  This uses a custom ABNF
+          filter that matches section 2.2 of RFC 3987: https://www.rfc-editor.org/rfc/rfc3987.txt.
+          Note that a these iris may be relative, i.e. do not need to contain a
+          scheme, host, and path.
+        - `"uri-template"`: enables the default uri-template filter for all
+          `{"format": "uri-template"}` context strings.  This uses a custom ABNF
+          filter that matches section 2.3 of RFC 6570: https://www.rfc-editor.org/rfc/rfc6570.txt.
+          Note that uri-templates are templated against iri-reference strings.
+        - `"json-pointer"`: enables the default json-pointer filter for all
+          `{"format": "json-pointer"}` context strings.  This uses a custom ABNF
+          filter that matches section 3 of RFC 6901: https://www.rfc-editor.org/rfc/rfc6901.txt
+        - `"relative-json-pointer"`: enables the default relative-json-pointer
+          filter for all `{"format": "relative-json-pointer"}` context strings.
+          This uses a custom ABNF filter that matches the followowing rfc proposal:
+          https://datatracker.ietf.org/doc/html/draft-handrews-relative-json-pointer-01
+        - `"regex"`: enables the default regex filter for all `{"format": "regex"}`
+          context strings.  Note: this does not compile the regex, instead it
+          uses a custom ABNF filter that matches the ECMA-262 standard:
+          https://www.ecma-international.org/publications-and-standards/standards/ecma-262/
 
   - `:entrypoint`: a JSONpointer to the internal location inside of a json
     document where you would like to start the JSONschema.  This should be in
@@ -98,7 +169,8 @@ defmodule Exonerate do
   - `:draft`: specifies any special draft information.  Defaults to "2020",
     which is intercompatible with `"2019"`.  `"4"`, `"6"`, and `"7"` are also
     supported.  Note: Validation is NOT performed on the schema, so
-    intermingling draft components is possible (but not recommended).
+    intermingling draft components is possible (but not recommended).  This overrides
+    draft information provided in the schema
 
   ### remoteRef schema retrieval
 
@@ -126,6 +198,7 @@ defmodule Exonerate do
 
   alias Exonerate.Cache
   alias Exonerate.Tools
+  alias Exonerate.Metadata
   alias Exonerate.Schema
 
   @doc """
@@ -144,10 +217,8 @@ defmodule Exonerate do
 
     function_resource = to_string(%URI{scheme: "function", host: "#{function_name}", path: "/"})
 
-    schema =
-      schema_ast
-      |> Macro.expand(__CALLER__)
-      |> Schema.ingest(__CALLER__, function_resource, opts)
+    schema_string = Macro.expand(schema_ast, __CALLER__)
+    schema = Schema.ingest(schema_string, __CALLER__, function_resource, opts)
 
     resource =
       if id = id_from(schema) do
@@ -160,12 +231,13 @@ defmodule Exonerate do
 
     call = Tools.call(resource, root_pointer, opts)
 
-    {schema_str, id} =
-      if is_map(schema), do: {schema["$schema"], id_from(schema)}, else: {nil, nil}
+    schema_fn = Metadata.schema(schema_string, type, function_name, opts)
 
     Tools.maybe_dump(
       quote do
         require Exonerate.Metadata
+
+        unquote(schema_fn)
 
         Exonerate.Metadata.functions(
           unquote(type),

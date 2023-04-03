@@ -3,7 +3,7 @@ defmodule Exonerate.Formats.Iri do
 
   # provides special code for an iri filter.  This only needs to be
   # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "iri?"
+  # be created more than once or not.  Creates a function "~iri"
   # which returns a boolean depending on whether the string is a valid
   # iri.
 
