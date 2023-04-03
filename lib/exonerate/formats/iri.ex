@@ -97,8 +97,20 @@ defmodule Exonerate.Formats.Iri do
         IRI_sub_delims       <- "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
         """)
 
-        defcombinatorp(:IRI_ucschar, utf8_char(not: 0..127, not: 0xE000..0xF8FF, not: 0xF0000..0xFFFFD, not: 0x100000..0x10FFFD))
-        defcombinatorp(:IRI_iprivate, utf8_char([0xE000..0xF8FF, 0xF0000..0xFFFFD, 0x100000..0x10FFFD]))
+        defcombinatorp(
+          :IRI_ucschar,
+          utf8_char(
+            not: 0..127,
+            not: 0xE000..0xF8FF,
+            not: 0xF0000..0xFFFFD,
+            not: 0x100000..0x10FFFD
+          )
+        )
+
+        defcombinatorp(
+          :IRI_iprivate,
+          utf8_char([0xE000..0xF8FF, 0xF0000..0xFFFFD, 0x100000..0x10FFFD])
+        )
 
         defparsec(:"~iri", parsec(:IRI) |> eos)
       end

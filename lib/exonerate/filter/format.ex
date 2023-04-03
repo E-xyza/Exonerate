@@ -178,7 +178,8 @@ defmodule Exonerate.Filter.Format do
     "iri-reference" => Exonerate.Formats.IriReference,
     "uri-template" => Exonerate.Formats.UriTemplate,
     "json-pointer" => Exonerate.Formats.JsonPointer,
-    "relative-json-pointer" => Exonerate.Formats.RelativeJsonPointer
+    "relative-json-pointer" => Exonerate.Formats.RelativeJsonPointer,
+    "regex" => Exonerate.Formats.Regex
   }
 
   for {filter, module} <- @format_filters do

@@ -119,8 +119,20 @@ defmodule Exonerate.Formats.UriTemplate do
         URI_TMP_sub_delims       <- "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
         """)
 
-        defcombinatorp(:URI_TMP_ucschar, utf8_char(not: 0..127, not: 0xE000..0xF8FF, not: 0xF0000..0xFFFFD, not: 0x100000..0x10FFFD))
-        defcombinatorp(:URI_TMP_iprivate, utf8_char([0xE000..0xF8FF, 0xF0000..0xFFFFD, 0x100000..0x10FFFD]))
+        defcombinatorp(
+          :URI_TMP_ucschar,
+          utf8_char(
+            not: 0..127,
+            not: 0xE000..0xF8FF,
+            not: 0xF0000..0xFFFFD,
+            not: 0x100000..0x10FFFD
+          )
+        )
+
+        defcombinatorp(
+          :URI_TMP_iprivate,
+          utf8_char([0xE000..0xF8FF, 0xF0000..0xFFFFD, 0x100000..0x10FFFD])
+        )
 
         defparsec(:"~uri-template", parsec(:URI_TEMPLATE) |> eos)
         defparsec(:testu, parsec(:URI_TMP_ihier_part))

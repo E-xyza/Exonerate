@@ -71,7 +71,7 @@ defmodule Exonerate.Formats.Email do
         EM_quoted_pairSMTP  <- "\\" / " " / [!-~]
 
         EM_qtextSMTP      <- " " / "!" / [#-Z] / "[" / "]" /  [^-~]
-        
+
         EM_QcontentSMTP   <- EM_qtextSMTP / EM_quoted_pairSMTP
 
         EM_Quoted_string  <- "\"" EM_QcontentSMTP* "\""
