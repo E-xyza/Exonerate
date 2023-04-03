@@ -65,6 +65,16 @@ defmodule Exonerate do
 
     - `true`: shorthand for `[default: true]`
     - keywords:
+      `<filter-spec>` may either be a module, which implies the existence of
+      the `module.validate/1` function, `{module, function}` which implies
+      the existence of `module.function/1`, or `{module, function, [extra-args]}`
+      which implies the existence of `module.function/n` where the extra args
+      are appended to the end of string to be validated.
+
+      In all cases, the validation function is expected to emit `:ok` if the
+      string validates, or `{:error, reason}`, if it does not.  `reason` should
+      either be a string or `nil`.
+
       - `:at`: a list of `{<json pointer>, <filter-spec>}` tuples to apply
         format filters in specific locations in the schema.  This can be used
         to specify custom filters for non-default format types.  It can also be
@@ -163,8 +173,12 @@ defmodule Exonerate do
     JSONPointer form (not URI form).  See https://datatracker.ietf.org/doc/html/rfc6901
     for more information about JSONPointer
 
-  - `:decoder`: specify `{module, function}` to use as the decoder for the text
-    that turns into JSON (e.g. YAML instead of JSON)
+  - `:decoder`: one of:
+    - `Jason` (default) for json parsing
+    - `YamlElixir` for yaml parsing
+    - `{module, function}` for custom parsing; the function should accept a
+      string and return json term, raising if the string is not valid input
+      for the decoder.
 
   - `:draft`: specifies any special draft information.  Defaults to "2020",
     which is intercompatible with `"2019"`.  `"4"`, `"6"`, and `"7"` are also
@@ -207,8 +221,10 @@ defmodule Exonerate do
   Note that the `schema` parameter must be a string literal.
   """
   defmacro function_from_string(type, function_name, schema_ast, opts \\ []) do
-    # prewalk the schema text
+    # expand literals (aliases) in ast.
+    opts = Macro.expand_literals(opts, __CALLER__)
 
+    # prewalk the schema text
     root_pointer = Tools.entrypoint(opts)
 
     # TODO: also attempt to obtain this from the schema.

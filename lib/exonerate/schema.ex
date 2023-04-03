@@ -13,7 +13,7 @@ defmodule Exonerate.Schema do
     {caller.module, resource}
 
     binary
-    |> Jason.decode!()
+    |> Tools.decode!(opts)
     |> Degeneracy.canonicalize(opts)
     |> tap(&Cache.put_schema(caller.module, resource, &1))
     |> Id.prescan(caller.module, resource, opts)

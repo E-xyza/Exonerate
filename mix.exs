@@ -50,6 +50,7 @@ defmodule Exonerate.MixProject do
       # test
       {:bandit, "~> 0.7", only: [:test, :bench]},
       {:tzdata, "~> 1.1.1", only: :test},
+      {:poison, "~> 5.0.0", only: :test},
       # benchmarking tools
       {:ex_json_schema, "~> 0.9.2", only: :bench},
       {:json_xema, "~> 0.3", only: :bench},

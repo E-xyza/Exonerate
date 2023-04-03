@@ -201,6 +201,15 @@ defmodule Exonerate.Tools do
     |> JsonPointer.from_path()
   end
 
+  def decode!(string, opts) do
+    case Keyword.get(opts, :decoder, Jason) do
+      Jason -> Jason.decode!(string)
+      YamlElixir -> YamlElixir.read_from_string!(string)
+      {module, function} ->
+        apply(module, function, [string])
+    end
+  end
+
   # URI tools
   @spec uri_to_resource(URI.t()) :: String.t()
   def uri_to_resource(uri) do

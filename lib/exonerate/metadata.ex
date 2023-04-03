@@ -16,7 +16,7 @@ defmodule Exonerate.Metadata do
 
   def schema(schema_str, type, function_name, opts) do
     metadata_opts = List.wrap(opts[:metadata])
-    schema_value = Jason.decode!(schema_str)
+    schema_value = Tools.decode!(schema_str, opts)
 
     if metadata_opts == [true] or :schema in metadata_opts do
       quote do
