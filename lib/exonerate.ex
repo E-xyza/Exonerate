@@ -4,12 +4,13 @@ defmodule Exonerate do
 
   Currently supports JSONSchema drafts 4, 6, 7, 2019, and 2020.  *except:*
 
-  - integer filters do not match exact integer floating point values.
-  - multipleOf is not supported for the number type (don't worry, it IS supported
-    for integers).  This is because Elixir does not support a floating point
-    remainder guard, and also because it is impossible for a floating point to
-    guarantee sane results (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
-  - currently remoteref is not supported.
+  - multipleOf is not supported for number types.  This is because
+  elixir does not support a floating point remainder guard, and also
+  because it is impossible for a floating point to guarantee sane results
+  (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
+  - id fields with fragments in their uri identifier (draft 7 and earlier only)
+  - dynamicRefs and anchors.
+  - contentMediaType, contentEncoding, contentSchema
 
   For details, see:  http://json-schema.org
 
