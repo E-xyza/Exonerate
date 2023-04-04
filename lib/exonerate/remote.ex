@@ -64,7 +64,11 @@ defmodule Exonerate.Remote do
         guard_fetch!(proxied_uri, opts)
         ensure_priv_directory!(opts)
 
-        body = remote_fetch_adapter.fetch_remote_cache!(proxied_uri, opts)
+        {body, content_type} = remote_fetch_adapter.fetch_remote_cache!(proxied_uri, opts)
+
+        content_type = content_type || Tools.content_type_from_extension(proxied_uri, opts)
+
+        opts = Keyword.put(opts, :content_type, content_type)
 
         if Keyword.get(opts, :cache, true) do
           uri
@@ -104,13 +108,20 @@ defmodule Exonerate.Remote do
   def fetch_remote_cache!(resource, _opts) do
     Application.ensure_all_started(:req)
 
-    %{status: 200, body: body} =
+    %{status: 200, body: body, headers: headers} =
       resource
       |> Map.put(:fragment, nil)
       |> to_string
       |> Req.get!(decode_body: false)
 
-    body
+    content_type = if List.keyfind(headers, "content-type", 0) do
+      List.keyfind(headers, "content-type", 0)
+      |> elem(1)
+      |> String.split(";")
+      |> List.first()
+    end
+
+    {body, content_type}
   end
 
   # utilities

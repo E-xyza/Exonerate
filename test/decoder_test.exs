@@ -15,7 +15,7 @@ defmodule ExonerateTest.DecoderTest do
         type: string
     """,
     entrypoint: "/foo/bar",
-    decoder: YamlElixir
+    content_type: "application/yaml"
   )
 
   test "yaml" do
@@ -30,7 +30,7 @@ defmodule ExonerateTest.DecoderTest do
     {"foo": {"bar": {"type": "string"}}}
     """,
     entrypoint: "/foo/bar",
-    decoder: Jason
+    decoders: [{"application/json", Jason}]
   )
 
   test "jason_explicit" do
@@ -45,7 +45,7 @@ defmodule ExonerateTest.DecoderTest do
     {"foo": {"bar": {"type": "string"}}}
     """,
     entrypoint: "/foo/bar",
-    decoder: {Poison, :decode!}
+    decoders: [{"application/json", {Poison, :decode!}}]
   )
 
   test "poison" do
@@ -65,7 +65,8 @@ defmodule ExonerateTest.DecoderTest do
     """,
     entrypoint: "/foo/bar",
     # note this is an alias!
-    decoder: {Custom, :generate!}
+    decoders: [{"custom", {Custom, :generate!}}],
+    content_type: "custom"
   )
 
   test "custom" do

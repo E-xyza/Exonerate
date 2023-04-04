@@ -205,15 +205,30 @@ defmodule Exonerate.Tools do
     |> JsonPointer.from_path()
   end
 
+  def set_decoders(opts) do
+    opts
+    |> Keyword.put_new(:decoders, [])
+    |> Keyword.update!(:decoders, fn decoders ->
+      decoders
+      |> if(&(!List.keymember?(&1, "application/json", 0)), &[{"application/json", Jason} | &1])
+      |> if(&(!List.keymember?(&1, "application/yaml", 0)), &[{"application/yaml", YamlElixir} | &1])
+    end)
+  end
+
   def decode!(string, opts) do
-    case Keyword.get(opts, :decoder, Jason) do
-      Jason ->
+    content_type = Keyword.fetch!(opts, :content_type)
+
+    opts
+    |> Keyword.fetch!(:decoders)
+    |> List.keyfind(content_type, 0)
+    |> case do
+      {_, Jason} ->
         Jason.decode!(string)
 
-      YamlElixir ->
+      {_, YamlElixir} ->
         YamlElixir.read_from_string!(string)
 
-      {module, function} ->
+      {_, {module, function}} ->
         apply(module, function, [string])
     end
   end
@@ -257,6 +272,21 @@ defmodule Exonerate.Tools do
 
   def uri_merge(base, rel) do
     URI.merge(base, rel)
+  end
+
+  def content_type_from_extension(uri_or_path, opts) do
+    case Path.extname("#{uri_or_path}") do
+      ".json" -> "application/json"
+      ".yaml" -> "application/yaml"
+      other ->
+        opts
+        |> Keyword.get(:mimetype_mapping, [])
+        |> List.keyfind(other, 0)
+        |> case do
+          {_, content_type} -> content_type
+          nil -> "application/json"
+        end
+    end
   end
 
   # general tools

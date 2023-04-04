@@ -193,12 +193,17 @@ defmodule Exonerate do
     JSONPointer form (not URI form).  See https://datatracker.ietf.org/doc/html/rfc6901
     for more information about JSONPointer
 
-  - `:decoder`: one of:
+  - `:decoders`: a list of `{<mimetype>, <decoder>}` tuples.  `<encoding-type>`
+    should be a string that matches the `content-type` of the schema. `<decoder>`
+    should be one of the following:
     - `Jason` (default) for json parsing
     - `YamlElixir` for yaml parsing
     - `{module, function}` for custom parsing; the function should accept a
       string and return json term, raising if the string is not valid input
       for the decoder.
+
+    Defaults to `[{"application/json", Jason}, {"application/yaml", YamlElixir}]`.
+    Tuples specified in this option will override or add to the defaults.
 
   - `:draft`: specifies any special draft information.  Defaults to "2020",
     which is intercompatible with `"2019"`.  `"4"`, `"6"`, and `"7"` are also
@@ -206,7 +211,13 @@ defmodule Exonerate do
     intermingling draft components is possible (but not recommended).  This overrides
     draft information provided in the schema
 
-  ### remoteRef schema retrieval
+  ### remoteRef schema retrieval options
+
+  - `:remote_fetch_adapter`: specifies the module to use for fetching remote
+    resources.  This module must export a `fetch_remote_cache!/2` function which
+    is passed a `t:URI.t/0` struct and returns `{<body>, <content-type>}` pair.
+    content-type may be `nil`.  Defaults to `Exonerate.Remote`, which uses the
+    `Req` library to perform the http request.
 
   - `:force_remote`: bypasses the manual prompt confirming if remote resources
     should be downoladed.  Use with caution!  Defaults to `false`.
@@ -240,10 +251,24 @@ defmodule Exonerate do
   generates a series of functions that validates a provided JSONSchema.
 
   Note that the `schema` parameter must be a string literal.
+
+  ### Extra options
+
+  - `:content_type`: specifies the content-type of the provided schema string literal.
+    Defaults to `"application/json"`.  This is used to determine which decoder to use
+    to parse the schema.
+  - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples.
+    This is used to determine the content-type of the schema if the file
+    extension is unrecognized.  E.g. [{".html", "text/html"}].  The mappings
+    {".json", "application/json"} and {".yaml", "application/yaml"} are not
+    overrideable.
   """
   defmacro function_from_string(type, function_name, schema_ast, opts \\ []) do
     # expand literals (aliases) in ast.
-    opts = Macro.expand_literals(opts, __CALLER__)
+    opts = opts
+    |> Macro.expand_literals(__CALLER__)
+    |> Keyword.put_new(:content_type, "application/json")
+    |> Tools.set_decoders
 
     # prewalk the schema text
     root_pointer = Tools.entrypoint(opts)
@@ -255,22 +280,73 @@ defmodule Exonerate do
     function_resource = to_string(%URI{scheme: "function", host: "#{function_name}", path: "/"})
 
     schema_string = Macro.expand(schema_ast, __CALLER__)
-    schema = Schema.ingest(schema_string, __CALLER__, function_resource, opts)
+
+    build_code(__CALLER__, schema_string, type, function_name, function_resource, root_pointer, opts)
+  end
+
+  defp id_from(schema) when is_map(schema), do: schema["$id"] || schema["id"]
+  defp id_from(_), do: nil
+
+  @doc """
+  generates a series of functions that validates a JSONschema in a file at
+  the provided path.
+
+  Note that the `path` parameter must be a `t:Path.t/0` value.
+
+  ### Extra options
+
+  - `:content_type`: specifies the content-type of the provided schema string
+    literal. Defaults to `application/json` if the file extension is `.json`,
+    and `application/yaml` if the file extension is `.yaml`  If `:content_type`
+    is unspecified and the file extension is unrecognized, Exonerate will
+    not be able to compile.
+  - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples.
+    This is used to determine the content-type of the schema if the file
+    extension is unrecognized.  E.g. [{".html", "text/html"}].  The mappings
+    {".json", "application/json"} and {".yaml", "application/yaml"} are not
+    overrideable.
+  """
+  defmacro function_from_file(type, function_name, path, opts \\ [])
+
+  defmacro function_from_file(type, function_name, path, opts) do
+    # expand literals (aliases) in ast.
+    opts = opts
+    |> Macro.expand_literals(__CALLER__)
+    |> set_content_type(path)
+    |> Tools.set_decoders
+
+    # prewalk the schema text
+    root_pointer = Tools.entrypoint(opts)
+
+    # TODO: also attempt to obtain this from the schema.
+    draft = Keyword.get(opts, :draft, "2020-12")
+    opts = Keyword.put(opts, :draft, draft)
+
+    function_resource = to_string(%URI{scheme: "file", host: "", path: Path.absname(path)})
+    schema_string = File.read!(path)
+
+    # set decoder options for the schema
+
+    build_code(__CALLER__, schema_string, type, function_name, function_resource, root_pointer, opts)
+  end
+
+  defp build_code(caller, schema_string, type, function_name, function_resource, root_pointer, opts) do
+    schema = Schema.ingest(schema_string, caller, function_resource, opts)
 
     opts = Draft.set_opts(opts, schema)
 
     resource =
       if id = id_from(schema) do
         resource = id
-        Cache.put_schema(__CALLER__.module, resource, schema)
+        Cache.put_schema(caller.module, resource, schema)
         resource
       else
         function_resource
       end
 
-    call = Tools.call(resource, root_pointer, opts)
-
     schema_fn = Metadata.schema(schema_string, type, function_name, opts)
+
+    call = Tools.call(resource, root_pointer, opts)
 
     Tools.maybe_dump(
       quote do
@@ -295,47 +371,9 @@ defmodule Exonerate do
     )
   end
 
-  defp id_from(schema) when is_map(schema), do: schema["$id"] || schema["id"]
-  defp id_from(_), do: nil
-
-  @doc """
-  generates a series of functions that validates a JSONschema in a file at
-  the provided path.
-
-  Note that the `path` parameter must be a string literal.
-  """
-  defmacro function_from_file(type, resource, path, opts \\ [])
-
-  defmacro function_from_file(type, resource, path, opts) do
-    raise "not yet"
-    # opts =
-    #  opts
-    #  |> Keyword.merge(resource: Atom.to_string(name))
-    #  |> resolve_opts(__CALLER__, @common_defaults)
-    #
-    # {schema, extra} =
-    #  path
-    #  |> Macro.expand(__CALLER__)
-    #  |> Registry.get_file()
-    #  |> case do
-    #    {:cached, contents} ->
-    #      {decode(contents, opts),
-    #       [
-    #         quote do
-    #           @external_resource unquote(path)
-    #         end
-    #       ]}
-    #
-    #    {:loaded, contents} ->
-    #      {decode(contents, opts), []}
-    #  end
-    #
-    # Tools.maybe_dump(
-    #  quote do
-    #    unquote_splicing(extra)
-    #    unquote(compile_json(type, name, schema, opts))
-    #  end,
-    #  opts
-    # )
+  defp set_content_type(opts, path) do
+    Keyword.put_new_lazy(opts, :content_type, fn ->
+      Tools.content_type_from_extension(path, opts)
+    end)
   end
 end
