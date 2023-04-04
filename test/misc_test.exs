@@ -4,24 +4,33 @@ defmodule ExonerateTest.MiscTest do
   require Exonerate
 
   Exonerate.function_from_string(:def, :utf8_string, ~s({"type": "string"}))
-  Exonerate.function_from_string(:def, :non_utf8_string, ~s({"type": "string", "format": "binary"}))
+
+  Exonerate.function_from_string(
+    :def,
+    :non_utf8_string,
+    ~s({"type": "string", "format": "binary"})
+  )
 
   Exonerate.function_from_string(:def, :utf8_length, """
-                      {
-                        "type": "string",
-                        "minLength": 2,
-                        "maxLength": 3
-                      }
-                      """)
+  {
+    "type": "string",
+    "minLength": 2,
+    "maxLength": 3
+  }
+  """)
 
-  Exonerate.function_from_string(:def, :non_utf8_length, """
-                      {
-                        "type": "string",
-                        "format": "binary",
-                        "minLength": 8,
-                        "maxLength": 12
-                      }
-                      """)
+  Exonerate.function_from_string(
+    :def,
+    :non_utf8_length,
+    """
+    {
+      "type": "string",
+      "format": "binary",
+      "minLength": 8,
+      "maxLength": 12
+    }
+    """
+  )
 
   describe "for the `string` type" do
     test "non-UTF8 string is rejected when no format is set" do
@@ -56,6 +65,35 @@ defmodule ExonerateTest.MiscTest do
       assert :ok == non_utf8_length("aaaaaaaa")
       assert :ok == non_utf8_length("aaaaaaaaaaaa")
       assert {:error, _} = non_utf8_length("aaaaaaaaaaaaaaaa")
+    end
+  end
+
+  Exonerate.function_from_string(
+    :def,
+    :minitems_contains,
+    """
+    {
+      "minItems": 2,
+      "contains": {"const": "foo"}
+    }
+    """
+  )
+
+  describe "array with minItems AND contains" do
+    test "doesn't contain enough items" do
+      assert {:error, _} = minitems_contains(["foo"])
+    end
+
+    test "dosn't contain the right item" do
+      assert {:error, _} = minitems_contains(["bar", "baz"])
+    end
+
+    test "doesn't contain either the right item or enough items" do
+      assert {:error, _} = minitems_contains(["bar"])
+    end
+
+    test "contains the right item and enough items" do
+      assert :ok == minitems_contains(["foo", "bar"])
     end
   end
 end

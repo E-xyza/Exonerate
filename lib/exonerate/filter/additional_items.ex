@@ -1,27 +1,61 @@
 defmodule Exonerate.Filter.AdditionalItems do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
+  alias Exonerate.Tools
 
-  alias Exonerate.Validator
-  defstruct [:context, :additional_items]
+  defmacro filter(resource, pointer, opts) do
+    parent_pointer = JsonPointer.backtrack!(pointer)
 
-  def parse(artifact = %{context: context}, %{"additionalItems" => _}) do
-
-    schema = Validator.parse(context.schema,
-      ["additionalItems" | context.pointer],
-      authority: context.authority,
-      format: context.format,
-      draft: context.draft)
-
-    %{artifact |
-      needs_accumulator: true,
-      additional_items: true,
-      filters: [%__MODULE__{context: context, additional_items: schema} | artifact.filters]}
+    __CALLER__
+    |> Tools.subschema(resource, parent_pointer)
+    |> build_filter(resource, parent_pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(%__MODULE__{additional_items: schema}) do
-    {[], [Validator.compile(schema)]}
+  defp build_filter(context, resource, parent_pointer, opts) do
+    entrypoint_pointer = JsonPointer.join(parent_pointer, "additionalItems")
+    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
+    context_pointer = JsonPointer.join(parent_pointer, "additionalItems")
+
+    context_opts = Tools.scrub(opts)
+    context_call = Tools.call(resource, context_pointer, context_opts)
+
+    case context do
+      # TODO: add a compiler error if this isn't a list
+      %{"items" => prefix} when is_list(prefix) ->
+        prefix_length = length(prefix)
+
+        quote do
+          defp unquote(entrypoint_call)({item, index}, path) when index < unquote(prefix_length),
+            do: :ok
+
+          defp unquote(entrypoint_call)({item, _index}, path) do
+            unquote(context_call)(item, path)
+          end
+
+          require Exonerate.Context
+
+          Exonerate.Context.filter(
+            unquote(resource),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
+        end
+
+      _ ->
+        quote do
+          defp unquote(entrypoint_call)({item, _index}, path) do
+            unquote(context_call)(item, path)
+          end
+
+          require Exonerate.Context
+
+          Exonerate.Context.filter(
+            unquote(resource),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
+        end
+    end
   end
 end

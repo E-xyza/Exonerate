@@ -34,279 +34,447 @@ defmodule Exonerate do
   end
   ```
 
-  The above module generates a function `MyModule.function_name/1` that takes an erlang JSON term
+  The above module generates a function `MyModule.function_name/1` that takes an BEAM JSON term
   (`string | number | array | map | bool | nil`) and validates it based on the the JSONschema.  If
   the term validates, it produces `:ok`.  If the term fails to validate, it produces
-  `{:error, keyword}`, where the key `:json_pointer` and points to the error location in the passed
+  `{:error, keyword}`, where the key `:instance_location` and points to the error location in the passed
   parameter, the `:schema_pointers` points to the validation that failed, and `error_value` is the
   failing inner term.
 
-  ## Metadata
+  ## Error keywords
 
-  The following metadata are accessible for the entrypoint in the jsonschema, by passing the corresponding
-  atom.  Note this is only activated for `def` functions, and will not be available
-  for `defp` functions.
+  The following error keywords conform to the JSONSchema spec
+  (https://json-schema.org/draft/2020-12/json-schema-core.html#name-format):
 
-  | JSONschema tag | atom parameter |
-  |----------------|----------------|
-  | $id            | `:id`          |
-  | $schema        | `:schema`      |
-  | default        | `:default`     |
-  | examples       | `:examples`    |
-  | description    | `:description` |
-  | title          | `:title`       |
+  - `:absolute_keyword_location`: a JSON pointer to the keyword in the schema that failed.
+  - `:instance_location`: a JSON pointer to the location in the instance that failed.
+  - `:errors`: a list of errors generated when a combining filter fails to match.
+
+  The following error keywords are not standard and are specific to Exonerate:
+
+  - `:error_value`: the innermost term that failed to validate.
+  - `:matches`: a list of JSON pointers to the keywords that matched a combining filter.
+  - `:reason`: a string describing the error, when the failing filter can fail for nonobvious
+    reasons.  For example `oneOf` will fail with the reason "no matches" when none of the
+    child schemas match; but it will fail with the reason "multiple matches" when more than
+    of the child schemas match.
+  - `:required`: a list of object keys that were required but missing.
+  - `:ref_trace`: a list of `$ref` keywords that were followed to get to the failing keyword.
 
   ## Options
 
   The following options are available:
 
-  - `:format`: a map of JSONpointers to tags with corresponding `{"format" => "..."}` filters.
+  - `:dump`: `true` to dump the generated code to the console.
 
-    Exonerate ships with filters for the following default content:
-    - `date-time`
-    - `date`
-    - `time`
-    - `ipv4`
-    - `ipv6`
+  - `:metadata`: `true` to enable all metadata decorator functions or a list of
+    atoms parameters to enable.  The following metadata are accessible by passing
+    the corresponding atom to the generated function in lieu of a JSON term to
+    validate.
 
-    To disable these filters, pass `false` to the path, e.g. `%{"/" => false}` or `%{"/foo/bar/" => false}`.
-    To specify a custom format filter, pass either function/args or mfa to the path, e.g.
-    `%{"/path/to/fun" => {Module, :fun, [123]}}` or if you want the f/a or mfa to apply to all tags of a
-    given format string, create use the atom of the type name as the key for your map.
+    | JSONschema tag  | atom parameter |
+    |-----------------|----------------|
+    | $id or id       | `:id`          |
+    | $schema         | `:schema_id`   |
+    | default         | `:default`     |
+    | examples        | `:examples`    |
+    | description     | `:description` |
+    | title           | `:title`       |
+    | <entire schema> | `:schema`      |
 
-    The corresponding function will be called with thue candidate formatted string as the first argument
-    and the supplied arguments after.  If you use the function/args (e.g. `{:private_function, [123]}`)
-    it may be a private function in the same module.  The custom function should return `true` on
-    successful validation and `false` on failure.
+  - `:format`: instructions for using (optional) format filters.  This should be
+    either `true` or a keyword list:
 
-    `date-time` ships with the parameter `:utc` which you may pass as `%{"/path/to/date-time/" => [:utc]}` that
-    forces the date-time to be an ISO-8601 datetime string.
+    - `true`: shorthand for `[default: true]`
 
-  - `:entrypoint`: a JSONpointer to the internal location inside of a json document where you would like to start
-    the JSONschema.  This should be in JSONPointer form.  See https://datatracker.ietf.org/doc/html/rfc6901 for
-    more information about JSONPointer
+    - keywords:
+      - `:at`: a list of `{<json pointer>, <filter-spec>}` tuples to apply
+        format filters in specific locations in the schema.  This can be used
+        to specify custom filters for non-default format types.  It can also be
+        used to override default formatting.  `<json pointer>` should be a
+        string which may be relative if no `"id"` or `"$id"` metadata are
+        present in the parents of the location.  Otherwise, the pointer must
+        the a uri of the nearest parent containing `"id"` or `"$id"` metadata,
+        with the relative pointer applied as the fragment of the uri.
 
-  - `:decoder`: specify `{module, function}` to use as the decoder for the text that turns into JSON
-    (e.g. YAML instead of JSON)
+        `<filter-spec>` may either be a module, which implies the existence of
+        the `module.validate/1` function, `{module, function}` which implies
+        the existence of `module.function/1`, or `{module, function, [extra-args]}`
+        which implies the existence of `module.function/n` where the extra args
+        are appended to the end of string to be validated.
 
-  - `:draft`: specifies any special draft information.  Defaults to "2020", which is intercompatible
-    with `"2019"`.  `"4"`, `"6"`, and `"7"` are also supported.  Note: Validation is NOT performed on
-    the schema, so intermingling draft components is possible (but not recommended).
+        In all cases, the validation function is expected to emit `:ok` if the
+        string validates, or `{:error, reason}`, if it does not.  `reason` should
+        either be a string or `nil`.
+      - `:type`: a list of `{<format-type>, <filter-spec>}` to apply across
+        the schema whenever `<format-type>` is encountered.  This can be used
+        to specify custom filters for non-default format types.  It can also
+        be used to override default formatting.  `<filter-spec>` is as above.
+      - `:default`: `true` to enable all default filters or a list of strings
+        specifying the default format types to enable.  The following format
+        types are available:
+        - `"date-time"`: enables the default date-time filter for all
+          `{"format": "date-time"}` contexts.  This uses Elixir's
+          `NaiveDateTime.from_iso8601/1` parser.
+
+        - `"date-time-utc"`: enables the default date-time-utc filter for all
+          `{"format": "date-time-utc"}` contexts.  This uses Elixir's
+          `DateTime.from_iso8601/1` parser, and requires the offset to be
+          0 from UTC.
+
+        - `"date-time-tz"`: enables the default date-time filter for all
+          `{"format": "date-time-tz"}` context strings.  This uses Elixir's
+          `DateTime.from_iso8601/1` parser, which requires an offset to
+          be specified.
+
+        - `"date"`: enables the default date filter for all `{"format": "date"}`
+          context strings.  This uses Elixir's `Date.from_iso8601/1` parser.
+
+        - `"time"`: enables the default time filter for all `{"format": "time"}`
+          context strings.  This uses Elixir's `Time.from_iso8601/1` parser.
+
+        - `"duration"`: enables the default duration filter for all
+          `{"format": "duration"}` context strings.  This uses a custom ABNF
+          validator that matches Appendix A of RFC 3339:
+          https://www.rfc-editor.org/rfc/rfc3339.txt
+
+          The validation function can be generated by `Exonerate.Formats.Duration`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"ipv4"`: enables the default ipv4 filter for all `{"format": "ipv4"}`
+          context strings.  This uses Erlang's `:inet.parse_ipv4strict_address/1`
+          parser.
+
+        - `"ipv6"`: enables the default ipv6 filter for all `{"format": "ipv6"}`
+          context strings.  This uses Erlang's `:inet.parse_ipv6strict_address/1`
+          parser.
+
+        - `"uuid"`: enables the default uuid filter for all `{"format": "uuid"}`
+          context strings.
+
+        - `"email"`: enables the default email filter for all `{"format": "email"}`
+          context strings.  This uses a custom ABNF validator that matches
+          section 4.1.2 of RFC 5322: https://www.rfc-editor.org/rfc/rfc5322.txt
+
+          The validation function can be generated by `Exonerate.Formats.Email`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"idn-email"`: enables the default idn-email (i18n email address)
+          filter for all `{"format": "idn-email"}` context strings.  This uses a
+          custom ABNF validator that matches section 3.3 of RFC 6531:
+          https://www.rfc-editor.org/rfc/rfc5322.txt
+
+          The validation function can be generated by `Exonerate.Formats.IdnEmail`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"hostname"`: enables the default hostname filter for all
+          `{"format": "hostname"}` context strings.  This uses a custom ABNF
+          validator that matches section 2.1 of RFC 1123:
+          https://www.rfc-editor.org/rfc/rfc1123.txt
+
+          The validation function can be generated by `Exonerate.Formats.Hostname`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"idn-hostname"`: enables the default idn-hostname (i18n hostname)
+          filter for all `{"format": "idn-hostname"}` context strings.
+
+          Note that in order to use this filter, you must add the
+          `:idna` library to your dependencies.
+
+          The validation function can be generated by `Exonerate.Formats.IdnHostname`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"uri"`: enables the default uri filter for all `{"format": "uri"}`
+          context strings.  This uses a custom ABNF validator that matches section
+          3 of RFC 3986: https://www.rfc-editor.org/rfc/rfc3986.txt.
+
+          > ### Absolute URIs {: .warning}
+          >
+          > uris must be absolute, i.e. they must contain a scheme, host,
+          > and path.  If you need relative uris, use the `uri-reference` filter.
+
+          The validation function can be generated by `Exonerate.Formats.Uri`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"uri-reference"`: enables the default uri-reference filter for all
+          `{"format": "uri-reference"}` context strings.  This uses a custom ABNF
+          validator that matches section 3 of RFC 3986:
+          https://www.rfc-editor.org/rfc/rfc3986.txt.
+
+          The validation function can be generated by `Exonerate.Formats.UriReference`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"iri"`: enables the default iri (i18n uri) filter for all
+          `{"format": "iri"}` context strings.  This uses a custom ABNF validator
+          that matches section 2.2 of RFC 3987: https://www.rfc-editor.org/rfc/rfc3987.txt.
+
+          > ### Absolute IRIs {: .warning}
+          >
+          > iris must be absolute, i.e. they must contain a scheme, host,
+          > and path.  If you need relative iris, use the `iri-reference` filter.
+
+          The validation function can be generated by `Exonerate.Formats.Iri`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"iri-reference"`: enables the default iri-reference (i18n uri) for all
+          `{"format": "iri-reference"}` context strings.  This uses a custom ABNF
+          validator that matches section 2.2 of RFC 3987:
+          https://www.rfc-editor.org/rfc/rfc3987.txt.
+
+          The validation function can be generated by `Exonerate.Formats.IriReference`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"uri-template"`: enables the default uri-template filter for all
+          `{"format": "uri-template"}` context strings.  This uses a custom ABNF
+          validator that matches section 2.3 of RFC 6570: https://www.rfc-editor.org/rfc/rfc6570.txt.
+
+          > ### URI-Template parent {: .info}
+          >
+          > uri-templates are templated against iri-reference strings.  This means they do not
+          > need to be absolute, and they may include unicode characters.
+
+          The validation function can be generated by `Exonerate.Formats.UriTemplate`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"json-pointer"`: enables the default json-pointer filter for all
+          `{"format": "json-pointer"}` context strings.  This uses a custom ABNF
+          validator that matches section 3 of RFC 6901: https://www.rfc-editor.org/rfc/rfc6901.txt
+
+          The validation function can be generated by `Exonerate.Formats.JsonPointer`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"relative-json-pointer"`: enables the default relative-json-pointer
+          filter for all `{"format": "relative-json-pointer"}` context strings.
+          This uses a custom ABNF validator that matches the followowing rfc proposal:
+          https://datatracker.ietf.org/doc/html/draft-handrews-relative-json-pointer-01
+
+          The validation function can be generated by `Exonerate.Formats.RelativeJsonPointer`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+        - `"regex"`: enables the default regex filter for all `{"format": "regex"}`
+          context strings.  Note: this does not compile the regex, instead it
+          uses a custom ABNF validator that matches the ECMA-262 standard:
+          https://www.ecma-international.org/publications-and-standards/standards/ecma-262/
+
+          The validation function can be generated by `Exonerate.Formats.Regex`.
+          requires `NimbleParsec` and `Pegasus` dependencies.
+
+  - `:entrypoint`: a JSONpointer to the internal location inside of a json
+    document where you would like to start the JSONschema.  This should be in
+    JSONPointer form (not URI form).  See https://datatracker.ietf.org/doc/html/rfc6901
+    for more information about JSONPointer
+
+  - `:decoders`: a list of `{<mimetype>, <decoder>}` tuples.  `<encoding-type>`
+    should be a string that matches the `content-type` of the schema. `<decoder>`
+    should be one of the following:
+    - `Jason` (default) for json parsing
+    - `YamlElixir` for yaml parsing
+    - `{module, function}` for custom parsing; the function should accept a
+      string and return json term, raising if the string is not valid input
+      for the decoder.
+
+    Defaults to `[{"application/json", Jason}, {"application/yaml", YamlElixir}]`.
+    Tuples specified in this option will override or add to the defaults.
+
+  - `:draft`: specifies any special draft information.  Defaults to `"2020"`,
+    `"2019"`, `"4"`, `"6"`, and `"7"` are also supported. This overrides draft
+    information provided in the schema
+
+    > ### Validation {: .warning}
+    >
+    > Validation is NOT performed on the schema, so intermingling draft
+    > components is possible (but not recommended).  In the future, using
+    > components in the wrong draft may cause a compile-time warning.
+
+  ### remoteRef schema retrieval options
+
+  - `:remote_fetch_adapter`: specifies the module to use for fetching remote
+    resources.  This module must export a `fetch_remote!/2` function which
+    is passed a `t:URI.t/0` struct and returns `{<body>, <content-type>}` pair.
+    content-type may be `nil`.  Defaults to `Exonerate.Remote`, which uses the
+    `Req` library to perform the http request.
+
+  - `:force_remote`: bypasses the manual prompt confirming if remote resources
+    should be downoladed.  Use with caution!  Defaults to `false`.
+
+  - `:cache`: if remote JSONs should be cached to the local filesystem.
+    Defaults to `false`
+
+  - `:cache_app`: specifies the otp app whose priv directory cached remote
+    JSONs are stored. Defaults to `:exonerate`.
+
+  - `:cache_path`: specifies the subdirectory of priv where cached remote JSONs
+    are stored.  Defaults to `/`.
+
+  - `:proxy`: a string proplist which describes string substitution of url
+    resources for proxied remote content.
+
+    #### Example
+
+    ``` elixir
+    [proxy: [{"https://my.remote.resource/", "http://localhost:4000"}]]
+    ```
   """
 
+  alias Exonerate.Cache
+  alias Exonerate.Draft
+  alias Exonerate.Tools
   alias Exonerate.Metadata
-  alias Exonerate.Pointer
-  alias Exonerate.Type
-  alias Exonerate.Registry
-  alias Exonerate.Validator
-
-  @common_defaults [
-    format: %{},
-    decoder: {Jason, :decode!}
-  ]
+  alias Exonerate.Schema
 
   @doc """
   generates a series of functions that validates a provided JSONSchema.
 
   Note that the `schema` parameter must be a string literal.
+
+  ### Extra options
+
+  - `:content_type`: specifies the content-type of the provided schema string literal.
+    Defaults to `"application/json"`.  This is used to determine which decoder to use
+    to parse the schema.
+  - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples.
+    This is used to determine the content-type of the schema if the file
+    extension is unrecognized.  E.g. `[{".html", "text/html"}]`.  The mappings
+    `{".json", "application/json"}` and `{".yaml", "application/yaml"}` are not
+    overrideable.
   """
-  defmacro function_from_string(type, name, schema, opts \\ [])
-  defmacro function_from_string(type, name, schema_ast, opts)  do
-    opts = opts
-    |> Keyword.merge(authority: Atom.to_string(name))
-    |> resolve_opts(__CALLER__, @common_defaults)
+  defmacro function_from_string(type, function_name, schema_ast, opts \\ []) do
+    # expand literals (aliases) in ast.
+    opts =
+      opts
+      |> Macro.expand_literals(__CALLER__)
+      |> Keyword.put_new(:content_type, "application/json")
+      |> Tools.set_decoders()
 
-    schema = schema_ast
-    |> Macro.expand(__CALLER__)
-    |> decode(opts)
+    # prewalk the schema text
+    root_pointer = Tools.entrypoint(opts)
 
-    compile_json(type, name, schema, opts)
+    # TODO: also attempt to obtain this from the schema.
+    draft = Keyword.get(opts, :draft, "2020-12")
+    opts = Keyword.put(opts, :draft, draft)
+
+    function_resource = to_string(%URI{scheme: "function", host: "#{function_name}", path: "/"})
+
+    schema_string = Macro.expand(schema_ast, __CALLER__)
+
+    build_code(
+      __CALLER__,
+      schema_string,
+      type,
+      function_name,
+      function_resource,
+      root_pointer,
+      opts
+    )
   end
+
+  defp id_from(schema) when is_map(schema), do: schema["$id"] || schema["id"]
+  defp id_from(_), do: nil
 
   @doc """
   generates a series of functions that validates a JSONschema in a file at
   the provided path.
 
-  Note that the `path` parameter must be a string literal.
+  Note that the `path` parameter must be a `t:Path.t/0` value.
+
+  ### Extra options
+
+  - `:content_type`: specifies the content-type of the provided schema string
+    literal. Defaults to `application/json` if the file extension is `.json`,
+    and `application/yaml` if the file extension is `.yaml`  If `:content_type`
+    is unspecified and the file extension is unrecognized, Exonerate will
+    not be able to compile.
+  - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples.
+    This is used to determine the content-type of the schema if the file
+    extension is unrecognized.  E.g. `[{".html", "text/html"}]`.  The mappings
+    `{".json", "application/json"}` and `{".yaml", "application/yaml"}` are not
+    overrideable.
   """
-  defmacro function_from_file(type, name, path, opts \\ [])
-  defmacro function_from_file(type, name, path, opts) do
-    opts = opts
-    |> Keyword.merge(authority: Atom.to_string(name))
-    |> resolve_opts(__CALLER__, @common_defaults)
+  defmacro function_from_file(type, function_name, path, opts \\ [])
 
-    {schema, extra} = path
-    |> Macro.expand(__CALLER__)
-    |> Registry.get_file
-    |> case do
-      {:cached, contents} -> {decode(contents, opts), [quote do @external_resource unquote(path) end]}
-      {:loaded, contents} -> {decode(contents, opts), []}
-    end
+  defmacro function_from_file(type, function_name, path, opts) do
+    # expand literals (aliases) in ast.
+    opts =
+      opts
+      |> Macro.expand_literals(__CALLER__)
+      |> set_content_type(path)
+      |> Tools.set_decoders()
 
-    quote do
-      unquote_splicing(extra)
-      unquote(compile_json(type, name, schema, opts))
-    end
+    # prewalk the schema text
+    root_pointer = Tools.entrypoint(opts)
+
+    # TODO: also attempt to obtain this from the schema.
+    draft = Keyword.get(opts, :draft, "2020-12")
+    opts = Keyword.put(opts, :draft, draft)
+
+    function_resource = to_string(%URI{scheme: "file", host: "", path: Path.absname(path)})
+    schema_string = File.read!(path)
+
+    # set decoder options for the schema
+
+    build_code(
+      __CALLER__,
+      schema_string,
+      type,
+      function_name,
+      function_resource,
+      root_pointer,
+      opts
+    )
   end
 
-  @spec precache_file!(Path.t) :: binary
-  @doc "lets you precache a file so you don't have to repeat loading it twice"
-  defdelegate precache_file!(path), to: Registry, as: :get_file!
+  defp build_code(
+         caller,
+         schema_string,
+         type,
+         function_name,
+         function_resource,
+         root_pointer,
+         opts
+       ) do
+    schema = Schema.ingest(schema_string, caller, function_resource, opts)
 
-  defp resolve_opts(opts, caller, defaults) do
-    Enum.reduce(defaults, opts, fn {k, default}, opts ->
-      if Keyword.has_key?(opts, k) do
-        new_v = opts[k]
-        |> Code.eval_quoted([], caller)
-        |> elem(0)
+    opts = Draft.set_opts(opts, schema)
 
-        Keyword.put(opts, k, new_v)
+    resource =
+      if id = id_from(schema) do
+        resource = id
+        Cache.put_schema(caller.module, resource, schema)
+        resource
       else
-        Keyword.put(opts, k, default)
+        function_resource
       end
+
+    schema_fn = Metadata.schema(schema_string, type, function_name, opts)
+
+    call = Tools.call(resource, root_pointer, opts)
+
+    Tools.maybe_dump(
+      quote do
+        require Exonerate.Metadata
+
+        unquote(schema_fn)
+
+        Exonerate.Metadata.functions(
+          unquote(type),
+          unquote(function_name),
+          unquote(resource),
+          unquote(root_pointer),
+          unquote(opts)
+        )
+
+        unquote(type)(unquote(function_name)(data), do: unquote(call)(data, "/"))
+
+        require Exonerate.Context
+        Exonerate.Context.filter(unquote(resource), unquote(root_pointer), unquote(opts))
+      end,
+      opts
+    )
+  end
+
+  defp set_content_type(opts, path) do
+    Keyword.put_new_lazy(opts, :content_type, fn ->
+      Tools.content_type_from_extension(path, opts)
     end)
   end
-
-  defp compile_json(type, name, schema, opts) do
-    entrypoint = opts
-    |> Keyword.get(:entrypoint, "/")
-    |> Pointer.from_uri
-
-    impl = schema
-    |> Validator.parse(entrypoint, opts)
-    |> Validator.compile
-
-    json_type = {:"#{name}_json", [], []}
-
-    # let's see if there's anything leftover.
-    dangling_refs = unroll_refs(schema)
-
-    entrypoint_body = quote do
-      try do
-        unquote(Pointer.to_fun(entrypoint, opts))(value, "/")
-      catch
-        error = {:error, e} when is_list(e) -> error
-      end
-    end
-
-    call = case type do
-      :def ->
-        quote do
-          # metadata functions not available for defp
-          unquote_splicing(Metadata.metadata_functions(name, schema, entrypoint))
-          def unquote(name)(value), do: unquote(entrypoint_body)
-        end
-      :defp ->
-        quote do
-          defp unquote(name)(value), do: unquote(entrypoint_body)
-        end
-    end
-
-    quote do
-      @typep unquote(json_type) ::
-        bool
-        | nil
-        | number
-        | String.t
-        | [unquote(json_type)]
-        | %{String.t => unquote(json_type)}
-
-      @spec unquote(name)(unquote(json_type)) :: :ok |
-        {:error, [
-          schema_pointer: Path.t,
-          error_value: term,
-          json_pointer: Path.t
-        ]}
-
-      unquote(call)
-
-      unquote(impl)
-      unquote(dangling_refs)
-    end
-  end
-
-  defp decode(contents, opts) do
-    case opts[:decoder] do
-      {module, fun} ->
-        apply(module, fun, [contents])
-      {module, fun, extra_args} ->
-        apply(module, fun, [contents | extra_args])
-    end
-  end
-
-  defp unroll_refs(schema) do
-    case Registry.needed(schema) do
-      [] -> []
-      list when is_list(list) ->
-        ref_impls = Enum.map(list, fn ref ->
-          schema
-          |> Validator.parse(ref.pointer, authority: ref.authority)
-          |> Validator.compile
-        end)
-        # keep going!  This schema might have created new refs.
-        ref_impls ++ unroll_refs(schema)
-    end
-  end
-
-  #################################################################
-  ## PRIVATE HELPER MACROS
-  ## used internally by macro generation functions
-
-  @doc false
-  def fun_to_path(fun) do
-    fun
-    |> to_string
-    |> String.split("#/")
-    |> tl()
-    |> Enum.join
-    |> amend_path
-  end
-
-  @doc false
-  defmacro mismatch(value, path, opts \\ []) do
-    schema_path! = __CALLER__.function
-    |> elem(0)
-    |> fun_to_path
-
-    schema_path! = if guard = opts[:guard] do
-      quote do
-        Path.join(unquote(schema_path!), unquote(guard))
-      end
-    else
-      schema_path!
-    end
-
-    extras = Keyword.take(opts, [:reason, :failures, :matches, :required])
-
-    quote do
-      throw {:error,
-      [schema_pointer: unquote(schema_path!),
-      error_value: unquote(value),
-      json_pointer: unquote(path)] ++ unquote(extras)}
-    end
-  end
-
-  defp amend_path(path = ("/" <> _)), do: path
-  defp amend_path(path), do: "/" <> path
-
-  @doc false
-  defmacro pipeline(variable_ast, path_ast, pipeline) do
-    build_pipe(variable_ast, path_ast, pipeline)
-  end
-
-  defp build_pipe(input_ast, params_ast, [fun | rest]) do
-    build_pipe({:|>, [], [input_ast, {fun, [], [params_ast]}]}, params_ast, rest)
-  end
-  defp build_pipe(input_ast, _params_ast, []), do: input_ast
-
-  # TODO: generalize these.
-
-  @doc false
-  defmacro chain_guards(variable_ast, types) do
-    types
-    |> Enum.map(&apply_guard(&1, variable_ast))
-    |> Enum.reduce(&{:or, [], [&1, &2]})
-  end
-
-  defp apply_guard(type, variable_ast), do: {Type.guard(type), [], [variable_ast]}
 end

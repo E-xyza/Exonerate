@@ -1,8 +1,21 @@
 .elixir_ls
+.envrc
 _build
 deps
 /docs/
+/doc/
+
+# coverage results
+/cover/
+
+# cached benchmark assets
+/bench/results
 
 # don't get the automated tests
 
 automated
+
+/test/one_test.exs
+
+# don't commit schemas fetched for testing
+/priv

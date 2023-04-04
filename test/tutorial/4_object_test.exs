@@ -12,7 +12,6 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   """
 
   defmodule Object do
-
     @moduledoc """
     tests from:
 
@@ -27,33 +26,33 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
   describe "basic objects example" do
     test "various objects match correctly" do
       assert :ok =
-      """
-      {
-        "key"         : "value",
-        "another_key" : "another_value"
-      }
-      """
-      |> Jason.decode!
-      |> Object.object
+               """
+               {
+                 "key"         : "value",
+                 "another_key" : "another_value"
+               }
+               """
+               |> Jason.decode!()
+               |> Object.object()
 
       assert :ok =
-      """
-      {
-          "Sun"     : 1.9891e30,
-          "Jupiter" : 1.8986e27,
-          "Saturn"  : 5.6846e26,
-          "Neptune" : 10.243e25,
-          "Uranus"  : 8.6810e25,
-          "Earth"   : 5.9736e24,
-          "Venus"   : 4.8685e24,
-          "Mars"    : 6.4185e23,
-          "Mercury" : 3.3022e23,
-          "Moon"    : 7.349e22,
-          "Pluto"   : 1.25e22
-      }
-      """
-      |> Jason.decode!
-      |> Object.object
+               """
+               {
+                   "Sun"     : 1.9891e30,
+                   "Jupiter" : 1.8986e27,
+                   "Saturn"  : 5.6846e26,
+                   "Neptune" : 10.243e25,
+                   "Uranus"  : 8.6810e25,
+                   "Earth"   : 5.9736e24,
+                   "Venus"   : 4.8685e24,
+                   "Mars"    : 6.4185e23,
+                   "Mercury" : 3.3022e23,
+                   "Moon"    : 7.349e22,
+                   "Pluto"   : 1.25e22
+               }
+               """
+               |> Jason.decode!()
+               |> Object.object()
     end
 
     @badarray ["An", "array", "not", "an", "object"]
@@ -61,20 +60,19 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     test "objects mismatches a string or array" do
       assert {:error, list} = Object.object("Not an object")
 
-      assert list[:schema_pointer] == "/type"
+      assert list[:absolute_keyword_location] == "#/type"
       assert list[:error_value] == "Not an object"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
 
       assert {:error, list} = Object.object(@badarray)
 
-      assert list[:schema_pointer] == "/type"
+      assert list[:absolute_keyword_location] == "#/type"
       assert list[:error_value] == @badarray
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
   defmodule Properties do
-
     @moduledoc """
     tests from:
 
@@ -83,49 +81,58 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :address1,
-    """
-    {
-      "type": "object",
-      "properties": {
-        "number":      { "type": "number" },
-        "street_name": { "type": "string" },
-        "street_type": { "type": "string",
-                         "enum": ["Street", "Avenue", "Boulevard"]
-                       }
+    Exonerate.function_from_string(
+      :def,
+      :address1,
+      """
+      {
+        "type": "object",
+        "properties": {
+          "number":      { "type": "number" },
+          "street_name": { "type": "string" },
+          "street_type": { "type": "string",
+                           "enum": ["Street", "Avenue", "Boulevard"]
+                         }
+        }
       }
-    }
-    """)
+      """
+    )
 
-    Exonerate.function_from_string(:def, :address2,
-    """
-    {
-      "type": "object",
-      "properties": {
-        "number":      { "type": "number" },
-        "street_name": { "type": "string" },
-        "street_type": { "type": "string",
-                         "enum": ["Street", "Avenue", "Boulevard"]
-                       }
-      },
-      "additionalProperties": false
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :address2,
+      """
+      {
+        "type": "object",
+        "properties": {
+          "number":      { "type": "number" },
+          "street_name": { "type": "string" },
+          "street_type": { "type": "string",
+                           "enum": ["Street", "Avenue", "Boulevard"]
+                         }
+        },
+        "additionalProperties": false
+      }
+      """
+    )
 
-    Exonerate.function_from_string(:def, :address3,
-    """
-    {
-      "type": "object",
-      "properties": {
-        "number":      { "type": "number" },
-        "street_name": { "type": "string" },
-        "street_type": { "type": "string",
-                         "enum": ["Street", "Avenue", "Boulevard"]
-                       }
-      },
-      "additionalProperties": { "type": "string" }
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :address3,
+      """
+      {
+        "type": "object",
+        "properties": {
+          "number":      { "type": "number" },
+          "street_name": { "type": "string" },
+          "street_type": { "type": "string",
+                           "enum": ["Street", "Avenue", "Boulevard"]
+                         }
+        },
+        "additionalProperties": { "type": "string" }
+      }
+      """
+    )
   end
 
   @addr1 ~s({ "number": 1600, "street_name": "Pennsylvania", "street_type": "Avenue" })
@@ -136,15 +143,17 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching simple addresses" do
     test "explicit addresses match correctly" do
-      assert :ok = @addr1
-      |> Jason.decode!
-      |> Properties.address1
+      assert :ok =
+               @addr1
+               |> Jason.decode!()
+               |> Properties.address1()
     end
 
     test "deficient properties match correctly" do
-      assert :ok = @addr3
-      |> Jason.decode!
-      |> Properties.address1
+      assert :ok =
+               @addr3
+               |> Jason.decode!()
+               |> Properties.address1()
     end
 
     test "empty object matches correctly" do
@@ -152,65 +161,68 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     end
 
     test "extra properties matches correctly" do
-      assert :ok = @addr4
-      |> Jason.decode!
-      |> Properties.address1
+      assert :ok =
+               @addr4
+               |> Jason.decode!()
+               |> Properties.address1()
     end
 
     test "mismatched inner property doesn't match" do
       assert {:error, list} =
-        @addr2
-        |> Jason.decode!
-        |> Properties.address1
+               @addr2
+               |> Jason.decode!()
+               |> Properties.address1()
 
-      assert list[:schema_pointer] == "/properties/number/type"
+      assert list[:absolute_keyword_location] == "#/properties/number/type"
       assert list[:error_value] == "1600"
-      assert list[:json_pointer] == "/number"
+      assert list[:instance_location] == "/number"
     end
   end
 
   describe "matching addresses with additionalProperties forbidden" do
     test "explicit addresses match correctly" do
-      assert :ok = @addr1
-      |> Jason.decode!
-      |> Properties.address2
+      assert :ok =
+               @addr1
+               |> Jason.decode!()
+               |> Properties.address2()
     end
 
     test "extra properties matches correctly" do
       addr4 = Jason.decode!(@addr4)
       assert {:error, list} = Properties.address2(addr4)
 
-      assert list[:schema_pointer] == "/additionalProperties"
-      assert list[:error_value] == {"direction", "NW"}
-      assert list[:json_pointer] == "/"
+      assert list[:absolute_keyword_location] == "#/additionalProperties"
+      assert list[:error_value] == "NW"
+      assert list[:instance_location] == "/direction"
     end
   end
 
   describe "matching addresses with additionalProperties as an object" do
     test "explicit addresses match correctly" do
-      assert :ok = @addr1
-      |> Jason.decode!
-      |> Properties.address3
+      assert :ok =
+               @addr1
+               |> Jason.decode!()
+               |> Properties.address3()
     end
 
     test "matching additionalProperties matches correctly" do
-      assert :ok = @addr4
-      |> Jason.decode!
-      |> Properties.address3
+      assert :ok =
+               @addr4
+               |> Jason.decode!()
+               |> Properties.address3()
     end
 
     test "extra nonstring property doesn't match" do
       addr5 = Jason.decode!(@addr5)
       assert {:error, list} = Properties.address3(addr5)
 
-      assert list[:schema_pointer] == "/additionalProperties/type"
+      assert list[:absolute_keyword_location] == "#/additionalProperties/type"
       assert list[:error_value] == 201
-      assert list[:json_pointer] == "/office_number"
+      assert list[:instance_location] == "/office_number"
     end
   end
 
   defmodule RequiredProperties do
-
     @moduledoc """
     tests from:
 
@@ -219,19 +231,22 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :contactinfo,
-    """
-    {
-      "type": "object",
-      "properties": {
-        "name":      { "type": "string" },
-        "email":     { "type": "string" },
-        "address":   { "type": "string" },
-        "telephone": { "type": "string" }
-      },
-      "required": ["name", "email"]
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :contactinfo,
+      """
+      {
+        "type": "object",
+        "properties": {
+          "name":      { "type": "string" },
+          "email":     { "type": "string" },
+          "address":   { "type": "string" },
+          "telephone": { "type": "string" }
+        },
+        "required": ["name", "email"]
+      }
+      """
+    )
   end
 
   @contact1 """
@@ -257,29 +272,30 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching required properties" do
     test "basic contact matches correctly" do
-      assert :ok = @contact1
-      |> Jason.decode!
-      |> RequiredProperties.contactinfo
+      assert :ok =
+               @contact1
+               |> Jason.decode!()
+               |> RequiredProperties.contactinfo()
     end
 
     test "extra info doesn't invalidate match" do
-      assert :ok = @contact2
-      |> Jason.decode!
-      |> RequiredProperties.contactinfo
+      assert :ok =
+               @contact2
+               |> Jason.decode!()
+               |> RequiredProperties.contactinfo()
     end
 
     test "deficient info is a problem" do
       contact3 = Jason.decode!(@contact3)
       assert {:error, list} = RequiredProperties.contactinfo(contact3)
 
-      assert list[:schema_pointer] == "/required/1"
+      assert list[:absolute_keyword_location] == "#/required/1"
       assert list[:error_value] == contact3
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
   defmodule PropertyNames do
-
     @moduledoc """
     tests from:
 
@@ -288,15 +304,18 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :token,
-    """
-    {
-      "type": "object",
-      "propertyNames": {
-       "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    Exonerate.function_from_string(
+      :def,
+      :token,
+      """
+      {
+        "type": "object",
+        "propertyNames": {
+         "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        }
       }
-    }
-    """)
+      """
+    )
   end
 
   @token1 ~s({ "_a_proper_token_001": "value" })
@@ -304,23 +323,23 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching property names" do
     test "basic contact matches correctly" do
-      assert :ok = @token1
-      |> Jason.decode!
-      |> PropertyNames.token
+      assert :ok =
+               @token1
+               |> Jason.decode!()
+               |> PropertyNames.token()
     end
 
     test "not matching the property name doesn't match" do
       token2 = Jason.decode!(@token2)
       assert {:error, list} = PropertyNames.token(token2)
 
-      assert list[:schema_pointer] == "/propertyNames/pattern"
+      assert list[:absolute_keyword_location] == "#/propertyNames/pattern"
       assert list[:error_value] == "001 invalid"
-      assert list[:json_pointer] == "/001 invalid"
+      assert list[:instance_location] == "/001 invalid"
     end
   end
 
   defmodule Size do
-
     @moduledoc """
     tests from:
 
@@ -329,8 +348,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :object,
-    """
+    Exonerate.function_from_string(:def, :object, """
     {
       "type": "object",
       "minProperties": 2,
@@ -350,44 +368,45 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       objsize1 = Jason.decode!(@objsize1)
       assert {:error, list} = Size.object(objsize1)
 
-      assert list[:schema_pointer] == "/minProperties"
+      assert list[:absolute_keyword_location] == "#/minProperties"
       assert list[:error_value] == objsize1
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
 
     test "too small object mismatches" do
       objsize2 = Jason.decode!(@objsize2)
       assert {:error, list} = Size.object(objsize2)
 
-      assert list[:schema_pointer] == "/minProperties"
+      assert list[:absolute_keyword_location] == "#/minProperties"
       assert list[:error_value] == objsize2
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
 
     test "small goldilocks matches correctly" do
-      assert :ok = @objsize3
-      |> Jason.decode!
-      |> Size.object
+      assert :ok =
+               @objsize3
+               |> Jason.decode!()
+               |> Size.object()
     end
 
     test "big goldilocks matches correctly" do
-      assert :ok = @objsize4
-      |> Jason.decode!
-      |> Size.object
+      assert :ok =
+               @objsize4
+               |> Jason.decode!()
+               |> Size.object()
     end
 
     test "too large object mismatches" do
       objsize5 = Jason.decode!(@objsize5)
       assert {:error, list} = Size.object(objsize5)
 
-      assert list[:schema_pointer] == "/maxProperties"
+      assert list[:absolute_keyword_location] == "#/maxProperties"
       assert list[:error_value] == objsize5
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
   defmodule PatternProperties do
-
     @moduledoc """
     tests from:
 
@@ -396,8 +415,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :patternprop1,
-    """
+    Exonerate.function_from_string(:def, :patternprop1, """
     {
       "type": "object",
       "patternProperties": {
@@ -417,42 +435,44 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
 
   describe "matching pattern properties without additionals" do
     test "string pattern works" do
-      assert :ok = @patternmatch1
-      |> Jason.decode!
-      |> PatternProperties.patternprop1
+      assert :ok =
+               @patternmatch1
+               |> Jason.decode!()
+               |> PatternProperties.patternprop1()
     end
 
     test "integer pattern works" do
-      assert :ok = @patternmatch2
-      |> Jason.decode!
-      |> PatternProperties.patternprop1
+      assert :ok =
+               @patternmatch2
+               |> Jason.decode!()
+               |> PatternProperties.patternprop1()
     end
 
     test "integers shouldn't match string pattern" do
       patternmatch3 = Jason.decode!(@patternmatch3)
       assert {:error, list} = PatternProperties.patternprop1(patternmatch3)
 
-      assert list[:schema_pointer] == "/patternProperties/%5ES_/type"
+      assert list[:absolute_keyword_location] == "#/patternProperties/%5ES_/type"
       assert list[:error_value] == 42
-      assert list[:json_pointer] == "/S_0"
+      assert list[:instance_location] == "/S_0"
     end
 
     test "strings shouldn't match integer pattern" do
       patternmatch4 = Jason.decode!(@patternmatch4)
       assert {:error, list} = PatternProperties.patternprop1(patternmatch4)
 
-      assert list[:schema_pointer] == "/patternProperties/%5EI_/type"
+      assert list[:absolute_keyword_location] == "#/patternProperties/%5EI_/type"
       assert list[:error_value] == "This is a string"
-      assert list[:json_pointer] == "/I_42"
+      assert list[:instance_location] == "/I_42"
     end
 
     test "additional properties shouldn't match" do
       patternmatch5 = Jason.decode!(@patternmatch5)
       assert {:error, list} = PatternProperties.patternprop1(patternmatch5)
 
-      assert list[:schema_pointer] == "/additionalProperties"
-      assert list[:error_value] == {"keyword", "value"}
-      assert list[:json_pointer] == "/"
+      assert list[:absolute_keyword_location] == "#/additionalProperties"
+      assert list[:error_value] == "value"
+      assert list[:instance_location] == "/keyword"
     end
   end
 end

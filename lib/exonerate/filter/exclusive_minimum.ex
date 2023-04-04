@@ -1,41 +1,48 @@
 defmodule Exonerate.Filter.ExclusiveMinimum do
   @moduledoc false
+  alias Exonerate.Tools
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
-
-  alias Exonerate.Type.Integer
-  alias Exonerate.Type.Number
-  alias Exonerate.Validator
-
-  import Validator, only: [fun: 2]
-
-  defstruct [:context, :minimum, :parent]
-
-  # ignore version-4-type exclusiveMaximum specifiers.
-  def parse(artifact, %{"exclusiveMinimum" => bool}) when is_boolean(bool), do: artifact
-
-  def parse(artifact = %type{}, %{"exclusiveMinimum" => minimum}) when type in [Integer, Number] do
-    %{artifact |
-      filters: [%__MODULE__{context: artifact.context, minimum: minimum, parent: type} | artifact.filters]}
+  # TODO: figure out draft-4 stuff
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(__CALLER__, resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{parent: Integer}) do
-    {[quote do
-      defp unquote(fun(filter, []))(integer, path)
-        when is_integer(integer) and integer <= unquote(filter.minimum) do
-          Exonerate.mismatch(integer, path, guard: "exclusiveMinimum")
+  defp build_filter(true, caller, resource, pointer, opts) do
+    # TODO: include a draft-4 warning
+    call = Tools.call(resource, pointer, opts)
+
+    minimum =
+      caller
+      |> Tools.parent(resource, pointer)
+      |> Map.fetch!("minimum")
+
+    quote do
+      defp unquote(call)(number = unquote(minimum), path) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(number, unquote(resource), unquote(pointer), path)
       end
-    end], []}
+
+      defp unquote(call)(_, _), do: :ok
+    end
   end
 
-  def compile(filter = %__MODULE__{parent: Number}) do
-    {[quote do
-      defp unquote(fun(filter, []))(number, path)
-        when is_number(number) and number <= unquote(filter.minimum) do
-          Exonerate.mismatch(number, path, guard: "exclusiveMinimum")
+  defp build_filter(minimum, _caller, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
+    quote do
+      defp unquote(call)(number, path) do
+        case number do
+          number when number > unquote(minimum) ->
+            :ok
+
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(number, unquote(resource), unquote(pointer), path)
+        end
       end
-    end], []}
+    end
   end
 end

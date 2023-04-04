@@ -1,97 +1,90 @@
 defmodule Exonerate.Filter.Dependencies do
   @moduledoc false
+  alias Exonerate.Tools
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
-
-  alias Exonerate.Type.Object
-  alias Exonerate.Validator
-
-  import Validator, only: [fun: 2]
-
-  defstruct [:context, :dependencies]
-
-  def parse(artifact = %Object{context: context}, %{"dependencies" => deps}) do
-    deps = deps
-    |> Enum.reject(&(elem(&1, 1) == true)) # as an optimization, just ignore {key, true}
-    |> Map.new(fn
-      {k, false} -> {k, false}  # might be optimizable as a filter.  Not done here.
-      {k, list} when is_list(list) ->
-        {k, list}
-      {k, schema} when is_map(schema) ->
-        {k, Validator.parse(
-          context.schema,
-          [k, "dependencies" | context.pointer],
-          authority: context.authority,
-          format: context.format,
-          draft: context.draft
-        )}
-    end)
-
-    %{
-      artifact |
-      pipeline: [fun(artifact, "dependencies") | artifact.pipeline],
-      filters: [%__MODULE__{context: context, dependencies: deps} | artifact.filters]
-    }
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> Enum.map(&make_dependencies(&1, resource, pointer, opts))
+    |> Enum.unzip()
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{dependencies: deps}) do
-    {pipeline, children} = deps
-    |> Enum.map(fn
-      {key, false} ->
-        {fun(filter, ["dependencies", key]),
-        quote do
-          defp unquote(fun(filter, ["dependencies", key]))(value, path) when is_map_key(value, unquote(key)) do
-            Exonerate.mismatch(value, Path.join(path, unquote(key)))
-          end
-          defp unquote(fun(filter, ["dependencies", key]))(value, _), do: value
-        end}
-      # one item optimization
-      {key, [dependent_key]} ->
-        {fun(filter, ["dependencies", key]),
-        quote do
-          defp unquote(fun(filter, ["dependencies", key]))(value, path) when is_map_key(value, unquote(key)) do
-            unless is_map_key(value, unquote(dependent_key)) do
-              Exonerate.mismatch(value, path, guard: "0")
-            end
-            value
-          end
-          defp unquote(fun(filter, ["dependencies", key]))(value, _), do: value
-        end}
-      {key, dependent_keys} when is_list(dependent_keys) ->
-        {fun(filter, ["dependencies", key]),
-        quote do
-          defp unquote(fun(filter, ["dependencies", key]))(value, path) when is_map_key(value, unquote(key)) do
-            unquote(dependent_keys)
-            |> Enum.with_index
-            |> Enum.each(fn {key, index} ->
-              unless is_map_key(value, key), do: Exonerate.mismatch(value, path, guard: to_string(index))
-            end)
-            value
-          end
-          defp unquote(fun(filter, ["dependencies", key]))(value, _), do: value
-        end}
-      {key, schema} ->
-        {fun(filter, ["dependencies", ":" <> key]),
-        quote do
-          defp unquote(fun(filter, ["dependencies", ":" <> key]))(value, path) when is_map_key(value, unquote(key)) do
-            unquote(fun(filter, ["dependencies", key]))(value, path)
-          end
-          defp unquote(fun(filter, ["dependencies", ":" <> key]))(value, _), do: value
-          unquote(Validator.compile(schema))
-        end
-        }
-    end)
-    |> Enum.unzip
+  defp make_dependencies({key, subschema}, resource, pointer, opts) do
+    call = Tools.call(resource, JsonPointer.join(pointer, key), :entrypoint, opts)
 
-    {[], [
+    prong =
       quote do
-        defp unquote(fun(filter, "dependencies"))(value, path) do
-          Exonerate.pipeline(value, path, unquote(pipeline))
+        :ok <- unquote(call)(content, path)
+      end
+
+    {prong, accessory(call, key, subschema, resource, pointer, opts)}
+  end
+
+  defp build_filter({prongs, accessories}, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
+    quote do
+      defp unquote(call)(content, path) do
+        with unquote_splicing(prongs) do
           :ok
         end
       end
-    ] ++ children}
+
+      unquote(accessories)
+    end
+  end
+
+  defp accessory(call, key, deps_list, resource, pointer, _opts) when is_list(deps_list) do
+    prongs =
+      Enum.with_index(deps_list, fn
+        dependent_key, index ->
+          schema_pointer = JsonPointer.join(pointer, [key, "#{index}"])
+
+          quote do
+            :ok <-
+              if is_map_key(content, unquote(dependent_key)) do
+                :ok
+              else
+                require Exonerate.Tools
+
+                Exonerate.Tools.mismatch(
+                  content,
+                  unquote(resource),
+                  unquote(schema_pointer),
+                  path
+                )
+              end
+          end
+      end)
+
+    quote do
+      defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do
+        with unquote_splicing(prongs) do
+          :ok
+        end
+      end
+
+      defp unquote(call)(content, path), do: :ok
+    end
+  end
+
+  defp accessory(call, key, subschema, resource, pointer, opts)
+       when is_map(subschema) or is_boolean(subschema) do
+    pointer = JsonPointer.join(pointer, key)
+    context_opts = Tools.scrub(opts)
+    context_call = Tools.call(resource, pointer, context_opts)
+
+    quote do
+      defp unquote(call)(content, path) when is_map_key(content, unquote(key)) do
+        unquote(context_call)(content, path)
+      end
+
+      defp unquote(call)(content, path), do: :ok
+
+      require Exonerate.Context
+      Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(context_opts))
+    end
   end
 end

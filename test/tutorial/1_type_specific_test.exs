@@ -31,9 +31,9 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
 
     test "number mismatches a string" do
       assert {:error, list} = Type.one_type("42")
-      assert list[:schema_pointer] == "/type"
+      assert list[:absolute_keyword_location] == "#/type"
       assert list[:error_value] == "42"
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -46,10 +46,9 @@ defmodule ExonerateTest.Tutorial.TypeSpecificTest do
     @struct_list ["Life", "the universe", "and everything"]
     test "number mismatches a structured type" do
       assert {:error, list} = Type.two_types(@struct_list)
-      assert list[:schema_pointer] == "/type"
+      assert list[:absolute_keyword_location] == "#/type"
       assert list[:error_value] == @struct_list
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
-
 end

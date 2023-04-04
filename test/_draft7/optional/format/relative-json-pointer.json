@@ -24,7 +24,7 @@
                 "valid": true
             },
             {
-                "description": "an invalid RJP that is a valid JSON Pointer",
+                "description": "an invalid RJP that is a valid JSON JsonPointer",
                 "data": "/foo/bar",
                 "valid": false
             },

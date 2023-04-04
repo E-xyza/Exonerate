@@ -23,3 +23,7 @@
 # 0.2.2
 - fixes it so that defp content with metadata don't cause compilation
   errors
+
+# 0.3.0
+- switch to using `:json_ptr` library
+- implementation of `unevaluatedItems` and `unevaluatedProperties`

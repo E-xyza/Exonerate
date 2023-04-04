@@ -1,58 +1,45 @@
 defmodule Exonerate.Filter.PropertyNames do
   @moduledoc false
-  
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Type.Object
-  alias Exonerate.Validator
+  alias Exonerate.Tools
 
-  import Validator, only: [fun: 2]
-
-  defstruct [:context, :schema]
-
-  def parse(artifact, %{"propertyNames" => true}) do
-    # true means no further conditions are added to the schema.
-    # this header clause is provided as an optimization.
-    artifact
+  defmacro filter(resource, pointer, opts) do
+    resource
+    |> build_filter(pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def parse(artifact = %{context: context}, %{"propertyNames" => false}) do
-    # false means only the empty object is valid
-    # this is provided as an optimization.
-    %{artifact |
-      iterate: false,
-      filters: [%__MODULE__{context: context, schema: false}]}
-  end
+  defp build_filter(resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
 
-  def parse(artifact = %Object{context: context}, %{"propertyNames" => schema})  do
-    schema = Exonerate.Type.String.parse(Validator.jump_into(artifact.context, "propertyNames", true), schema)
+    # TODO: make sure we don't drop the only if this has been reffed.
+    context_opts =
+      opts
+      |> Tools.scrub()
+      |> Keyword.put(:only, ["string"])
 
-    %{artifact |
-      iterate: true,
-      filters: [%__MODULE__{context: context, schema: schema} | artifact.filters],
-      kv_pipeline: [fun(artifact, "propertyNames") | artifact.kv_pipeline]
-    }
-  end
-
-  def compile(filter = %__MODULE__{schema: false}) do
-    {[quote do
-      defp unquote(fun(filter, []))(object, path) when object != %{} do
-        Exonerate.mismatch(object, path, guard: "propertyNames")
-      end
-    end], []}
-  end
-
-  def compile(filter = %__MODULE__{schema: schema}) do
-    {guards, body} = Exonerate.Compiler.compile(schema, force: true)
-    {[], guards ++ body ++ [
+    subfilter =
       quote do
-        defp unquote(fun(filter, "propertyNames"))(seen, {path, key, value}) do
-          unquote(fun(filter, "propertyNames"))(key, Path.join(path, key))
-          seen
+        defp unquote(call)({key, _v}, path) do
+          case unquote(call)(key, path) do
+            :ok ->
+              :ok
+
+            {:error, errors} ->
+              {:error, Keyword.update!(errors, :instance_location, &Path.join(&1, key))}
+          end
         end
       end
-    ]}
+
+    context =
+      quote do
+        require Exonerate.Context
+        Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(context_opts))
+      end
+
+    quote do
+      unquote(subfilter)
+      unquote(context)
+    end
   end
 end

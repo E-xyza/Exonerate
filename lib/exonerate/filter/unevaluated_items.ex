@@ -1,42 +1,123 @@
-#defmodule Exonerate.Filter.UnevaluatedItems do
-#  @behaviour Exonerate.Filter
-#
-#  alias Exonerate.Type
-#  require Type
-#
-#  def append_filter(object, validation) when Type.is_schema(object) do
-#    collection_calls = validation.collection_calls
-#    |> Map.get(:array, [])
-#    |> List.insert_at(0, name(validation))
-#    |> Kernel.++([reset(validation)])
-#
-#    children = code(object, validation) ++ validation.children
-#
-#    validation
-#    |> put_in([:collection_calls, :array], collection_calls)
-#    |> put_in([:children], children)
-#  end
-#
-#  defp name(validation) do
-#    Exonerate.path_to_call(["unevaluatedItems" | validation.path])
-#  end
-#
-#  defp reset(validation) do
-#    Exonerate.path_to_call(["unevaluatedItems_reset_" | validation.path])
-#  end
-#
-#  defp code(object, validation) do
-#    [quote do
-#      defp unquote(name(validation))({value, _}, acc, path) do
-#        if acc.unevaluated do
-#          unquote(name(validation))(value, Path.join(path, "unevaluatedItems"))
-#        end
-#        acc
-#      end
-#      defp unquote(reset(validation))(unit, acc, path) do
-#        Map.put(acc, :unevaluated, true)
-#      end
-#      unquote(Exonerate.Validation.from_schema(object, ["unevaluatedItems" | validation.path]))
-#    end]
-#  end
-#end
+defmodule Exonerate.Filter.UnevaluatedItems do
+  @moduledoc false
+
+  alias Exonerate.Tools
+
+  defmacro filter(resource, pointer, opts) do
+    parent_pointer = JsonPointer.backtrack!(pointer)
+
+    __CALLER__
+    |> Tools.subschema(resource, parent_pointer)
+    |> build_filter(resource, parent_pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
+
+  @seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
+
+  defp build_filter(context, resource, parent_pointer, opts) do
+    if Enum.any?(@seen_filters, &is_map_key(context, &1)) do
+      build_combining(context, resource, parent_pointer, opts)
+    else
+      build_trivial(context, resource, parent_pointer, opts)
+    end
+  end
+
+  defp build_combining(context, resource, parent_pointer, opts) do
+    entrypoint_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
+    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
+    context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
+
+    context_opts = Tools.scrub(opts)
+    context_call = Tools.call(resource, context_pointer, context_opts)
+
+    case context do
+      # TODO: add a compiler error if this isn't a list
+      %{"prefixItems" => prefix} ->
+        prefix_length = length(prefix)
+
+        quote do
+          defp unquote(entrypoint_call)({item, index, first_unseen_index}, path)
+               when index < unquote(prefix_length) or index < first_unseen_index,
+               do: :ok
+
+          defp unquote(entrypoint_call)({item, _index, _}, path) do
+            unquote(context_call)(item, path)
+          end
+
+          require Exonerate.Context
+
+          Exonerate.Context.filter(
+            unquote(resource),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
+        end
+
+      _ ->
+        quote do
+          defp unquote(entrypoint_call)({item, index, first_unseen_index}, path)
+               when index < first_unseen_index,
+               do: :ok
+
+          defp unquote(entrypoint_call)({item, _index, _}, path) do
+            unquote(context_call)(item, path)
+          end
+
+          require Exonerate.Context
+
+          Exonerate.Context.filter(
+            unquote(resource),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
+        end
+    end
+  end
+
+  defp build_trivial(context, resource, parent_pointer, opts) do
+    entrypoint_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
+    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
+    context_pointer = JsonPointer.join(parent_pointer, "unevaluatedItems")
+
+    context_opts = Tools.scrub(opts)
+    context_call = Tools.call(resource, context_pointer, context_opts)
+
+    case context do
+      # TODO: add a compiler error if this isn't a list
+      %{"prefixItems" => prefix} ->
+        prefix_length = length(prefix)
+
+        quote do
+          defp unquote(entrypoint_call)({item, index}, path) when index < unquote(prefix_length),
+            do: :ok
+
+          defp unquote(entrypoint_call)({item, _index}, path) do
+            unquote(context_call)(item, path)
+          end
+
+          require Exonerate.Context
+
+          Exonerate.Context.filter(
+            unquote(resource),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
+        end
+
+      _ ->
+        quote do
+          defp unquote(entrypoint_call)({item, _index}, path) do
+            unquote(context_call)(item, path)
+          end
+
+          require Exonerate.Context
+
+          Exonerate.Context.filter(
+            unquote(resource),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
+        end
+    end
+  end
+end

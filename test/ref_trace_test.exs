@@ -2,40 +2,51 @@ defmodule ExonerateTest.RefTraceTest do
   use ExUnit.Case, async: true
   require Exonerate
 
-  Exonerate.function_from_string(:defp, :ref1, """
-  {
-    "properties": {
-        "foo": {"type": "integer"},
-        "bar": {"$ref": "#/properties/foo"}
+  Exonerate.function_from_string(
+    :defp,
+    :ref1,
+    """
+    {
+      "properties": {
+          "foo": {"type": "integer"},
+          "bar": {"$ref": "#/properties/foo"}
+      }
     }
-  }
-  """)
+    """
+  )
 
   test "ref tracing works through one hop" do
-    assert {:error, [
-      ref_trace: ["/properties/bar"],
-      schema_pointer: "/properties/foo/type",
-      error_value: "baz",
-      json_pointer: "/bar"
-    ]} = ref1(%{"bar" => "baz"})
+    assert {:error, error} = ref1(%{"bar" => "baz"})
+
+    assert [
+             absolute_keyword_location: "#/properties/foo/type",
+             error_value: "baz",
+             instance_location: "/bar",
+             ref_trace: ["/properties/bar/$ref"]
+           ] = Enum.sort(error)
   end
 
   Exonerate.function_from_string(:defp, :ref2, """
   {
-    "properties": {
-        "foo": {"type": "integer"},
-        "bar": {"$ref": "#/properties/foo"},
-        "baz": {"$ref": "#/properties/bar"}
-    }
+   "properties": {
+       "foo": {"type": "integer"},
+       "bar": {"$ref": "#/properties/foo"},
+       "baz": {"$ref": "#/properties/bar"}
+   }
   }
   """)
 
   test "ref tracing works through two hops" do
-    assert {:error, [
-      ref_trace: ["/properties/baz", "/properties/bar"],
-      schema_pointer: "/properties/foo/type",
-      error_value: "quux",
-      json_pointer: "/baz"
-    ]} = ref2(%{"baz" => "quux"})
+    assert {:error, error} = ref2(%{"baz" => "quux"})
+
+    assert [
+             absolute_keyword_location: "#/properties/foo/type",
+             error_value: "quux",
+             instance_location: "/baz",
+             ref_trace: [
+               "/properties/baz/$ref",
+               "/properties/bar/$ref"
+             ]
+           ] = Enum.sort(error)
   end
 end

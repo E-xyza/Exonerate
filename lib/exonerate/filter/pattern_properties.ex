@@ -1,50 +1,101 @@
 defmodule Exonerate.Filter.PatternProperties do
   @moduledoc false
+  alias Exonerate.Tools
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
-
-  alias Exonerate.Validator
-
-  import Validator, only: [fun: 2]
-
-  defstruct [:context, :patterns]
-
-  def parse(artifact = %{context: context}, %{"patternProperties" => patterns})  do
-    patterns = Map.new(patterns, fn
-      {pattern, _} ->
-        {pattern,
-          Validator.parse(
-            context.schema,
-            [pattern, "patternProperties" | context.pointer],
-            authority: context.authority,
-            format: context.format,
-            draft: context.draft)}
-    end)
-
-    filter = %__MODULE__{context: context, patterns: patterns}
-
-    %{artifact |
-      iterate: true,
-      kv_pipeline: Enum.map(patterns, fn {k, _} -> fun(artifact, ["patternProperties", k]) end) ++ artifact.kv_pipeline,
-      filters: [filter | artifact.filters]}
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{patterns: patterns}) do
-    {[], Enum.map(patterns, fn
-      {pattern, compiled} ->
+  defp build_filter(subschema, resource, pointer, opts) do
+    {subfilters, contexts} =
+      subschema
+      |> Enum.map(&filters_for(&1, resource, pointer, opts))
+      |> Enum.unzip()
+
+    init =
+      if opts[:tracked] do
+        {:ok, false}
+      else
+        :ok
+      end
+
+    capture =
+      if opts[:tracked] do
         quote do
-          defp unquote(fun(filter, ["patternProperties", pattern]))(seen, {path, key, value}) do
-            if Regex.match?(sigil_r(<<unquote(pattern)>>, []), key) do
-              unquote(fun(filter, ["patternProperties", pattern]))(value, Path.join(path, key))
-              true
-            else
-              seen
-            end
-          end
-          unquote(Validator.compile(compiled))
+          {:ok, visited}
         end
-    end)}
+      else
+        :ok
+      end
+
+    evaluation =
+      if opts[:tracked] do
+        quote do
+          require Exonerate.Tools
+
+          case fun.(value, Path.join(path, key)) do
+            :ok -> {:ok, true}
+            Exonerate.Tools.error_match(error) -> error
+          end
+        end
+      else
+        quote do
+          fun.(value, Path.join(path, key))
+        end
+      end
+
+    negative =
+      if opts[:tracked] do
+        quote do
+          {:ok, visited}
+        end
+      else
+        :ok
+      end
+
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))({key, value}, path) do
+        require Exonerate.Tools
+
+        Enum.reduce_while(unquote(subfilters), unquote(init), fn
+          {regex, fun}, unquote(capture) ->
+            result =
+              if Regex.match?(regex, key) do
+                unquote(evaluation)
+              else
+                unquote(negative)
+              end
+
+            {:cont, result}
+
+          _, Exonerate.Tools.error_match(error) ->
+            {:halt, error}
+        end)
+      end
+
+      unquote(contexts)
+    end
+  end
+
+  defp filters_for({regex, _}, resource, pointer, opts) do
+    opts = Tools.scrub(opts)
+    pointer = JsonPointer.join(pointer, regex)
+    fun = Tools.call(resource, pointer, opts)
+
+    {quote do
+       {sigil_r(<<unquote(regex)>>, []), &(unquote({fun, [], Elixir}) / 2)}
+     end,
+     quote do
+       require Exonerate.Context
+
+       Exonerate.Context.filter(
+         unquote(resource),
+         unquote(pointer),
+         unquote(opts)
+       )
+     end}
   end
 end

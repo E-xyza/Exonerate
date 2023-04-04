@@ -1,70 +1,106 @@
 defmodule Exonerate.Type.String do
   @moduledoc false
 
-  # boilerplate!!
   @behaviour Exonerate.Type
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
 
-  defstruct [:context, :format_binary, pipeline: [], filters: []]
-  @type t :: %__MODULE__{}
-
-  alias Exonerate.Filter
+  # alias Exonerate.Draft
   alias Exonerate.Tools
-  alias Exonerate.Type
-  alias Exonerate.Validator
+  alias Exonerate.Combining
+  alias Exonerate.Filter.Format
 
-  import Validator, only: [fun: 2]
+  @modules Combining.merge(%{
+             "minLength" => Exonerate.Filter.MinLength,
+             "maxLength" => Exonerate.Filter.MaxLength,
+             "min-max-length" => Exonerate.Filter.MinMaxLength,
+             "format" => Exonerate.Filter.Format,
+             "pattern" => Exonerate.Filter.Pattern
+           })
 
-  @validator_filters ~w(minLength maxLength format pattern)
-  @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
+  @filters Map.keys(@modules)
 
-  @impl true
-  @spec parse(Validator.t, Type.json) :: t
-
-  # draft <= 7 refs inhibit type-based analysis
-  def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
-    %__MODULE__{context: validator}
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def parse(validator, schema) do
-    %__MODULE__{context: validator, format_binary: format_binary(schema)}
-    |> Tools.collect(@validator_filters, fn
-      artifact, filter when is_map_key(schema, filter) ->
-        Filter.parse(artifact, @validator_modules[filter], schema)
-      artifact, _ -> artifact
-    end)
-  end
+  defp build_filter(context = %{"format" => "binary"}, resource, pointer, opts) do
+    filters = build_filter_with_clause(context, resource, pointer, opts)
 
-  defp format_binary(%{"format" => "binary"}), do: true
-  defp format_binary(_), do: false
-
-  @impl true
-  @spec compile(t) :: Macro.t
-  def compile(artifact = %{format_binary: true}) do
-    combining = Validator.combining(artifact.context, quote do string end, quote do path end)
     quote do
-      defp unquote(fun(artifact, []))(string, path) when is_binary(string) do
-        Exonerate.pipeline(string, path, unquote(artifact.pipeline))
-        unquote_splicing(combining)
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) when is_binary(string) do
+        unquote(filters)
       end
     end
   end
 
-  def compile(artifact) do
-
-    combining = Validator.combining(artifact.context, quote do string end, quote do path end)
+  defp build_filter(context, resource, pointer, opts) do
+    filters = build_filter_with_clause(context, resource, pointer, opts)
+    non_utf_error_pointer = JsonPointer.join(pointer, "type")
 
     quote do
-      defp unquote(fun(artifact, []))(string, path) when is_binary(string) do
+      defp unquote(Tools.call(resource, pointer, opts))(string, path) when is_binary(string) do
         if String.valid?(string) do
-          Exonerate.pipeline(string, path, unquote(artifact.pipeline))
-          unquote_splicing(combining)
+          unquote(filters)
         else
-          Exonerate.mismatch(string, path)
+          require Exonerate.Tools
+
+          Exonerate.Tools.mismatch(
+            string,
+            unquote(resource),
+            unquote(non_utf_error_pointer),
+            path
+          )
         end
       end
     end
   end
 
+  defp build_filter_with_clause(context, resource, pointer, opts) do
+    filter_clauses =
+      for filter <- @filters,
+          is_map_key(context, filter),
+          accept_format?(context, filter, resource, pointer, opts) do
+        call = Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+
+        quote do
+          :ok <- unquote(call)(string, path)
+        end
+      end
+
+    quote do
+      with unquote_splicing(filter_clauses) do
+        :ok
+      end
+    end
+  end
+
+  defp accept_format?(context, "format", resource, pointer, opts) do
+    Format.should_format?(context["format"], resource, JsonPointer.join(pointer, "format"), opts)
+  end
+
+  defp accept_format?(_context, _, _, _, _), do: true
+
+  defmacro accessories(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_accessories(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
+
+  defp build_accessories(context, resource, pointer, opts) do
+    for filter <- @filters,
+        is_map_key(context, filter),
+        accept_format?(context, filter, resource, pointer, opts),
+        not Combining.filter?(filter) do
+      module = @modules[filter]
+      pointer = JsonPointer.join(pointer, filter)
+
+      quote do
+        require unquote(module)
+        unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
+      end
+    end
+  end
 end

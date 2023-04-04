@@ -1,53 +1,73 @@
 defmodule Exonerate.Filter.Properties do
   @moduledoc false
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Tools
 
-  alias Exonerate.Validator
-
-  import Validator, only: [fun: 2]
-
-  defstruct [:context, :children]
-
-  def parse(artifact = %{context: context}, %{"properties" => properties})  do
-    children = Map.new(
-      properties,
-      fn {k, _} ->
-        {k, Validator.parse(
-        context.schema,
-        [k, "properties" | context.pointer],
-        authority: context.authority,
-        format: context.format,
-        draft: context.draft)}
-      end)
-
-    %{artifact |
-      iterate: true,
-      filters: [%__MODULE__{context: context, children: children} | artifact.filters],
-      kv_pipeline: [fun(artifact, "properties") | artifact.kv_pipeline]
-    }
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{children: children}) do
-    {guarded_clauses, tests} = children
-    |> Enum.map(fn {k, v} ->
-      {quote do
-        defp unquote(fun(filter, "properties"))(_, {path, unquote(k), v}) do
-          unquote(fun(filter, ["properties", k]))(v, Path.join(path, unquote(k)))
-          true
-        end
-      end,
-      Validator.compile(v)}
-    end)
-    |> Enum.unzip
+  defp build_filter(subschema, resource, pointer, opts) do
+    main_call = Tools.call(resource, pointer, opts)
 
+    {subfilters, contexts} =
+      subschema
+      |> Enum.map(&filters_for(&1, main_call, resource, pointer, opts))
+      |> Enum.unzip()
 
-    {[], guarded_clauses ++ [quote do
-      defp unquote(fun(filter, "properties"))(seen, {_path, _key, _value}) do
-        seen
+    negative =
+      if opts[:tracked] do
+        {:ok, false}
+      else
+        :ok
       end
-    end] ++ tests}
+
+    quote do
+      unquote(subfilters)
+      defp unquote(main_call)(_, _), do: unquote(negative)
+      unquote(contexts)
+    end
+  end
+
+  defp filters_for({key, _schema}, main_call, resource, pointer, opts) do
+    context_opts = Tools.scrub(opts)
+    context_pointer = JsonPointer.join(pointer, key)
+    context_call = Tools.call(resource, context_pointer, context_opts)
+
+    subfilter =
+      if opts[:tracked] do
+        quote do
+          defp unquote(main_call)({unquote(key), value}, path) do
+            require Exonerate.Tools
+
+            case unquote(context_call)(value, Path.join(path, unquote(key))) do
+              :ok -> {:ok, true}
+              Exonerate.Tools.error_match(error) -> error
+            end
+          end
+        end
+      else
+        quote do
+          defp unquote(main_call)({unquote(key), value}, path) do
+            unquote(context_call)(value, Path.join(path, unquote(key)))
+          end
+        end
+      end
+
+    context =
+      quote do
+        require Exonerate.Context
+
+        Exonerate.Context.filter(
+          unquote(resource),
+          unquote(context_pointer),
+          unquote(context_opts)
+        )
+      end
+
+    {subfilter, context}
   end
 end

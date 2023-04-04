@@ -25,23 +25,25 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
 
   describe "basic array type matching" do
     test "an array" do
-      assert :ok = ~s([1, 2, 3, 4, 5])
-      |> Jason.decode!
-      |> Array.array
+      assert :ok =
+               ~s([1, 2, 3, 4, 5])
+               |> Jason.decode!()
+               |> Array.array()
     end
 
     test "different types of values are ok" do
-      assert :ok = ~s([3, "different", { "types" : "of values" }])
-      |> Jason.decode!
-      |> Array.array
+      assert :ok =
+               ~s([3, "different", { "types" : "of values" }])
+               |> Jason.decode!()
+               |> Array.array()
     end
 
     test "object doesn't match array" do
       assert {:error, list} = Array.array(%{"Not" => "an array"})
 
-      assert list[:schema_pointer] == "/type"
+      assert list[:absolute_keyword_location] == "#/type"
       assert list[:error_value] == %{"Not" => "an array"}
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -54,68 +56,79 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :items, """
-    {
-      "type": "array",
-      "items": {
-        "type": "number"
+    Exonerate.function_from_string(
+      :def,
+      :items,
+      """
+      {
+        "type": "array",
+        "items": {
+          "type": "number"
+        }
       }
-    }
-    """)
+      """
+    )
 
-    Exonerate.function_from_string(:def, :contains, """
-    {
-      "type": "array",
-      "contains": {
-        "type": "number"
+    Exonerate.function_from_string(
+      :def,
+      :contains,
+      """
+      {
+        "type": "array",
+        "contains": {
+          "type": "number"
+        }
       }
-    }
-    """)
-
+      """
+    )
   end
 
   describe "basic array items matching" do
     test "an array of numbers" do
-      assert :ok = ~s([1, 2, 3, 4, 5])
-      |> Jason.decode!
-      |> ListValidation.items
+      assert :ok =
+               ~s([1, 2, 3, 4, 5])
+               |> Jason.decode!()
+               |> ListValidation.items()
     end
 
     test "one non-number ruins the party" do
       assert {:error, list} = ListValidation.items([1, 2, "3", 4, 5])
 
-      assert list[:schema_pointer] == "/items/type"
+      assert list[:absolute_keyword_location] == "#/items/type"
       assert list[:error_value] == "3"
-      assert list[:json_pointer] == "/2"
+      assert list[:instance_location] == "/2"
     end
 
     test "an empty array passes" do
-      assert :ok = ~s([])
-      |> Jason.decode!
-      |> ListValidation.items
+      assert :ok =
+               ~s([])
+               |> Jason.decode!()
+               |> ListValidation.items()
     end
   end
 
   describe "basic array contains matching" do
     test "a single number is enough to make it pass" do
-      assert :ok = ~s(["life", "universe", "everything", 42])
-      |> Jason.decode!
-      |> ListValidation.contains
+      assert :ok =
+               ~s(["life", "universe", "everything", 42])
+               |> Jason.decode!()
+               |> ListValidation.contains()
     end
 
     test "it fails with no numbers" do
-      assert  {:error, list} =
-          ListValidation.contains(["life", "universe", "everything", "forty-two"])
+      assert {:error, list} =
+               ListValidation.contains(["life", "universe", "everything", "forty-two"])
 
-      assert list[:schema_pointer] == "/contains"
+      assert list[:absolute_keyword_location] == "#/contains"
       assert list[:error_value] == ["life", "universe", "everything", "forty-two"]
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
 
     test "all numbers is ok" do
-      assert :ok = ~s([1, 2, 3, 4, 5])
-      |> Jason.decode!
-      |> ListValidation.items
+      assert :ok =
+               ~s([1, 2, 3, 4, 5])
+               |> Jason.decode!()
+               |> ListValidation.items()
     end
   end
 
@@ -150,131 +163,152 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     }
     """)
 
-    Exonerate.function_from_string(:def, :tuple_noadditional, """
-    {
-      "type": "array",
-      "items": [
-        {
-          "type": "number"
-        },
-        {
-          "type": "string"
-        },
-        {
-          "type": "string",
-          "enum": ["Street", "Avenue", "Boulevard"]
-        },
-        {
-          "type": "string",
-          "enum": ["NW", "NE", "SW", "SE"]
-        }
-      ],
-      "additionalItems": false
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :tuple_noadditional,
+      """
+      {
+        "type": "array",
+        "items": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "string",
+            "enum": ["Street", "Avenue", "Boulevard"]
+          },
+          {
+            "type": "string",
+            "enum": ["NW", "NE", "SW", "SE"]
+          }
+        ],
+        "additionalItems": false
+      }
+      """
+    )
 
-
-    Exonerate.function_from_string(:def, :tuple_additional_with_property,
-    """
-    {
-      "type": "array",
-      "items": [
-        {
-          "type": "number"
-        },
-        {
-          "type": "string"
-        },
-        {
-          "type": "string",
-          "enum": ["Street", "Avenue", "Boulevard"]
-        },
-        {
-          "type": "string",
-          "enum": ["NW", "NE", "SW", "SE"]
-        }
-      ],
-      "additionalItems": { "type": "string" }
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :tuple_additional_with_property,
+      """
+      {
+        "type": "array",
+        "items": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "string",
+            "enum": ["Street", "Avenue", "Boulevard"]
+          },
+          {
+            "type": "string",
+            "enum": ["NW", "NE", "SW", "SE"]
+          }
+        ],
+        "additionalItems": { "type": "string" }
+      }
+      """
+    )
   end
 
   describe "tuple validation" do
     test "a single number is enough to make it pass" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW"])
-      |> Jason.decode!
-      |> TupleValidation.tuple
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue", "NW"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple()
     end
 
     test "drive is not an acceptable street type" do
-      assert  {:error, list} = TupleValidation.tuple([24, "Sussex", "Drive"])
+      assert {:error, list} = TupleValidation.tuple([24, "Sussex", "Drive"])
 
-      assert list[:schema_pointer] == "/items/2/enum"
+      assert list[:absolute_keyword_location] == "#/items/2/enum"
       assert list[:error_value] == "Drive"
-      assert list[:json_pointer] == "/2"
+      assert list[:instance_location] == "/2"
     end
 
     test "address is missing a street number" do
-      assert  {:error, list} =
-        TupleValidation.tuple(["Palais de l'Élysée"])
+      assert {:error, list} = TupleValidation.tuple(["Palais de l'Élysée"])
 
-      assert list[:schema_pointer] == "/items/0/type"
+      assert list[:absolute_keyword_location] == "#/items/0/type"
       assert list[:error_value] == "Palais de l'Élysée"
-      assert list[:json_pointer] == "/0"
+      assert list[:instance_location] == "/0"
     end
 
     test "it's ok to not have all the items" do
-      assert :ok = ~s([10, "Downing", "Street"])
-      |> Jason.decode!
-      |> TupleValidation.tuple
+      assert :ok =
+               ~s([10, "Downing", "Street"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple()
     end
 
     test "it's ok to have extra items" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
-      |> Jason.decode!
-      |> TupleValidation.tuple
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple()
     end
   end
 
   describe "tuple validation can happen with additionalItems" do
     test "the basic still passes" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW"])
-      |> Jason.decode!
-      |> TupleValidation.tuple_noadditional
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue", "NW"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple_noadditional()
     end
 
     test "it is ok to not provide all the items" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue"])
-      |> Jason.decode!
-      |> TupleValidation.tuple_noadditional
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple_noadditional()
     end
 
     test "it is not ok to provide extra items" do
-      assert  {:error, list} =
-        TupleValidation.tuple_noadditional(
-          [1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+      assert {:error, list} =
+               TupleValidation.tuple_noadditional([
+                 1600,
+                 "Pennsylvania",
+                 "Avenue",
+                 "NW",
+                 "Washington"
+               ])
 
-      assert list[:schema_pointer] == "/additionalItems"
+      assert list[:absolute_keyword_location] == "#/additionalItems"
       assert list[:error_value] == "Washington"
-      assert list[:json_pointer] == "/4"
+      assert list[:instance_location] == "/4"
     end
   end
 
   describe "tuple validation can happen with additionalItems and properties" do
     test "extra strings are ok" do
-      assert :ok = ~s([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
-      |> Jason.decode!
-      |> TupleValidation.tuple_additional_with_property
+      assert :ok =
+               ~s([1600, "Pennsylvania", "Avenue", "NW", "Washington"])
+               |> Jason.decode!()
+               |> TupleValidation.tuple_additional_with_property()
     end
 
     test "but not extra numbers" do
       assert {:error, list} =
-        TupleValidation.tuple_additional_with_property(
-          [1600, "Pennsylvania", "Avenue", "NW", 20500])
+               TupleValidation.tuple_additional_with_property([
+                 1600,
+                 "Pennsylvania",
+                 "Avenue",
+                 "NW",
+                 20500
+               ])
 
-      assert list[:schema_pointer] == "/additionalItems/type"
+      assert list[:absolute_keyword_location] == "#/additionalItems/type"
       assert list[:error_value] == 20500
-      assert list[:json_pointer] == "/4"
+      assert list[:instance_location] == "/4"
     end
   end
 
@@ -300,18 +334,18 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     test "by length" do
       assert {:error, list} = Length.length([])
 
-      assert list[:schema_pointer] == "/minItems"
+      assert list[:absolute_keyword_location] == "#/minItems"
       assert list[:error_value] == []
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
 
       assert :ok == Length.length([1, 2])
       assert :ok == Length.length([1, 2, 3])
 
       assert {:error, list} = Length.length([1, 2, 3, 4])
 
-      assert list[:schema_pointer] == "/maxItems"
+      assert list[:absolute_keyword_location] == "#/maxItems"
       assert list[:error_value] == [1, 2, 3, 4]
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
@@ -324,12 +358,16 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :unique, """
-    {
-      "type": "array",
-      "uniqueItems": true
-    }
-    """)
+    Exonerate.function_from_string(
+      :def,
+      :unique,
+      """
+      {
+        "type": "array",
+        "uniqueItems": true
+      }
+      """
+    )
   end
 
   describe "array uniqueness works" do
@@ -338,14 +376,13 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
 
       assert {:error, list} = Uniqueness.unique([1, 2, 3, 3, 4])
 
-      assert list[:schema_pointer] == "/uniqueItems"
+      assert list[:absolute_keyword_location] == "#/uniqueItems"
       assert list[:error_value] == 3
-      assert list[:json_pointer] == "/3"
+      assert list[:instance_location] == "/3"
     end
 
     test "empty array always passes" do
       assert :ok = Uniqueness.unique([])
     end
   end
-
 end

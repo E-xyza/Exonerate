@@ -1,42 +1,31 @@
 # Exonerate
 
-**A JSONSchema -> Elixir macro**
+**A JSONSchema -> Elixir compiler**
+
+## JsonSchema support scope:
 
 Currently supports JSONSchema drafts 4, 6, 7, 2019, 2020.  *except:*
 
-- integer filters do not match exact integer floating point values.
 - multipleOf is not supported for number types.  This is because
-elixir does not support a floating point remainder guard, and also
-because it is impossible for a floating point to guarantee sane results
-(e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
-- currently remoteref is not supported.
-- 'definitions' is disabled in pre-draft-7, for now.  Please use absolute refs.
+  elixir does not support a floating point remainder guard, and also
+  because it is impossible for a floating point to guarantee sane results
+  (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
+- id fields with fragments in their uri identifier
+- dynamicRefs and anchors.
+- contentMediaType, contentEncoding:
 
-Works in progress:
+  Because Exonerate doesn't return the validated structured data, validating based
+  on these filters will likely require a costly decode/parse step whose results will
+  be immediately thrown away.
 
-- support for remoteref
-- support for unevaluatedItems, unevaluatedProperties
-- support for contentMediaType
-- support for contentEncoding
-- support for named anchors
-- better uri support
-- support for function_from_map
-- support for more formatted strings
+- dictionaries
 
 Note:
+
 - by default, ALL strings are considered to be invalid unless they are valid
-  UTF-8 encodings and will be validated.  If you require a raw binary, (for example
+  UTF-8 encodings and will be validated.  If you require a raw binary, for example
   if you are ingesting raw data in `multipart/form-encoded`, use the
   `{"format": "binary"}` filter on your string.
-- some parts of the public API e.g. function_from_* options may change to better
-  suit the standard.
-
-String formatting included:
-- date-time
-- date
-- time
-- ipv4
-- ipv6
 
 ## Installation
 
@@ -45,7 +34,7 @@ Add the following lines to your mix.exs
 ```elixir
   defp deps do
     [
-      {:exonerate, "~> 0.1", runtime: false},
+      {:exonerate, "~> 0.3", runtime: false},
     ]
   end
 ```
@@ -53,13 +42,9 @@ Add the following lines to your mix.exs
 ## Quick Start
 
 ```elixir
-
 defmodule SchemaModule do
   require Exonerate
 
-  @doc """
-  validates our input
-  """
   Exonerate.function_from_string(:def, :validate_input, """
   {
     "type":"object",
@@ -70,16 +55,16 @@ defmodule SchemaModule do
   """)
 end
 ```
-```
+
+```elixir
 iex> SchemaModule.validate_input("some string")
-{:error, schema_pointer: "#", error_value: "some string", json_pointer: "#/parameter"}}
+{:error, error_value: "some string", instance_location: "/", absolute_keyword_location: "#/type",}
 
 iex> SchemaModule.validate_input(%{"parameter" => "2"})
-{:error, schema_pointer: "#/properties/parameter", error_value: "2", json_pointer: "#/parameter"}}
+{:error, error_value: "2", instance_location: "/parameter", absolute_keyword_location: "#/properties/parameter/type", }
 
 iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok
-
 ```
 
 ## Licensing notes

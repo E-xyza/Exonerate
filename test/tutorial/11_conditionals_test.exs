@@ -5,7 +5,6 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
   @moduletag :tutorial
 
   defmodule PropertyDependencies do
-
     @moduledoc """
     tests from:
 
@@ -14,27 +13,29 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :dependency1,
-    """
-    {
-      "type": "object",
+    Exonerate.function_from_string(
+      :def,
+      :dependency1,
+      """
+      {
+        "type": "object",
 
-      "properties": {
-        "name": { "type": "string" },
-        "credit_card": { "type": "number" },
-        "billing_address": { "type": "string" }
-      },
+        "properties": {
+          "name": { "type": "string" },
+          "credit_card": { "type": "number" },
+          "billing_address": { "type": "string" }
+        },
 
-      "required": ["name"],
+        "required": ["name"],
 
-      "dependencies": {
-        "credit_card": ["billing_address"]
+        "dependencies": {
+          "credit_card": ["billing_address"]
+        }
       }
-    }
-    """)
+      """
+    )
 
-    Exonerate.function_from_string(:def, :dependency2,
-    """
+    Exonerate.function_from_string(:def, :dependency2, """
     {
       "type": "object",
 
@@ -77,55 +78,57 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
 
   describe "matching one-way dependency" do
     test "meeting dependency matches" do
-      assert :ok = @propdependency1
-      |> Jason.decode!
-      |> PropertyDependencies.dependency1
+      assert :ok =
+               @propdependency1
+               |> Jason.decode!()
+               |> PropertyDependencies.dependency1()
     end
+
     test "failing to meet dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:error, list} =
-        PropertyDependencies.dependency1(propdependency2)
+      assert {:error, list} = PropertyDependencies.dependency1(propdependency2)
 
-      assert list[:schema_pointer] == "/dependencies/credit_card/0"
+      assert list[:absolute_keyword_location] == "#/dependencies/credit_card/0"
       assert list[:error_value] == propdependency2
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
+
     test "no dependency doesn't need to be met" do
-      assert :ok = @propdependency3
-      |> Jason.decode!
-      |> PropertyDependencies.dependency1
+      assert :ok =
+               @propdependency3
+               |> Jason.decode!()
+               |> PropertyDependencies.dependency1()
     end
+
     test "dependency is one-way" do
-      assert :ok = @propdependency4
-      |> Jason.decode!
-      |> PropertyDependencies.dependency1
+      assert :ok =
+               @propdependency4
+               |> Jason.decode!()
+               |> PropertyDependencies.dependency1()
     end
   end
 
   describe "matching two-way dependency" do
     test "one-way dependency mismatches" do
       propdependency2 = Jason.decode!(@propdependency2)
-      assert {:error, list} =
-        PropertyDependencies.dependency2(propdependency2)
+      assert {:error, list} = PropertyDependencies.dependency2(propdependency2)
 
-      assert list[:schema_pointer] == "/dependencies/credit_card/0"
+      assert list[:absolute_keyword_location] == "#/dependencies/credit_card/0"
       assert list[:error_value] == propdependency2
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
 
     test "dependency is now two-way" do
       propdependency4 = Jason.decode!(@propdependency4)
-      assert {:error, list} =
-        PropertyDependencies.dependency2(propdependency4)
+      assert {:error, list} = PropertyDependencies.dependency2(propdependency4)
 
-      assert list[:schema_pointer] == "/dependencies/billing_address/0"
+      assert list[:absolute_keyword_location] == "#/dependencies/billing_address/0"
       assert list[:error_value] == propdependency4
-      assert list[:json_pointer] == "/"
+      assert list[:instance_location] == "/"
     end
   end
 
   defmodule SchemaDependencies do
-
     @moduledoc """
     tests from:
 
@@ -134,29 +137,31 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
     """
     require Exonerate
 
-    Exonerate.function_from_string(:def, :schemadependency,
-    """
-    {
-      "type": "object",
+    Exonerate.function_from_string(
+      :def,
+      :schemadependency,
+      """
+      {
+        "type": "object",
 
-      "properties": {
-        "name": { "type": "string" },
-        "credit_card": { "type": "number" }
-      },
+        "properties": {
+          "name": { "type": "string" },
+          "credit_card": { "type": "number" }
+        },
 
-      "required": ["name"],
+        "required": ["name"],
 
-      "dependencies": {
-        "credit_card": {
-          "properties": {
-            "billing_address": { "type": "string" }
-          },
-          "required": ["billing_address"]
+        "dependencies": {
+          "credit_card": {
+            "properties": {
+              "billing_address": { "type": "string" }
+            },
+            "required": ["billing_address"]
+          }
         }
       }
-    }
-    """)
-
+      """
+    )
   end
 
   @schemadependency1 """
@@ -181,23 +186,26 @@ defmodule ExonerateTest.Tutorial.ConditionalsTest do
 
   describe "matching schema dependency" do
     test "full compliance works" do
-      assert :ok = @schemadependency1
-      |> Jason.decode!
-      |> SchemaDependencies.schemadependency
+      assert :ok =
+               @schemadependency1
+               |> Jason.decode!()
+               |> SchemaDependencies.schemadependency()
     end
+
     test "partial compliance does not work" do
       schemadependency2 = Jason.decode!(@schemadependency2)
-      assert {:error, list} =
-        SchemaDependencies.schemadependency(schemadependency2)
+      assert {:error, list} = SchemaDependencies.schemadependency(schemadependency2)
 
-      assert list[:schema_pointer] == "/dependencies/credit_card/required/0"
-      assert list[:error_value] == %{"credit_card" => 5555555555555555, "name" => "John Doe"}
-      assert list[:json_pointer] == "/"
+      assert list[:absolute_keyword_location] == "#/dependencies/credit_card/required/0"
+      assert list[:error_value] == %{"credit_card" => 5_555_555_555_555_555, "name" => "John Doe"}
+      assert list[:instance_location] == "/"
     end
+
     test "omitting a trigger works" do
-      assert :ok = @schemadependency3
-      |> Jason.decode!
-      |> SchemaDependencies.schemadependency
+      assert :ok =
+               @schemadependency3
+               |> Jason.decode!()
+               |> SchemaDependencies.schemadependency()
     end
   end
 end

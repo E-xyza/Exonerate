@@ -1,48 +1,55 @@
 defmodule Exonerate.Type.Number do
   @moduledoc false
 
-  # boilerplate!!
   @behaviour Exonerate.Type
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Filter
+  # note this module ONLY implements "float".  If something has the "number" type declaration
+  # it will implement both Number and Integer, this is handled at the Context level.
+
+  alias Exonerate.Combining
   alias Exonerate.Tools
-  alias Exonerate.Validator
 
-  import Validator, only: [fun: 2]
+  @modules Combining.merge(%{
+             "maximum" => Exonerate.Filter.Maximum,
+             "minimum" => Exonerate.Filter.Minimum,
+             "exclusiveMaximum" => Exonerate.Filter.ExclusiveMaximum,
+             "exclusiveMinimum" => Exonerate.Filter.ExclusiveMinimum
+           })
 
-  defstruct [:context, filters: []]
-  @type t :: %__MODULE__{}
+  @filters Map.keys(@modules)
 
-  @validator_filters ~w(minimum maximum exclusiveMinimum exclusiveMaximum multipleOf)
-  @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
-
-  @impl true
-  @spec parse(Validator.t, Type.json) :: t
-  # draft <= 7 refs inhibit type-based analysis
-  def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
-    %__MODULE__{context: validator}
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def parse(validator, schema) do
-    %__MODULE__{context: validator}
-    |> Tools.collect(@validator_filters, fn
-      artifact, filter when is_map_key(schema, filter) ->
-        Filter.parse(artifact, @validator_modules[filter], schema)
-      artifact, _ -> artifact
-    end)
-  end
+  defp build_filter(context, resource, pointer, opts) do
+    # TODO: make sure that this actually detects the draft version before
+    # attempting to adjust the draft
 
-  @impl true
-  @spec compile(t) :: Macro.t
-  def compile(artifact) do
-    combining = Validator.combining(artifact.context, quote do number end, quote do path end)
+    filter_clauses =
+      for filter <- @filters, is_map_key(context, filter) do
+        filter_call =
+          Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+
+        quote do
+          :ok <- unquote(filter_call)(float, path)
+        end
+      end
+
+    call = Tools.call(resource, pointer, opts)
 
     quote do
-      defp unquote(fun(artifact, []))(number, path) when is_number(number) do
-        unquote_splicing(combining)
+      defp unquote(call)(float, path) when is_float(float) do
+        with unquote_splicing(filter_clauses) do
+          :ok
+        end
       end
     end
   end
+
+  # there are no accessories for "number" because these will ALWAYS be included in "integer".
+  defmacro accessories(_, _, _), do: []
 end

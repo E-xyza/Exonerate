@@ -1,26 +1,27 @@
 defmodule Exonerate.Filter.MaxProperties do
   @moduledoc false
+  alias Exonerate.Tools
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
-
-  alias Exonerate.Validator
-
-  import Validator, only: [fun: 2]
-
-  defstruct [:context, :count]
-
-  def parse(artifact, %{"maxProperties" => count}) do
-    %{artifact |
-      filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
+  # TODO: figure out draft-4 stuff
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{count: count}) do
-    {[quote do
-      defp unquote(fun(filter, []))(object, path) when is_map(object) and :erlang.map_size(object) > unquote(count) do
-        Exonerate.mismatch(object, path, guard: unquote("maxProperties"))
+  defp build_filter(maximum, resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(object, path) do
+        case object do
+          object when map_size(object) <= unquote(maximum) ->
+            :ok
+
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(object, unquote(resource), unquote(pointer), path)
+        end
       end
-    end], []}
+    end
   end
 end

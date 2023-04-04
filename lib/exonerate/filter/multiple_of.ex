@@ -1,28 +1,29 @@
 defmodule Exonerate.Filter.MultipleOf do
   @moduledoc false
-  
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Type.Integer
-  alias Exonerate.Type.Number
-  alias Exonerate.Validator
+  alias Exonerate.Tools
 
-  import Validator, only: [fun: 2]
+  # TODO: reenable the decision to force use with floats.
 
-  defstruct [:context, :factor]
-
-  def parse(artifact = %type{}, %{"multipleOf" => factor}) when is_integer(factor) and type in [Number, Integer]do
-    %{artifact | filters: [%__MODULE__{context: artifact.context, factor: factor} | artifact.filters]}
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{}) do
-    {[quote do
-      defp unquote(fun(filter, []))(integer, path)
-        when is_integer(integer) and rem(integer, unquote(filter.factor)) != 0 do
-          Exonerate.mismatch(integer, path, guard: "multipleOf")
+  defp build_filter(divisor, resource, pointer, opts) do
+    quote do
+      defp unquote(Tools.call(resource, pointer, opts))(integer, path) do
+        case integer do
+          number when rem(number, unquote(divisor)) === 0 ->
+            :ok
+
+          _ ->
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(integer, unquote(resource), unquote(pointer), path)
+        end
       end
-    end], []}
+    end
   end
 end

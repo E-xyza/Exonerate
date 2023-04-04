@@ -1,88 +1,224 @@
 defmodule Exonerate.Type.Array do
   @moduledoc false
-  # boilerplate!!
+
   @behaviour Exonerate.Type
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Filter
+  alias Exonerate.Combining
   alias Exonerate.Tools
-  alias Exonerate.Validator
+  alias Exonerate.Type.Array.Iterator
 
-  import Validator, only: [fun: 2]
+  @combining_modules Combining.modules()
+  @combining_filters Combining.filters()
 
-  defstruct [
-    :context,
-    :additional_items,
-    filters: [],
-    pipeline: [],
-    needs_array_in_accumulator: false,
-    needs_accumulator: false,
-    accumulator_init: %{},
-    accumulator_pipeline: [],
-    post_reduce_pipeline: []]
-
-  @type t :: %__MODULE__{}
-
-  # maxContains MUST precede contains so it is put onto the pipeline AFTER the contains
-  # reduction element.
-  # items MUST be last to detect the presence of prefixItems and also clear all filters
-  # in the items = false optimization.
-  @validator_filters ~w(minItems maxItems additionalItems prefixItems maxContains minContains contains uniqueItems items)
-  @validator_modules Map.new(@validator_filters, &{&1, Filter.from_string(&1)})
-
-  @impl true
-  @spec parse(Validator.t, Type.json) :: t
-  # draft <= 7 refs inhibit type-based analysis
-  def parse(validator = %{draft: draft}, %{"$ref" => _}) when draft in ~w(4 6 7) do
-    %__MODULE__{context: validator}
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def parse(validator, schema) do
-    %__MODULE__{context: validator}
-    |> Tools.collect(@validator_filters, fn
-      artifact, filter when is_map_key(schema, filter) ->
-        Filter.parse(artifact, @validator_modules[filter], schema)
-      artifact, _ -> artifact
-    end)
-  end
+  #########################################################
+  # trivial exception
 
-  @impl true
-  @spec compile(t) :: Macro.t
-  def compile(artifact) do
-    {accumulator_pipeline, index_accumulator} = if :index in Map.keys(artifact.accumulator_init) do
-      {
-        artifact.accumulator_pipeline ++ [fun(artifact, ":index")],
-        quote do
-          defp unquote(fun(artifact, ":index"))(acc, _) do
-            %{acc | index: acc.index + 1}
-          end
-        end
-      }
-    else
-      {artifact.accumulator_pipeline, :ok}
-    end
-
-    accumulator = if artifact.needs_array_in_accumulator do
-      quote do
-        Map.put(unquote(Macro.escape(artifact.accumulator_init)), :array, array)
-      end
-    else
-      Macro.escape(artifact.accumulator_init)
-    end
-
-    combining = Validator.combining(artifact.context, quote do array end, quote do path end)
+  def build_filter(%{"contains" => false}, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+    pointer = JsonPointer.join(pointer, "contains")
 
     quote do
-      defp unquote(fun(artifact, []))(array, path) when is_list(array) do
-        array
-        |> Enum.reduce(unquote(accumulator), fn item, acc ->
-          Exonerate.pipeline(acc, {path, item}, unquote(accumulator_pipeline))
-        end)
-        |> Exonerate.pipeline({path, array}, unquote(artifact.post_reduce_pipeline))
-        unquote_splicing(combining)
+      defp unquote(call)(array, path) when is_list(array) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(array, unquote(resource), unquote(pointer), path)
       end
-      unquote(index_accumulator)
     end
+  end
+
+  def build_filter(context, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
+    seen = needs_combining_seen?(context)
+
+    filter_clauses =
+      for filter <- @combining_filters, is_map_key(context, filter), reduce: [] do
+        calls -> calls ++ filter_clauses(resource, pointer, opts, filter, seen)
+      end
+
+    iterator_clause =
+      List.wrap(
+        if Iterator.mode(context, opts) do
+          iterator_clause(resource, pointer, opts, seen)
+        end
+      )
+
+    if seen or opts[:tracked] do
+      build_seen(call, filter_clauses, iterator_clause, opts)
+    else
+      build_trivial(call, filter_clauses, iterator_clause)
+    end
+  end
+
+  def build_seen(call, filter_clauses, iterator_clause, opts) do
+    clauses = filter_clauses ++ iterator_clause
+
+    return =
+      if opts[:tracked] do
+        quote do
+          {:ok, first_unseen_index}
+        end
+      else
+        :ok
+      end
+
+    quote do
+      defp unquote(call)(array, path) when is_list(array) do
+        first_unseen_index = 0
+
+        with unquote_splicing(clauses) do
+          unquote(return)
+        end
+      end
+    end
+  end
+
+  def build_trivial(call, filter_clauses, iterator_clause) do
+    clauses = filter_clauses ++ iterator_clause
+
+    quote do
+      defp unquote(call)(array, path) when is_list(array) do
+        with unquote_splicing(clauses) do
+          :ok
+        end
+      end
+    end
+  end
+
+  @seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
+
+  def needs_combining_seen?(context) do
+    is_map_key(context, "unevaluatedItems") and Enum.any?(@seen_filters, &is_map_key(context, &1))
+  end
+
+  defp filter_clauses(resource, pointer, opts, filter, true) when filter in @seen_filters do
+    filter_call =
+      Tools.call(
+        resource,
+        JsonPointer.join(pointer, Combining.adjust(filter)),
+        Keyword.put(opts, :tracked, :array)
+      )
+
+    quote do
+      [
+        {:ok, new_index} <- unquote(filter_call)(array, path),
+        first_unseen_index = max(first_unseen_index, new_index)
+      ]
+    end
+  end
+
+  defp filter_clauses(resource, pointer, opts, filter, _) do
+    filter_call = Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+
+    [
+      quote do
+        :ok <- unquote(filter_call)(array, path)
+      end
+    ]
+  end
+
+  defp iterator_clause(resource, pointer, opts, needs_combining_seen) do
+    call_opts =
+      if needs_combining_seen do
+        Keyword.put(opts, :tracked, :array)
+      else
+        opts
+      end
+
+    iterator_call = Tools.call(resource, pointer, :array_iterator, call_opts)
+
+    case {needs_combining_seen, opts[:tracked]} do
+      {true, :array} ->
+        quote do
+          [
+            {:ok, new_index} <- unquote(iterator_call)(array, path, first_unseen_index),
+            first_unseen_index = max(new_index, first_unseen_index)
+          ]
+        end
+
+      {true, _} ->
+        quote do
+          {:ok, _} <- unquote(iterator_call)(array, path, first_unseen_index)
+        end
+
+      {false, :array} ->
+        # TODO: the second line could be optimized away!
+        quote do
+          [
+            {:ok, new_index} <- unquote(iterator_call)(array, path),
+            first_unseen_index = max(first_unseen_index, new_index)
+          ]
+        end
+
+      {false, _} ->
+        quote do
+          :ok <- unquote(iterator_call)(array, path)
+        end
+    end
+  end
+
+  defmacro accessories(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_accessories(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
+
+  defp build_accessories(context, resource, pointer, opts) do
+    opts =
+      if needs_combining_seen?(context) or opts[:tracked] do
+        Keyword.merge(opts, only: ["array"], tracked: :array)
+      else
+        opts
+      end
+
+    build_tracked_filters(context, resource, pointer, opts) ++
+      build_iterator(context, resource, pointer, opts)
+  end
+
+  defp build_tracked_filters(context, resource, pointer, opts) do
+    # if we're tracked, then we need to rebuild all the filters, with the
+    # tracked appendage.
+    List.wrap(
+      if needs_combining_seen?(context) or opts[:tracked] do
+        for filter <- @seen_filters, is_map_key(context, filter) do
+          module = @combining_modules[filter]
+          pointer = JsonPointer.join(pointer, filter)
+
+          quote do
+            require unquote(module)
+            unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
+          end
+        end
+      end
+    )
+  end
+
+  defp build_iterator(context, resource, pointer, opts) do
+    List.wrap(
+      if Iterator.mode(context, opts) do
+        quote do
+          require Exonerate.Type.Array.Iterator
+
+          Exonerate.Type.Array.Iterator.filter(
+            unquote(resource),
+            unquote(pointer),
+            unquote(opts)
+          )
+
+          Exonerate.Type.Array.Iterator.accessories(
+            unquote(resource),
+            unquote(pointer),
+            unquote(opts)
+          )
+        end
+      end
+    )
   end
 end

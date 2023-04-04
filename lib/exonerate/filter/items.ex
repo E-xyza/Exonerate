@@ -1,141 +1,99 @@
 defmodule Exonerate.Filter.Items do
   @moduledoc false
+  alias Exonerate.Tools
 
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  defmacro filter(resource, pointer, opts) do
+    parent_pointer = JsonPointer.backtrack!(pointer)
 
-  alias Exonerate.Validator
-
-  import Validator, only: [fun: 2]
-
-  defstruct [:context, :schema, :additional_items, :prefix_size]
-
-  def parse(artifact = %{context: context}, %{"items" => true}) do
-    # true means any array is valid
-    # this header clause is provided as an optimization.
-    %{artifact | filters: [%__MODULE__{context: context, schema: true} | artifact.filters]}
+    __CALLER__
+    |> Tools.subschema(resource, parent_pointer)
+    |> build_filter(resource, parent_pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def parse(artifact = %{context: context}, schema = %{"items" => false}) do
-    # false means everything after prefixItems gets checked.
-    if prefix_items = schema["prefixItems"] do
-      filter = %__MODULE__{context: context, schema: false, prefix_size: length(prefix_items)}
-      %{artifact |
-        needs_accumulator: true,
-        accumulator_pipeline: [fun(artifact, "items") | artifact.accumulator_pipeline],
-        accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
-        filters: [filter  | artifact.filters]}
-    else
-      # this is provided as an optimization.
-      filter = %__MODULE__{context: context, schema: false, prefix_size: 0}
-      %{artifact | filters: [filter]}
+  # legacy "items" which is now "prefixItems"
+  defp build_filter(%{"items" => subschema}, resource, parent_pointer, opts)
+       when is_list(subschema) do
+    this_pointer = JsonPointer.join(parent_pointer, "items")
+
+    call = Tools.call(resource, this_pointer, opts)
+
+    {calls, filters} =
+      subschema
+      |> Enum.with_index(&build_filter(&1, &2, call, resource, this_pointer, opts))
+      |> Enum.unzip()
+
+    quote do
+      require Exonerate.Context
+      unquote(calls)
+      defp unquote(call)({item, _index}, path), do: :ok
+      unquote(filters)
     end
   end
 
-  def parse(artifact = %{context: context}, %{"items" => s}) when is_map(s) do
-    fun = fun(artifact, "items")
+  defp build_filter(context = %{"items" => subschema}, resource, parent_pointer, opts)
+       when is_map(subschema) or is_boolean(subschema) do
+    entrypoint_pointer = JsonPointer.join(parent_pointer, "items")
+    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
 
-    schema = Validator.parse(context.schema,
-      ["items" | context.pointer],
-      authority: context.authority,
-      format: context.format,
-      draft: context.draft)
+    context_opts = Tools.scrub(opts)
+    context_pointer = JsonPointer.join(parent_pointer, "items")
+    context_call = Tools.call(resource, context_pointer, context_opts)
 
-    %{artifact |
-      needs_accumulator: true,
-      accumulator_pipeline: [fun | artifact.accumulator_pipeline],
-      accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
-      filters: [
-        %__MODULE__{
-          context: context,
-          schema: schema} | artifact.filters]}
-  end
+    case context do
+      %{"prefixItems" => prefix} ->
+        prefix_length = length(prefix)
 
-  def parse(artifact = %{context: context}, %{"items" => s}) when is_list(s) do
-    fun = fun(artifact, "items")
+        quote do
+          defp unquote(entrypoint_call)({item, index}, path) when index < unquote(prefix_length),
+            do: :ok
 
-    schemas = Enum.map(0..(length(s) - 1),
-      &Validator.parse(context.schema,
-        ["#{&1}", "items" | context.pointer],
-        authority: context.authority,
-        format: context.format,
-        draft: context.draft))
+          defp unquote(entrypoint_call)({item, _index}, path) do
+            unquote(context_call)(item, path)
+          end
 
-    %{artifact |
-      needs_accumulator: true,
-      accumulator_pipeline: [fun | artifact.accumulator_pipeline],
-      accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
-      filters: [
-        %__MODULE__{
-          context: artifact.context,
-          schema: schemas,
-          additional_items: artifact.additional_items} | artifact.filters]}
-  end
+          require Exonerate.Context
 
-  def compile(%__MODULE__{schema: true}), do: {[], []}
-
-  def compile(filter = %__MODULE__{schema: false, prefix_size: 0}) do
-    {[quote do
-      defp unquote(fun(filter, []))(array, path) when is_list(array) and array != [] do
-        Exonerate.mismatch(array, path, guard: "items")
-      end
-    end], []}
-  end
-
-  def compile(filter = %__MODULE__{schema: false}) do
-    {[], [
-      quote do
-        defp unquote(fun(filter, "items"))(acc = %{index: index}, {path, array})
-          when index < unquote(filter.prefix_size) do
-          acc
+          Exonerate.Context.filter(
+            unquote(resource),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
         end
-        defp unquote(fun(filter, "items"))(%{index: index}, {path, array}) do
-          Exonerate.mismatch(array, path, guard: to_string(index))
-        end
-      end
-    ]}
-  end
 
-  def compile(filter = %__MODULE__{schema: schema}) when is_map(schema) do
-    {[], [
-      quote do
-        defp unquote(fun(filter, "items"))(acc, {path, item}) do
-          unquote(fun(filter, "items"))(item, Path.join(path, to_string(acc.index)))
-          acc
-        end
-        unquote(Validator.compile(schema))
-      end
-    ]}
-  end
+      _ ->
+        quote do
+          defp unquote(entrypoint_call)({item, _index}, path) do
+            unquote(context_call)(item, path)
+          end
 
-  def compile(filter = %__MODULE__{schema: schemas}) when is_list(schemas) do
-    {trampolines, children} = schemas
-    |> Enum.with_index()
-    |> Enum.map(fn {schema, index} ->
-      {quote do
-        defp unquote(fun(filter, "items"))(acc = %{index: unquote(index)}, {path, item}) do
-          unquote(fun(filter, ["items", to_string(index)]))(item, Path.join(path, unquote("#{index}")))
-          acc
-        end
-      end,
-      Validator.compile(schema)}
-    end)
-    |> Enum.unzip()
+          require Exonerate.Context
 
-    additional_item_filter = if filter.additional_items do
-      quote do
-        defp unquote(fun(filter, "items"))(acc = %{index: index}, {path, item}) do
-          unquote(fun(filter, "additionalItems"))(item, Path.join(path, to_string(index)))
-          acc
+          Exonerate.Context.filter(
+            unquote(resource),
+            unquote(context_pointer),
+            unquote(context_opts)
+          )
         end
-      end
-    else
-      quote do
-        defp unquote(fun(filter, "items"))(acc = %{index: _}, {_item, _path}), do: acc
-      end
     end
+  end
 
-    {[], trampolines ++ [additional_item_filter] ++ children}
+  defp build_filter(_, index, call, resource, pointer, opts) do
+    context_pointer = JsonPointer.join(pointer, "#{index}")
+    context_opts = Tools.scrub(opts)
+    context_call = Tools.call(resource, context_pointer, context_opts)
+
+    {quote do
+       defp unquote(call)({item, unquote(index)}, path) do
+         unquote(context_call)(item, path)
+       end
+     end,
+     quote do
+       Exonerate.Context.filter(
+         unquote(resource),
+         unquote(context_pointer),
+         unquote(context_opts)
+       )
+     end}
   end
 end

@@ -1,39 +1,42 @@
 defmodule Exonerate.Filter.MinLength do
   @moduledoc false
-  
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
+  alias Exonerate.Tools
 
-  import Validator, only: [fun: 2]
-
-  defstruct [:context, :length, :format_binary]
-
-  def parse(artifact = %Exonerate.Type.String{}, %{"minLength" => length}) do
-    pipeline = List.wrap(unless artifact.format_binary, do: fun(artifact, "minLength"))
-
-    %{artifact |
-      pipeline: pipeline ++ artifact.pipeline,
-      filters: [%__MODULE__{context: artifact.context, length: length, format_binary: artifact.format_binary} | artifact.filters]}
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(__CALLER__, resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{format_binary: true}) do
-    {[quote do
-      defp unquote(fun(filter, []))(string, path) when is_binary(string) and byte_size(string) < unquote(filter.length) do
-        Exonerate.mismatch(string, path, guard: "minLength")
-      end
-    end],[]}
-  end
-  def compile(filter = %__MODULE__{}) do
-    {[], [quote do
-      defp unquote(fun(filter, "minLength"))(string, path) do
-        if String.length(string) < unquote(filter.length) do
-          Exonerate.mismatch(string, path)
+  defp build_filter(min, caller, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
+    case Tools.parent(caller, resource, pointer) do
+      %{"format" => "binary"} ->
+        quote do
+          defp unquote(call)(string, path) when byte_size(string) < unquote(min) do
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
+          end
+
+          defp unquote(call)(string, path), do: :ok
         end
-        string
-      end
-    end]}
+
+      _ ->
+        quote do
+          defp unquote(call)(string, path) do
+            case String.length(string) do
+              length when length >= unquote(min) ->
+                :ok
+
+              _ ->
+                require Exonerate.Tools
+                Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
+            end
+          end
+        end
+    end
   end
 end

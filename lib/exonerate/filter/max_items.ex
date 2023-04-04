@@ -1,35 +1,25 @@
 defmodule Exonerate.Filter.MaxItems do
   @moduledoc false
-  
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
 
-  alias Exonerate.Validator
-  defstruct [:context, :count]
+  alias Exonerate.Tools
 
-  import Validator, only: [fun: 2]
-
-  def parse(artifact, %{"maxItems" => count}) do
-
-    %{artifact |
-      needs_accumulator: true,
-      needs_array_in_accumulator: true,
-      accumulator_pipeline: [fun(artifact, "maxItems") | artifact.accumulator_pipeline],
-      accumulator_init: Map.put(artifact.accumulator_init, :index, 0),
-      filters: [%__MODULE__{context: artifact.context, count: count} | artifact.filters]}
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{count: count}) do
-    {[], [
-      quote do
-        defp unquote(fun(filter, "maxItems"))(acc, {path, _}) do
-          if acc.index >= unquote(count) do
-            Exonerate.mismatch(acc.array, path)
-          end
-          acc
-        end
+  defp build_filter(limit, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
+    quote do
+      defp unquote(call)(array, index, path) when index >= unquote(limit) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(array, unquote(resource), unquote(pointer), path)
       end
-    ]}
+
+      defp unquote(call)(_, _, _), do: :ok
+    end
   end
 end

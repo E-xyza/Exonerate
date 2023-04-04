@@ -1,30 +1,26 @@
 defmodule Exonerate.Filter.Pattern do
   @moduledoc false
-  
-  @behaviour Exonerate.Filter
-  @derive Exonerate.Compiler
-  @derive {Inspect, except: [:context]}
+  alias Exonerate.Tools
 
-  alias Exonerate.Validator
-
-  import Validator, only: [fun: 2]
-
-  defstruct [:context, :pattern]
-
-  def parse(artifact = %Exonerate.Type.String{}, %{"pattern" => pattern}) do
-    %{artifact |
-      pipeline: [fun(artifact, "pattern") | artifact.pipeline],
-      filters: [%__MODULE__{context: artifact.context, pattern: pattern} | artifact.filters]}
+  defmacro filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
   end
 
-  def compile(filter = %__MODULE__{}) do
-    {[quote do
-      defp unquote(fun(filter, "pattern"))(string, path) do
-        unless Regex.match?(sigil_r(<<unquote(filter.pattern)>>, []), string) do
-          Exonerate.mismatch(string, path)
+  defp build_filter(pattern, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
+    quote do
+      defp unquote(call)(string, path) do
+        if Regex.match?(sigil_r(<<unquote(pattern)>>, []), string) do
+          :ok
+        else
+          require Exonerate.Tools
+          Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
         end
-        string
       end
-    end], []}
+    end
   end
 end
