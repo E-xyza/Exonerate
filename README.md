@@ -2,7 +2,7 @@
 
 **A JSONSchema -> Elixir compiler**
 
-![example workflow](https://github.com/ityonemo/exonerate/actions/workflows/elixir.yml/badge.svg)
+![example workflow](https://github.com/E-xyza/exonerate/actions/workflows/elixir.yml/badge.svg)
 
 ## Documentation
 
