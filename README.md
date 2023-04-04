@@ -2,6 +2,8 @@
 
 **A JSONSchema -> Elixir compiler**
 
+![example workflow](https://github.com/ityonemo/exonerate/actions/workflows/elixir.yml/badge.svg)
+
 ## JsonSchema support scope:
 
 Currently supports JSONSchema drafts 4, 6, 7, 2019, 2020.  *except:*
