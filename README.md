@@ -6,12 +6,11 @@
 
 Currently supports JSONSchema drafts 4, 6, 7, 2019, 2020.  *except:*
 
-- integer filters do not match exact integer floating point values.
 - multipleOf is not supported for number types.  This is because
   elixir does not support a floating point remainder guard, and also
   because it is impossible for a floating point to guarantee sane results
   (e.g. for IEEE Float64, `1.2 / 0.1 != 12`)
-- 'definitions' is disabled in pre-draft-7, for now.  Please use absolute refs.
+- id fields with fragments in their uri identifier
 - dynamicRefs and anchors.
 - contentMediaType, contentEncoding:
 
