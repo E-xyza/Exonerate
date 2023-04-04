@@ -114,12 +114,13 @@ defmodule Exonerate.Remote do
       |> to_string
       |> Req.get!(decode_body: false)
 
-    content_type = if List.keyfind(headers, "content-type", 0) do
-      List.keyfind(headers, "content-type", 0)
-      |> elem(1)
-      |> String.split(";")
-      |> List.first()
-    end
+    content_type =
+      if List.keyfind(headers, "content-type", 0) do
+        List.keyfind(headers, "content-type", 0)
+        |> elem(1)
+        |> String.split(";")
+        |> List.first()
+      end
 
     {body, content_type}
   end

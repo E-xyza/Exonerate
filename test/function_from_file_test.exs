@@ -11,15 +11,14 @@ defmodule ExonerateTest.FunctionFromFileTest do
     assert {:error, _} = foo([])
   end
 
-
-   Exonerate.function_from_file(
+  Exonerate.function_from_file(
     :def,
     :bar,
     "test/assets/basic.yaml"
-   )
+  )
 
-   test "bar" do
+  test "bar" do
     assert :ok = bar("bar")
     assert {:error, _} = bar(42)
-   end
+  end
 end

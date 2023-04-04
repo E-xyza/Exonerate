@@ -265,10 +265,11 @@ defmodule Exonerate do
   """
   defmacro function_from_string(type, function_name, schema_ast, opts \\ []) do
     # expand literals (aliases) in ast.
-    opts = opts
-    |> Macro.expand_literals(__CALLER__)
-    |> Keyword.put_new(:content_type, "application/json")
-    |> Tools.set_decoders
+    opts =
+      opts
+      |> Macro.expand_literals(__CALLER__)
+      |> Keyword.put_new(:content_type, "application/json")
+      |> Tools.set_decoders()
 
     # prewalk the schema text
     root_pointer = Tools.entrypoint(opts)
@@ -281,7 +282,15 @@ defmodule Exonerate do
 
     schema_string = Macro.expand(schema_ast, __CALLER__)
 
-    build_code(__CALLER__, schema_string, type, function_name, function_resource, root_pointer, opts)
+    build_code(
+      __CALLER__,
+      schema_string,
+      type,
+      function_name,
+      function_resource,
+      root_pointer,
+      opts
+    )
   end
 
   defp id_from(schema) when is_map(schema), do: schema["$id"] || schema["id"]
@@ -310,10 +319,11 @@ defmodule Exonerate do
 
   defmacro function_from_file(type, function_name, path, opts) do
     # expand literals (aliases) in ast.
-    opts = opts
-    |> Macro.expand_literals(__CALLER__)
-    |> set_content_type(path)
-    |> Tools.set_decoders
+    opts =
+      opts
+      |> Macro.expand_literals(__CALLER__)
+      |> set_content_type(path)
+      |> Tools.set_decoders()
 
     # prewalk the schema text
     root_pointer = Tools.entrypoint(opts)
@@ -327,10 +337,26 @@ defmodule Exonerate do
 
     # set decoder options for the schema
 
-    build_code(__CALLER__, schema_string, type, function_name, function_resource, root_pointer, opts)
+    build_code(
+      __CALLER__,
+      schema_string,
+      type,
+      function_name,
+      function_resource,
+      root_pointer,
+      opts
+    )
   end
 
-  defp build_code(caller, schema_string, type, function_name, function_resource, root_pointer, opts) do
+  defp build_code(
+         caller,
+         schema_string,
+         type,
+         function_name,
+         function_resource,
+         root_pointer,
+         opts
+       ) do
     schema = Schema.ingest(schema_string, caller, function_resource, opts)
 
     opts = Draft.set_opts(opts, schema)

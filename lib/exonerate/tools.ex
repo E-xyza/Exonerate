@@ -147,10 +147,12 @@ defmodule Exonerate.Tools do
   defp adjust_length(string) when byte_size(string) < 255, do: string
 
   defp adjust_length(string) do
-    # take the first 25 and last 25 characters and put the base16-hashed value in the middle
+    # take the first 10 and last 50 graphemes and put the base16-hashed value in the middle
+    # it is not possible that this will still be too long, even if someone goes nuts with
+    # UTF8-encoded content. (10 * 4) + 12 + 50 * 4 < 255.
     g = String.graphemes(string)
     first = Enum.take(g, 25)
-    last = g |> Enum.reverse() |> Enum.take(25) |> Enum.reverse()
+    last = g |> Enum.reverse() |> Enum.take(50) |> Enum.reverse()
     middle = Base.encode16(<<:erlang.phash2(string)::32>>)
     IO.iodata_to_binary([first, "..", middle, "..", last])
   end
@@ -211,7 +213,10 @@ defmodule Exonerate.Tools do
     |> Keyword.update!(:decoders, fn decoders ->
       decoders
       |> if(&(!List.keymember?(&1, "application/json", 0)), &[{"application/json", Jason} | &1])
-      |> if(&(!List.keymember?(&1, "application/yaml", 0)), &[{"application/yaml", YamlElixir} | &1])
+      |> if(
+        &(!List.keymember?(&1, "application/yaml", 0)),
+        &[{"application/yaml", YamlElixir} | &1]
+      )
     end)
   end
 
@@ -276,8 +281,12 @@ defmodule Exonerate.Tools do
 
   def content_type_from_extension(uri_or_path, opts) do
     case Path.extname("#{uri_or_path}") do
-      ".json" -> "application/json"
-      ".yaml" -> "application/yaml"
+      ".json" ->
+        "application/json"
+
+      ".yaml" ->
+        "application/yaml"
+
       other ->
         opts
         |> Keyword.get(:mimetype_mapping, [])
