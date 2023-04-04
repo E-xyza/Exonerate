@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.Items do
   end
 
   # legacy "items" which is now "prefixItems"
-  defp build_filter(context = %{"items" => subschema}, resource, parent_pointer, opts)
+  defp build_filter(%{"items" => subschema}, resource, parent_pointer, opts)
        when is_list(subschema) do
 
     this_pointer = JsonPointer.join(parent_pointer, "items")

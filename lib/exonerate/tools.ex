@@ -228,7 +228,7 @@ defmodule Exonerate.Tools do
   @doc """
   extends the standard library URI.merge to also be able to merge a relative URI
   """
-  def uri_merge(base = %{scheme: nil, userinfo: nil, host: nil, port: nil, path: path}, target) do
+  def uri_merge(%{scheme: nil, userinfo: nil, host: nil, port: nil, path: path}, target) do
     case target do
       # target is relative.
       %{scheme: nil, userinfo: nil, host: nil, port: nil} ->
