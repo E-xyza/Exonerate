@@ -1,4 +1,6 @@
 defmodule Exonerate.Type.Object.Iterator do
+  @moduledoc false
+
   alias Exonerate.Tools
   alias Exonerate.Type.Object
 

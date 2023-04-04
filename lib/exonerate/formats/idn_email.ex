@@ -1,19 +1,32 @@
 defmodule Exonerate.Formats.IdnEmail do
-  @moduledoc false
+  @moduledoc """
+  Module which provides a macro that generates special code for an idn-email
+  filter.  This is an email address with internationalization support.
 
-  # provides special code for an idn-email filter.  This only needs to be
-  # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~idn-email"
-  # which returns `:ok` or `{:error, reason}` if it is a valid
-  # idn-email.
-
-  # the format is governed by section 3.3 of RFC 6531:
-  # https://www.rfc-editor.org/rfc/rfc6531.txt
+  the format is governed by section 3.3 of RFC 6531:
+  https://www.rfc-editor.org/rfc/rfc6531.txt
+  """
 
   alias Exonerate.Cache
 
-  defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~idn-email") do
+  @doc """
+  Creates a `NimbleParsec` parser `~idn-email/1`.
+
+  This function returns `{:ok, ...}` if the passed string is a valid idn-email,
+  or `{:error, reason, ...}` if it is not.  See `NimbleParsec` for more
+  information on the return tuples.
+
+  The function will only be created once per module, and it is safe to call
+  the macro more than once.
+
+  ## Options:
+  - `:name` (atom): the name of the function to create.  Defaults to
+    `:"~idn-email"`
+  """
+  defmacro filter(opts \\ []) do
+    name = Keyword.get(opts, :name, :"~idn-email")
+
+    if Cache.register_context(__CALLER__.module, name) do
       quote do
         require Pegasus
         import NimbleParsec
@@ -86,7 +99,7 @@ defmodule Exonerate.Formats.IdnEmail do
         """)
 
         defcombinatorp(:IDN_EM_UTF8_non_ascii, utf8_char(not: 0..127))
-        defparsec(:"~idn-email", parsec(:IDN_EM_Mailbox))
+        defparsec(unquote(name), parsec(:IDN_EM_Mailbox))
       end
     end
   end

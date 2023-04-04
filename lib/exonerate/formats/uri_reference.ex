@@ -1,19 +1,31 @@
 defmodule Exonerate.Formats.UriReference do
-  @moduledoc false
+  @moduledoc """
+  Module which provides a macro that generates special code for a uri filter.
 
-  # provides special code for an uri reference filter.  This only needs to be
-  # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~uri-reference"
-  # which returns `:ok` or `{:error, reason}` if it is a valid
-  # uri reference.
-
-  # the format is governed by appendix A of RFC 3986:
-  # https://www.rfc-editor.org/rfc/rfc3986.txt
+  the format is governed by appendix A of RFC 3986:
+  https://www.rfc-editor.org/rfc/rfc3986.txt
+  """
 
   alias Exonerate.Cache
 
-  defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~uri-reference") do
+  @doc """
+  Creates a `NimbleParsec` parser `~uri-reference/1`.
+
+  This function returns `{:ok, ...}` if the passed string is a valid uri
+  reference, or `{:error, reason, ...}` if it is not.  See `NimbleParsec` for
+  more information on the return tuples.
+
+  The function will only be created once per module, and it is safe to call
+  the macro more than once.
+
+  ## Options:
+  - `:name` (atom): the name of the function to create.  Defaults to
+    `:"~uri-reference"`
+  """
+  defmacro filter(opts \\ []) do
+    name = Keyword.get(opts, :name, :"~uri-reference")
+
+    if Cache.register_context(__CALLER__.module, name) do
       quote do
         require Pegasus
         import NimbleParsec
@@ -102,7 +114,7 @@ defmodule Exonerate.Formats.UriReference do
         URI_REF_sub_delims      <- "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
         """)
 
-        defparsec(:"~uri-reference", parsec(:URI_REFERENCE) |> eos)
+        defparsec(unquote(name), parsec(:URI_REFERENCE) |> eos)
       end
     end
   end

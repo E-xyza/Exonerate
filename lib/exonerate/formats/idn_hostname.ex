@@ -1,21 +1,37 @@
 defmodule Exonerate.Formats.IdnHostname do
-  @moduledoc false
+  @moduledoc """
+  Module which provides a macro that generates special code for an idn-hostname
+  filter.  This is a hostname with internationalization support.
 
-  # provides special code for an idn hostname filter.  This only needs to be
-  # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~idn-hostname"
-  # which returns `:ok` or `{:error, reason}` if it is a valid
-  # idn hostname.
-
-  # the format is governed by section 2.1 of RFC 1123, which
-  # modifies RFC 952:
-  # https://www.rfc-editor.org/rfc/rfc1123.txt
-  # https://www.rfc-editor.org/rfc/rfc952.txt
+  the format is governed by section 2.1 of RFC 1123, which
+  modifies RFC 952:
+  https://www.rfc-editor.org/rfc/rfc1123.txt
+  https://www.rfc-editor.org/rfc/rfc952.txt
+  """
 
   alias Exonerate.Cache
 
-  defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~idn-hostname") do
+  @doc """
+  Creates a parser `~idn-hostname/1`.
+
+  This function returns `{:ok}` if the passed string is a valid idn hostname, or
+  `{:error, reason}` if it is not.
+
+  The function will only be created once per module, and it is safe to call
+  the macro more than once.
+
+  > ### Warning {: .warning}
+  >
+  > this function generates code that requires the `:idna` library.
+
+  ## Options:
+  - `:name` (atom): the name of the function to create.  Defaults to
+    `:"~idn-hostname"`
+  """
+  defmacro filter(opts \\ []) do
+    name = Keyword.get(opts, :name, :"~idn-hostname")
+
+    if Cache.register_context(__CALLER__.module, name) do
       quote do
         require Pegasus
         import NimbleParsec
@@ -31,15 +47,20 @@ defmodule Exonerate.Formats.IdnHostname do
         defcombinatorp(:IDN_HN_UTF8_non_ascii, utf8_char(not: 0..127))
         defparsec(:"~idn-hostname:entrypoint", parsec(:IDN_HN_hname) |> eos)
 
-        defp unquote(:"~idn-hostname")(string) when byte_size(string) > 253 do
+        defp unquote(name)(string) when byte_size(string) > 253 do
           {:error, "exceeds hostname length limit"}
         end
 
-        defp unquote(:"~idn-hostname")(string) do
+        defp unquote(name)(string) do
           segments = String.split(string, ".")
 
-          with {:ok, unicode} <- unquote(:"~idn-hostname:punycode-normalize")(segments) do
-            unquote(:"~idn-hostname:entrypoint")(IO.iodata_to_binary(unicode))
+          with {:ok, unicode} <- unquote(:"~idn-hostname:punycode-normalize")(segments),
+               tuple when elem(tuple, 0) === :ok <-
+                 unquote(:"~idn-hostname:entrypoint")(IO.iodata_to_binary(unicode)) do
+            {:ok}
+          else
+            tuple when elem(tuple, 0) === :error ->
+              {:error, elem(tuple, 1)}
           end
         end
 

@@ -1,22 +1,37 @@
 defmodule Exonerate.Formats.Iri do
-  @moduledoc false
+  @moduledoc """
+  Module which provides a macro that generates special code for an iri
+  filter.  This is an absolute uri with internationalization support.
 
-  # provides special code for an iri filter.  This only needs to be
-  # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~iri"
-  # which returns a boolean depending on whether the string is a valid
-  # iri.
+  If you require a relative uri, use `Exonerate.Formats.IriReference`.
 
-  # the format is governed by appendix A of RFC 3986, as modified by
-  # section 2.2 of RFC 3987
+  the format is governed by appendix A of RFC 3986, as modified by
+  section 2.2 of RFC 3987:
 
-  # https://www.rfc-editor.org/rfc/rfc3986.txt
-  # https://www.rfc-editor.org/rfc/rfc3987.txt
+  https://www.rfc-editor.org/rfc/rfc3986.txt
+  https://www.rfc-editor.org/rfc/rfc3987.txt
+  """
 
   alias Exonerate.Cache
 
-  defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~iri") do
+  @doc """
+  Creates a `NimbleParsec` parser `~iri/1`.
+
+  This function returns `{:ok, ...}` if the passed string is a valid iri,
+  or `{:error, reason, ...}` if it is not.  See `NimbleParsec` for
+  more information on the return tuples.
+
+  The function will only be created once per module, and it is safe to call
+  the macro more than once.
+
+  ## Options:
+  - `:name` (atom): the name of the function to create.  Defaults to
+    `:"~iri"`
+  """
+  defmacro filter(opts \\ []) do
+    name = Keyword.get(opts, :name, :"~iri")
+
+    if Cache.register_context(__CALLER__.module, name) do
       quote do
         require Pegasus
         import NimbleParsec
@@ -112,7 +127,7 @@ defmodule Exonerate.Formats.Iri do
           utf8_char([0xE000..0xF8FF, 0xF0000..0xFFFFD, 0x100000..0x10FFFD])
         )
 
-        defparsec(:"~iri", parsec(:IRI) |> eos)
+        defparsec(unquote(name), parsec(:IRI) |> eos)
       end
     end
   end

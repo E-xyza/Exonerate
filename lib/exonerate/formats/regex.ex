@@ -1,19 +1,32 @@
 defmodule Exonerate.Formats.Regex do
-  @moduledoc false
+  @moduledoc """
+  Module which provides a macro that generates special code for an json
+  pointer filter.
 
-  # provides special code for a regex filter.  This only needs to be
-  # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~regex"
-  # which returns `:ok` or `{:error, reason}` if it is a valid
-  # regex.
-
-  # the format is governed by the ECMA-262 standard:
-  # https://www.ecma-international.org/publications-and-standards/standards/ecma-262/
+  the format is governed by the ECMA-262 standard:
+  https://www.ecma-international.org/publications-and-standards/standards/ecma-262/
+  """
 
   alias Exonerate.Cache
 
-  defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~regex") do
+  @doc """
+  Creates a `NimbleParsec` parser `~regex/1`.
+
+  This function returns `{:ok, ...}` if the passed string is a valid regex,
+  or `{:error, reason, ...}` if it is not.  See `NimbleParsec` for more
+  information on the return tuples.
+
+  The function will only be created once per module, and it is safe to call
+  the macro more than once.
+
+  ## Options:
+  - `:name` (atom): the name of the function to create.  Defaults to
+    `:"~regex"`
+  """
+  defmacro filter(opts \\ []) do
+    name = Keyword.get(opts, :name, :"~regex")
+
+    if Cache.register_context(__CALLER__.module, name) do
       quote do
         require Pegasus
         import NimbleParsec
@@ -136,7 +149,7 @@ defmodule Exonerate.Formats.Regex do
 
         defcombinatorp(:ClassAtomSource, utf8_char(not: ?\\, not: ?], not: ?-))
 
-        defparsec(:"~regex", parsec(:Pattern) |> eos)
+        defparsec(unquote(name), parsec(:Pattern) |> eos)
       end
     end
   end

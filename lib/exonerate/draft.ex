@@ -1,4 +1,6 @@
 defmodule Exonerate.Draft do
+  @moduledoc false
+
   @all_drafts ~w(4 6 7 2019-09 2020-12)
 
   @spec opts_before?(String.t(), keyword) :: boolean

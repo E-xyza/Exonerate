@@ -1,19 +1,32 @@
 defmodule Exonerate.Formats.Duration do
-  @moduledoc false
+  @moduledoc """
+  Module which provides a macro that generates special code for a duration
+  filter.
 
-  # provides special code for a duration filter.  This only needs to be
-  # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~duration"
-  # which returns `:ok` or `{:error, reason}` if it is a valid
-  # duration.
-
-  # the format is governed by appendix A of RFC 3339:
-  # https://www.rfc-editor.org/rfc/rfc3339.txt
+  This format is governed by appendix A of RFC 3339:
+  https://www.rfc-editor.org/rfc/rfc3339.txt
+  """
 
   alias Exonerate.Cache
 
-  defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~duration") do
+  @doc """
+  Creates a `NimbleParsec` parser `~duration/1`.
+
+  This function returns `{:ok, ...}` if the passed string is a valid duration,
+  or `{:error, reason, ...}` if it is not.  See `NimbleParsec` for more
+  information on the return tuples.
+
+  The function will only be created once per module, and it is safe to call
+  the macro more than once.
+
+  ## Options:
+  - `:name` (atom): the name of the function to create.  Defaults to
+    `:"~duration"`
+  """
+  defmacro filter(opts \\ []) do
+    name = Keyword.get(opts, :name, :"~duration")
+
+    if Cache.register_context(__CALLER__.module, name) do
       quote do
         require Pegasus
         import NimbleParsec
@@ -35,7 +48,7 @@ defmodule Exonerate.Formats.Duration do
         duration   <- "P" (date / time / week)
         """)
 
-        defparsec(:"~duration", parsec(:duration) |> eos)
+        defparsec(unquote(name), parsec(:duration) |> eos)
       end
     end
   end

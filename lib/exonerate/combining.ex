@@ -1,4 +1,6 @@
 defmodule Exonerate.Combining do
+  @moduledoc false
+
   @modules %{
     "anyOf" => Exonerate.Combining.AnyOf,
     "allOf" => Exonerate.Combining.AllOf,

@@ -1,19 +1,32 @@
 defmodule Exonerate.Formats.Email do
-  @moduledoc false
+  @moduledoc """
+  Module which provides a macro that generates special code for a duration
+  filter.
 
-  # provides special code for an email filter.  This only needs to be
-  # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~email
-  # which returns `:ok` or `{:error, reason}` if it is a valid
-  # email.
-
-  # the format is governed by section 4.1.2 of RFC 5321:
-  # https://www.rfc-editor.org/rfc/rfc5321.txt
+  the format is governed by section 4.1.2 of RFC 5321:
+  https://www.rfc-editor.org/rfc/rfc5321.txt
+  """
 
   alias Exonerate.Cache
 
-  defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~email") do
+  @doc """
+  Creates a `NimbleParsec` parser `~email/1`.
+
+  This function returns `{:ok, ...}` if the passed string is a valid email, or
+  `{:error, reason, ...}` if it is not.  See `NimbleParsec` for more
+  information on the return tuples.
+
+  The function will only be created once per module, and it is safe to call
+  the macro more than once.
+
+  ## Options:
+  - `:name` (atom): the name of the function to create.  Defaults to
+    `:"~email"`
+  """
+  defmacro filter(opts \\ []) do
+    name = Keyword.get(opts, :name, :"~email")
+
+    if Cache.register_context(__CALLER__.module, name) do
       quote do
         require Pegasus
         import NimbleParsec
@@ -81,10 +94,7 @@ defmodule Exonerate.Formats.Email do
         EM_Mailbox  <-  EM_Local_part "@" ( EM_Domain / EM_address_literal )
         """)
 
-        defparsec(:"~email", parsec(:EM_Mailbox) |> eos)
-
-        defparsec(:testy, parsec(:EM_Mailbox) |> eos)
-        defparsec(:test2, parsec(:EM_Ldh_str) |> eos)
+        defparsec(unquote(name), parsec(:EM_Mailbox) |> eos)
       end
     end
   end

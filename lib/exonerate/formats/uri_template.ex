@@ -1,19 +1,31 @@
 defmodule Exonerate.Formats.UriTemplate do
-  @moduledoc false
+  @moduledoc """
+  Module which provides a macro that generates special code for a uri template.
 
-  # provides special code for an uri template filter.  This only needs to be
-  # dropped in once.  The macro uses the cache to track if it needs to
-  # be created more than once or not.  Creates a function "~uri-template"
-  # which returns `:ok` or `{:error, reason}` if it is a valid
-  # uri template.
-
-  # the format is governed by RFC 6570:
-  # https://www.rfc-editor.org/rfc/rfc6570.txt
+  the format is governed by RFC 6570:
+  https://www.rfc-editor.org/rfc/rfc6570.txt
+  """
 
   alias Exonerate.Cache
 
-  defmacro filter do
-    if Cache.register_context(__CALLER__.module, :"~uri-template") do
+  @doc """
+  Creates a `NimbleParsec` parser `~uri-template/1`.
+
+  This function returns `{:ok, ...}` if the passed string is a valid uri
+  template, or `{:error, reason, ...}` if it is not.  See `NimbleParsec` for
+  more information on the return tuples.
+
+  The function will only be created once per module, and it is safe to call
+  the macro more than once.
+
+  ## Options:
+  - `:name` (atom): the name of the function to create.  Defaults to
+    `:"~uri-template"`
+  """
+  defmacro filter(opts \\ []) do
+    name = Keyword.get(opts, :name, :"~uri-template")
+
+    if Cache.register_context(__CALLER__.module, name) do
       quote do
         require Pegasus
         import NimbleParsec
@@ -134,8 +146,7 @@ defmodule Exonerate.Formats.UriTemplate do
           utf8_char([0xE000..0xF8FF, 0xF0000..0xFFFFD, 0x100000..0x10FFFD])
         )
 
-        defparsec(:"~uri-template", parsec(:URI_TEMPLATE) |> eos)
-        defparsec(:testu, parsec(:URI_TMP_ihier_part))
+        defparsec(unquote(name), parsec(:URI_TEMPLATE) |> eos)
       end
     end
   end
