@@ -58,10 +58,10 @@ end
 
 ```elixir
 iex> SchemaModule.validate_input("some string")
-{:error, error_value: "some string", instance_location: "/", absolute_keyword_location: "#/type",}
+{:error, error_value: "some string", instance_location: "/", absolute_keyword_location: "#/type"}
 
 iex> SchemaModule.validate_input(%{"parameter" => "2"})
-{:error, error_value: "2", instance_location: "/parameter", absolute_keyword_location: "#/properties/parameter/type", }
+{:error, error_value: "2", instance_location: "/parameter", absolute_keyword_location: "#/properties/parameter/type"}
 
 iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok
