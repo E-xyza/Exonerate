@@ -16,6 +16,7 @@ defmodule Exonerate.MixProject do
         links: %{"GitHub" => "https://github.com/E-xyza/exonerate"}
       ],
       source_url: "https://github.com/E-xyza/exonerate/",
+      source_url_pattern: "https://github.com/E-xyza/exonerate/blob/master/%{path}#L%{line}",
       docs: [main: "Exonerate"],
       preferred_cli_env: [bench_lib: :bench, gpt4_helper: :bench, bench_gpt: :bench]
     ]
