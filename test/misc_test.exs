@@ -68,5 +68,32 @@ defmodule ExonerateTest.MiscTest do
     end
   end
 
-  test "array with minItems AND contains"
+  Exonerate.function_from_string(
+    :def,
+    :minitems_contains,
+    """
+    {
+      "minItems": 2,
+      "contains": {"const": "foo"}
+    }
+    """
+  )
+
+  describe "array with minItems AND contains" do
+    test "doesn't contain enough items" do
+      assert {:error, _} = minitems_contains(["foo"])
+    end
+
+    test "dosn't contain the right item" do
+      assert {:error, _} = minitems_contains(["bar", "baz"])
+    end
+
+    test "doesn't contain either the right item or enough items" do
+      assert {:error, _} = minitems_contains(["bar"])
+    end
+
+    test "contains the right item and enough items" do
+      assert :ok == minitems_contains(["foo", "bar"])
+    end
+  end
 end

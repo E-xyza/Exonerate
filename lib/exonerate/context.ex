@@ -210,7 +210,13 @@ defmodule Exonerate.Context do
       quote do
         defp unquote(Tools.call(resource, pointer, opts))(content, path) do
           require Exonerate.Tools
-          Exonerate.Tools.mismatch(content, unquote(resource), unquote(type_failure_pointer), path)
+
+          Exonerate.Tools.mismatch(
+            content,
+            unquote(resource),
+            unquote(type_failure_pointer),
+            path
+          )
         end
       end,
       opts

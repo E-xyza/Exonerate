@@ -48,7 +48,13 @@ defmodule Exonerate.Filter.Dependencies do
                 :ok
               else
                 require Exonerate.Tools
-                Exonerate.Tools.mismatch(content, unquote(resource), unquote(schema_pointer), path)
+
+                Exonerate.Tools.mismatch(
+                  content,
+                  unquote(resource),
+                  unquote(schema_pointer),
+                  path
+                )
               end
           end
       end)

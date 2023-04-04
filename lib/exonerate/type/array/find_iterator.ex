@@ -41,10 +41,14 @@ defmodule Exonerate.Type.Array.FindIterator do
 
         content
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(resource), unquote(contains_pointer), path), 0, 0},
+          {Exonerate.Tools.mismatch(content, unquote(resource), unquote(contains_pointer), path),
+           0, 0},
           fn
             _item, {:ok, index, count} when index >= unquote(length) ->
               {:halt, {:ok, index, count}}
+
+            _item, {:ok, index, count} ->
+              {:halt, {:ok, index + 1, count}}
 
             item, {{:error, error_so_far}, index, count} ->
               case unquote(contains_call)(item, Path.join(path, "#{index}")) do
@@ -52,11 +56,11 @@ defmodule Exonerate.Type.Array.FindIterator do
                   {:cont, {:ok, index + 1, count}}
 
                 :ok ->
-                  {:cont, {:error, error_so_far}, index + 1, count + 1}
+                  {:cont, {{:error, error_so_far}, index + 1, count + 1}}
 
                 Exonerate.Tools.error_match(error) ->
                   new_params = Keyword.update(error_so_far, :errors, [error], &[error | &1])
-                  {:cont, {{:error, error_so_far}, index + 1}}
+                  {:cont, {{:error, error_so_far}, index + 1, count}}
               end
           end
         )
@@ -77,7 +81,21 @@ defmodule Exonerate.Type.Array.FindIterator do
               path
             )
 
-          {Exonerate.Tools.error_match(error), _} ->
+          {:ok, _, _} ->
+            :ok
+
+          {Exonerate.Tools.error_match(error), count, unquote(needed)} when count >= unquote(length) ->
+            :ok
+
+          {Exonerate.Tools.error_match(error), count, unquote(needed)} ->
+            Exonerate.Tools.mismatch(
+              content,
+              unquote(resource),
+              unquote(JsonPointer.join(pointer, "minContains")),
+              path
+            )
+
+          {Exonerate.Tools.error_match(error), _, _} ->
             error
         end
       end
@@ -97,7 +115,8 @@ defmodule Exonerate.Type.Array.FindIterator do
 
         content
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(resource), unquote(contains_pointer), path), 0, 0},
+          {Exonerate.Tools.mismatch(content, unquote(resource), unquote(contains_pointer), path),
+           0, 0},
           fn
             item, {{:error, params}, index, count} ->
               case unquote(contains_call)(item, path) do

@@ -66,8 +66,11 @@ defmodule Exonerate.Filter.Format do
         |> String.upcase()
         |> NaiveDateTime.from_iso8601()
         |> case do
-          {:ok, _} -> :ok
-          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
+          {:ok, _} ->
+            :ok
+
+          {:error, _} ->
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
         end
       end
     end
@@ -106,8 +109,11 @@ defmodule Exonerate.Filter.Format do
         |> String.upcase()
         |> DateTime.from_iso8601()
         |> case do
-          {:ok, %{utc_offset: _}, _} -> :ok
-          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
+          {:ok, %{utc_offset: _}, _} ->
+            :ok
+
+          {:error, _} ->
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
         end
       end
     end
@@ -119,8 +125,11 @@ defmodule Exonerate.Filter.Format do
         require Exonerate.Tools
 
         case Date.from_iso8601(string) do
-          {:ok, _} -> :ok
-          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
+          {:ok, _} ->
+            :ok
+
+          {:error, _} ->
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
         end
       end
     end
@@ -132,8 +141,11 @@ defmodule Exonerate.Filter.Format do
         require Exonerate.Tools
 
         case Time.from_iso8601(string) do
-          {:ok, _} -> :ok
-          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
+          {:ok, _} ->
+            :ok
+
+          {:error, _} ->
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
         end
       end
     end
@@ -146,8 +158,11 @@ defmodule Exonerate.Filter.Format do
 
         # NB ipv4strict means no "shortened ipv4 addresses"
         case :inet.parse_ipv4strict_address(to_charlist(string)) do
-          {:ok, _} -> :ok
-          {:error, _} -> Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
+          {:ok, _} ->
+            :ok
+
+          {:error, _} ->
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
         end
       end
     end
@@ -257,7 +272,9 @@ defmodule Exonerate.Filter.Format do
               :ok
 
             tuple when elem(tuple, 0) == :error ->
-              Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path, reason: elem(tuple, 1))
+              Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path,
+                reason: elem(tuple, 1)
+              )
           end
         end
       end
@@ -305,7 +322,9 @@ defmodule Exonerate.Filter.Format do
             :ok
 
           {:error, reason} ->
-            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path, reason: reason)
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path,
+              reason: reason
+            )
         end
       end
     end
@@ -321,7 +340,9 @@ defmodule Exonerate.Filter.Format do
             :ok
 
           {:error, reason} ->
-            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path, reason: reason)
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path,
+              reason: reason
+            )
         end
       end
     end
@@ -337,7 +358,9 @@ defmodule Exonerate.Filter.Format do
             :ok
 
           {:error, reason} ->
-            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path, reason: reason)
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path,
+              reason: reason
+            )
         end
       end
     end
