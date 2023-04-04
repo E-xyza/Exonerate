@@ -23,7 +23,7 @@ defmodule Exonerate.Filter.DependentRequired do
         :ok <- unquote(call)(content, path)
       end
 
-    accessory = accessory(call, key, subschema, pointer)
+    accessory = accessory(call, key, subschema, resource, pointer)
 
     {prong, accessory}
   end
@@ -42,7 +42,7 @@ defmodule Exonerate.Filter.DependentRequired do
     end
   end
 
-  defp accessory(call, key, deps_list, pointer) when is_list(deps_list) do
+  defp accessory(call, key, deps_list, resource, pointer) when is_list(deps_list) do
     prongs =
       Enum.with_index(deps_list, fn
         dependent_key, index ->
@@ -54,7 +54,7 @@ defmodule Exonerate.Filter.DependentRequired do
                 :ok
               else
                 require Exonerate.Tools
-                Exonerate.Tools.mismatch(content, unquote(pointer), path)
+                Exonerate.Tools.mismatch(content, unquote(resource), unquote(pointer), path)
               end
           end
       end)

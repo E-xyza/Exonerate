@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.MaxItems do
     quote do
       defp unquote(call)(array, index, path) when index >= unquote(limit) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(array, unquote(pointer), path)
+        Exonerate.Tools.mismatch(array, unquote(resource), unquote(pointer), path)
       end
 
       defp unquote(call)(_, _, _), do: :ok

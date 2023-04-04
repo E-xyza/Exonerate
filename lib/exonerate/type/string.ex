@@ -45,7 +45,7 @@ defmodule Exonerate.Type.String do
           unquote(filters)
         else
           require Exonerate.Tools
-          Exonerate.Tools.mismatch(string, unquote(non_utf_error_pointer), path)
+          Exonerate.Tools.mismatch(string, unquote(resource), unquote(non_utf_error_pointer), path)
         end
       end
     end

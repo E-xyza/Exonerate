@@ -36,7 +36,7 @@ defmodule Exonerate.Filter.Dependencies do
     end
   end
 
-  defp accessory(call, key, deps_list, _name, pointer, _opts) when is_list(deps_list) do
+  defp accessory(call, key, deps_list, resource, pointer, _opts) when is_list(deps_list) do
     prongs =
       Enum.with_index(deps_list, fn
         dependent_key, index ->
@@ -48,7 +48,7 @@ defmodule Exonerate.Filter.Dependencies do
                 :ok
               else
                 require Exonerate.Tools
-                Exonerate.Tools.mismatch(content, unquote(schema_pointer), path)
+                Exonerate.Tools.mismatch(content, unquote(resource), unquote(schema_pointer), path)
               end
           end
       end)

@@ -52,7 +52,7 @@ defmodule Exonerate.Combining.OneOf do
 
         unquote(lambdas)
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(data, unquote(pointer), path, reason: "no matches"), 0},
+          {Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path, reason: "no matches"), 0},
           fn
             fun, {{:error, opts}, index} ->
               case fun.(data, path) do
@@ -73,7 +73,7 @@ defmodule Exonerate.Combining.OneOf do
                     end)
 
                   {:halt,
-                   {Exonerate.Tools.mismatch(data, unquote(pointer), path,
+                   {Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
                       matches: matches,
                       reason: "multiple matches"
                     )}}
@@ -98,7 +98,7 @@ defmodule Exonerate.Combining.OneOf do
 
         unquote(lambdas)
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(data, unquote(pointer), path, reason: "no matches"), 0},
+          {Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path, reason: "no matches"), 0},
           fn
             fun, {{:error, opts}, index} ->
               case fun.(data, path) do
@@ -119,7 +119,7 @@ defmodule Exonerate.Combining.OneOf do
                     end)
 
                   {:halt,
-                   {Exonerate.Tools.mismatch(data, unquote(pointer), path,
+                   {Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
                       matches: matches,
                       reason: "multiple matches"
                     )}}

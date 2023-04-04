@@ -5,16 +5,22 @@ defmodule Exonerate.Tools do
   alias Exonerate.Type
 
   # GENERAL-USE MACROS
-  defmacro mismatch(error_value, absolute_keyword_location, json_pointer, opts \\ [])
+  defmacro mismatch(error_value, resource, keyword_pointer, json_pointer, opts \\ [])
 
-  defmacro mismatch(error_value, {absolute_keyword_location, extras}, instance_location, opts) do
+  defmacro mismatch(
+             error_value,
+             resource,
+             {keyword_pointer, extras},
+             instance_location,
+             opts
+           ) do
     primary = Keyword.take(binding(), ~w(error_value instance_location)a)
-    absolute_keyword_location = JsonPointer.to_path(absolute_keyword_location)
+    uri = "#{resource_pointer_to_uri(resource, keyword_pointer, trim: true)}"
 
     absolute_keyword_location = [
       absolute_keyword_location:
         quote do
-          Path.join(unquote(absolute_keyword_location), unquote(extras))
+          Path.join(unquote(uri), unquote(extras))
         end
     ]
 
@@ -25,11 +31,12 @@ defmodule Exonerate.Tools do
     end
   end
 
-  defmacro mismatch(error_value, absolute_keyword_location, instance_location, opts) do
+  defmacro mismatch(error_value, resource, keyword_pointer, instance_location, opts) do
     primary = Keyword.take(binding(), ~w(error_value instance_location)a)
 
     absolute_keyword_location = [
-      absolute_keyword_location: JsonPointer.to_path(absolute_keyword_location)
+      absolute_keyword_location:
+        "#{resource_pointer_to_uri(resource, keyword_pointer, trim: true)}"
     ]
 
     extras = Keyword.take(opts, ~w(reason errors matches required)a)
@@ -242,6 +249,18 @@ defmodule Exonerate.Tools do
   @spec uri_to_resource(URI.t()) :: String.t()
   def uri_to_resource(uri) do
     to_string(%{uri | fragment: nil})
+  end
+
+  @spec resource_pointer_to_uri(String.t(), JsonPointer.t(), keyword) :: URI.t()
+  def resource_pointer_to_uri(resource, pointer, opts \\ []) do
+    resource
+    |> URI.parse()
+    |> uri_merge(JsonPointer.to_uri(pointer))
+    |> if(opts[:trim], fn
+      uri = %{scheme: "file"} -> %URI{fragment: uri.fragment}
+      uri = %{scheme: "function"} -> %URI{fragment: uri.fragment}
+      uri -> uri
+    end)
   end
 
   @spec uri_merge(URI.t(), URI.t()) :: URI.t()

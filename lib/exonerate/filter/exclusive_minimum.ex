@@ -22,7 +22,7 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
     quote do
       defp unquote(call)(number = unquote(minimum), path) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(number, unquote(pointer), path)
+        Exonerate.Tools.mismatch(number, unquote(resource), unquote(pointer), path)
       end
 
       defp unquote(call)(_, _), do: :ok
@@ -40,7 +40,7 @@ defmodule Exonerate.Filter.ExclusiveMinimum do
 
           _ ->
             require Exonerate.Tools
-            Exonerate.Tools.mismatch(number, unquote(pointer), path)
+            Exonerate.Tools.mismatch(number, unquote(resource), unquote(pointer), path)
         end
       end
     end

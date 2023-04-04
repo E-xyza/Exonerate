@@ -102,7 +102,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = EnumeratedValues.enum1("blue")
 
-      assert list[:absolute_keyword_location] == "/enum"
+      assert list[:absolute_keyword_location] == "#/enum"
       assert list[:error_value] == "blue"
       assert list[:instance_location] == "/"
     end
@@ -118,7 +118,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = EnumeratedValues.enum2(0)
 
-      assert list[:absolute_keyword_location] == "/enum"
+      assert list[:absolute_keyword_location] == "#/enum"
       assert list[:error_value] == 0
       assert list[:instance_location] == "/"
     end
@@ -132,7 +132,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "enumerated values that fail still fail" do
       assert {:error, list} = EnumeratedValues.enum3(nil)
 
-      assert list[:absolute_keyword_location] == "/type"
+      assert list[:absolute_keyword_location] == "#/type"
       assert list[:error_value] == nil
       assert list[:instance_location] == "/"
     end
@@ -165,7 +165,7 @@ defmodule ExonerateTest.Tutorial.GenericTest do
     test "unenumerated values don't match" do
       assert {:error, list} = ConstantValues.const(%{"country" => "Canada"})
 
-      assert list[:absolute_keyword_location] == "/properties/country/const"
+      assert list[:absolute_keyword_location] == "#/properties/country/const"
       assert list[:error_value] == "Canada"
       assert list[:instance_location] == "/country"
     end

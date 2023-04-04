@@ -24,6 +24,7 @@ defmodule Exonerate.Filter.Required do
             {:halt,
              {Exonerate.Tools.mismatch(
                 object,
+                unquote(resource),
                 {unquote(pointer), "#{index}"},
                 path,
                 required: Path.join(path, required_field)

@@ -60,13 +60,13 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
     test "objects mismatches a string or array" do
       assert {:error, list} = Object.object("Not an object")
 
-      assert list[:absolute_keyword_location] == "/type"
+      assert list[:absolute_keyword_location] == "#/type"
       assert list[:error_value] == "Not an object"
       assert list[:instance_location] == "/"
 
       assert {:error, list} = Object.object(@badarray)
 
-      assert list[:absolute_keyword_location] == "/type"
+      assert list[:absolute_keyword_location] == "#/type"
       assert list[:error_value] == @badarray
       assert list[:instance_location] == "/"
     end
@@ -173,7 +173,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
                |> Jason.decode!()
                |> Properties.address1()
 
-      assert list[:absolute_keyword_location] == "/properties/number/type"
+      assert list[:absolute_keyword_location] == "#/properties/number/type"
       assert list[:error_value] == "1600"
       assert list[:instance_location] == "/number"
     end
@@ -191,7 +191,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       addr4 = Jason.decode!(@addr4)
       assert {:error, list} = Properties.address2(addr4)
 
-      assert list[:absolute_keyword_location] == "/additionalProperties"
+      assert list[:absolute_keyword_location] == "#/additionalProperties"
       assert list[:error_value] == "NW"
       assert list[:instance_location] == "/direction"
     end
@@ -216,7 +216,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       addr5 = Jason.decode!(@addr5)
       assert {:error, list} = Properties.address3(addr5)
 
-      assert list[:absolute_keyword_location] == "/additionalProperties/type"
+      assert list[:absolute_keyword_location] == "#/additionalProperties/type"
       assert list[:error_value] == 201
       assert list[:instance_location] == "/office_number"
     end
@@ -289,7 +289,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       contact3 = Jason.decode!(@contact3)
       assert {:error, list} = RequiredProperties.contactinfo(contact3)
 
-      assert list[:absolute_keyword_location] == "/required/1"
+      assert list[:absolute_keyword_location] == "#/required/1"
       assert list[:error_value] == contact3
       assert list[:instance_location] == "/"
     end
@@ -333,7 +333,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       token2 = Jason.decode!(@token2)
       assert {:error, list} = PropertyNames.token(token2)
 
-      assert list[:absolute_keyword_location] == "/propertyNames/pattern"
+      assert list[:absolute_keyword_location] == "#/propertyNames/pattern"
       assert list[:error_value] == "001 invalid"
       assert list[:instance_location] == "/001 invalid"
     end
@@ -368,7 +368,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       objsize1 = Jason.decode!(@objsize1)
       assert {:error, list} = Size.object(objsize1)
 
-      assert list[:absolute_keyword_location] == "/minProperties"
+      assert list[:absolute_keyword_location] == "#/minProperties"
       assert list[:error_value] == objsize1
       assert list[:instance_location] == "/"
     end
@@ -377,7 +377,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       objsize2 = Jason.decode!(@objsize2)
       assert {:error, list} = Size.object(objsize2)
 
-      assert list[:absolute_keyword_location] == "/minProperties"
+      assert list[:absolute_keyword_location] == "#/minProperties"
       assert list[:error_value] == objsize2
       assert list[:instance_location] == "/"
     end
@@ -400,7 +400,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       objsize5 = Jason.decode!(@objsize5)
       assert {:error, list} = Size.object(objsize5)
 
-      assert list[:absolute_keyword_location] == "/maxProperties"
+      assert list[:absolute_keyword_location] == "#/maxProperties"
       assert list[:error_value] == objsize5
       assert list[:instance_location] == "/"
     end
@@ -452,7 +452,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       patternmatch3 = Jason.decode!(@patternmatch3)
       assert {:error, list} = PatternProperties.patternprop1(patternmatch3)
 
-      assert list[:absolute_keyword_location] == "/patternProperties/%5ES_/type"
+      assert list[:absolute_keyword_location] == "#/patternProperties/%5ES_/type"
       assert list[:error_value] == 42
       assert list[:instance_location] == "/S_0"
     end
@@ -461,7 +461,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       patternmatch4 = Jason.decode!(@patternmatch4)
       assert {:error, list} = PatternProperties.patternprop1(patternmatch4)
 
-      assert list[:absolute_keyword_location] == "/patternProperties/%5EI_/type"
+      assert list[:absolute_keyword_location] == "#/patternProperties/%5EI_/type"
       assert list[:error_value] == "This is a string"
       assert list[:instance_location] == "/I_42"
     end
@@ -470,7 +470,7 @@ defmodule ExonerateTest.Tutorial.ObjectTest do
       patternmatch5 = Jason.decode!(@patternmatch5)
       assert {:error, list} = PatternProperties.patternprop1(patternmatch5)
 
-      assert list[:absolute_keyword_location] == "/additionalProperties"
+      assert list[:absolute_keyword_location] == "#/additionalProperties"
       assert list[:error_value] == "value"
       assert list[:instance_location] == "/keyword"
     end

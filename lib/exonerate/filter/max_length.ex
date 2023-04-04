@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.MaxLength do
         quote do
           defp unquote(call)(string, path) when byte_size(string) > unquote(max) do
             require Exonerate.Tools
-            Exonerate.Tools.mismatch(string, unquote(pointer), path)
+            Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
           end
 
           defp unquote(call)(string, path), do: :ok
@@ -33,7 +33,7 @@ defmodule Exonerate.Filter.MaxLength do
 
               _ ->
                 require Exonerate.Tools
-                Exonerate.Tools.mismatch(string, unquote(pointer), path)
+                Exonerate.Tools.mismatch(string, unquote(resource), unquote(pointer), path)
             end
           end
         end

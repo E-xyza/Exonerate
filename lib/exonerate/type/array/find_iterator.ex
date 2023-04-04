@@ -41,7 +41,7 @@ defmodule Exonerate.Type.Array.FindIterator do
 
         content
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(contains_pointer), path), 0, 0},
+          {Exonerate.Tools.mismatch(content, unquote(resource), unquote(contains_pointer), path), 0, 0},
           fn
             _item, {:ok, index, count} when index >= unquote(length) ->
               {:halt, {:ok, index, count}}
@@ -64,6 +64,7 @@ defmodule Exonerate.Type.Array.FindIterator do
           {:ok, index, _count} when index < unquote(length) - 1 ->
             Exonerate.Tools.mismatch(
               content,
+              unquote(resource),
               unquote(JsonPointer.join(pointer, "minItems")),
               path
             )
@@ -71,6 +72,7 @@ defmodule Exonerate.Type.Array.FindIterator do
           {:ok, _index, count} when count < unquote(needed) ->
             Exonerate.Tools.mismatch(
               content,
+              unquote(resource),
               unquote(JsonPointer.join(pointer, "minContains")),
               path
             )
@@ -95,7 +97,7 @@ defmodule Exonerate.Type.Array.FindIterator do
 
         content
         |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(contains_pointer), path), 0, 0},
+          {Exonerate.Tools.mismatch(content, unquote(resource), unquote(contains_pointer), path), 0, 0},
           fn
             item, {{:error, params}, index, count} ->
               case unquote(contains_call)(item, path) do
@@ -129,6 +131,7 @@ defmodule Exonerate.Type.Array.FindIterator do
         |> Enum.reduce_while(
           {Exonerate.Tools.mismatch(
              content,
+             unquote(resource),
              unquote(JsonPointer.join(pointer, "minItems")),
              path
            ), 0},

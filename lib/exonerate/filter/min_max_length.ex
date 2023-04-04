@@ -30,6 +30,7 @@ defmodule Exonerate.Filter.MinMaxLength do
 
         Exonerate.Tools.mismatch(
           string,
+          unquote(resource),
           unquote(JsonPointer.join(parent_pointer, "minLength")),
           path
         )
@@ -40,6 +41,7 @@ defmodule Exonerate.Filter.MinMaxLength do
 
         Exonerate.Tools.mismatch(
           string,
+          unquote(resource),
           unquote(JsonPointer.join(parent_pointer, "maxLength")),
           path
         )
@@ -61,6 +63,7 @@ defmodule Exonerate.Filter.MinMaxLength do
 
             Exonerate.Tools.mismatch(
               string,
+              unquote(resource),
               unquote(JsonPointer.join(parent_pointer, "minLength")),
               path
             )
@@ -70,6 +73,7 @@ defmodule Exonerate.Filter.MinMaxLength do
 
             Exonerate.Tools.mismatch(
               string,
+              unquote(resource),
               unquote(JsonPointer.join(parent_pointer, "maxLength")),
               path
             )

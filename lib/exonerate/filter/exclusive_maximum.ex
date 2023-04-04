@@ -23,7 +23,7 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
     quote do
       defp unquote(call)(number = unquote(maximum), path) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(number, unquote(pointer), path)
+        Exonerate.Tools.mismatch(number, unquote(resource), unquote(pointer), path)
       end
 
       defp unquote(call)(_, _), do: :ok
@@ -41,7 +41,7 @@ defmodule Exonerate.Filter.ExclusiveMaximum do
 
           _ ->
             require Exonerate.Tools
-            Exonerate.Tools.mismatch(number, unquote(pointer), path)
+            Exonerate.Tools.mismatch(number, unquote(resource), unquote(pointer), path)
         end
       end
     end

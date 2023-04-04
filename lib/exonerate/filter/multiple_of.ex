@@ -21,7 +21,7 @@ defmodule Exonerate.Filter.MultipleOf do
 
           _ ->
             require Exonerate.Tools
-            Exonerate.Tools.mismatch(integer, unquote(pointer), path)
+            Exonerate.Tools.mismatch(integer, unquote(resource), unquote(pointer), path)
         end
       end
     end

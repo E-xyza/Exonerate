@@ -110,7 +110,10 @@ defmodule ExonerateTest.Automate do
 
     quote do
       test unquote(description) do
-        assert {:error, _} = unquote(schema_name)(unquote(data!))
+        assert {:error, result} = unquote(schema_name)(unquote(data!))
+        assert Keyword.has_key?(result, :error_value)
+        assert Keyword.has_key?(result, :instance_location)
+        assert Keyword.has_key?(result, :absolute_keyword_location)
       end
     end
   end

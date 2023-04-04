@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.MaxContains do
     quote do
       defp unquote(call)(contains_count, parent, path) when contains_count > unquote(maximum) do
         require Exonerate.Tools
-        Tools.mismatch(parent, unquote(pointer), path)
+        Tools.mismatch(parent, unquote(resource), unquote(pointer), path)
       end
 
       defp unquote(call)(_, _, _), do: :ok

@@ -23,7 +23,7 @@ defmodule Exonerate.Combining.Not do
           quote do
             case unquote(call)(data, path) do
               :ok ->
-                Exonerate.Tools.mismatch(data, unquote(pointer), path)
+                Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path)
 
               {:error, _} ->
                 :ok
@@ -32,7 +32,7 @@ defmodule Exonerate.Combining.Not do
 
         :ok ->
           quote do
-            Exonerate.Tools.mismatch(data, unquote(pointer), path)
+            Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path)
           end
 
         :error ->

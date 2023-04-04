@@ -45,9 +45,6 @@ Add the following lines to your mix.exs
 defmodule SchemaModule do
   require Exonerate
 
-  @doc """
-  validates our input
-  """
   Exonerate.function_from_string(:def, :validate_input, """
   {
     "type":"object",
@@ -61,10 +58,10 @@ end
 
 ```elixir
 iex> SchemaModule.validate_input("some string")
-{:error, absolute_keyword_location: "#", error_value: "some string", absolute_keyword_location: "#/parameter"}
+{:error, error_value: "some string", instance_location: "/", absolute_keyword_location: "#/type",}
 
 iex> SchemaModule.validate_input(%{"parameter" => "2"})
-{:error, absolute_keyword_location: "#/properties/parameter", error_value: "2", absolute_keyword_location: "#/parameter"}
+{:error, error_value: "2", instance_location: "/parameter", absolute_keyword_location: "#/properties/parameter/type", }
 
 iex> SchemaModule.validate_input(%{"parameter" => 2})
 :ok

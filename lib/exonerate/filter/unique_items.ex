@@ -15,7 +15,7 @@ defmodule Exonerate.Filter.UniqueItems do
       defp unquote(Tools.call(resource, pointer, opts))(item, so_far, path) do
         if item in so_far do
           require Exonerate.Tools
-          Exonerate.Tools.mismatch(item, unquote(pointer), path)
+          Exonerate.Tools.mismatch(item, unquote(resource), unquote(pointer), path)
         else
           :ok
         end

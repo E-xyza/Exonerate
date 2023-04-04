@@ -44,7 +44,7 @@ defmodule Exonerate.Type.Object do
 
       defp unquote(call)(object, path) when is_map(object) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(object, unquote(pointer), path)
+        Exonerate.Tools.mismatch(object, unquote(resource), unquote(pointer), path)
       end
     end
   end

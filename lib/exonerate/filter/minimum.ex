@@ -21,7 +21,7 @@ defmodule Exonerate.Filter.Minimum do
 
           _ ->
             require Exonerate.Tools
-            Exonerate.Tools.mismatch(number, unquote(pointer), path)
+            Exonerate.Tools.mismatch(number, unquote(resource), unquote(pointer), path)
         end
       end
     end

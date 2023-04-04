@@ -57,7 +57,7 @@ defmodule Exonerate.Context do
       @compile {:inline, [{unquote(call), 2}]}
       defp unquote(call)(content, path) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(content, unquote(pointer), path)
+        Exonerate.Tools.mismatch(content, unquote(resource), unquote(pointer), path)
       end
     end
   end
@@ -115,7 +115,7 @@ defmodule Exonerate.Context do
       defp unquote(Tools.call(resource, pointer, opts))(content, path)
            when content != unquote(const) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(content, unquote(const_pointer), path)
+        Exonerate.Tools.mismatch(content, unquote(resource), unquote(const_pointer), path)
       end
 
       unquote(rest_filter)
@@ -142,7 +142,7 @@ defmodule Exonerate.Context do
       defp unquote(Tools.call(resource, pointer, opts))(content, path)
            when content not in unquote(values) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(content, unquote(enum_pointer), path)
+        Exonerate.Tools.mismatch(content, unquote(resource), unquote(enum_pointer), path)
       end
 
       unquote(rest_filter)
@@ -210,7 +210,7 @@ defmodule Exonerate.Context do
       quote do
         defp unquote(Tools.call(resource, pointer, opts))(content, path) do
           require Exonerate.Tools
-          Exonerate.Tools.mismatch(content, unquote(type_failure_pointer), path)
+          Exonerate.Tools.mismatch(content, unquote(resource), unquote(type_failure_pointer), path)
         end
       end,
       opts

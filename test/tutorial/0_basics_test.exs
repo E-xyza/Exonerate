@@ -45,7 +45,7 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
       assert {:error, list} =
                HelloWorld.helloworld3("Resistance is futile...  This will always fail!!!")
 
-      assert list[:absolute_keyword_location] == "/"
+      assert list[:absolute_keyword_location] == "#/"
       assert list[:error_value] == "Resistance is futile...  This will always fail!!!"
       assert list[:instance_location] == "/"
     end
@@ -69,7 +69,7 @@ defmodule ExonerateTest.Tutorial.BasicsTest do
 
     test "string type does not match nonstring" do
       assert {:error, list} = TypeKeyword.type(42)
-      assert list[:absolute_keyword_location] == "/type"
+      assert list[:absolute_keyword_location] == "#/type"
       assert list[:error_value] == 42
       assert list[:instance_location] == "/"
     end

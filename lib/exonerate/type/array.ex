@@ -27,7 +27,7 @@ defmodule Exonerate.Type.Array do
     quote do
       defp unquote(call)(array, path) when is_list(array) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(array, unquote(pointer), path)
+        Exonerate.Tools.mismatch(array, unquote(resource), unquote(pointer), path)
       end
     end
   end

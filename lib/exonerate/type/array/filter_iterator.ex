@@ -27,7 +27,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
     reduction = reduction(context, accumulator, resource, pointer, opts)
 
-    if finalizer = finalizer_for(context, tracked, accumulator, pointer) do
+    if finalizer = finalizer_for(context, tracked, accumulator, resource, pointer) do
       quote do
         defp unquote(call)(unquote_splicing(call_parameters(context))) do
           unquote(reduction)
@@ -300,7 +300,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
   # TODO: minItems AND contains
 
-  defp finalizer_for(context = %{"minItems" => min}, tracked, accumulators, pointer) do
+  defp finalizer_for(context = %{"minItems" => min}, tracked, accumulators, resource, pointer) do
     minitems_pointer = JsonPointer.join(pointer, "minItems")
 
     index =
@@ -323,7 +323,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
         {:ok, accumulator} when unquote(index) < unquote(min) ->
           require Exonerate.Tools
-          Exonerate.Tools.mismatch(array, unquote(minitems_pointer), path)
+          Exonerate.Tools.mismatch(array, unquote(resource), unquote(minitems_pointer), path)
 
         {:ok, accumulator} ->
           unquote(finalizer_return(context, tracked, accumulators))
@@ -331,7 +331,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp finalizer_for(context = %{"contains" => _}, tracked, accumulators, pointer) do
+  defp finalizer_for(context = %{"contains" => _}, tracked, accumulators, resource, pointer) do
     contains_pointer = JsonPointer.join(pointer, "contains")
     mincontains_pointer = JsonPointer.join(pointer, "minContains")
     mincontains = Map.get(context, "minContains", 1)
@@ -343,11 +343,11 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
         {:ok, accumulator} when accumulator.contains == 0 ->
           require Exonerate.Tools
-          Exonerate.Tools.mismatch(array, unquote(contains_pointer), path)
+          Exonerate.Tools.mismatch(array, unquote(resource), unquote(contains_pointer), path)
 
         {:ok, accumulator} when accumulator.contains < unquote(mincontains) ->
           require Exonerate.Tools
-          Exonerate.Tools.mismatch(array, unquote(mincontains_pointer), path)
+          Exonerate.Tools.mismatch(array, unquote(resource), unquote(mincontains_pointer), path)
 
         {:ok, accumulator} ->
           unquote(finalizer_return(context, tracked, accumulators))
@@ -355,7 +355,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp finalizer_for(context, tracked, accumulators, _) do
+  defp finalizer_for(context, tracked, accumulators, _, _) do
     finalizer_return = finalizer_return(context, tracked, accumulators)
 
     if tracked do

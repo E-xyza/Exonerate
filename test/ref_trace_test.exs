@@ -19,7 +19,7 @@ defmodule ExonerateTest.RefTraceTest do
     assert {:error, error} = ref1(%{"bar" => "baz"})
 
     assert [
-             absolute_keyword_location: "/properties/foo/type",
+             absolute_keyword_location: "#/properties/foo/type",
              error_value: "baz",
              instance_location: "/bar",
              ref_trace: ["/properties/bar/$ref"]
@@ -40,7 +40,7 @@ defmodule ExonerateTest.RefTraceTest do
     assert {:error, error} = ref2(%{"baz" => "quux"})
 
     assert [
-             absolute_keyword_location: "/properties/foo/type",
+             absolute_keyword_location: "#/properties/foo/type",
              error_value: "quux",
              instance_location: "/baz",
              ref_trace: [
@@ -49,6 +49,4 @@ defmodule ExonerateTest.RefTraceTest do
              ]
            ] = Enum.sort(error)
   end
-
-  test "a ref is okay if it's type-restricted but called from elsewhere"
 end
