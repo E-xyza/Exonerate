@@ -231,6 +231,7 @@ defmodule Exonerate do
   """
 
   alias Exonerate.Cache
+  alias Exonerate.Draft
   alias Exonerate.Tools
   alias Exonerate.Metadata
   alias Exonerate.Schema
@@ -255,6 +256,8 @@ defmodule Exonerate do
 
     schema_string = Macro.expand(schema_ast, __CALLER__)
     schema = Schema.ingest(schema_string, __CALLER__, function_resource, opts)
+
+    opts = Draft.set_opts(opts, schema)
 
     resource =
       if id = id_from(schema) do

@@ -5,6 +5,7 @@ defmodule Exonerate.Schema do
 
   alias Exonerate.Cache
   alias Exonerate.Degeneracy
+  alias Exonerate.Draft
   alias Exonerate.Id
   alias Exonerate.Tools
   alias Exonerate.Remote
@@ -12,8 +13,10 @@ defmodule Exonerate.Schema do
   def ingest(binary, caller, resource, opts) do
     {caller.module, resource}
 
-    binary
-    |> Tools.decode!(opts)
+    json_decoded = Tools.decode!(binary, opts)
+    opts = Draft.set_opts(opts, json_decoded)
+
+    json_decoded
     |> Degeneracy.canonicalize(opts)
     |> tap(&Cache.put_schema(caller.module, resource, &1))
     |> Id.prescan(caller.module, resource, opts)
