@@ -13,9 +13,9 @@ defmodule Exonerate.MixProject do
         description: "JSON Schema macro generator",
         licenses: ["MIT"],
         files: ~w(lib mix.exs README* LICENSE* VERSIONS*),
-        links: %{"GitHub" => "https://github.com/ityonemo/exonerate"}
+        links: %{"GitHub" => "https://github.com/E-xyza/exonerate"}
       ],
-      source_url: "https://github.com/ityonemo/exonerate/",
+      source_url: "https://github.com/E-xyza/exonerate/",
       docs: [main: "Exonerate"],
       preferred_cli_env: [bench_lib: :bench, gpt4_helper: :bench, bench_gpt: :bench]
     ]
