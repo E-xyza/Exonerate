@@ -16,8 +16,7 @@ defmodule Exonerate.MixProject do
         links: %{"GitHub" => "https://github.com/E-xyza/exonerate"}
       ],
       source_url: "https://github.com/E-xyza/exonerate/",
-      source_url_pattern: "https://github.com/E-xyza/exonerate/blob/master/%{path}#L%{line}",
-      docs: [main: "Exonerate"],
+      docs: [main: "Exonerate", source_ref: "master",],
       preferred_cli_env: [bench_lib: :bench, gpt4_helper: :bench, bench_gpt: :bench]
     ]
   end
@@ -46,7 +45,7 @@ defmodule Exonerate.MixProject do
       {:yaml_elixir, "~> 2.7", optional: true},
       {:idna, "~> 6.1.1", optional: true},
       # dev tools
-      {:ex_doc, "~> 0.24", only: :dev},
+      {:ex_doc, "~> 0.29", only: :dev},
       {:dialyxir, "~> 1.2.0", only: :dev, runtime: false},
       # test
       {:bandit, "~> 0.7", only: [:test, :bench]},
