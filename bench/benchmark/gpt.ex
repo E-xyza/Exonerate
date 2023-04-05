@@ -1,8 +1,8 @@
 defmodule Benchmark.GPT do
   @openapi_url "https://api.openai.com/v1/chat/completions"
 
-  def prompt(schema, title \\ nil) do
-    title = if title, do: ~s(please name the module with the atom `:"#{title}"`)
+  def prompt(schema, group, title) do
+    title = if title, do: ~s(please name the module with the atom `:"#{group}-#{title}"`)
 
     """
     Hi, ChatGPT! I would love your help writing an Elixir public function `validate/1`, which takes
@@ -48,7 +48,7 @@ defmodule Benchmark.GPT do
       raw_code =
         schema.schema
         |> Jason.encode!()
-        |> fetch_schema_code!(model)
+        |> fetch_schema_code!(schema.group, schema.description, model)
         |> trim_elixir
 
       code =
@@ -76,7 +76,7 @@ defmodule Benchmark.GPT do
 
   @model_ids %{"3.5" => "gpt-3.5-turbo", "4" => "gpt-4"}
 
-  def fetch_schema_code!(schema, model) do
+  def fetch_schema_code!(schema, group, description, model) do
     api_key = System.fetch_env!("CHATGPT_SECRET_KEY")
 
     payload =
@@ -85,7 +85,7 @@ defmodule Benchmark.GPT do
         messages: [
           %{
             role: :user,
-            content: prompt(schema)
+            content: prompt(schema, group, description)
           }
         ]
       })

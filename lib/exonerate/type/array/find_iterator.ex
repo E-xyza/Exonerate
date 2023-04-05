@@ -84,7 +84,8 @@ defmodule Exonerate.Type.Array.FindIterator do
           {:ok, _, _} ->
             :ok
 
-          {Exonerate.Tools.error_match(error), count, unquote(needed)} when count >= unquote(length) ->
+          {Exonerate.Tools.error_match(error), count, unquote(needed)}
+          when count >= unquote(length) ->
             :ok
 
           {Exonerate.Tools.error_match(error), count, unquote(needed)} ->

@@ -1,33 +1,39 @@
 defmodule Benchmark.Schema do
   alias Benchmark.Test
 
-  @enforce_keys [:description, :schema, :tests]
+  @enforce_keys [:group, :description, :schema, :tests]
   defstruct @enforce_keys
 
   @type t :: %__MODULE__{
+          group: String.t(),
           description: String.t(),
           schema: Exonerate.Type.json(),
           tests: Test.t()
         }
+
   def stream_from_directory(directory, opts \\ []) do
     directory
     |> File.ls!()
-    |> Stream.map(&Path.join(directory, &1))
-    |> Stream.reject(&File.dir?/1)
+    |> Stream.reject(&(Path.extname(&1) != ".json"))
     |> Stream.reject(&omitted_file?(&1, opts))
     |> Stream.filter(&only_file?(&1, opts))
-    |> Stream.map(&File.read!/1)
-    |> Stream.map(&Jason.decode!/1)
-    |> Stream.flat_map(&unpack_schemas(&1, opts))
+    |> Stream.flat_map(fn filename ->
+      directory
+      |> Path.join(filename)
+      |> File.read!()
+      |> Jason.decode!()
+      |> unpack_schemas(filename, opts)
+    end)
   end
 
-  defp unpack_schemas(schemas, opts) do
+  defp unpack_schemas(schemas, filename, opts) do
     Enum.flat_map(schemas, fn schema ->
       description = schema["description"]
 
       List.wrap(
         unless omitted_schema?(description, opts) do
           %__MODULE__{
+            group: Path.basename(filename, ".json"),
             description: description,
             schema: schema["schema"],
             tests: Test.unpack_tests(schema["tests"])
