@@ -1,13 +1,28 @@
-defmodule :"anyOf-anyOf-gpt-3.5" do
-  def validate(value) when is_integer(value) do
-    :ok
+defmodule :"anyOf-gpt-3.5" do
+  def validate(value) do
+    if validate_anyof(value, [{"type", "integer"}, {"minimum", 2}]) do
+      :ok
+    else
+      :error
+    end
   end
 
-  def validate(value) when is_map(value) and value["minimum"] >= 2 do
-    :ok
+  defp validate_anyof(value, subschemas) do
+    Enum.any?(subschemas, &validate_schema(value, &1))
   end
 
-  def validate(_) do
-    :error
+  defp validate_schema(value, {"type", type}) do
+    case type do
+      "integer" -> is_integer(value)
+      _ -> false
+    end
+  end
+
+  defp validate_schema(value, {"minimum", min}) when is_integer(value) do
+    value >= min
+  end
+
+  defp validate_schema(_, _) do
+    false
   end
 end

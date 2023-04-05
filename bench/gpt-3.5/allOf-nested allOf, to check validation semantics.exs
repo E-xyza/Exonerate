@@ -1,16 +1,25 @@
-defmodule :"allOf-nested allOf, to check validation semantics-gpt-3.5" do
-  def validate(nil) do
+defmodule :"nested allOf, to check validation semantics-gpt-3.5" do
+  def validate(null) when null == nil do
     :ok
-  end
-
-  def validate(map = %{allOf: all_of}) do
-    case Enum.all?(all_of, &(validate(map) === :ok)) do
-      true -> :ok
-      false -> :error
-    end
   end
 
   def validate(_) do
     :error
+  end
+
+  def process_schema(schema) when is_map(schema) and schema["allOf"] do
+    all_of_schemas = schema["allOf"]
+
+    for sub_schema <- all_of_schemas do
+      validate(sub_schema)
+    end
+  end
+
+  def process_schema(schema) when is_map(schema) and schema["type"] == "null" do
+    &validate/1
+  end
+
+  def process_schema(_) do
+    &validate/1
   end
 end

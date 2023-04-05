@@ -1,17 +1,34 @@
-defmodule :"multipleOf-by small number-gpt-3.5" do
-  def validate(%{} = object) when is_map(object) do
-    :ok
+defmodule :"by small number-gpt-3.5" do
+  def validate(input) do
+    case input do
+      %{"multipleOf" => multiple_of} ->
+        %{
+          "type" => "number",
+          "minimum" => multiple_of - 5.0e-5,
+          "maximum" => multiple_of + 5.0e-5
+        }
+        |> validate_number(input)
+
+      _ ->
+        :error
+    end
   end
 
-  def validate(_) do
-    :error
+  defp validate_number(input, schema) do
+    case input do
+      number when is_number(number) ->
+        if is_number_valid(number, schema) do
+          :ok
+        else
+          :error
+        end
+
+      _ ->
+        :error
+    end
   end
 
-  def validate(value) when is_float(value) and rem(value, 0.0001) == 0 do
-    :ok
-  end
-
-  def validate(_) do
-    :error
+  defp is_number_valid(number, schema) do
+    rem(abs(number), schema["multipleOf"]) == 0
   end
 end

@@ -1,85 +1,42 @@
-# Untitled notebook
+# GPT Benchmarking
 
 ```elixir
 Mix.install([{:jason, "> 0.0.0"}])
-```
 
-## Section
-
-```elixir
-multiples = [
-  "dependencies with escaped characters",
-  "nul characters in strings",
-  "single dependency"
-]
-```
-
-```elixir
-tests_dir = Path.join(__DIR__, "../test/_draft2020-12")
-
-omit = ~w(defs.json anchor.json dynamicRef.json id.json refRemote.json)
-
-code_dir = Path.join(__DIR__, "gpt-4")
-
-adjust_block_desc = fn string -> String.replace(string, "/", "-") end
-
-tests_dir
-|> File.ls!()
-|> Stream.filter(&(Path.extname(&1) === ".json"))
-|> Stream.reject(&(&1 in omit))
-|> Stream.flat_map(fn filename ->
-  test_json =
-    tests_dir
-    |> Path.join(filename)
-    |> File.read!()
-    |> Jason.decode!()
-
-  base_file = Path.basename(filename, ".json")
-
-  Enum.flat_map(test_json, fn %{"description" => block_desc} ->
-    block_desc = adjust_block_desc.(block_desc)
-    full_name = "#{base_file}-#{block_desc}.exs"
-    code_file = Path.join(code_dir, full_name)
-
-    List.wrap(
-      unless File.exists?(code_file) do
-        {base_file, block_desc}
-      end
-    )
-  end)
+~w(test.ex schema.ex)
+|> Enum.each(fn file ->
+  __DIR__
+  |> Path.join("benchmark/#{file}")
+  |> Code.compile_file()
 end)
-|> Enum.to_list()
+
+alias Benchmark.Schema
+alias Benchmark.Test
 ```
 
-```elixir
-gpt35missing = [
-  {"dependentSchemas", "single dependency"},
-  {"dependentSchemas", "dependencies with escaped characters"},
-  {"enum", "nul characters in strings"},
-  {"const", "nul characters in strings"},
-  {"dependentRequired", "single dependency"},
-  {"dependentRequired", "dependencies with escaped characters"}
-]
-```
+## Benchmarking Framework Code
 
 ```elixir
-gpt4missing = [
-  {"type", "type: array, object or null"},
-  {"ref", "remote ref, containing refs itself"},
-  {"ref", "refs with quote"},
-  {"unevaluatedProperties", "unevaluatedProperties with if-then-else"},
-  {"allOf", "allOf"},
-  {"dependentSchemas", "single dependency"},
-  {"dependentSchemas", "dependencies with escaped characters"},
-  {"enum", "nul characters in strings"},
-  {"format", "validation of URIs"},
-  {"const", "const with {\"a\": false} does not match {\"a\": 0}"},
-  {"const", "const with {\"a\": true} does not match {\"a\": 1}"},
-  {"const", "nul characters in strings"},
-  {"unevaluatedItems", "unevaluatedItems false"},
-  {"unevaluatedItems", "unevaluatedItems with if-then-else"},
-  {"dependentRequired", "single dependency"},
-  {"dependentRequired", "dependencies with escaped characters"},
-  {"oneOf", "oneOf"}
-]
+defmodule Benchmark do
+  @test_directory Path.join(__DIR__, "../test/_draft2020-12")
+  def get_test_content do
+    @test_directory
+    |> Schema.stream_from_directory()
+    |> Enum.to_list()
+  end
+
+  def run(gpt, test_content) do
+    code_directory = Path.join(__DIR__, gpt)
+
+    Enum.map(test_content, &compile_schema/1)
+  end
+end
+```
+
+## Run benchmark
+
+```elixir
+tests = Benchmark.get_test_content()
+
+Benchmark.run("3.5", tests)
 ```

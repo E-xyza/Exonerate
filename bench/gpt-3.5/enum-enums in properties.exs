@@ -1,26 +1,10 @@
-defmodule :"enum-enums in properties-gpt-3.5" do
+defmodule :"enums in properties-gpt-3.5" do
   def validate(object) when is_map(object) do
-    case Map.has_key(object, "bar") do
-      true ->
-        case Map.get(object, "bar") do
-          "bar" ->
-            case Map.has_key(object, "foo") do
-              true ->
-                case Map.get(object, "foo") do
-                  "foo" -> :ok
-                  _ -> :error
-                end
+    {:ok, _} = Map.get_and_update(object, :bar, fn _old_val -> :not_found end)
 
-              false ->
-                :error
-            end
-
-          _ ->
-            :error
-        end
-
-      false ->
-        :error
+    case Map.has_key?(object, :foo) do
+      true -> {:ok, _}
+      false -> :error
     end
   end
 

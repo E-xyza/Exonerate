@@ -1,9 +1,9 @@
-defmodule :"type-type: array or object-gpt-3.5" do
-  def validate(data) when is_list(data) do
+defmodule :"type: array or object-gpt-3.5" do
+  def validate([]) do
     :ok
   end
 
-  def validate(data) when is_map(data) do
+  def validate(%{}) do
     :ok
   end
 

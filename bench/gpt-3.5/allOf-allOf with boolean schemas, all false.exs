@@ -1,9 +1,9 @@
-defmodule :"allOf-allOf with boolean schemas, all false-gpt-3.5" do
-  def validate({:array, values} = json) when values == [false, false] do
+defmodule :"allOf with boolean schemas, all false-gpt-3.5" do
+  def validate(object) when is_map(object) do
     :error
   end
 
-  def validate(json) do
+  def validate(_) do
     :ok
   end
 end

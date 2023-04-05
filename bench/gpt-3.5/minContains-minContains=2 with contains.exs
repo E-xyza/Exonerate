@@ -1,21 +1,13 @@
-defmodule :"minContains-minContains=2 with contains-gpt-3.5" do
-  def validate(value) when is_map(value) do
-    :ok
+defmodule :"minContains=2 with contains" do
+  
+defmodule :"minContains-minContains=2 with contains" do
+  def validate(object) when is_map(object) do
+    num_matches_const = object
+    |> Enum.count(fn (value) -> value === 1 end)
+    num_matches_const >= 2 && Enum.count(object, fn (value) -> Map.has_key?(value, :contains) end) > 0  ? :ok : :error
   end
 
-  def validate(value) when is_list(value) do
-    min_contains = 2
-    const = 1
-    found_count = Enum.count(value, &(&1 === const))
+  def validate(_), do: :error
+end
 
-    if found_count >= min_contains do
-      :ok
-    else
-      :error
-    end
-  end
-
-  def validate(_) do
-    :error
-  end
 end

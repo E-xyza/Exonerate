@@ -1,21 +1,49 @@
-defmodule :"ref-refs with quote-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    case validate_properties(object, %{"foo\"bar" => fn val -> is_number(val) end}) do
-      true -> :ok
-      false -> :error
-    end
+defmodule :"refs with quote-gpt-3.5" do
+  def validate(%{} = object) do
+    :ok
   end
 
   def validate(_) do
     :error
   end
 
-  defp validate_properties(object, properties) do
-    Enum.all?(properties, fn {prop_key, prop_fun} ->
-      case get_in(object, String.split(prop_key, "\""), :invalid) do
-        :invalid -> false
-        val -> prop_fun.(val)
-      end
-    end)
+  @schema %{
+    "$defs" => %{"foo\"bar" => %{"type" => "number"}},
+    "properties" => %{"foo\"bar" => %{"$ref" => "#/$defs/foo%22bar"}}
+  }
+  defp validate_ref_ref(%{"$ref" => ref}) do
+    validate_ref(ref)
+  end
+
+  defp validate_ref_ref(_) do
+    :ok
+  end
+
+  defp validate_ref(ref) do
+    ["#", path] =
+      String.split(
+        ref,
+        "/",
+        parts: 2
+      )
+
+    [head | tail] =
+      String.split(
+        path,
+        "/"
+      )
+
+    case head do
+      "$defs" ->
+        {:ok, definition} = Map.fetch_in(@schema, [head, to_atom(head) |> to_binary, tail])
+        validate_ref(definition)
+
+      _ ->
+        :error
+    end
+  end
+
+  defp to_binary(string) do
+    string |> String.replace("\\", "\\\\") |> String.replace("\"", "\\\"") |> String.to_binary()
   end
 end

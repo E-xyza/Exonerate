@@ -1,5 +1,5 @@
-defmodule :"type-object type matches objects-gpt-3.5" do
-  def validate(item) when is_map(item) do
+defmodule :"object type matches objects-gpt-3.5" do
+  def validate(object) when is_map(object) do
     :ok
   end
 

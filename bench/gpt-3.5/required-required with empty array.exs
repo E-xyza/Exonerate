@@ -1,12 +1,14 @@
-defmodule :"required-required with empty array-gpt-3.5" do
+defmodule :"required with empty array-gpt-3.5" do
   def validate(object) when is_map(object) do
-    case Map.has_key?(object, :foo) do
-      true -> :ok
-      false -> :error
+    props = Map.keys(object)
+
+    case props -- [] do
+      [] -> :ok
+      missing_props -> {:error, "Required properties missing: #{inspect(missing_props)}"}
     end
   end
 
   def validate(_) do
-    :error
+    {:error, "Invalid object type"}
   end
 end

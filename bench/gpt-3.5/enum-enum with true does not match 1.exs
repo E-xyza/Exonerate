@@ -1,5 +1,5 @@
-defmodule :"enum-enum with true does not match 1-gpt-3.5" do
-  def validate(object) when object in [true] do
+defmodule :"enum with true does not match 1-gpt-3.5" do
+  def validate({:array, elements}) when elements == [true] do
     :ok
   end
 

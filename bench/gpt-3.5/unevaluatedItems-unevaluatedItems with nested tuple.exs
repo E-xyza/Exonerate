@@ -1,43 +1,56 @@
-defmodule :"unevaluatedItems-unevaluatedItems with nested tuple-gpt-3.5" do
-  def validate(json) do
-    case json do
-      %{} -> validate_object(json)
-      [] -> :ok
-      [_ | _] -> validate_array(json)
-      _ -> :error
+defmodule :"unevaluatedItems with nested tuple-gpt-3.5" do
+  def validate(value) when is_list(value) do
+    if Enum.reduce(value, {true, :ok}, fn item, {valid, _} ->
+         case validate_item(item) do
+           :error -> {false, :error}
+           _ -> {valid, :ok}
+         end
+       end) == {true, :ok} do
+      :ok
+    else
+      :error
     end
   end
 
-  defp validate_object(json) when is_map(json) do
-    :ok
-  end
-
-  defp validate_object(_) do
+  def validate(_) do
     :error
   end
 
-  defp validate_array(json) when is_list(json) do
-    case json do
-      [prefix_item | _tail] = json ->
-        case prefix_item do
-          "string" ->
-            case _tail do
-              [true | [_ | _rest]] -> validate_array(_rest)
-              _ -> :error
-            end
+  defp validate_item(value) when is_binary(value) do
+    :ok
+  end
 
-          true ->
-            case _tail do
-              [{"number", _} | [_ | _rest]] -> validate_array(_rest)
-              _ -> :error
-            end
+  defp validate_item(value) when is_number(value) do
+    :ok
+  end
 
-          _ ->
-            :error
+  defp validate_item(value) when is_list(value) do
+    items = Enum.reverse(value) |> Enum.drop(1) |> Enum.reverse()
+    prefix_items = Enum.reverse(value) |> Enum.take(1)
+
+    case Enum.reduce(items, {true, :ok}, fn item, {valid, _} ->
+           case validate_item(item) do
+             :error -> {false, :error}
+             _ -> {valid, :ok}
+           end
+         end) do
+      {_, :error} ->
+        :error
+
+      {true, _} ->
+        case Enum.reduce(prefix_items, {true, :ok}, fn item, {valid, _} ->
+               case validate_item(item) do
+                 :error -> {false, :error}
+                 _ -> {valid, :ok}
+               end
+             end) do
+          {false, _} -> :error
+          _ -> :ok
         end
-
-      [] ->
-        :ok
     end
+  end
+
+  defp validate_item(_, _) do
+    :error
   end
 end

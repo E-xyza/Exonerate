@@ -1,45 +1,47 @@
-defmodule :"format-validation of JSON pointers-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    :ok
+defmodule :"validation of JSON pointers-gpt-3.5" do
+  def validate(%{"$ref" => _} = object) do
+    validate_ref(object)
+  end
+
+  def validate(%{"format" => "json-pointer"} = object) do
+    validate_json_pointer(object)
   end
 
   def validate(_) do
     :error
   end
 
-  defp validate_with_format(object, "json-pointer") do
-    :ok
+  defp validate_ref(%{"$ref" => ref} = object) do
+    {schema_module, pointer} = resolve_reference(ref)
+    schema = schema_module.validate(pointer)
+    schema.validate(object)
   end
 
-  defp validate_with_format(_, _) do
+  defp validate_ref(_) do
     :error
   end
 
-  defp validate_with_type(object, "object") do
-    validate_map(object)
+  defp validate_json_pointer(%{"$data" => data} = object) do
+    try do
+      {:ok, _} =
+        Jason.decode!(data,
+          keys: :atoms
+        )
+
+      :ok
+    rescue
+      _ -> :error
+    end
   end
 
-  defp validate_with_type(object, "string") do
-    validate_string(object)
-  end
-
-  defp validate_with_type(_, _) do
+  defp validate_json_pointer(_) do
     :error
   end
 
-  defp validate_map(object) when is_map(object) do
-    :ok
-  end
+  defp resolve_reference(reference) do
+    {module_name, pointer} =
+      URI.parse(reference).fragment |> URI.decode_www_form() |> List.first()
 
-  defp validate_map(_) do
-    :error
-  end
-
-  defp validate_string(object) when is_binary(object) do
-    :ok
-  end
-
-  defp validate_string(_) do
-    :error
+    {Code.require_file(module_name), pointer}
   end
 end

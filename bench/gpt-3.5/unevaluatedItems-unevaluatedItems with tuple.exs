@@ -1,13 +1,9 @@
-defmodule :"unevaluatedItems-unevaluatedItems with tuple-gpt-3.5" do
-  def validate(input)
-      when is_list(input) and input != [] and List.first(input) == %{"type" => "array"} and
-             Keyword.has_key?(
-               List.last(input),
-               :type
-             ) and List.length(List.last(input)[:prefixItems]) == 1 and
-             List.first(List.last(input)[:prefixItems]) == %{"type" => "string"} and
-             List.last(input)[:unevaluatedItems] == false do
-    :ok
+defmodule :"unevaluatedItems with tuple-gpt-3.5" do
+  def validate(object) when is_list(object) do
+    case Enum.all?(object, fn item -> is_binary(item) end) do
+      true -> :ok
+      false -> :error
+    end
   end
 
   def validate(_) do

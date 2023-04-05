@@ -1,73 +1,49 @@
-defmodule :"unevaluatedProperties-unevaluatedProperties with anyOf-gpt-3.5" do
+defmodule :"unevaluatedProperties with anyOf-gpt-3.5" do
   def validate(object) when is_map(object) do
-    validate_object(object)
+    any_of_valid =
+      object
+      |> Map.keys()
+      |> Enum.reduce(
+        [],
+        fn key, valid ->
+          case any_of_key_valid?(key) do
+            true -> [key | valid]
+            false -> valid
+          end
+        end
+      )
+
+    case length(any_of_valid) do
+      0 -> :error
+      _ -> :ok
+    end
   end
 
   def validate(_) do
     :error
   end
 
-  defp validate_object(object) do
-    case validate_schema(object) do
-      :ok -> :ok
-      _ -> :error
-    end
+  defp any_of_key_valid?("foo") do
+    map_key_valid?("foo", :string)
   end
 
-  defp validate_schema(%{"type" => "object"}) do
-    :ok
+  defp any_of_key_valid?("bar") do
+    map_key_valid?("bar", :constant, "bar")
   end
 
-  defp validate_schema(%{"type" => "array"}) do
-    :ok
+  defp any_of_key_valid?("baz") do
+    map_key_valid?("baz", :constant, "baz")
   end
 
-  defp validate_schema(%{"type" => "string"} = schema) do
-    case schema["format"] do
-      "email" -> validate_email(schema)
-      _ -> :ok
-    end
+  defp any_of_key_valid?("quux") do
+    map_key_valid?("quux", :constant, "quux")
   end
 
-  defp validate_schema(%{"type" => "number"}) do
-    :ok
+  defp map_key_valid?(key, :string) do
+    is_binary(Map.get(object, key))
   end
 
-  defp validate_schema(%{"type" => "integer"}) do
-    :ok
-  end
-
-  defp validate_schema(%{"type" => "boolean"}) do
-    :ok
-  end
-
-  defp validate_schema(%{"anyOf" => any_of}) do
-    case Enum.map(any_of, &validate_schema/1) do
-      [:ok | _] -> :ok
-      _ -> :error
-    end
-  end
-
-  defp validate_schema(%{"properties" => props} = schema) do
-    case Enum.all?(props, fn {key, prop} ->
-           case Map.get(schema, "required") do
-             [required_key | _] when required_key == key -> Map.has_key?(prop, "const")
-             _ -> true
-           end
-         end) do
-      true -> :ok
-      _ -> :error
-    end
-  end
-
-  defp validate_schema(_) do
-    :error
-  end
-
-  defp validate_email(%{"pattern" => pattern}) do
-    case Regex.match?(~r/#{pattern}/, "test@example.com") do
-      true -> :ok
-      false -> :error
-    end
+  defp map_key_valid?(key, :constant, val) do
+    Map.get(object, key) === val
   end
 end

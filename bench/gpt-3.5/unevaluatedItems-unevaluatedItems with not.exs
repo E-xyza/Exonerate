@@ -1,42 +1,27 @@
-defmodule :"unevaluatedItems-unevaluatedItems with not-gpt-3.5" do
-  def validate(json) when is_list(json) do
-    check_array(json)
-  end
+defmodule :"unevaluatedItems with not-gpt-3.5" do
+  def validate(array) when is_list(array) do
+    prefix_items =
+      case Enum.split_while(array, &(&1 == "foo")) do
+        {prefix_items, ["foo" | rest]} -> prefix_items
+        _ -> []
+      end
 
-  def validate(json) when is_map(json) do
-    check_object(json)
+    not_prefix_items =
+      case Enum.split_while(array, &(&1 in [true, "bar"])) do
+        {not_prefix_items, [true | ["bar" | rest]]} -> not_prefix_items
+        _ -> []
+      end
+
+    is_valid = length(prefix_items) > 0 and length(not_prefix_items) == 0
+
+    if is_valid do
+      :ok
+    else
+      :error
+    end
   end
 
   def validate(_) do
     :error
-  end
-
-  defp check_array(json) do
-    case Keyword.fetch(json, "type") do
-      {:ok, "array"} ->
-        items = Keyword.get(json, "prefixItems", [])
-        eval_items = Keyword.get(json, "unevaluatedItems", "true")
-
-        if !Enum.all?(items, fn item ->
-             case Keyword.fetch(item, "const") do
-               {:ok, const} -> const in [true, false]
-               :error -> false
-             end
-           end) do
-          :error
-        else
-          :ok
-        end
-
-      _ ->
-        :error
-    end
-  end
-
-  defp check_object(json) do
-    case Keyword.fetch(json, "type") do
-      {:ok, "object"} -> :ok
-      _ -> :error
-    end
   end
 end

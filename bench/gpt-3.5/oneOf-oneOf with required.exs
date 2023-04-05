@@ -1,17 +1,17 @@
-defmodule :"oneOf-oneOf with required-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    validate_object(object)
+defmodule :"oneOf with required-gpt-3.5" do
+  def validate(object) when is_map(object) and is_valid_object(object) do
+    :ok
   end
 
   def validate(_) do
     :error
   end
 
-  defp validate_object(object) do
+  def is_valid_object(object) do
     case object do
-      %{"foo" => foo, "bar" => bar} -> :ok
-      %{"foo" => foo, "baz" => baz} -> :ok
-      _ -> :error
+      %{"foo" => _, "bar" => _} -> true
+      %{"foo" => _, "baz" => _} -> true
+      _ -> false
     end
   end
 end

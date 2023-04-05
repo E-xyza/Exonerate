@@ -1,57 +1,55 @@
-defmodule :"properties-properties with escaped characters-gpt-3.5" do
-  def validate(%{} = object) do
-    validate_object(object)
+defmodule :"properties with escaped characters" do
+  
+defmodule :"properties-properties with escaped characters" do
+  def validate(schema) do
+    case schema do
+      %{"type" => "object"} ->
+        fn map when is_map(map) -> :ok
+           _ -> :error
+        end
+      %{"properties" => properties} ->
+        fun =
+          properties
+          |> Enum.reduce([], fn {key, value}, acc ->
+            module_name =
+              key
+              |> String.replace(~r/[\n\r\t\f"\\]/, &("\\\\" <> to_string(&1)) |> String.to_atom)
+
+            schema = %{key => value}
+
+            quote bind_quoted: [module_name: module_name, schema: schema, acc: acc] do
+              def validate(unquote(module_name) = map when is_map(map) and map_contains?(unquote(map), unquote(schema)), do: Enum.concat(unquote(acc), [])
+
+              def validate(map when is_map(map) and not map_contains?(unquote(map), unquote(schema)), do: [:error | Enum.concat(unquote(acc), []))
+            end
+          end)
+          |> List.flatten()
+          |> Macro.escape()
+
+        Macro.module_eval(quote bind_quoted: [fun: fun] do
+          def validate(map) do
+            unquote(fun).(map)
+          end
+        end)
+      _ ->
+        fn _ -> :error end
+    end
   end
 
-  def validate(_) do
-    :error
+  defp map_contains?(map, schema) do
+    map
+    |> Map.keys()
+    |> Enum.all?(fn key -> schema_contains_key?(key, schema) end)
   end
 
-  defp validate_object(%{} = object) do
-    %{"properties" => properties} = schema_parts()
-    validate_properties(properties, object)
+  defp schema_contains_key?(key, schema) do
+    case schema do
+      %{"properties" => properties} ->
+        Enum.any?(properties, fn {k, _} -> k == key end)
+      _ ->
+        false
+    end
   end
+end
 
-  defp validate_object(_) do
-    :error
-  end
-
-  defp validate_properties(properties, object) do
-    Enum.reduce(properties, :ok, fn {key, property_schema}, result ->
-      case Map.get(object, key) do
-        nil -> :error
-        value -> validate_property(property_schema, value)
-      end
-      |> validate_result(result)
-    end)
-  end
-
-  defp validate_property(%{"type" => "number"}, value) when is_number(value) do
-    :ok
-  end
-
-  defp validate_property(_property_schema, _value) do
-    :error
-  end
-
-  defp validate_result(:error, _) do
-    :error
-  end
-
-  defp validate_result(:ok, result) do
-    result
-  end
-
-  defp schema_parts() do
-    %{
-      "properties" => %{
-        "foo\tbar" => %{"type" => "number"},
-        "foo\nbar" => %{"type" => "number"},
-        "foo\fbar" => %{"type" => "number"},
-        "foo\rbar" => %{"type" => "number"},
-        "foo\"bar" => %{"type" => "number"},
-        "foo\\bar" => %{"type" => "number"}
-      }
-    }
-  end
 end

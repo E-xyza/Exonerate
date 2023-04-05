@@ -1,20 +1,9 @@
-defmodule :"if-then-else-ignore if without then or else-gpt-3.5" do
-  @spec validate(String.t()) :: :ok | :error
-  def validate(json) do
-    {:ok, decoded} = Jason.decode(json)
+defmodule :"ignore if without then or else-gpt-3.5" do
+  def validate(json) when json == %{"if" => %{"const" => 0}} do
+    :ok
+  end
 
-    case decoded do
-      %{"if" => %{"const" => 0}} ->
-        :ok
-
-      %{"type" => "object"} ->
-        (fn
-           object when is_map(object) -> :ok
-           _ -> :error
-         end).()
-
-      _ ->
-        :error
-    end
+  def validate(_) do
+    :error
   end
 end

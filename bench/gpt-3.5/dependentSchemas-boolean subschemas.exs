@@ -1,35 +1,30 @@
-defmodule :"dependentSchemas-boolean subschemas-gpt-3.5" do
-  def validate(schema) when is_map(schema) do
-    validate_object(schema)
-  end
+defmodule :"boolean subschemas-gpt-3.5" do
+  def validate(decoded_json) do
+    case decoded_json do
+      %{"type" => "object"} ->
+        check_object()
 
-  def validate(_) do
-    :error
-  end
+      %{"dependentSchemas" => %{"foo" => foo_val, "bar" => bar_val}} ->
+        check_dependent_schemas(foo_val, bar_val)
 
-  defp validate_object(%{"type" => "object"}) do
-    fn object -> is_map(object) end
-  end
-
-  defp validate_object(%{"dependentSchemas" => dependent_schemas}) do
-    dependent_schemas
-    |> Enum.all?(&validate_dependent_schema(&1))
-    |> if do
-      fn _ -> :ok end
-    else
-      fn _ -> :error end
+      _ ->
+        :error
     end
   end
 
-  defp validate_object(_) do
-    fn _ -> false end
+  defp check_object() do
+    :ok
   end
 
-  defp validate_dependent_schema({schema_name, false}) do
-    fn _ -> true end
+  defp check_object(_) do
+    :error
   end
 
-  defp validate_dependent_schema({schema_name, true}) do
-    fn object -> apply(schema_name, :validate, [object]) == :ok end
+  defp check_dependent_schemas(true, false) do
+    :ok
+  end
+
+  defp check_dependent_schemas(_, _) do
+    :error
   end
 end

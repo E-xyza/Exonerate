@@ -1,14 +1,8 @@
-defmodule :"format-validation of regexes" do
-  
-defmodule Jsonschema do
-  def validate(json) when is_map(json) and Map.has_key?(json, "format") do
-    case json["format"] do
-      "regex" -> fn(value) when is_binary(value) and String.match?(value, //) -> :ok
+defmodule :"validation of regexes-gpt-3.5" do
+  def validate(value) do
+    case value do
+      %{"format" => "regex"} -> :ok
       _ -> :error
-    end.().()
+    end
   end
-
-  def validate(_), do: :ok
-end
-
 end

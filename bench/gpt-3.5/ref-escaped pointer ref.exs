@@ -1,22 +1,20 @@
-defmodule :"ref-escaped pointer ref-gpt-3.5" do
-  @jsonschema %{
-    "$defs" => %{
-      "percent%field" => %{"type" => "integer"},
-      "slash/field" => %{"type" => "integer"},
-      "tilde~field" => %{"type" => "integer"}
-    },
-    "properties" => %{
-      "percent" => %{"$ref" => "#/$defs/percent%25field"},
-      "slash" => %{"$ref" => "#/$defs/slash~1field"},
-      "tilde" => %{"$ref" => "#/$defs/tilde~0field"}
-    }
-  }
+defmodule :"escaped pointer ref-gpt-3.5" do
   def validate(object) when is_map(object) do
-    try do
-      validate_object(object, @jsonschema)
+    :ok
+  end
+
+  def validate(_) do
+    :error
+  end
+
+  def validate(%{"$defs" => defs, "properties" => props}) when is_map(defs) and is_map(props) do
+    defs_valid = defs |> Enum.map(&match_def(&1)) |> Enum.all?(&(&1 == :ok))
+    props_valid = props |> Enum.map(&match_prop(&1, defs)) |> Enum.all?(&(&1 == :ok))
+
+    if defs_valid and props_valid do
       :ok
-    rescue
-      _ -> :error
+    else
+      :error
     end
   end
 
@@ -24,37 +22,59 @@ defmodule :"ref-escaped pointer ref-gpt-3.5" do
     :error
   end
 
-  defp validate_object(%{}, _) do
-    :ok
+  def match_def({k, v}) when is_atom(k) and is_map(v) do
+    case v["type"] do
+      "integer" -> :ok
+      _ -> :error
+    end
   end
 
-  defp validate_object(%{key => value} = object, schema) do
-    case Map.get(schema, "properties") do
-      nil ->
-        case Map.get(schema, "type") do
-          "object" -> validate_object(value, schema)
-          "integer" when is_integer(value) -> :ok
+  def match_def(_) do
+    :error
+  end
+
+  def match_prop({k, %{"$ref" => ref}}, defs) when is_atom(k) and is_binary(ref) do
+    case resolve_ref(ref, defs) do
+      :ok -> :ok
+      _ -> :error
+    end
+  end
+
+  def match_prop({k, _}, _) do
+    :error
+  end
+
+  def resolve_ref(ref, defs) when is_binary(ref) do
+    case Regex.run(~r/^#\/(\$defs)?\/(\w+[\w\/\%\~]*)$/, ref) do
+      [[_, _, path]] ->
+        path
+        |> String.split("~/")
+        |> Enum.reduce_while(defs, fn name, map ->
+          map[key_to_atom(name)]
+          |> case do
+            nil -> {:halt, :error}
+            v -> {:cont, v}
+          end
+        end)
+        |> case do
+          %{"type" => "integer"} -> :ok
           _ -> :error
         end
 
-      properties_schema ->
-        case Map.get(properties_schema, key) do
-          nil ->
-            case Map.get(properties_schema, "$ref") do
-              nil ->
-                case Map.get(schema, "additionalProperties") do
-                  false -> :error
-                  sub_schema -> validate_object(object, sub_schema)
-                end
-
-              ref when is_binary(ref) ->
-                {_, property} = ref |> String.split("#/") |> List.last() |> String.split("/")
-                validate_object(object, Map.get(schema, "$defs", %{}) |> Map.get(property, %{}))
-            end
-
-          key_schema ->
-            validate_object(value, key_schema)
-        end
+      _ ->
+        :error
     end
+  end
+
+  def resolve_ref(_, _) do
+    :error
+  end
+
+  def key_to_atom(key) do
+    key
+    |> String.replace("%", "%25")
+    |> String.replace("/", "~1")
+    |> String.replace("~", "~0")
+    |> String.to_atom()
   end
 end

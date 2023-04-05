@@ -1,17 +1,12 @@
-defmodule :"propertyNames-propertyNames with boolean schema false-gpt-3.5" do
-  def validate(data) when is_map(data) do
-    :ok
+defmodule :"propertyNames with boolean schema false-gpt-3.5" do
+  def validate(object) when is_map(object) and Map.size(object) > 0 do
+    case Map.keys(object) do
+      [_ | _] -> :error
+      [] -> :ok
+    end
   end
 
   def validate(_) do
-    :error
-  end
-
-  def from_schema(%{"propertyNames" => false}) do
-    &validate/1
-  end
-
-  def from_schema(_) do
-    nil
+    :ok
   end
 end

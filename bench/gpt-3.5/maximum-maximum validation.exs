@@ -1,20 +1,16 @@
-defmodule :"maximum-maximum validation-gpt-3.5" do
-  def validate(json) when is_map(json) do
-    if json_has_valid_maximum?(json) do
-      :ok
-    else
-      :error
+defmodule :"maximum validation-gpt-3.5" do
+  def validate(object) when is_map(object) do
+    cond do
+      Map.has_key?(object, "maximum") and is_number(Map.get(object, "maximum")) and
+          Map.get(object, "maximum") <= 3.0 ->
+        :ok
+
+      true ->
+        :error
     end
   end
 
   def validate(_) do
     :error
-  end
-
-  defp json_has_valid_maximum?(json) do
-    case Map.fetch(json, "maximum") do
-      {:ok, max} when is_float(max) and max <= 3.0 -> true
-      _ -> false
-    end
   end
 end

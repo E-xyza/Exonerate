@@ -1,13 +1,9 @@
-defmodule :"minimum-minimum validation with signed integer-gpt-3.5" do
-  defmodule Validator do
-    def validate(object) when is_integer(object) and object >= -2 do
-      :ok
-    end
-
-    def validate(_) do
-      :error
-    end
+defmodule :"minimum validation with signed integer-gpt-3.5" do
+  def validate(value) when is_integer(value) and value >= -2 do
+    :ok
   end
 
-  Validator.validate(decoded_json_value)
+  def validate(_) do
+    :error
+  end
 end

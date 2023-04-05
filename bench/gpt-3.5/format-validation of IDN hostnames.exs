@@ -1,12 +1,16 @@
-defmodule :"format-validation of IDN hostnames-gpt-3.5" do
-  def validate(value) when is_map(value) do
-    case Map.fetch(value, "format") do
-      {:ok, "idn-hostname"} -> :ok
-      _ -> :error
-    end
+defmodule :"validation of IDN hostnames-gpt-3.5" do
+  def validate(object) when is_binary(object) and is_valid_idn_hostname?(object) do
+    :ok
   end
 
-  def validate(_) do
+  def validate(object) do
     :error
+  end
+
+  defp is_valid_idn_hostname?(hostname) do
+    case :inet_parse.idn_to_ascii(hostname) do
+      {:ok, _} -> true
+      :error -> false
+    end
   end
 end

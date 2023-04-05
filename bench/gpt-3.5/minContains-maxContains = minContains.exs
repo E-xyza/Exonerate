@@ -1,19 +1,22 @@
-defmodule :"minContains-maxContains = minContains-gpt-3.5" do
-  def validate(schema) do
-    case schema do
-      %{"contains" => %{"const" => constant}, "maxContains" => max, "minContains" => min} ->
-        fn decoded when is_list(decoded) ->
-          count = decoded |> Enum.count(&(&1 == constant))
+defmodule :"maxContains = minContains-gpt-3.5" do
+  def validate(arr)
+      when is_list(arr) and length(arr) >= @minContains and
+             length(Enum.filter(arr, &(&1 == 1))) <= @maxContains do
+    :ok
+  end
 
-          if min <= count and count <= max do
-            :ok
-          else
-            :error
-          end
-        end
+  def validate(_) do
+    :error
+  end
 
-      _ ->
-        fn _ -> :error end
-    end
+  @impl true
+  def init([]) do
+    []
+  end
+
+  def init(config) do
+    config
+    |> Enum.reduce(%{}, fn {k, v}, acc -> Map.put(acc, to_atom(k), v) end)
+    |> Map.merge(%{minContains: 0, maxContains: 100})
   end
 end

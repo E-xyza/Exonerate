@@ -1,22 +1,30 @@
-defmodule :"contains-contains keyword validation-gpt-3.5" do
-  elixir
+defmodule :"contains keyword validation-gpt-3.5" do
+  def validate(object)
+      when is_map(object) and tuple_size(:maps.find(object, "contains", :error)) == 2 do
+    {key, value} =
+      :maps.find(
+        object,
+        "contains"
+      )
 
-  defmodule Validator do
-    def validate(_) do
+    if is_list(value) and length(value) >= get_minimum(key) do
+      :ok
+    else
       :error
     end
+  end
 
-    def validate(object) when is_map(object) do
-      case Map.fetch(object, "contains") do
-        {:ok, validation} ->
-          case Map.fetch(validation, "minimum") do
-            {:ok, minimum} when is_integer(minimum) and minimum >= 5 -> :ok
-            _ -> :error
-          end
+  def validate(_) do
+    :error
+  end
 
-        _ ->
-          :error
-      end
+  defp get_minimum(key) do
+    minimum = tuple_size(:maps.find(key, "minimum", :error))
+
+    if minimum == 2 do
+      :maps.get(key, "minimum", :error)
+    else
+      0
     end
   end
 end

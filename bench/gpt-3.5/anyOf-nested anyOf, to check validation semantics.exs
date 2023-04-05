@@ -1,5 +1,5 @@
-defmodule :"anyOf-nested anyOf, to check validation semantics-gpt-3.5" do
-  def validate(object) when object == nil do
+defmodule :"nested anyOf, to check validation semantics-gpt-3.5" do
+  def validate(nil) do
     :ok
   end
 

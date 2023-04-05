@@ -1,13 +1,17 @@
-defmodule :"oneOf-nested oneOf, to check validation semantics-gpt-3.5" do
-  def validate(value) when is_map(value) and not Map.is_empty(value) do
-    :ok
-  end
-
-  def validate(value) when is_nil(value) do
+defmodule :"nested oneOf, to check validation semantics-gpt-3.5" do
+  def validate(null) when is_nil(null) do
     :ok
   end
 
   def validate(_) do
     :error
+  end
+
+  def validate(object) when is_map(object) do
+    :error
+  end
+
+  def validate(_) do
+    :ok
   end
 end

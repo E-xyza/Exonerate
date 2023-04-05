@@ -1,10 +1,6 @@
-defmodule :"format-validation of URI templates-gpt-3.5" do
-  def validate(%{"format" => "uri-template"} = decoded_json) do
-    if is_map(decoded_json) do
-      :ok
-    else
-      :error
-    end
+defmodule :"validation of URI templates-gpt-3.5" do
+  def validate(object) when is_binary(object) and String.match?(object, ~r{\A\{([^\}]*)\}\z}) do
+    :ok
   end
 
   def validate(_) do

@@ -1,81 +1,77 @@
-defmodule :"unevaluatedItems-unevaluatedItems with if-then-else" do
+defmodule :"unevaluatedItems with if/then/else" do
+  
+defmodule :"unevaluatedItems-unevaluatedItems_with_if_then_else" do
+  def validate(object)
+      when is_tuple(object) and tuple_size(object) == 2 and
+           element(1, object) == :ok and is_map(element(2, object)) 
+      do
+    schema = %{
+      "else" => %{
+        "prefixItems" => [true, true, true, %{"const" => "else"}]
+      },
+      "if" => %{
+        "prefixItems" => [true, %{"const" => "bar"}]
+      },
+      "prefixItems" => [%{"const" => "foo"}],
+      "then" => %{
+        "prefixItems" => [true, true, %{"const" => "then"}]
+      },
+      "type" => "array",
+      "unevaluatedItems" => false
+    }
 
-defmodule MySchema do
-  def validate(schema) do
-    case schema do
-      %{"type" => "object"} -> validate_object()
-      %{"type" => "array"} -> validate_array()
-      _ -> :error
+    case validate_schema(schema, object) do
+      true -> :ok
+      false -> :error
     end
   end
 
-  defp validate_object(), do: fn object when is_map(object) -> :ok end
-  defp validate_object(), do: fn _ -> :error end
+  def validate(_), do: :error
 
-  defp validate_array(), do: fn array when is_list(array) ->
-    validate_array_items(array, [])
-  end
-
-  defp validate_array(), do: fn _ -> :error end
-
-  defp validate_array_items([], []) -> :ok
-  defp validate_array_items([], _) -> :error
-  defp validate_array_items([item | rest], items) do
-    case validate_array_item(item) do
-      :ok -> validate_array_items(rest, [item | items])
-      _ -> :error
-    end
-  end
-
-  defp validate_array_item(value), do: validate(value)
-
-  defp validate_array_item(%{ "const" => _ } = value) do
-    fn array ->
-      case array do
-        [] -> :error
-        [head | _] ->
-          if head == value, do: :ok, else: :error
+  defp validate_schema(%{"type" => "array", "prefixItems" => prefix_items,
+                         "if" => if_value, "then" => then_value, "else" => else_value,
+                         "unevaluatedItems" => unevaluated_items}, array) do
+    if unevaluated_items do
+      cond do
+        validate_condition(if_value, array) -> validate_branch(then_value, array)
+        true -> validate_branch(else_value, array)
+      end
+    else
+      case length(array) do
+        length when length < length(prefix_items) -> false
+        length when length == length(prefix_items) -> validate_items(array, prefix_items)
+        _ -> case Enum.split(array, length(prefix_items)) do
+          {prefix, rest} -> validate_items(prefix, prefix_items) and
+                             validate_branch(else_value, rest, if_value, then_value)
+          _ -> false
+        end
       end
     end
   end
 
-  defp validate_array_item(%{ "type" => "array", "prefixItems" => prefix }) do
-    if prefix == [], do: fn _ -> :ok end, else: build_array_validator(prefix)
-  end
+  defp validate_schema(_schema, _object), do: false
 
-  defp validate_array_item(%{ "type" => "object", "prefixItems" => prefix }) do
-    if prefix == [], do: fn _ -> :ok end, else: build_object_validator(prefix)
-  end
+  defp validate_items([], []), do: true
+  defp validate_items([head | tail], [%{"const" => const} | rest]),
+    do: head == const and validate_items(tail, rest)
+  defp validate_items([_ | _], [%{"const" => _} | _rest]), do: false
+  defp validate_items([_ | _], []), do: false
 
-  defp validate_array_item(_), do: fn _ -> :error end
-
-  defp build_array_validator(prefix) do
-    fn array ->
-      case prefix do
-        [item | rest] ->
-          case validate_array_item(item).(array) do
-            :ok -> build_array_validator(rest).(array)
-            _ -> :error
-          end
-        [] -> validate_array_items(array, [])
-      end
+  defp validate_branch(nil, []) -> true
+  defp validate_branch(schema, array) -> validate_schema(schema, array)
+  defp validate_branch(schema, array, if_value, then_value) do
+    if validate_condition(if_value, array) do
+      validate_schema(then_value, array)
+    else
+      validate_schema(schema, array)
     end
   end
 
-  defp build_object_validator(prefix) do
-    fn object ->
-      case prefix do
-        [key | rest] ->
-          case Map.get(object, key) do
-            nil -> :error
-            value ->
-              case validate(value).(value) do
-                :ok -> build_object_validator(rest).(object)
-                _ -> :error
-              end
-          end
-        [] -> validate_object().(object)
-      end
+  defp validate_condition(nil, _), do: true
+  defp validate_condition(schema, array) do
+    case validate_schema(schema, array) do
+      true -> true
+      false -> false
     end
   end
 end

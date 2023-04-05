@@ -1,25 +1,33 @@
-defmodule :"multipleOf-invalid instance should not raise error when float division = inf-gpt-3.5" do
-  def validate(%{"type" => "integer", "multipleOf" => multiple_of} = value) do
-    if is_integer(value) and rem(value, trunc(multiple_of)) == 0 do
-      :ok
-    else
-      :error
-    end
+defmodule :"invalid instance should not raise error when float division = inf-gpt-3.5" do
+  def validate(value) do
+    validate_type(value) |> validate_multiple_of()
   end
 
-  def validate(%{"type" => "integer", "multipleOf" => _} = value) do
-    if is_integer(value) do
-      :ok
-    else
-      :error
-    end
-  end
-
-  def validate(%{"type" => "object"} = value) when is_map(value) do
+  defp validate_type(value) when is_integer(value) do
     :ok
   end
 
-  def validate(_) do
+  defp validate_type(value) when is_float(value) do
+    :error
+  end
+
+  defp validate_type(_) do
+    :error
+  end
+
+  defp validate_multiple_of(:error) do
+    :error
+  end
+
+  defp validate_multiple_of(:ok) do
+    :ok
+  end
+
+  defp validate_multiple_of({:number, value}) when rem(value, 0.123456789) == 0 do
+    :ok
+  end
+
+  defp validate_multiple_of(_) do
     :error
   end
 end

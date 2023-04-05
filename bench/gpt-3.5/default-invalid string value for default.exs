@@ -1,21 +1,19 @@
-defmodule :"default-invalid string value for default-gpt-3.5" do
-  def validate(obj) when is_map(obj) do
-    case Map.has_key?(obj, "bar") do
-      false ->
+defmodule :"invalid string value for default-gpt-3.5" do
+  def validate(object) when is_map(object) do
+    if Map.has_key?(object, "bar") do
+      bar_value =
+        Map.get(
+          object,
+          "bar"
+        )
+
+      if is_binary(bar_value) and byte_size(bar_value) >= 4 do
+        :ok
+      else
         :error
-
-      true ->
-        bar_val =
-          Map.get(
-            obj,
-            "bar"
-          )
-
-        if is_binary(bar_val) and String.length(bar_val) >= 4 do
-          :ok
-        else
-          :error
-        end
+      end
+    else
+      :ok
     end
   end
 

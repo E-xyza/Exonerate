@@ -1,12 +1,6 @@
-defmodule :"enum-enum with 1 does not match true-gpt-3.5" do
-  def validate({:array, _, enum: enum} = json) when is_list(enum) do
-    (fn value ->
-       if Enum.member?(enum, value) do
-         :ok
-       else
-         :error
-       end
-     end).()
+defmodule :"enum with 1 does not match true-gpt-3.5" do
+  def validate(object) when is_map(object) and object["enum"] == [1] do
+    :ok
   end
 
   def validate(_) do

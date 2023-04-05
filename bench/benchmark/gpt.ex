@@ -1,6 +1,8 @@
 defmodule Benchmark.GPT do
   @openapi_url "https://api.openai.com/v1/chat/completions"
 
+  alias Exonerate.Tools
+
   def prompt(schema, group, title) do
     title = if title, do: ~s(please name the module with the atom `:"#{group}-#{title}"`)
 
@@ -42,14 +44,14 @@ defmodule Benchmark.GPT do
 
     unless File.dir?(model_dir), do: raise("model code directory #{model_dir} doesn't exist!")
 
-    script_file = Path.join(model_dir, "#{escape(schema.description)}.exs")
+    script_file = Path.join(model_dir, "#{schema.group}-#{escape(schema.description)}.exs")
 
     unless File.exists?(script_file) do
       raw_code =
         schema.schema
         |> Jason.encode!()
         |> fetch_schema_code!(schema.group, schema.description, model)
-        |> trim_elixir
+        |> Tools.if(&(&1), &trim_elixir/1)
 
       code =
         try do

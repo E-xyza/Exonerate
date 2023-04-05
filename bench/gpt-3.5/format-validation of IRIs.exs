@@ -1,5 +1,5 @@
-defmodule :"format-validation of IRIs-gpt-3.5" do
-  def validate(%{"format" => "iri"} = value) do
+defmodule :"validation of IRIs-gpt-3.5" do
+  def validate(iri) when is_binary(iri) and Regex.match?(~r/^[a-z][a-z\d+.-]*:/i, iri) do
     :ok
   end
 

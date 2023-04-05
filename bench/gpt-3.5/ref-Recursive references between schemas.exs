@@ -1,36 +1,31 @@
-defmodule :"ref-Recursive references between schemas-gpt-3.5" do
+defmodule :"Recursive references between schemas-gpt-3.5" do
   def validate(object) when is_map(object) do
-    validate_object(object)
+    case Map.has_key?(object, "meta") and Map.has_key?(object, "nodes") do
+      true ->
+        case Enum.all?(object["nodes"], fn node -> validate_node(node) == :ok end) do
+          true -> :ok
+          false -> :error
+        end
+
+      false ->
+        :error
+    end
   end
 
   def validate(_) do
     :error
   end
 
-  defp validate_object(%{"meta" => _meta, "nodes" => nodes}) do
-    validate_nodes(nodes)
-  end
+  defp validate_node(node) do
+    case Map.has_key?(node, "value") do
+      true ->
+        case Map.has_key?(node, "subtree") do
+          true -> validate(node["subtree"])
+          false -> :ok
+        end
 
-  defp validate_object(_) do
-    :error
-  end
-
-  defp validate_nodes([]) do
-    :ok
-  end
-
-  defp validate_nodes([node | nodes]) do
-    case validate_node(node) do
-      :ok -> validate_nodes(nodes)
-      _ -> :error
+      false ->
+        :error
     end
-  end
-
-  defp validate_node(%{"value" => _value, "subtree" => subtree}) do
-    validate_object(subtree)
-  end
-
-  defp validate_node(_) do
-    :error
   end
 end

@@ -1,46 +1,43 @@
-defmodule :"patternProperties-multiple simultaneous patternProperties are validated-gpt-3.5" do
-  def validate(json) when is_map(json) do
-    case validate_object(json, %{
-           "patternProperties" => %{"a*" => %{"type" => "integer"}, "aaa*" => %{"maximum" => 20}}
-         }) do
-      true -> :ok
-      false -> :error
-    end
+defmodule :"multiple simultaneous patternProperties are validated-gpt-3.5" do
+  def validate(value) when is_map(value) do
+    validate_object(value)
   end
 
   def validate(_) do
     :error
   end
 
-  defp validate_object(object, schema) when is_map(schema) do
-    Map.from_struct(object, &validate_property/1, schema)
+  defp validate_object(object) do
+    case Enum.all?(object, fn {key, value} -> validate_property(key, value) end) do
+      true -> :ok
+      false -> :error
+    end
   end
 
-  defp validate_property({prop, value}, schema) when is_map(schema) do
-    validate_property(prop, value, schema[prop])
+  defp validate_property(key, value) do
+    case Regex.match?("a*", key) do
+      true ->
+        validate_integer(value)
+
+      false ->
+        case Regex.match?("aaa*", key) do
+          true -> validate_maximum(value, 20)
+          false -> true
+        end
+    end
   end
 
-  defp validate_property(_, _, _) do
-    true
+  defp validate_integer(value) do
+    case value do
+      n when is_integer(n) -> :ok
+      _ -> :error
+    end
   end
 
-  defp validate_property(prop, value, %{"type" => "integer"}) when is_integer(value) do
-    true
-  end
-
-  defp validate_property(_, _, %{"type" => "integer"}) do
-    false
-  end
-
-  defp validate_property(prop, value, %{"maximum" => max}) when max >= value do
-    true
-  end
-
-  defp validate_property(_, _, %{"maximum" => _}) do
-    false
-  end
-
-  defp validate_property(_, _, _) do
-    true
+  defp validate_maximum(value, maximum) do
+    case value do
+      n when is_integer(n) and n <= maximum -> :ok
+      _ -> :error
+    end
   end
 end

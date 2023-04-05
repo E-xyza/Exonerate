@@ -1,20 +1,6 @@
-defmodule :"format-validation of URI references-gpt-3.5" do
-  def validate(object) when is_binary(object) do
-    case Poison.decode(object) do
-      {:ok, decoded} -> validate(decoded)
-      _ -> :error
-    end
-  end
-
+defmodule :"validation of URI references-gpt-3.5" do
   def validate(object)
-      when is_map(object) and map_size(object) == 1 and Map.keys(object) == [:format] and
-             String.match?(
-               Map.get(
-                 object,
-                 :format
-               ),
-               ~r/^[\w\+\.\/-]+:\S+$/i
-             ) do
+      when is_binary(object) and Regex.match?(~r/^[a-zA-Z][a-zA-Z0-9+.-]*:/, object) do
     :ok
   end
 

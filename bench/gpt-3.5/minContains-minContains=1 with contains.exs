@@ -1,10 +1,9 @@
-defmodule :"minContains-minContains=1 with contains-gpt-3.5" do
-  require Jason.Schema
-
-  def validate(json) when is_map(json) do
-    case Jason.Schema.validate(json, %{"contains" => %{"const" => 1}, "minContains" => 1}) do
-      {:ok, _} -> :ok
-      {:error, _} -> :error
+defmodule :"minContains=1 with contains-gpt-3.5" do
+  def validate(object) when is_map(object) do
+    if Enum.count(Enum.filter_values(object, &(&1 == 1))) >= 1 do
+      :ok
+    else
+      :error
     end
   end
 

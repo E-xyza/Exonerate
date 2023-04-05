@@ -1,9 +1,33 @@
-defmodule :"default-invalid type for default-gpt-3.5" do
-  @doc "Validates a decoded JSON value against the given schema.\n\n:param value: the decoded JSON value to validate\n:returns: :ok if the value is valid according to the schema,\n          or an error tuple otherwise\n"
-  def validate(value) do
-    case value do
-      %{"foo" => _} when is_integer(Map.get(value, "foo")) -> :ok
-      _ -> {:error, "Value does not match schema"}
+defmodule :"invalid type for default-gpt-3.5" do
+  def validate(object) when is_map(object) do
+    validate_map(object)
+  end
+
+  def validate(_) do
+    :error
+  end
+
+  defp validate_map(map) do
+    case Map.has_key?(map, "foo") do
+      true ->
+        case validate_foo(Map.get(map, "foo")) do
+          :ok -> :ok
+          _ -> :error
+        end
+
+      false ->
+        :ok
     end
+  end
+
+  defp validate_foo(foo) do
+    case is_integer_list(foo) do
+      true -> :ok
+      _ -> :error
+    end
+  end
+
+  defp is_integer_list(list) do
+    list == [] or (is_list(list) and Enum.all?(list, &is_integer/1))
   end
 end

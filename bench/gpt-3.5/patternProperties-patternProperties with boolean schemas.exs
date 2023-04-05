@@ -1,26 +1,21 @@
-defmodule :"patternProperties-patternProperties with boolean schemas-gpt-3.5" do
-  def validate(%{} = object) do
-    case validate_object_keys(object) and validate_pattern_properties(object) do
-      true -> :ok
-      _ -> :error
+defmodule :"patternProperties with boolean schemas" do
+  
+defmodule :"patternProperties-patternProperties with boolean schemas" do
+  def validate(object) when is_map(object) do
+    for {pattern, valid} <- object, regex = Regex.compile("^#{pattern}$") do
+      for {key, value} <- object do
+        if Regex.match?(regex, key) do
+          if valid == true and not(is_map(value)) do
+            return :error
+          elsif valid == false and is_map(value) do
+            return :error
+          end
+        end
+      end
     end
+    :ok
   end
+  def validate(_), do: :error
+end
 
-  def validate(_) do
-    :error
-  end
-
-  defp validate_object_keys(object) do
-    is_map(object)
-  end
-
-  defp validate_pattern_properties(object) do
-    object
-    |> Enum.reject(fn {key, _} -> match_regex?(key, ~r/b.*/) end)
-    |> Enum.all?(fn {key, _} -> match_regex?(key, ~r/f.*/) end)
-  end
-
-  defp match_regex?(string, regex) do
-    String.match?(string, regex)
-  end
 end

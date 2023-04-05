@@ -1,36 +1,33 @@
-defmodule :"ref-relative pointer ref to object-gpt-3.5" do
-  def validate(
-        %{
-          "properties" => %{
-            "bar" => %{"$ref" => "#/properties/foo"},
-            "foo" => %{"type" => "integer"}
-          }
-        } = object
-      ) do
-    case validate_props(object, ["bar", "foo"]) do
-      true -> :ok
-      false -> :error
-    end
+defmodule :"relative pointer ref to object-gpt-3.5" do
+  def validate(%{"$ref" => ref} = object) do
+    json_schema = resolve_ref(ref)
+    validate_schema(json_schema, object)
   end
 
   def validate(_) do
     :error
   end
 
-  defp validate_props(object, props) when is_list(props) do
-    case props do
-      [prop | rest] ->
-        case Map.has_key?(object, prop) do
-          true -> validate_props(Map.get(object, prop), rest)
-          false -> false
-        end
+  defp resolve_ref(ref) do
+    json_schema = %{
+      "properties" => %{"bar" => %{"$ref" => "#/properties/foo"}, "foo" => %{"type" => "integer"}}
+    }
 
-      [] ->
-        true
+    case ref do
+      "#/properties/foo" -> json_schema["properties"]["foo"]
+      _ -> raise "Invalid reference: #{ref}"
     end
   end
 
-  defp validate_props(_, _) do
-    false
+  defp validate_schema(%{"type" => "integer"}, _object) do
+    :ok
+  end
+
+  defp validate_schema(%{"type" => "object"}, object) when is_map(object) do
+    :ok
+  end
+
+  defp validate_schema(_schema, _object) do
+    :error
   end
 end

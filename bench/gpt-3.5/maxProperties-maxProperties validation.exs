@@ -1,17 +1,9 @@
-defmodule :"maxProperties-maxProperties validation-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    validate(object, %{"maxProperties" => 2})
-  end
-
-  def validate(_) do
-    :error
-  end
-
-  defp validate(object, %{"maxProperties" => max}) when map_size(object) <= max do
+defmodule :"maxProperties validation-gpt-3.5" do
+  def validate(object) when is_map(object) and map_size(object) <= 2 do
     :ok
   end
 
-  defp validate(_, _) do
+  def validate(_) do
     :error
   end
 end

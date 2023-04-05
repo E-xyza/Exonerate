@@ -1,4 +1,4 @@
-defmodule :"anyOf-anyOf with boolean schemas, some true-gpt-3.5" do
+defmodule :"anyOf with boolean schemas, some true-gpt-3.5" do
   def validate(true) do
     :ok
   end

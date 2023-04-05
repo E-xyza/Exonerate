@@ -1,8 +1,14 @@
-defmodule :"allOf-allOf with base schema-gpt-3.5" do
-  def validate(data) when is_map(data) do
-    case validate_object(data) do
-      :ok -> :ok
-      _ -> :error
+defmodule :"allOf with base schema-gpt-3.5" do
+  def validate(object) when is_map(object) do
+    case validate_all_of(object) do
+      :ok ->
+        case Map.fetch(object, :bar) do
+          {:ok, val} when is_integer(val) -> :ok
+          _ -> :error
+        end
+
+      _ ->
+        :error
     end
   end
 
@@ -10,23 +16,38 @@ defmodule :"allOf-allOf with base schema-gpt-3.5" do
     :error
   end
 
-  defp validate_object(object) do
-    case Map.has_key?(object, "bar") and is_integer(Map.get(object, "bar")) do
-      true -> validate_array(object)
-      false -> :error
+  defp validate_all_of(object) do
+    case object do
+      %{"foo" => foo} ->
+        case validate_baz(null, foo) do
+          :ok -> :ok
+          _ -> :error
+        end
+
+      %{"baz" => nil} ->
+        case validate_foo(null, nil) do
+          :ok -> :ok
+          _ -> :error
+        end
+
+      _ ->
+        :error
     end
   end
 
-  defp validate_array(array) do
-    case Enum.all?(array, fn {key, value} ->
-           case key do
-             "foo" -> Map.has_key?(array, "foo") and is_string(Map.get(array, "foo"))
-             "baz" -> Map.has_key?(array, "baz") and is_nil(Map.get(array, "baz"))
-             _ -> false
-           end
-         end) do
-      true -> :ok
-      _ -> :error
-    end
+  defp validate_foo(null, nil) do
+    :ok
+  end
+
+  defp validate_foo(schema, _) do
+    :error
+  end
+
+  defp validate_baz(null, nil) do
+    :ok
+  end
+
+  defp validate_baz(schema, _) do
+    :error
   end
 end

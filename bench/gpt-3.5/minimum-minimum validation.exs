@@ -1,5 +1,5 @@
-defmodule :"minimum-minimum validation-gpt-3.5" do
-  def validate(%{minimum: min} = object) when is_float(min) and obj >= min do
+defmodule :"minimum validation-gpt-3.5" do
+  def validate(object) when is_map(object) and Map.get(object, "minimum") >= 1.1 do
     :ok
   end
 

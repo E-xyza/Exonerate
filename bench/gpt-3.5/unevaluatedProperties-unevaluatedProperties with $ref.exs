@@ -1,9 +1,6 @@
-defmodule :"unevaluatedProperties-unevaluatedProperties with $ref-gpt-3.5" do
+defmodule :"unevaluatedProperties with $ref-gpt-3.5" do
   def validate(object) when is_map(object) do
-    case validate_object(object) do
-      true -> :ok
-      _ -> :error
-    end
+    validate_object(object)
   end
 
   def validate(_) do
@@ -11,48 +8,55 @@ defmodule :"unevaluatedProperties-unevaluatedProperties with $ref-gpt-3.5" do
   end
 
   defp validate_object(object) do
-    case Map.has_key?(object, "foo") do
-      true -> validate_properties(object)
-      _ -> false
+    case match_properties(object, schema()) do
+      {true, _} -> :ok
+      {false, error} -> error
     end
   end
 
-  defp validate_properties(object) do
-    case Map.has_key?(object, "bar") do
-      true ->
-        case Map.get(object, "bar") do
-          value when is_map(value) ->
-            case Map.has_key?(value, "bar") do
-              true -> validate_type(Map.get(value, "bar"), "string")
-              _ -> false
-            end
+  defp match_properties(object, %{"type" => "object", "properties" => properties}) do
+    match_properties_with_optional_fields(object, properties, [])
+  end
 
-          _ ->
-            false
+  defp match_properties_with_optional_fields(object, [], errors) do
+    {true, errors}
+  end
+
+  defp match_properties_with_optional_fields(object, [{key, schema} | rest], errors) do
+    case match_property(object, key, schema) do
+      :ok -> match_properties_with_optional_fields(object, rest, errors)
+      error -> match_properties_with_optional_fields(object, rest, [error | errors])
+    end
+  end
+
+  defp match_property(object, key, schema) do
+    case Map.get(object, key) do
+      nil ->
+        error("required property missing: #{key}")
+
+      value ->
+        case match_value(value, schema) do
+          true -> :ok
+          false -> error("property value does not match schema: #{key}")
         end
-
-      _ ->
-        validate_type(object, "string")
     end
   end
 
-  defp validate_type(value, "string") do
+  defp match_value(value, %{"type" => "string"}) do
     is_binary(value)
   end
 
-  defp validate_type(value, "object") do
-    is_map(value)
+  defp error(message) do
+    {:error, message}
   end
 
-  defp validate_type(value, "array") do
-    is_list(value)
-  end
-
-  defp validate_type(value, "number") do
-    is_number(value)
-  end
-
-  defp validate_type(_, _) do
-    false
+  defp schema do
+    %{
+      "$defs" => %{"bar" => %{"properties" => %{"bar" => %{"type" => "string"}}}},
+      "$ref" => "#/$defs/bar",
+      "properties" => %{"foo" => %{"type" => "string"}},
+      "type" => "object",
+      "unevaluatedProperties" => false
+    }
   end
 end

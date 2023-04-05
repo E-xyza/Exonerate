@@ -1,24 +1,16 @@
-defmodule :"required-required with escaped characters-gpt-3.5" do
-  def validate(json) when is_map(json) do
-    case Map.has_key?(json, "required") do
-      true -> validate_required(json["required"])
-      false -> :ok
+defmodule :"required with escaped characters-gpt-3.5" do
+  def validate(%{} = object) do
+    for field <- ["foo\nbar", "foo\"bar", "foo\\bar", "foo\rbar", "foo\tbar", "foo\fbar"] do
+      case Map.has_key?(object, field) do
+        true -> :ok
+        false -> {:error, "#{field} is a required field"}
+      end
     end
+
+    :ok
   end
 
   def validate(_) do
-    :error
-  end
-
-  defp validate_required(required) when is_list(required) do
-    case Enum.all?(required, &is_foobar/1) do
-      true -> :ok
-      false -> :error
-    end
-  end
-
-  defp is_foobar(str) do
-    str == "foo\nbar" || str == "foo\"bar" || str == "foo\\bar" || str == "foo\rbar" ||
-      str == "foo\tbar" || str == "foo\fbar"
+    {:error, "Invalid input, expected a map"}
   end
 end

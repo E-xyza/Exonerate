@@ -1,9 +1,9 @@
-defmodule :"minLength-minLength validation-gpt-3.5" do
-  def validate(object) when is_map(object) and map_size(object) >= 2 do
+defmodule :"minLength validation-gpt-3.5" do
+  def validate(object) when is_binary(object) and byte_size(object) >= 2 do
     :ok
   end
 
-  def validate(object) do
+  def validate(_) do
     :error
   end
 end
