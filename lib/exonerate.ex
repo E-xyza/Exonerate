@@ -36,7 +36,7 @@ defmodule Exonerate do
   ```
 
   The above module generates a function `MyModule.function_name/1` that takes an BEAM JSON term
-  (`string | number | array | map | bool | nil`) and validates it based on the the JSONschema.  If
+  (`string | number | list | map | bool | nil`) and validates it based on the the JSONschema.  If
   the term validates, it produces `:ok`.  If the term fails to validate, it produces
   `{:error, keyword}`, where the key `:instance_location` and points to the error location in the passed
   parameter, the `:schema_pointers` points to the validation that failed, and `error_value` is the
