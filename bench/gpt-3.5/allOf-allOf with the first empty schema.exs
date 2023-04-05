@@ -1,4 +1,4 @@
-defmodule :"allOf with the first empty schema-gpt-3.5" do
+defmodule :"allOf-allOf with the first empty schema-gpt-3.5" do
   def validate(value) do
     case value do
       %{} = map_val when is_map(map_val) -> :ok

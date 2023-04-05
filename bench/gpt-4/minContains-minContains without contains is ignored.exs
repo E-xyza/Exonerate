@@ -1,3 +1,3 @@
-defmodule :"minContains without contains is ignored" do
+defmodule :"minContains-minContains without contains is ignored" do
   def validate(_json), do: :ok
 end

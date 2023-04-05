@@ -1,4 +1,4 @@
-defmodule :"uniqueItems with an array of items" do
+defmodule :"uniqueItems-uniqueItems with an array of items" do
   
 defmodule MyModule do
   def validate(json) when is_map(json) do

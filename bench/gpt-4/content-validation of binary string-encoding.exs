@@ -1,4 +1,4 @@
-defmodule :"validation of binary string-encoding" do
+defmodule :"content-validation of binary string-encoding" do
   def validate(input) when is_binary(input) do
     case decode_base64(input) do
       {:ok, _} -> :ok

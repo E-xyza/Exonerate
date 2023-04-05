@@ -1,4 +1,4 @@
-defmodule :"regexes are not anchored by default and are case sensitive" do
+defmodule :"patternProperties-regexes are not anchored by default and are case sensitive" do
   def validate(object) when is_map(object) do
     validate_pattern_properties(object, %{}, %{}, Map.keys(object))
   end

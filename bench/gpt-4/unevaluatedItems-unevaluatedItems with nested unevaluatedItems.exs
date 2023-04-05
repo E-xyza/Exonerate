@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with nested unevaluatedItems" do
+defmodule :"unevaluatedItems-unevaluatedItems with nested unevaluatedItems" do
   def validate(value) when is_list(value) and has_first_item_string(value) and length(value) == 1 do
     :ok
   end

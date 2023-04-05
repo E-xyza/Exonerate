@@ -1,4 +1,4 @@
-defmodule :"root pointer ref-gpt-3.5" do
+defmodule :"ref-root pointer ref-gpt-3.5" do
   def validate(object) when is_map(object) do
     validate_object(object)
   end

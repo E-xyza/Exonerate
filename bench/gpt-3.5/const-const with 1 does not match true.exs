@@ -1,4 +1,4 @@
-defmodule :"const with 1 does not match true-gpt-3.5" do
+defmodule :"const-const with 1 does not match true-gpt-3.5" do
   def validate(schema_object) do
     case schema_object do
       %{"const" => 1} -> :ok

@@ -1,4 +1,4 @@
-defmodule :"not multiple types-gpt-3.5" do
+defmodule :"not-not multiple types-gpt-3.5" do
   def validate(json) do
     case json do
       %{} = object -> :ok

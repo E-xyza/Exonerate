@@ -1,4 +1,4 @@
-defmodule :"refs with quote-gpt-3.5" do
+defmodule :"ref-refs with quote-gpt-3.5" do
   def validate(object) when is_map(object) do
     case validate_properties(object, %{"foo\"bar" => fn val -> is_number(val) end}) do
       true -> :ok

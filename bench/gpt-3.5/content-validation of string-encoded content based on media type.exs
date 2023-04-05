@@ -1,4 +1,4 @@
-defmodule :"validation of string-encoded content based on media type-gpt-3.5" do
+defmodule :"content-validation of string-encoded content based on media type-gpt-3.5" do
   defmodule Validator do
     def validate(object) when is_map(object) do
       :ok

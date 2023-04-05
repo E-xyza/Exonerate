@@ -1,4 +1,4 @@
-defmodule :"heterogeneous enum validation-gpt-3.5" do
+defmodule :"enum-heterogeneous enum validation-gpt-3.5" do
   def validate(json) do
     case json do
       %{__value__: 6} -> :ok

@@ -1,4 +1,4 @@
-defmodule :"root pointer ref" do
+defmodule :"ref-root pointer ref" do
   def validate(map) when is_map(map) do
     case Map.keys(map) do
       [:foo] ->

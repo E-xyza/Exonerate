@@ -1,4 +1,4 @@
-defmodule :"a schema given for items-gpt-3.5" do
+defmodule :"items-a schema given for items-gpt-3.5" do
   def validate(object) when is_map(object) do
     validate_map(object)
   end

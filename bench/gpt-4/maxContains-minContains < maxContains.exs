@@ -1,4 +1,4 @@
-defmodule :"minContains < maxContains" do
+defmodule :"maxContains-minContains < maxContains" do
   def validate(list) when is_list(list) do
     count = Enum.count(list, fn item -> item == 1 end)
 

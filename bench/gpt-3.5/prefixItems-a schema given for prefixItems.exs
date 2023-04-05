@@ -1,4 +1,4 @@
-defmodule :"a schema given for prefixItems-gpt-3.5" do
+defmodule :"prefixItems-a schema given for prefixItems-gpt-3.5" do
   def validate(%{"prefixItems" => [%{"type" => "integer"}, %{"type" => "string"}]} = object) do
     case {Map.get(object, 0), Map.get(object, 1)} do
       {nil, _} -> {:error, "First element is missing"}

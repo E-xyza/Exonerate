@@ -1,4 +1,4 @@
-defmodule :"regexes are not anchored by default and are case sensitive-gpt-3.5" do
+defmodule :"patternProperties-regexes are not anchored by default and are case sensitive-gpt-3.5" do
   defmodule MySchema do
     def validate(%{}) do
       :ok

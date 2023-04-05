@@ -1,4 +1,4 @@
-defmodule :"validation of IDN e-mail addresses" do
+defmodule :"format-validation of IDN e-mail addresses" do
   require Record
   import :idna
 

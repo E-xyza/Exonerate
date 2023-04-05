@@ -1,4 +1,4 @@
-defmodule :"non-interference across combined schemas" do
+defmodule :"if-then-else-non-interference across combined schemas" do
   def validate(value) when is_number(value) do
     exclusive_max = value < 0
     min_check = value >= -10

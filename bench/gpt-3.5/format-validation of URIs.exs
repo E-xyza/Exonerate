@@ -1,4 +1,4 @@
-defmodule :"validation of URIs-gpt-3.5" do
+defmodule :"format-validation of URIs-gpt-3.5" do
   def validate(%{"format" => "uri"} = _json) do
     :ok
   end

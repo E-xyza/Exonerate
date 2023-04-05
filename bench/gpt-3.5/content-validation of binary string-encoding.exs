@@ -1,4 +1,4 @@
-defmodule :"validation of binary string-encoding-gpt-3.5" do
+defmodule :"content-validation of binary string-encoding-gpt-3.5" do
   def validate(%{"contentEncoding" => "base64"} = object) do
     case is_binary(object["value"]) do
       true -> :ok

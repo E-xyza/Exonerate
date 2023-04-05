@@ -1,4 +1,4 @@
-defmodule :"enums in properties-gpt-3.5" do
+defmodule :"enum-enums in properties-gpt-3.5" do
   def validate(object) when is_map(object) do
     case Map.has_key(object, "bar") do
       true ->

@@ -1,4 +1,4 @@
-defmodule :"minContains=1 with contains-gpt-3.5" do
+defmodule :"minContains-minContains=1 with contains-gpt-3.5" do
   require Jason.Schema
 
   def validate(json) when is_map(json) do

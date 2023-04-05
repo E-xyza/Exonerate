@@ -1,4 +1,4 @@
-defmodule :"prefixItems with no additional items allowed-gpt-3.5" do
+defmodule :"items-prefixItems with no additional items allowed-gpt-3.5" do
   def validate(object) when is_map(object) and map_size(object) == 2 do
     if Map.has_key?(object, "items") and not Map.has_key?(object, "additionalItems") do
       case object["items"] do

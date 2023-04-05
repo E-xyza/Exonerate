@@ -1,4 +1,4 @@
-defmodule :"additionalProperties being false does not allow other properties" do
+defmodule :"additionalProperties-additionalProperties being false does not allow other properties" do
   def validate(value) do
     case value do
       %{"foo" => _, "bar" => _} = object ->

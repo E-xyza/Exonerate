@@ -1,4 +1,4 @@
-defmodule :"type: array, object or null-gpt-3.5" do
+defmodule :"type-type: array, object or null-gpt-3.5" do
   def validate(nil) do
     :ok
   end

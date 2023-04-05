@@ -1,4 +1,4 @@
-defmodule :"required with escaped characters-gpt-3.5" do
+defmodule :"required-required with escaped characters-gpt-3.5" do
   def validate(json) when is_map(json) do
     case Map.has_key?(json, "required") do
       true -> validate_required(json["required"])

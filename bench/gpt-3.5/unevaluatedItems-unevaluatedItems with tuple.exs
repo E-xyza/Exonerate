@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with tuple-gpt-3.5" do
+defmodule :"unevaluatedItems-unevaluatedItems with tuple-gpt-3.5" do
   def validate(input)
       when is_list(input) and input != [] and List.first(input) == %{"type" => "array"} and
              Keyword.has_key?(

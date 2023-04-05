@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with not-gpt-3.5" do
+defmodule :"unevaluatedItems-unevaluatedItems with not-gpt-3.5" do
   def validate(json) when is_list(json) do
     check_array(json)
   end

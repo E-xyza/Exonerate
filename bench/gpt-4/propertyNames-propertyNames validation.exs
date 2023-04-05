@@ -1,4 +1,4 @@
-defmodule :"propertyNames validation" do
+defmodule :"propertyNames-propertyNames validation" do
   def validate(object) when is_map(object) do
     object
     |> Map.keys()

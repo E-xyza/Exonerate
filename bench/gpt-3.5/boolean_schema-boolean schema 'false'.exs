@@ -1,4 +1,4 @@
-defmodule :"boolean schema 'false'" do
+defmodule :"boolean_schema-boolean schema 'false'" do
   
 defmodule JsonSchema do
   def validate(false), do: :error

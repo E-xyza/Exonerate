@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with anyOf-gpt-3.5" do
+defmodule :"unevaluatedItems-unevaluatedItems with anyOf-gpt-3.5" do
   def validate_array([], _, _) do
     :ok
   end

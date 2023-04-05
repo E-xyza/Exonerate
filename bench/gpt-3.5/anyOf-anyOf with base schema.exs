@@ -1,4 +1,4 @@
-defmodule :"anyOf with base schema-gpt-3.5" do
+defmodule :"anyOf-anyOf with base schema-gpt-3.5" do
   def validate(value) do
     case value do
       %{__struct__: Poison.Decoder.Nothing} ->

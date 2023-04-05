@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with oneOf" do
+defmodule :"unevaluatedItems-unevaluatedItems with oneOf" do
   def validate(value) when is_list(value) and length(value) == 3 and valid_oneof(value) do
     :ok
   end

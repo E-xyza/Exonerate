@@ -1,4 +1,4 @@
-defmodule :"cousin unevaluatedProperties, true and false, true with properties-gpt-3.5" do
+defmodule :"unevaluatedProperties-cousin unevaluatedProperties, true and false, true with properties-gpt-3.5" do
   def validate(json) when is_map(json) do
     if validate_object(json) do
       :ok

@@ -1,4 +1,4 @@
-defmodule :"validate against correct branch, then vs else" do
+defmodule :"if-then-else-validate against correct branch, then vs else" do
   def validate(value) when is_number(value) do
     if value < 0 do
       if value > -10 do

@@ -1,4 +1,4 @@
-defmodule :"ref applies alongside sibling keywords-gpt-3.5" do
+defmodule :"ref-ref applies alongside sibling keywords-gpt-3.5" do
   def validate(object) when is_map(object) do
     validate_object(object)
   end

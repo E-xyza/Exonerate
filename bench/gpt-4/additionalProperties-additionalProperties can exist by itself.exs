@@ -1,4 +1,4 @@
-defmodule :"additionalProperties can exist by itself" do
+defmodule :"additionalProperties-additionalProperties can exist by itself" do
   def validate(object) when is_map(object) do
     values = Map.values(object)
 

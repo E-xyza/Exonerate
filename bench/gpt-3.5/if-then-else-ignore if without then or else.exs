@@ -1,4 +1,4 @@
-defmodule :"ignore if without then or else-gpt-3.5" do
+defmodule :"if-then-else-ignore if without then or else-gpt-3.5" do
   @spec validate(String.t()) :: :ok | :error
   def validate(json) do
     {:ok, decoded} = Jason.decode(json)

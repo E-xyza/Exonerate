@@ -1,4 +1,4 @@
-defmodule :"pattern validation-gpt-3.5" do
+defmodule :"pattern-pattern validation-gpt-3.5" do
   def validate(value) when is_map(value) do
     validate_object(value)
   end

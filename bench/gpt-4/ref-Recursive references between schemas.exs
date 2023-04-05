@@ -1,4 +1,4 @@
-defmodule :"Recursive references between schemas" do
+defmodule :"ref-Recursive references between schemas" do
   def validate(json) when is_map(json) do
     case Map.fetch(json, "meta") do
       {:ok, meta} when is_binary(meta) ->

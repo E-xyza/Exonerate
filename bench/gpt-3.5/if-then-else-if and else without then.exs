@@ -1,4 +1,4 @@
-defmodule :"if and else without then-gpt-3.5" do
+defmodule :"if-then-else-if and else without then-gpt-3.5" do
   def validate(object) when is_map(object) and validate_object(object) do
     :ok
   end

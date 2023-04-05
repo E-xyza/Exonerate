@@ -1,4 +1,4 @@
-defmodule :"evaluating the same schema location against the same data location twice is not a sign of an infinite loop-gpt-3.5" do
+defmodule :"infinite-loop-detection-evaluating the same schema location against the same data location twice is not a sign of an infinite loop-gpt-3.5" do
   def validate(map) when is_map(map) do
     if Map.has_key?(map, "foo") do
       with %{"foo" => _foo} <- Map.take(map, ["foo"]),

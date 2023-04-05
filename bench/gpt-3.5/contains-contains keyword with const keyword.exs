@@ -1,4 +1,4 @@
-defmodule :"contains keyword with const keyword-gpt-3.5" do
+defmodule :"contains-contains keyword with const keyword-gpt-3.5" do
   def validate(schema) do
     case schema do
       %{"contains" => %{"const" => value}} ->

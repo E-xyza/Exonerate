@@ -1,4 +1,4 @@
-defmodule :"additionalProperties being false does not allow other properties-gpt-3.5" do
+defmodule :"additionalProperties-additionalProperties being false does not allow other properties-gpt-3.5" do
   def validate(obj) when is_map(obj) do
     case %{properties: props, patternProperties: pat_props, additionalProperties: add_props} =
            &(Map.from_struct() / 1.(&1)) do

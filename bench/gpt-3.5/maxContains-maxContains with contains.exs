@@ -1,4 +1,4 @@
-defmodule :"maxContains with contains-gpt-3.5" do
+defmodule :"maxContains-maxContains with contains-gpt-3.5" do
   def validate(object) when is_map(object) do
     case validate_contains(object, 1) do
       :ok ->

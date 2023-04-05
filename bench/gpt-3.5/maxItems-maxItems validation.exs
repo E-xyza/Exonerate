@@ -1,4 +1,4 @@
-defmodule :"maxItems validation-gpt-3.5" do
+defmodule :"maxItems-maxItems validation-gpt-3.5" do
   def validate(schema) do
     case schema do
       %{"maxItems" => max_items} ->

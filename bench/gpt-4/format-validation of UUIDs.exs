@@ -1,4 +1,4 @@
-defmodule :"validation of UUIDs" do
+defmodule :"format-validation of UUIDs" do
   def validate(uuid) when is_binary(uuid) do
     if valid_uuid?(uuid) do
       :ok

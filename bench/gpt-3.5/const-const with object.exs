@@ -1,4 +1,4 @@
-defmodule :"const with object-gpt-3.5" do
+defmodule :"const-const with object-gpt-3.5" do
   def validate(object)
       when is_map(object) and read_const(object) == {:ok, %{"baz" => "bax", "foo" => "bar"}} do
     :ok

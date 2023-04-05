@@ -1,4 +1,4 @@
-defmodule :"enum with escaped characters-gpt-3.5" do
+defmodule :"enum-enum with escaped characters-gpt-3.5" do
   def validate(object) when is_map(object) do
     :ok
   end

@@ -1,4 +1,4 @@
-defmodule :"boolean subschemas" do
+defmodule :"dependentSchemas-boolean subschemas" do
   def validate(object) when is_map(object) do
     if is_dependencies_valid?(object) do
       :ok

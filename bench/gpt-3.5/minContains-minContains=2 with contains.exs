@@ -1,4 +1,4 @@
-defmodule :"minContains=2 with contains-gpt-3.5" do
+defmodule :"minContains-minContains=2 with contains-gpt-3.5" do
   def validate(value) when is_map(value) do
     :ok
   end

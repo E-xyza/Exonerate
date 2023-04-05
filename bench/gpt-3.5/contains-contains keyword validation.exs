@@ -1,4 +1,4 @@
-defmodule :"contains keyword validation-gpt-3.5" do
+defmodule :"contains-contains keyword validation-gpt-3.5" do
   elixir
 
   defmodule Validator do

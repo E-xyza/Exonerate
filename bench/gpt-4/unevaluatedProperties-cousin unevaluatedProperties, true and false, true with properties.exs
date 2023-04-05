@@ -1,4 +1,4 @@
-defmodule :"cousin unevaluatedProperties, true and false, true with properties" do
+defmodule :"unevaluatedProperties-cousin unevaluatedProperties, true and false, true with properties" do
   def validate(object) when is_map(object) do
     # Check if "foo" exists in the object and is of type "string"
     foo_valid =

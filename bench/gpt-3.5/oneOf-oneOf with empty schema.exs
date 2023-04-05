@@ -1,4 +1,4 @@
-defmodule :"oneOf with empty schema-gpt-3.5" do
+defmodule :"oneOf-oneOf with empty schema-gpt-3.5" do
   def validate(%{"oneOf" => one_of}) when is_list(one_of) do
     case length(one_of) do
       2 ->

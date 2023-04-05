@@ -1,4 +1,4 @@
-defmodule :"additionalProperties should not look in applicators" do
+defmodule :"additionalProperties-additionalProperties should not look in applicators" do
   def validate(object) when is_map(object) do
     if is_foo_property_valid?(object) and are_additional_properties_valid?(object) do
       :ok

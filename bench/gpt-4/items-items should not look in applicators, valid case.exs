@@ -1,4 +1,4 @@
-defmodule :"items should not look in applicators, valid case" do
+defmodule :"items-items should not look in applicators, valid case" do
   def validate(value) when is_list(value) do
     result = Enum.map(value, &validate_item/1)
     if Enum.all?(result, &(&1 == :ok)) do

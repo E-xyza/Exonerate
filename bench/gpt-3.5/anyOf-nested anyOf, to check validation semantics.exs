@@ -1,4 +1,4 @@
-defmodule :"nested anyOf, to check validation semantics-gpt-3.5" do
+defmodule :"anyOf-nested anyOf, to check validation semantics-gpt-3.5" do
   def validate(object) when object == nil do
     :ok
   end

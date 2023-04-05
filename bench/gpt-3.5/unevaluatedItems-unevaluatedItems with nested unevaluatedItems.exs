@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with nested unevaluatedItems-gpt-3.5" do
+defmodule :"unevaluatedItems-unevaluatedItems with nested unevaluatedItems-gpt-3.5" do
   def validate([]) do
     :ok
   end

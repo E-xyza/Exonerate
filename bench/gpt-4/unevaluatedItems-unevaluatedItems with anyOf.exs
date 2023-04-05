@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with anyOf" do
+defmodule :"unevaluatedItems-unevaluatedItems with anyOf" do
   def validate(value) when is_list(value) and length(value) in [2, 3] and valid_anyof(value) do
     :ok
   end

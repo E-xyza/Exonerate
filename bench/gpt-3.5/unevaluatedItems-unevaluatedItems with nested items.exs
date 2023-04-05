@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with nested items-gpt-3.5" do
+defmodule :"unevaluatedItems-unevaluatedItems with nested items-gpt-3.5" do
   def validate(json) when is_list(json) do
     case json do
       [] ->

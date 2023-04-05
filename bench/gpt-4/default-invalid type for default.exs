@@ -1,4 +1,4 @@
-defmodule :"invalid type for default" do
+defmodule :"default-invalid type for default" do
   def validate(value) when is_map(value) and has_valid_foo_property(value), do: :ok
   def validate(_), do: :error
 

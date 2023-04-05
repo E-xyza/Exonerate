@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties can't see inside cousins" do
+defmodule :"unevaluatedProperties-unevaluatedProperties can't see inside cousins" do
   
 defmodule JsonSchema do
   def validate(object) when is_map(object) do

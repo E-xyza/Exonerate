@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with $ref-gpt-3.5" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with $ref-gpt-3.5" do
   def validate(object) when is_map(object) do
     case validate_object(object) do
       true -> :ok

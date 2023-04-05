@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with nested properties" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with nested properties" do
   
 defmodule JsonSchema do
   def validate(object) when is_map(object) do

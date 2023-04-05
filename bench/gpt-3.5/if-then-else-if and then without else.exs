@@ -1,4 +1,4 @@
-defmodule :"if and then without else-gpt-3.5" do
+defmodule :"if-then-else-if and then without else-gpt-3.5" do
   def validate(schema) do
     cond do
       is_map(schema) and schema["if"] ->

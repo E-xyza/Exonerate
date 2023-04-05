@@ -1,4 +1,4 @@
-defmodule :"anyOf-gpt-3.5" do
+defmodule :"anyOf-anyOf-gpt-3.5" do
   def validate(value) when is_integer(value) do
     :ok
   end

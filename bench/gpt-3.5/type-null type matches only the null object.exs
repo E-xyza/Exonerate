@@ -1,4 +1,4 @@
-defmodule :"null type matches only the null object-gpt-3.5" do
+defmodule :"type-null type matches only the null object-gpt-3.5" do
   def validate(nil) do
     :ok
   end

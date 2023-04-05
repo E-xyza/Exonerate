@@ -1,4 +1,4 @@
-defmodule :"non-ASCII pattern with additionalProperties-gpt-3.5" do
+defmodule :"additionalProperties-non-ASCII pattern with additionalProperties-gpt-3.5" do
   def validate(%{} = object) do
     case Map.get(object, "additionalProperties") do
       false -> validate_pattern_properties(object)

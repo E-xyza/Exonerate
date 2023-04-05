@@ -1,4 +1,4 @@
-defmodule :"minProperties validation-gpt-3.5" do
+defmodule :"minProperties-minProperties validation-gpt-3.5" do
   def validate(object) when is_map(object) do
     :ok
   end

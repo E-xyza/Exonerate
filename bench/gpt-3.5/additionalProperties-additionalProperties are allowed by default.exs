@@ -1,4 +1,4 @@
-defmodule :"additionalProperties are allowed by default-gpt-3.5" do
+defmodule :"additionalProperties-additionalProperties are allowed by default-gpt-3.5" do
   def validate(%{properties: props}) do
     validate_object(props)
   end

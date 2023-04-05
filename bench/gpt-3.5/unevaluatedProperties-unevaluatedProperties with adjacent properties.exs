@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with adjacent properties" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with adjacent properties" do
   
 defmodule Validator do
   def validate(object) when is_map(object) and map_size(object) > 0, do: :ok

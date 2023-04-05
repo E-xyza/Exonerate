@@ -1,4 +1,4 @@
-defmodule :"string type matches strings-gpt-3.5" do
+defmodule :"type-string type matches strings-gpt-3.5" do
   def validate(data) when is_binary(data) do
     :ok
   end

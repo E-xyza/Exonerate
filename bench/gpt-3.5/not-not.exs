@@ -1,4 +1,4 @@
-defmodule :"not-gpt-3.5" do
+defmodule :"not-not-gpt-3.5" do
   def validate(json) do
     case json do
       %{type: "integer"} ->

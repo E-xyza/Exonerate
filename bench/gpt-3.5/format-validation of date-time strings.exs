@@ -1,4 +1,4 @@
-defmodule :"validation of date-time strings-gpt-3.5" do
+defmodule :"format-validation of date-time strings-gpt-3.5" do
   def validate(value) do
     case value do
       _ when is_binary(value) ->

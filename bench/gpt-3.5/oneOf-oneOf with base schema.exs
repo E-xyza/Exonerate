@@ -1,4 +1,4 @@
-defmodule :"oneOf with base schema-gpt-3.5" do
+defmodule :"oneOf-oneOf with base schema-gpt-3.5" do
   def validate(object) when is_binary(object) do
     case Jason.decode(object) do
       {:error, _} -> :error

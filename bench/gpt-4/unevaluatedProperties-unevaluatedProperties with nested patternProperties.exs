@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with nested patternProperties" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with nested patternProperties" do
   def validate(object) when is_map(object) do
     keys = Map.keys(object)
 

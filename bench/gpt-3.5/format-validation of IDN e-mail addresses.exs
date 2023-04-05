@@ -1,4 +1,4 @@
-defmodule :"validation of IDN e-mail addresses-gpt-3.5" do
+defmodule :"format-validation of IDN e-mail addresses-gpt-3.5" do
   def validate(json) when is_binary(json) do
     case :jiffy.decode(json) do
       {:ok, decoded} ->

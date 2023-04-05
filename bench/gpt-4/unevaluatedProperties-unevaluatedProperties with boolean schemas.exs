@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with boolean schemas" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with boolean schemas" do
   def validate(object) when is_map(object) do
     foo_valid =
       case Map.get(object, "foo") do

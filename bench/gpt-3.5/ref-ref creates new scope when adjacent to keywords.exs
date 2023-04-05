@@ -1,4 +1,4 @@
-defmodule :"ref creates new scope when adjacent to keywords-gpt-3.5" do
+defmodule :"ref-ref creates new scope when adjacent to keywords-gpt-3.5" do
   def validate(decoded_json) when is_map(decoded_json) do
     case decoded_json do
       %{"$defs" => defs, "$ref" => ref, "properties" => props} ->

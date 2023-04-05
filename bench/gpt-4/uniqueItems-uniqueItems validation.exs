@@ -1,4 +1,4 @@
-defmodule :"uniqueItems validation" do
+defmodule :"uniqueItems-uniqueItems validation" do
   def validate(list) when is_list(list) do
     unique_list = Enum.uniq(list)
 

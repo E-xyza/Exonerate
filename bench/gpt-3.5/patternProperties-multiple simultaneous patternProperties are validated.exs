@@ -1,4 +1,4 @@
-defmodule :"multiple simultaneous patternProperties are validated-gpt-3.5" do
+defmodule :"patternProperties-multiple simultaneous patternProperties are validated-gpt-3.5" do
   def validate(json) when is_map(json) do
     case validate_object(json, %{
            "patternProperties" => %{"a*" => %{"type" => "integer"}, "aaa*" => %{"maximum" => 20}}

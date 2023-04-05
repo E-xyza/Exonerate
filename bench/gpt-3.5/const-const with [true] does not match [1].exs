@@ -1,4 +1,4 @@
-defmodule :"const with [true] does not match [1]-gpt-3.5" do
+defmodule :"const-const with [true] does not match [1]-gpt-3.5" do
   def validate(decoded_json) do
     case decoded_json do
       %{"const" => [true]} -> :ok

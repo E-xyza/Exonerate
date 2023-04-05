@@ -1,4 +1,4 @@
-defmodule :"validation of URI templates" do
+defmodule :"format-validation of URI templates" do
   def validate(uri_template) when is_binary(uri_template) do
     if valid_uri_template?(uri_template) do
       :ok

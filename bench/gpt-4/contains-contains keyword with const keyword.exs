@@ -1,4 +1,4 @@
-defmodule :"contains keyword with const keyword" do
+defmodule :"contains-contains keyword with const keyword" do
   def validate(object) when is_list(object) do
     if Enum.any?(object, &(&1 === 5)) do
       :ok

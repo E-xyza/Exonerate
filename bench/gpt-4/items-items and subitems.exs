@@ -1,4 +1,4 @@
-defmodule :"items and subitems" do
+defmodule :"items-items and subitems" do
   def validate(value) when is_list(value) and length(value) == 3 do
     Enum.all?(value, &validate_item/1) and :ok || :error
   end

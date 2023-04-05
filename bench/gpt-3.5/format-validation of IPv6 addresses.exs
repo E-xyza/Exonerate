@@ -1,4 +1,4 @@
-defmodule :"validation of IPv6 addresses-gpt-3.5" do
+defmodule :"format-validation of IPv6 addresses-gpt-3.5" do
   def validate(json) when is_map(json) do
     validate_object(json)
   end

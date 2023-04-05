@@ -1,4 +1,4 @@
-defmodule :"uniqueItems=false with an array of items" do
+defmodule :"uniqueItems-uniqueItems=false with an array of items" do
   
 defmodule Validator do
   def validate(decoded_json) do

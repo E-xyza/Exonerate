@@ -1,4 +1,4 @@
-defmodule :"boolean schema 'true'-gpt-3.5" do
+defmodule :"boolean_schema-boolean schema 'true'-gpt-3.5" do
   def validate(object) when is_map(object) do
     :ok
   end

@@ -1,4 +1,4 @@
-defmodule :"oneOf complex types-gpt-3.5" do
+defmodule :"oneOf-oneOf complex types-gpt-3.5" do
   def validate(data) when is_map(data) do
     case data do
       %{"bar" => bar} when is_integer(bar) -> :ok

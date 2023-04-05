@@ -1,4 +1,4 @@
-defmodule :"validation of hostnames" do
+defmodule :"format-validation of hostnames" do
   def validate(hostname) when is_binary(hostname) do
     if valid_hostname?(hostname) do
       :ok

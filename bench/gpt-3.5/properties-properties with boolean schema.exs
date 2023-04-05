@@ -1,4 +1,4 @@
-defmodule :"properties with boolean schema-gpt-3.5" do
+defmodule :"properties-properties with boolean schema-gpt-3.5" do
   def validate(json) when is_map(json) do
     case Map.fetch(json, "properties") do
       {:ok, properties} ->

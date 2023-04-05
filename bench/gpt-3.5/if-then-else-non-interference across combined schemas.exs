@@ -1,4 +1,4 @@
-defmodule :"non-interference across combined schemas-gpt-3.5" do
+defmodule :"if-then-else-non-interference across combined schemas-gpt-3.5" do
   def validate(object) when is_map(object) do
     if Map.has_key?(object, "exclusiveMaximum") and object["exclusiveMaximum"] == 0 do
       if Map.has_key?(object, "minimum") and object["minimum"] < -10 do

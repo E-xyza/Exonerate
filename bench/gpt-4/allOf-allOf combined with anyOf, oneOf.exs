@@ -1,4 +1,4 @@
-defmodule :"allOf combined with anyOf, oneOf" do
+defmodule :"allOf-allOf combined with anyOf, oneOf" do
   def validate(value) when is_number(value) do
     all_of_result = all_of_validate(value)
     any_of_result = any_of_validate(value)

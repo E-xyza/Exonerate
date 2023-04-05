@@ -1,4 +1,4 @@
-defmodule :"prefixItems with boolean schemas" do
+defmodule :"prefixItems-prefixItems with boolean schemas" do
   def validate(list) when is_list(list) and length(list) >= 2 do
     [first | tail] = list
     [second | _] = tail

@@ -1,4 +1,4 @@
-defmodule :"allOf combined with anyOf, oneOf-gpt-3.5" do
+defmodule :"allOf-allOf combined with anyOf, oneOf-gpt-3.5" do
   def validate(object) when is_integer(object) do
     if is_multiple_of(object, 2) do
       :ok

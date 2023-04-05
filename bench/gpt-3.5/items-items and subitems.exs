@@ -1,4 +1,4 @@
-defmodule :"items and subitems" do
+defmodule :"items-items and subitems" do
   
 defmodule Validator do
 

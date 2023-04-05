@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with dependentSchemas-gpt-3.5" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with dependentSchemas-gpt-3.5" do
   def validate(object) when is_map(object) do
     if dependent_schemas_valid?(object) and properties_valid?(object) do
       :ok

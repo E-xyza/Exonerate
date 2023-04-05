@@ -1,4 +1,4 @@
-defmodule :"uniqueItems=false validation-gpt-3.5" do
+defmodule :"uniqueItems-uniqueItems=false validation-gpt-3.5" do
   def validate(object) when is_map(object) and is_valid_for_object?(object) do
     :ok
   end

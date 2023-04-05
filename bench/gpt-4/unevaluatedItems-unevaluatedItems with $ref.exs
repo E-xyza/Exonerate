@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with $ref" do
+defmodule :"unevaluatedItems-unevaluatedItems with $ref" do
   def validate([first | rest]) when is_list(rest) and is_binary(first) do
     case rest do
       [true | _] -> :ok

@@ -1,4 +1,4 @@
-defmodule :"anyOf with boolean schemas, all true-gpt-3.5" do
+defmodule :"anyOf-anyOf with boolean schemas, all true-gpt-3.5" do
   def validate(object) when object in [true, false] do
     :ok
   end

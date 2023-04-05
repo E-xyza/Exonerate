@@ -1,4 +1,4 @@
-defmodule :"properties with boolean schema" do
+defmodule :"properties-properties with boolean schema" do
   def validate(object) when is_map(object) do
     properties_valid? = validate_properties(object)
 

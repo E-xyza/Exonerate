@@ -1,4 +1,4 @@
-defmodule :"validation of date strings-gpt-3.5" do
+defmodule :"format-validation of date strings-gpt-3.5" do
   def validate(%{"format" => "date"} = object) when is_map(object) and is_date(object) do
     :ok
   end

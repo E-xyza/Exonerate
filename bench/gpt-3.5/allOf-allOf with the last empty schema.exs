@@ -1,4 +1,4 @@
-defmodule :"allOf with the last empty schema" do
+defmodule :"allOf-allOf with the last empty schema" do
   
 defmodule Validator do
   def validate(value) do

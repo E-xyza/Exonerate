@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with nested tuple-gpt-3.5" do
+defmodule :"unevaluatedItems-unevaluatedItems with nested tuple-gpt-3.5" do
   def validate(json) do
     case json do
       %{} -> validate_object(json)

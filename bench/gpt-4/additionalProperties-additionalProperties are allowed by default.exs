@@ -1,4 +1,4 @@
-defmodule :"additionalProperties are allowed by default" do
+defmodule :"additionalProperties-additionalProperties are allowed by default" do
   def validate(object) when is_map(object) do
     keys = Map.keys(object)
 

@@ -1,4 +1,4 @@
-defmodule :"allOf with two empty schemas-gpt-3.5" do
+defmodule :"allOf-allOf with two empty schemas-gpt-3.5" do
   defmodule MyValidator do
     def validate(%{}) do
       :ok

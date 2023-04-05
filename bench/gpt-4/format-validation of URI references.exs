@@ -1,4 +1,4 @@
-defmodule :"validation of URI references" do
+defmodule :"format-validation of URI references" do
   def validate(uri_ref) when is_binary(uri_ref) do
     if valid_uri_reference?(uri_ref) do
       :ok

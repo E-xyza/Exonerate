@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with items" do
+defmodule :"unevaluatedItems-unevaluatedItems with items" do
   def validate([first | rest]) when is_list(rest) do
     if is_binary(first) and Enum.empty?(rest) do
       :ok

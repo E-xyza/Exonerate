@@ -1,4 +1,4 @@
-defmodule :"remote ref, containing refs itself" do
+defmodule :"ref-remote ref, containing refs itself" do
   
 defmodule Validator do
   def validate(%{} = object) do

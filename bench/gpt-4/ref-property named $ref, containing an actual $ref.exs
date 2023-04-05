@@ -1,4 +1,4 @@
-defmodule :"property named $ref, containing an actual $ref" do
+defmodule :"ref-property named $ref, containing an actual $ref" do
   def validate(value) do
     case value do
       %{"$ref" => string_value} ->

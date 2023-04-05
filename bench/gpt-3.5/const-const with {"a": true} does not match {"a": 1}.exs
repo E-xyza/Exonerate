@@ -1,4 +1,4 @@
-defmodule :"const with {\"a\": true} does not match {\"a\": 1}-gpt-3.5" do
+defmodule :"const-const with {\"a\": true} does not match {\"a\": 1}-gpt-3.5" do
   def validate(object) when is_map(object) do
     validate_const(object)
   end

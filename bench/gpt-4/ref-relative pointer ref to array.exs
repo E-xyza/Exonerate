@@ -1,4 +1,4 @@
-defmodule :"relative pointer ref to array" do
+defmodule :"ref-relative pointer ref to array" do
   def validate(list) when is_list(list) do
     case Enum.take(list, 2) do
       [first, second] ->

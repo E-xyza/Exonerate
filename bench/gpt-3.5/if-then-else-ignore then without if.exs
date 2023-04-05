@@ -1,4 +1,4 @@
-defmodule :"ignore then without if-gpt-3.5" do
+defmodule :"if-then-else-ignore then without if-gpt-3.5" do
   def validate(value) do
     case match?(value, %{"then" => %{"const" => 0}}) do
       true -> :ok

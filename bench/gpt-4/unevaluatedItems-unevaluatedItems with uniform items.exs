@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with uniform items" do
+defmodule :"unevaluatedItems-unevaluatedItems with uniform items" do
   def validate(list) when is_list(list) do
     case Enum.all?(list, &is_binary/1) do
       true -> :ok

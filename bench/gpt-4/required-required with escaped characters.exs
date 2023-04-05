@@ -1,4 +1,4 @@
-defmodule :"required with escaped characters" do
+defmodule :"required-required with escaped characters" do
   def validate(object) when is_map(object) and has_required_properties(object), do: :ok
   def validate(_), do: :error
 

@@ -1,4 +1,4 @@
-defmodule :"integer type matches integers-gpt-3.5" do
+defmodule :"type-integer type matches integers-gpt-3.5" do
   def validate(n) when is_integer(n) do
     :ok
   end

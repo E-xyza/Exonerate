@@ -1,4 +1,4 @@
-defmodule :"const with {\"a\": false} does not match {\"a\": 0}-gpt-3.5" do
+defmodule :"const-const with {\"a\": false} does not match {\"a\": 0}-gpt-3.5" do
   def validate(json) do
     case json do
       %{const: %{a: false}} ->

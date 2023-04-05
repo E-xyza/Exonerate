@@ -1,4 +1,4 @@
-defmodule :"enums in properties" do
+defmodule :"enum-enums in properties" do
   def validate(%{"bar" => "bar"} = object) do
     case Map.get(object, "foo") do
       "foo" -> :ok

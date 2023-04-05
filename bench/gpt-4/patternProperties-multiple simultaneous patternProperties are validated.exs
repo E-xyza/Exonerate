@@ -1,4 +1,4 @@
-defmodule :"multiple simultaneous patternProperties are validated" do
+defmodule :"patternProperties-multiple simultaneous patternProperties are validated" do
   def validate(object) when is_map(object) do
     valid_props = for {key, value} <- object, do: validate_prop(key, value)
     if length(valid_props) == length(object) do

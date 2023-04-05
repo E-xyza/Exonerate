@@ -1,5 +1,5 @@
-defmodule :"unevaluatedItems with if/then/else" do
-  
+defmodule :"unevaluatedItems-unevaluatedItems with if-then-else" do
+
 defmodule MySchema do
   def validate(schema) do
     case schema do

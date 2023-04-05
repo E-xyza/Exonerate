@@ -1,4 +1,4 @@
-defmodule :"minItems validation-gpt-3.5" do
+defmodule :"minItems-minItems validation-gpt-3.5" do
   def validate(%{type: "object"} = object) do
     if is_map(object) do
       :ok

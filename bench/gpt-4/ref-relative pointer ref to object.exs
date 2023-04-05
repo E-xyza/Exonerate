@@ -1,4 +1,4 @@
-defmodule :"relative pointer ref to object" do
+defmodule :"ref-relative pointer ref to object" do
   def validate(map) when is_map(map) do
     keys = Map.keys(map)
 

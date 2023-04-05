@@ -1,4 +1,4 @@
-defmodule :"propertyNames validation-gpt-3.5" do
+defmodule :"propertyNames-propertyNames validation-gpt-3.5" do
   def validate(object) when is_map(object) do
     case check_property_names(object) do
       true -> :ok

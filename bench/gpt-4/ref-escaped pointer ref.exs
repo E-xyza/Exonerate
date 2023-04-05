@@ -1,4 +1,4 @@
-defmodule :"escaped pointer ref" do
+defmodule :"ref-escaped pointer ref" do
   def validate(map) when is_map(map) do
     keys = Map.keys(map)
 

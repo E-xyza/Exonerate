@@ -1,4 +1,4 @@
-defmodule :"naive replacement of $ref with its destination is not correct-gpt-3.5" do
+defmodule :"ref-naive replacement of $ref with its destination is not correct-gpt-3.5" do
   def validate(data) when is_map(data) or is_list(data) do
     validate(data, schema())
   end

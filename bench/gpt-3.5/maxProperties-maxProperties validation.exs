@@ -1,4 +1,4 @@
-defmodule :"maxProperties validation-gpt-3.5" do
+defmodule :"maxProperties-maxProperties validation-gpt-3.5" do
   def validate(object) when is_map(object) do
     validate(object, %{"maxProperties" => 2})
   end

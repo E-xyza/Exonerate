@@ -1,4 +1,4 @@
-defmodule :"minContains=2 with contains" do
+defmodule :"minContains-minContains=2 with contains" do
   def validate(json) do
     case json do
       list when is_list(list) ->

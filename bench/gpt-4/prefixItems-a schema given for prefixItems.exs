@@ -1,4 +1,4 @@
-defmodule :"a schema given for prefixItems" do
+defmodule :"prefixItems-a schema given for prefixItems" do
   def validate(list) when is_list(list) and length(list) >= 2 do
     [first | tail] = list
     [second | _] = tail

@@ -1,4 +1,4 @@
-defmodule :"invalid string value for default-gpt-3.5" do
+defmodule :"default-invalid string value for default-gpt-3.5" do
   def validate(obj) when is_map(obj) do
     case Map.has_key?(obj, "bar") do
       false ->

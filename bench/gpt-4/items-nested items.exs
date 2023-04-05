@@ -1,4 +1,4 @@
-defmodule :"nested items" do
+defmodule :"items-nested items" do
   def validate(value) when is_list(value) do
     Enum.all?(value, &validate_item_level_1/1) and :ok || :error
   end

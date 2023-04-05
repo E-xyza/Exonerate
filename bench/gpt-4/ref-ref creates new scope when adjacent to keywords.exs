@@ -1,4 +1,4 @@
-defmodule :"ref creates new scope when adjacent to keywords" do
+defmodule :"ref-ref creates new scope when adjacent to keywords" do
   def validate(json) when is_map(json) do
     case Map.fetch(json, "prop1") do
       {:ok, prop1} when is_binary(prop1) ->

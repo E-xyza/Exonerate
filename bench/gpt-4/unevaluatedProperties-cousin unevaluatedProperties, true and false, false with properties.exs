@@ -1,4 +1,4 @@
-defmodule :"cousin unevaluatedProperties, true and false, false with properties" do
+defmodule :"unevaluatedProperties-cousin unevaluatedProperties, true and false, false with properties" do
   def validate(object) when is_map(object) do
     case Map.has_key?(object, "foo") do
       true ->

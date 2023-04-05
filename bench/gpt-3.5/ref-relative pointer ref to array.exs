@@ -1,4 +1,4 @@
-defmodule :"relative pointer ref to array-gpt-3.5" do
+defmodule :"ref-relative pointer ref to array-gpt-3.5" do
   def validate(json) when is_map(json) do
     validate_object(json)
   end

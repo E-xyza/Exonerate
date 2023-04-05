@@ -1,4 +1,4 @@
-defmodule :"propertyNames with boolean schema true-gpt-3.5" do
+defmodule :"propertyNames-propertyNames with boolean schema true-gpt-3.5" do
   def validate(object) when is_map(object) do
     cond do
       contains_only_valid_property_names?(object) -> :ok

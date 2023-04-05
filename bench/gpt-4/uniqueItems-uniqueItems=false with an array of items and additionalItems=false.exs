@@ -1,4 +1,4 @@
-defmodule :"uniqueItems=false with an array of items and additionalItems=false" do
+defmodule :"uniqueItems-uniqueItems=false with an array of items and additionalItems=false" do
   def validate([first, second]) do
     if is_boolean(first) and is_boolean(second) do
       :ok

@@ -1,4 +1,4 @@
-defmodule :"validation of URI templates-gpt-3.5" do
+defmodule :"format-validation of URI templates-gpt-3.5" do
   def validate(%{"format" => "uri-template"} = decoded_json) do
     if is_map(decoded_json) do
       :ok

@@ -1,4 +1,4 @@
-defmodule :"oneOf with required" do
+defmodule :"oneOf-oneOf with required" do
   def validate(object) when is_map(object) do
     case Enum.count([:foo, :bar] -- Map.keys(object)) do
       0 -> :ok

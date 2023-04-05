@@ -1,4 +1,4 @@
-defmodule :"prefixItems with boolean schemas-gpt-3.5" do
+defmodule :"prefixItems-prefixItems with boolean schemas-gpt-3.5" do
   @spec validate(term) :: :ok | :error
   def validate({"prefixItems", [true, false]}) do
     :ok

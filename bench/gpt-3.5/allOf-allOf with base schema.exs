@@ -1,4 +1,4 @@
-defmodule :"allOf with base schema-gpt-3.5" do
+defmodule :"allOf-allOf with base schema-gpt-3.5" do
   def validate(data) when is_map(data) do
     case validate_object(data) do
       :ok -> :ok

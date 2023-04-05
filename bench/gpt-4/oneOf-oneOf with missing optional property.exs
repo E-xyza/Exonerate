@@ -1,4 +1,4 @@
-defmodule :"oneOf with missing optional property" do
+defmodule :"oneOf-oneOf with missing optional property" do
   def validate(%{"foo" => _} = object) do
     case Map.keys(object) do
       ["foo"] -> :ok

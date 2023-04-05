@@ -1,4 +1,4 @@
-defmodule :"$ref to boolean schema true-gpt-3.5" do
+defmodule :"ref-$ref to boolean schema true-gpt-3.5" do
   defmodule Validator do
     def validate(bool) when bool == true or bool == false do
       :ok

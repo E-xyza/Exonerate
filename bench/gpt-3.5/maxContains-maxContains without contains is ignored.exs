@@ -1,4 +1,4 @@
-defmodule :"maxContains without contains is ignored-gpt-3.5" do
+defmodule :"maxContains-maxContains without contains is ignored-gpt-3.5" do
   def validate(object) when is_map(object) do
     case Map.size(object) do
       1 -> validate_max_contains(object)

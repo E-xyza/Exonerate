@@ -1,4 +1,4 @@
-defmodule :"$ref to boolean schema false" do
+defmodule :"ref-$ref to boolean schema false" do
   
 defmodule Validator do
   def validate(object) when is_map(object) do

@@ -1,4 +1,4 @@
-defmodule :"invalid instance should not raise error when float division = inf-gpt-3.5" do
+defmodule :"multipleOf-invalid instance should not raise error when float division = inf-gpt-3.5" do
   def validate(%{"type" => "integer", "multipleOf" => multiple_of} = value) do
     if is_integer(value) and rem(value, trunc(multiple_of)) == 0 do
       :ok

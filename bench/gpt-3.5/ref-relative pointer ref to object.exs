@@ -1,4 +1,4 @@
-defmodule :"relative pointer ref to object-gpt-3.5" do
+defmodule :"ref-relative pointer ref to object-gpt-3.5" do
   def validate(
         %{
           "properties" => %{

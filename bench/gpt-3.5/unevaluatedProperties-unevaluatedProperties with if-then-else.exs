@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with if/then/else-gpt-3.5" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with if-then-else-gpt-3.5" do
   def validate(object) when is_map(object) do
     if Map.has_key?(object, "foo") do
       if object["foo"] == "then" do

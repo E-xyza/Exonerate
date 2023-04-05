@@ -1,4 +1,4 @@
-defmodule :"by number-gpt-3.5" do
+defmodule :"multipleOf-by number-gpt-3.5" do
   @schema %{"multipleOf" => 1.5}
   def validate(map) when is_map(map) do
     with {:ok, _} <- Jason.Validator.validate(@schema, %{root: map}),

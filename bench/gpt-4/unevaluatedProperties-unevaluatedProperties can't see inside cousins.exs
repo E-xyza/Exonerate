@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties can't see inside cousins" do
+defmodule :"unevaluatedProperties-unevaluatedProperties can't see inside cousins" do
   def validate(object) when is_map(object) do
     # Check if "foo" exists in the object
     foo_exists = Map.has_key?(object, "foo")

@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with nested unevaluatedProperties-gpt-3.5" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with nested unevaluatedProperties-gpt-3.5" do
   @spec validate(map) :: :ok | :error
   def validate(data) when is_map(data) do
     if validate_properties(data) and validate_unevaluated_properties(data) do

@@ -1,4 +1,4 @@
-defmodule :"pattern is not anchored" do
+defmodule :"pattern-pattern is not anchored" do
   
 def validate(json) do
   case json do

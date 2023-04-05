@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems can't see inside cousins-gpt-3.5" do
+defmodule :"unevaluatedItems-unevaluatedItems can't see inside cousins-gpt-3.5" do
   def validate(json) do
     cond do
       is_valid(json, %{"allOf" => [%{"prefixItems" => [true]}, %{"unevaluatedItems" => false}]}) ->

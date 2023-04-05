@@ -1,4 +1,4 @@
-defmodule :"uniqueItems with an array of items" do
+defmodule :"uniqueItems-uniqueItems with an array of items" do
   def validate(list) when is_list(list) do
     case {length(list), Enum.uniq(list)} do
       {len, unique_list} when len == length(unique_list) ->

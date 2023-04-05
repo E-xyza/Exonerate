@@ -1,4 +1,4 @@
-defmodule :"items should not look in applicators, valid case-gpt-3.5" do
+defmodule :"items-items should not look in applicators, valid case-gpt-3.5" do
   def validate(%{"allOf" => [prefix_items], "items" => items} = data) do
     case validate_prefix_items(prefix_items, data) do
       :ok -> validate_items(items)

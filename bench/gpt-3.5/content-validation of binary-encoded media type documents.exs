@@ -1,4 +1,4 @@
-defmodule :"validation of binary-encoded media type documents-gpt-3.5" do
+defmodule :"content-validation of binary-encoded media type documents-gpt-3.5" do
   def validate(value) when is_map(value) do
     case value do
       %{"contentEncoding" => "base64", "contentMediaType" => "application/json"} ->

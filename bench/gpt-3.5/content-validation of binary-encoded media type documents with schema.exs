@@ -1,4 +1,4 @@
-defmodule :"validation of binary-encoded media type documents with schema-gpt-3.5" do
+defmodule :"content-validation of binary-encoded media type documents with schema-gpt-3.5" do
   def validate(json) when is_map(json) do
     schema = %{
       "contentEncoding" => "base64",

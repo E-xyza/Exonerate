@@ -1,4 +1,4 @@
-defmodule :"property named $ref, containing an actual $ref-gpt-3.5" do
+defmodule :"ref-property named $ref, containing an actual $ref-gpt-3.5" do
   def validate(object) when is_map(object) do
     :ok
   end

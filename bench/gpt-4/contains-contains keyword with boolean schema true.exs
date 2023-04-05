@@ -1,4 +1,4 @@
-defmodule :"contains keyword with boolean schema true" do
+defmodule :"contains-contains keyword with boolean schema true" do
   def validate(object) when is_list(object) do
     if Enum.empty?(object) do
       :error

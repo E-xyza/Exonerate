@@ -1,4 +1,4 @@
-defmodule :"forbidden property" do
+defmodule :"not-forbidden property" do
   def validate(object) when not is_map_key(object, "foo"), do: :ok
   def validate(_), do: :error
 

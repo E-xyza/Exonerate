@@ -1,4 +1,4 @@
-defmodule :"validation of e-mail addresses-gpt-3.5" do
+defmodule :"format-validation of e-mail addresses-gpt-3.5" do
   @moduledoc "This module provides a `validate/1` function to validate JSON data against a specified JSON schema\n"
   @specs validate(map) :: :ok | :error
   def validate(data) when is_map(data) do

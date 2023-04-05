@@ -1,4 +1,4 @@
-defmodule :"oneOf-gpt-3.5" do
+defmodule :"oneOf-oneOf-gpt-3.5" do
   def validate(value) do
     case value do
       <<_::size(0)>> -> :error

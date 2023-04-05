@@ -1,4 +1,4 @@
-defmodule :"anyOf with one empty schema-gpt-3.5" do
+defmodule :"anyOf-anyOf with one empty schema-gpt-3.5" do
   def validate(data) do
     case data do
       %{} -> :ok

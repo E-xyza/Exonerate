@@ -1,4 +1,4 @@
-defmodule :"if appears at the end when serialized (keyword processing sequence)" do
+defmodule :"if-then-else-if appears at the end when serialized (keyword processing sequence)" do
   def validate(value) when is_binary(value) do
     case String.length(value) do
       len when len <= 4 ->

@@ -1,4 +1,4 @@
-defmodule :"type: array or object-gpt-3.5" do
+defmodule :"type-type: array or object-gpt-3.5" do
   def validate(data) when is_list(data) do
     :ok
   end

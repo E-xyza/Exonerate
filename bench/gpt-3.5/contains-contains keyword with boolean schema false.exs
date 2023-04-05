@@ -1,4 +1,4 @@
-defmodule :"contains keyword with boolean schema false-gpt-3.5" do
+defmodule :"contains-contains keyword with boolean schema false-gpt-3.5" do
   def validate(json) do
     case json do
       %{"contains" => false} ->

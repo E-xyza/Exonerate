@@ -1,4 +1,4 @@
-defmodule :"oneOf with missing optional property" do
+defmodule :"oneOf-oneOf with missing optional property" do
   
 defmodule JsonValidation do
   @true true

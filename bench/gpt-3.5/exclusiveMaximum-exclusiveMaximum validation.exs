@@ -1,4 +1,4 @@
-defmodule :"exclusiveMaximum validation-gpt-3.5" do
+defmodule :"exclusiveMaximum-exclusiveMaximum validation-gpt-3.5" do
   @spec validate(term) :: :ok | :error
   def validate(value) do
     case value do

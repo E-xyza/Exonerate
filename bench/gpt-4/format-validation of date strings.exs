@@ -1,4 +1,4 @@
-defmodule :"validation of date strings" do
+defmodule :"format-validation of date strings" do
   def validate(date_string) when is_binary(date_string) do
     if valid_date?(date_string) do
       :ok

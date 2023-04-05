@@ -1,4 +1,4 @@
-defmodule :"validation of string-encoded content based on media type" do
+defmodule :"content-validation of string-encoded content based on media type" do
   def validate(input) when is_binary(input) do
     case decode_json(input) do
       {:ok, _} -> :ok

@@ -1,4 +1,4 @@
-defmodule :"allOf with base schema" do
+defmodule :"allOf-allOf with base schema" do
   def validate(object) when is_map(object) do
     has_foo = Map.has_key?(object, "foo") and is_binary(object["foo"])
     has_baz = Map.has_key?(object, "baz") and is_nil(object["baz"])

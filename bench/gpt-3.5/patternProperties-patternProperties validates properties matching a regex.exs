@@ -1,4 +1,4 @@
-defmodule :"patternProperties validates properties matching a regex-gpt-3.5" do
+defmodule :"patternProperties-patternProperties validates properties matching a regex-gpt-3.5" do
   def validate(schema) do
     case schema do
       %{"patternProperties" => pattern_properties} ->

@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties false" do
+defmodule :"unevaluatedProperties-unevaluatedProperties false" do
   def validate(object) when is_map(object) do
     if Enum.empty?(object) do
       :ok

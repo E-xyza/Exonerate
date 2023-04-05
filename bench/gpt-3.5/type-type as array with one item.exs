@@ -1,4 +1,4 @@
-defmodule :"type as array with one item-gpt-3.5" do
+defmodule :"type-type as array with one item-gpt-3.5" do
   def validate(json) do
     case json do
       %{"type" => "string"} when is_binary(json) -> :ok

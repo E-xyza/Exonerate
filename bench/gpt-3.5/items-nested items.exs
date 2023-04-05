@@ -1,4 +1,4 @@
-defmodule :"nested items-gpt-3.5" do
+defmodule :"items-nested items-gpt-3.5" do
   def validate(:null) do
     :ok
   end

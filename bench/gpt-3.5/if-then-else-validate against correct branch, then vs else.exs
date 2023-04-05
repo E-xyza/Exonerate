@@ -1,4 +1,4 @@
-defmodule :"validate against correct branch, then vs else-gpt-3.5" do
+defmodule :"if-then-else-validate against correct branch, then vs else-gpt-3.5" do
   def validate(json) when is_map(json) do
     if Map.has_key?(json, "else") and Map.has_key?(json, "if") and Map.has_key?(json, "then") do
       if exclusive_maximum(json["if"]) and multiple_of(json["else"]) and minimum(json["then"]) do

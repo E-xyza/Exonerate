@@ -1,4 +1,4 @@
-defmodule :"properties with escaped characters-gpt-3.5" do
+defmodule :"properties-properties with escaped characters-gpt-3.5" do
   def validate(%{} = object) do
     validate_object(object)
   end

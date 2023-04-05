@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with nested additionalProperties" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with nested additionalProperties" do
   def validate(object) when is_map(object) do
     foo_valid =
       case Map.fetch(object, "foo") do

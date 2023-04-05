@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties schema" do
+defmodule :"unevaluatedProperties-unevaluatedProperties schema" do
   def validate(object) when is_map(object) do
     unevaluated_properties_valid? =
       Enum.all?(object, fn {_, value} ->

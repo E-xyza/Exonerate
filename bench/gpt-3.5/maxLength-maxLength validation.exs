@@ -1,4 +1,4 @@
-defmodule :"maxLength validation-gpt-3.5" do
+defmodule :"maxLength-maxLength validation-gpt-3.5" do
   defmodule MySchema do
     def validate(value) when is_map(value) do
       if MapSize.check(value) <= 2 do

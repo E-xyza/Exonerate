@@ -1,4 +1,4 @@
-defmodule :"propertyNames with boolean schema false-gpt-3.5" do
+defmodule :"propertyNames-propertyNames with boolean schema false-gpt-3.5" do
   def validate(data) when is_map(data) do
     :ok
   end

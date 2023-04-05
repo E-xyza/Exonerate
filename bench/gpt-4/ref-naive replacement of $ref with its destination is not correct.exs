@@ -1,4 +1,4 @@
-defmodule :"naive replacement of $ref with its destination is not correct" do
+defmodule :"ref-naive replacement of $ref with its destination is not correct" do
   def validate(json) do
     case is_a_string(json) do
       true -> :ok

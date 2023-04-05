@@ -1,4 +1,4 @@
-defmodule :"validation of durations-gpt-3.5" do
+defmodule :"format-validation of durations-gpt-3.5" do
   defmodule Validator do
     def validate(duration) when is_binary(duration) and is_duration(duration) do
       :ok

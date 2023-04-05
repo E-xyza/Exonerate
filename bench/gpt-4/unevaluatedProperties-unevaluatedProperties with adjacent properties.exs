@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with adjacent properties" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with adjacent properties" do
   def validate(object) when is_map(object) do
     case Map.pop(object, "foo") do
       {"", rest} -> :error

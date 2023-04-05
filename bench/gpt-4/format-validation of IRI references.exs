@@ -1,4 +1,4 @@
-defmodule :"validation of IRI references" do
+defmodule :"format-validation of IRI references" do
   def validate(iri_reference) when is_binary(iri_reference) do
     if valid_iri_reference?(iri_reference) do
       :ok

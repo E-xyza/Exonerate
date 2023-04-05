@@ -1,2 +1,2 @@
-defmodule :"ignore else without if" do
+defmodule :"if-then-else-ignore else without if" do
 end

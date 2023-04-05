@@ -1,4 +1,4 @@
-defmodule :"multiple dependents required" do
+defmodule :"dependentRequired-multiple dependents required" do
   def validate(object) when is_map(object) do
     case Map.has_key?(object, "quux") do
       true ->

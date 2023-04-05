@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with oneOf" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with oneOf" do
   def validate(object) when is_map(object) do
     foo_valid =
       case Map.fetch(object, "foo") do

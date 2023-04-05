@@ -1,4 +1,4 @@
-defmodule :"additional items are allowed by default-gpt-3.5" do
+defmodule :"prefixItems-additional items are allowed by default-gpt-3.5" do
   def validate(object) when is_map(object) do
     validate_map(object)
   end

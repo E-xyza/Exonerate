@@ -1,4 +1,4 @@
-defmodule :"boolean subschemas-gpt-3.5" do
+defmodule :"dependentSchemas-boolean subschemas-gpt-3.5" do
   def validate(schema) when is_map(schema) do
     validate_object(schema)
   end

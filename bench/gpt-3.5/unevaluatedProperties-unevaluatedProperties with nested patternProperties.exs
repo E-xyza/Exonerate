@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with nested patternProperties-gpt-3.5" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with nested patternProperties-gpt-3.5" do
   @spec validate(term) :: atom
   def validate(decoded_json) when is_map(decoded_json) do
     case validate_object(decoded_json) do

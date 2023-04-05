@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with dependentSchemas" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with dependentSchemas" do
   def validate(object) when is_map(object) do
     foo_valid =
       case Map.has_key?(object, "foo") do

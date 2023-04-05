@@ -1,4 +1,4 @@
-defmodule :"maxContains = minContains-gpt-3.5" do
+defmodule :"minContains-maxContains = minContains-gpt-3.5" do
   def validate(schema) do
     case schema do
       %{"contains" => %{"const" => constant}, "maxContains" => max, "minContains" => min} ->

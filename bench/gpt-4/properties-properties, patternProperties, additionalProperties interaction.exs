@@ -1,4 +1,4 @@
-defmodule :"properties, patternProperties, additionalProperties interaction" do
+defmodule :"properties-properties, patternProperties, additionalProperties interaction" do
   def validate(object) when is_map(object) do
     properties_valid? = validate_properties(object)
     pattern_properties_valid? = validate_pattern_properties(object)

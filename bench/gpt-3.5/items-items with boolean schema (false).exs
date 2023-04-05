@@ -1,4 +1,4 @@
-defmodule :"items with boolean schema (false)-gpt-3.5" do
+defmodule :"items-items with boolean schema (false)-gpt-3.5" do
   def validate(schema)
 
   def validate(%{"items" => false}) do

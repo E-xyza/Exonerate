@@ -1,4 +1,4 @@
-defmodule :"allOf with one empty schema-gpt-3.5" do
+defmodule :"allOf-allOf with one empty schema-gpt-3.5" do
   def validate(object) when is_map(object) do
     case validate_all_of(object) do
       {:ok, _} -> :ok

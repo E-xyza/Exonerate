@@ -1,3 +1,3 @@
-defmodule :"anyOf with boolean schemas, all false" do
+defmodule :"anyOf-anyOf with boolean schemas, all false" do
   def validate(_), do: :error
 end

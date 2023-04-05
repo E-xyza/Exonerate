@@ -1,4 +1,4 @@
-defmodule :"float and integers are equal up to 64-bit representation limits-gpt-3.5" do
+defmodule :"const-float and integers are equal up to 64-bit representation limits-gpt-3.5" do
   def validate(json) do
     try do
       case json do

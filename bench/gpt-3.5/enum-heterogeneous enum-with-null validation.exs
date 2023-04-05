@@ -1,4 +1,4 @@
-defmodule :"heterogeneous enum-with-null validation-gpt-3.5" do
+defmodule :"enum-heterogeneous enum-with-null validation-gpt-3.5" do
   def validate(nil) do
     {:error, "Null is not allowed."}
   end

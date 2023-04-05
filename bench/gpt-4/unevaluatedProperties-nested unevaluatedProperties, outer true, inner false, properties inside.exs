@@ -1,4 +1,4 @@
-defmodule :"nested unevaluatedProperties, outer true, inner false, properties inside" do
+defmodule :"unevaluatedProperties-nested unevaluatedProperties, outer true, inner false, properties inside" do
   def validate(object) when is_map(object) do
     # Check if "foo" exists in the object and is of type "string"
     foo_valid =

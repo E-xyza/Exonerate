@@ -1,4 +1,4 @@
-defmodule :"oneOf complex types" do
+defmodule :"oneOf-oneOf complex types" do
   def validate(object) when is_map(object) do
     case Enum.filter([:bar, :foo], &Map.has_key?(object, &1)) do
       [:bar] ->

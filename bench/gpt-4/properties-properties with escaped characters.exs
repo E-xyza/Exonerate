@@ -1,4 +1,4 @@
-defmodule :"properties with escaped characters" do
+defmodule :"properties-properties with escaped characters" do
   def validate(object) when is_map(object) do
     properties_valid? = validate_properties(object)
 

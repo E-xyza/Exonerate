@@ -1,4 +1,4 @@
-defmodule :"enum with 1 does not match true-gpt-3.5" do
+defmodule :"enum-enum with 1 does not match true-gpt-3.5" do
   def validate({:array, _, enum: enum} = json) when is_list(enum) do
     (fn value ->
        if Enum.member?(enum, value) do

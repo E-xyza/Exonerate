@@ -1,4 +1,4 @@
-defmodule :"allOf simple types-gpt-3.5" do
+defmodule :"allOf-allOf simple types-gpt-3.5" do
   def validate({"allOf", [max_schema, min_schema]} = schema) do
     [maximum: maximum, minimum: minimum]
     |> Enum.map(fn {k, v} -> {k, v, Map.fetch(schema, k)} end)

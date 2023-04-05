@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with adjacent patternProperties" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with adjacent patternProperties" do
   import Regex
 
   def validate(object) when is_map(object) do

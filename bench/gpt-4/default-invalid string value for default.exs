@@ -1,4 +1,4 @@
-defmodule :"invalid string value for default" do
+defmodule :"default-invalid string value for default" do
   def validate(value) when is_map(value) and has_valid_bar_property(value), do: :ok
   def validate(_), do: :error
 

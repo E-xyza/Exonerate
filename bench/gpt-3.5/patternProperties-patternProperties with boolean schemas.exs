@@ -1,4 +1,4 @@
-defmodule :"patternProperties with boolean schemas-gpt-3.5" do
+defmodule :"patternProperties-patternProperties with boolean schemas-gpt-3.5" do
   def validate(%{} = object) do
     case validate_object_keys(object) and validate_pattern_properties(object) do
       true -> :ok

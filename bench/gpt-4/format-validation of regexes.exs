@@ -1,4 +1,4 @@
-defmodule :"validation of regexes" do
+defmodule :"format-validation of regexes" do
   def validate(regex) when is_binary(regex) do
     case Regex.compile(regex) do
       {:ok, _} -> :ok

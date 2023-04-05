@@ -1,4 +1,4 @@
-defmodule :"validation of durations" do
+defmodule :"format-validation of durations" do
   def validate(duration) when is_binary(duration) do
     if valid_duration?(duration) do
       :ok

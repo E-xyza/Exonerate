@@ -1,4 +1,4 @@
-defmodule :"validation of IDN hostnames" do
+defmodule :"format-validation of IDN hostnames" do
   alias :idna, as: Idna
 
   def validate(hostname) when is_binary(hostname) do

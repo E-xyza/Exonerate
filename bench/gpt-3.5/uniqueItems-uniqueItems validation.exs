@@ -1,4 +1,4 @@
-defmodule :"uniqueItems validation-gpt-3.5" do
+defmodule :"uniqueItems-uniqueItems validation-gpt-3.5" do
   def validate(object) when is_map(object) do
     :ok
   end

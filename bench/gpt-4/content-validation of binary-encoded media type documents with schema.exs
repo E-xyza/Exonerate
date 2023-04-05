@@ -1,4 +1,4 @@
-defmodule :"validation of binary-encoded media type documents with schema" do
+defmodule :"content-validation of binary-encoded media type documents with schema" do
   def validate(%{"contentEncoding" => "base64", "contentMediaType" => "application/json", "contentSchema" => schema} = object) do
     case Jason.decode!(Base.decode64!(object)) do
       %{"foo" => _} = json ->

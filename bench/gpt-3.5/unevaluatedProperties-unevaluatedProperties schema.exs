@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties schema-gpt-3.5" do
+defmodule :"unevaluatedProperties-unevaluatedProperties schema-gpt-3.5" do
   def validate(json) do
     case json do
       %{} = object -> :ok

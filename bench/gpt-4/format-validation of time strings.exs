@@ -1,4 +1,4 @@
-defmodule :"validation of time strings" do
+defmodule :"format-validation of time strings" do
   def validate(time_string) when is_binary(time_string) do
     if valid_time?(time_string) do
       :ok

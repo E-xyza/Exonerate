@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with anyOf-gpt-3.5" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with anyOf-gpt-3.5" do
   def validate(object) when is_map(object) do
     validate_object(object)
   end

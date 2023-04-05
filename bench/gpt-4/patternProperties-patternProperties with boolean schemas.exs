@@ -1,4 +1,4 @@
-defmodule :"patternProperties with boolean schemas" do
+defmodule :"patternProperties-patternProperties with boolean schemas" do
   def validate(object) when is_map(object) do
     # Iterate over each key-value pair in the object
     for {key, value} <- object do

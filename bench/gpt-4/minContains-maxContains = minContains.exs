@@ -1,4 +1,4 @@
-defmodule :"maxContains = minContains" do
+defmodule :"minContains-maxContains = minContains" do
   def validate(json) do
     case json do
       list when is_list(list) ->

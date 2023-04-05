@@ -1,4 +1,4 @@
-defmodule :"unevaluatedProperties with $ref" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with $ref" do
   def validate(object) when is_map(object) do
     foo_valid =
       case Map.get(object, "foo") do

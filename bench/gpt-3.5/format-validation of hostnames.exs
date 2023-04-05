@@ -1,4 +1,4 @@
-defmodule :"validation of hostnames-gpt-3.5" do
+defmodule :"format-validation of hostnames-gpt-3.5" do
   def validate(%{"format" => "hostname"} = value) do
     case :inet.gethostname() == value do
       true -> :ok

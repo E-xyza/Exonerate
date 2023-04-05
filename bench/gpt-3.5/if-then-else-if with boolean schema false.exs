@@ -1,4 +1,4 @@
-defmodule :"if with boolean schema false-gpt-3.5" do
+defmodule :"if-then-else-if with boolean schema false-gpt-3.5" do
   def validate(decoded_json) do
     case decoded_json do
       %{"else" => %{"const" => "else"}, "if" => false, "then" => %{"const" => "then"}} ->

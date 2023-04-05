@@ -1,4 +1,4 @@
-defmodule :"a schema given for items" do
+defmodule :"items-a schema given for items" do
   def validate(value) when is_list(value) do
     if is_items_valid?(value) do
       :ok

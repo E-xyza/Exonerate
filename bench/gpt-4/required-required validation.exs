@@ -1,4 +1,4 @@
-defmodule :"required validation" do
+defmodule :"required-required validation" do
   def validate(object) when is_map(object) do
     if Map.has_key?(object, "foo") do
       :ok

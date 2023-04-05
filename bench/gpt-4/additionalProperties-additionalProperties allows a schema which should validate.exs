@@ -1,4 +1,4 @@
-defmodule :"additionalProperties allows a schema which should validate" do
+defmodule :"additionalProperties-additionalProperties allows a schema which should validate" do
   def validate(object) when is_map(object) do
     keys = Map.keys(object)
 

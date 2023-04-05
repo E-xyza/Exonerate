@@ -1,4 +1,4 @@
-defmodule :"validation of URI references-gpt-3.5" do
+defmodule :"format-validation of URI references-gpt-3.5" do
   def validate(object) when is_binary(object) do
     case Poison.decode(object) do
       {:ok, decoded} -> validate(decoded)

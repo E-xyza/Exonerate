@@ -1,4 +1,4 @@
-defmodule :"nested oneOf, to check validation semantics" do
+defmodule :"oneOf-nested oneOf, to check validation semantics" do
   def validate(null) do
     :ok
   end

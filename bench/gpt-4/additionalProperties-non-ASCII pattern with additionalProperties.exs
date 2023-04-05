@@ -1,4 +1,4 @@
-defmodule :"non-ASCII pattern with additionalProperties" do
+defmodule :"additionalProperties-non-ASCII pattern with additionalProperties" do
   import Regex
 
   def validate(object) when is_map(object) do

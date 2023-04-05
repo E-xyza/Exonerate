@@ -1,4 +1,4 @@
-defmodule :"escaped pointer ref-gpt-3.5" do
+defmodule :"ref-escaped pointer ref-gpt-3.5" do
   @jsonschema %{
     "$defs" => %{
       "percent%field" => %{"type" => "integer"},

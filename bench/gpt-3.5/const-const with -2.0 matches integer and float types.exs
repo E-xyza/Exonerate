@@ -1,4 +1,4 @@
-defmodule :"const with -2.0 matches integer and float types-gpt-3.5" do
+defmodule :"const-const with -2.0 matches integer and float types-gpt-3.5" do
   def validate(_) do
     :error
   end

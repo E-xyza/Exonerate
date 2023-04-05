@@ -1,4 +1,4 @@
-defmodule :"validation of JSON pointers" do
+defmodule :"format-validation of JSON pointers" do
   def validate(json_pointer) when is_binary(json_pointer) do
     if valid_json_pointer?(json_pointer) do
       :ok

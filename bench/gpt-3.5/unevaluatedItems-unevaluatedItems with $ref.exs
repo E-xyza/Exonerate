@@ -1,4 +1,4 @@
-defmodule :"unevaluatedItems with $ref-gpt-3.5" do
+defmodule :"unevaluatedItems-unevaluatedItems with $ref-gpt-3.5" do
   @jsonschema %{
     "$defs": %{bar: %{prefixItems: [true, %{type: "string"}]}},
     "$ref": "#/$defs/bar",

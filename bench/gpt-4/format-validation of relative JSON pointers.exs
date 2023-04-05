@@ -1,4 +1,4 @@
-defmodule :"validation of relative JSON pointers" do
+defmodule :"format-validation of relative JSON pointers" do
   def validate(relative_json_pointer) when is_binary(relative_json_pointer) do
     if valid_relative_json_pointer?(relative_json_pointer) do
       :ok
