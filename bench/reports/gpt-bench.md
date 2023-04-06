@@ -1028,7 +1028,7 @@ VegaLite.new(width: 500)
 |> VegaLite.encode_field(:color, "group")
 ```
 
-![](uniqueItems-perf.svg)
+![](oneOf-perf.svg)
 
 In the worst case scenario for Exonerate, we see that the relative speeds stay about the same: 
 This makes sense, as both processes are O(N) in the size of the list, and the Exonerate overhead
