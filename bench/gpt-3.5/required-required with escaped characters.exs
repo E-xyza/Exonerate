@@ -1,16 +1,27 @@
-defmodule :"required with escaped characters-gpt-3.5" do
-  def validate(%{} = object) do
-    for field <- ["foo\nbar", "foo\"bar", "foo\\bar", "foo\rbar", "foo\tbar", "foo\fbar"] do
-      case Map.has_key?(object, field) do
-        true -> :ok
-        false -> {:error, "#{field} is a required field"}
-      end
-    end
+defmodule :"required-required with escaped characters-gpt-3.5" do
+  def validate(object) when is_map(object), do: :ok
+  def validate(_), do: :error
 
-    :ok
+  def validate([_ | _] = list) do
+    {errors, _} = Enum.reduce(list, {[], []}, fn
+      required, {acc_errors, acc_reqs} ->
+        case validate_required(required) do
+          :ok ->
+            {acc_errors, [required | acc_reqs]}
+          _error ->
+            {[required | acc_errors], acc_reqs}
+        end
+    end)
+    if errors, do: {:error, Enum.reverse(errors)}
+    else, do: :ok
   end
 
-  def validate(_) do
-    {:error, "Invalid input, expected a map"}
+  defp validate_required(required) do
+    required
+    |> Poison.decode!()
+    |> validate_required_decoded()
   end
+
+  defp validate_required_decoded(%{"required" => [value | _]}) when is_binary(value), do: :ok
+  defp validate_required_decoded(_), do: :error
 end

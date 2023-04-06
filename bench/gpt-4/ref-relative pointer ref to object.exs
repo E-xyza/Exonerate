@@ -3,13 +3,13 @@ defmodule :"ref-relative pointer ref to object" do
     keys = Map.keys(map)
 
     cond do
-      keys -- [:foo, :bar] != [] ->
+      keys -- ["foo", "bar"] != [] ->
         :error
 
-      keys -- [:foo] == [] and not is_integer(map[:foo]) ->
+      keys -- ["foo"] == [] and not is_integer(map["foo"]) ->
         :error
 
-      keys -- [:bar] == [] and not validate_foo(map[:bar]) ->
+      keys -- ["bar"] == [] and not validate_foo(map["bar"]) ->
         :error
 
       true ->

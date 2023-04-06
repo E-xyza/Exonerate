@@ -58,13 +58,13 @@ defmodule Benchmark.GPT do
           raw_code
           |> Code.string_to_quoted!()
           |> strip_module()
-          |> into_module(schema.description, model)
+          |> into_module(schema.group, schema.description, model)
           |> Macro.to_string()
         rescue
           _ ->
             # just put the raw code in the template directly.
-            code = """
-            defmodule :"#{schema.description}" do
+            """
+            defmodule :"#{module_name(schema.group, schema.description, model)}" do
               #{raw_code}
             end
             """
@@ -114,10 +114,10 @@ defmodule Benchmark.GPT do
   defp strip_module({:defmodule, _, [_, [do: code]]}), do: code
   defp strip_module(code), do: code
 
-  def module_name(description, model), do: :"#{description}-gpt-#{model}"
+  def module_name(group, description, model), do: :"#{group}-#{description}-gpt-#{model}"
 
-  defp into_module(code, description, model) do
-    module_name = module_name(description, model)
+  defp into_module(code, group, description, model) do
+    module_name = module_name(group, description, model)
 
     quote do
       defmodule unquote(module_name) do

@@ -1,13 +1,13 @@
-defmodule :"type: array, object or null-gpt-3.5" do
+defmodule :"type-type: array, object or null-gpt-3.5" do
   def validate(nil) do
     :ok
   end
 
-  def validate([]) do
+  def validate(object) when is_map(object) do
     :ok
   end
 
-  def validate(map) when is_map(map) do
+  def validate(list) when is_list(list) do
     :ok
   end
 

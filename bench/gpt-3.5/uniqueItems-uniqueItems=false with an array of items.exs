@@ -1,18 +1,15 @@
-defmodule :"uniqueItems=false with an array of items-gpt-3.5" do
-  def validate([head | tail]) when is_list(tail) do
-    validate([head]) == :ok && validate(tail)
-  end
+defmodule :"uniqueItems-uniqueItems=false with an array of items-gpt-3.5" do
+  def validate(json)
+      when is_map(json) and is_map(json["prefixItems"]) and length(json["prefixItems"]) == 2 do
+    first_type = json["prefixItems"][0]["type"]
+    second_type = json["prefixItems"][1]["type"]
+    unique_items = json["uniqueItems"]
 
-  def validate([head | []]) do
-    validate([head])
-  end
-
-  def validate([%{"type" => "boolean"} | tail]) do
-    validate(tail)
-  end
-
-  def validate(%{"uniqueItems" => false}) do
-    :ok
+    if first_type == second_type and unique_items == false do
+      :ok
+    else
+      :error
+    end
   end
 
   def validate(_) do

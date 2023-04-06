@@ -1,15 +1,10 @@
-defmodule :"anyOf complex types-gpt-3.5" do
-  def validate(json) when is_map(json) do
-    case %{properties: %{bar: %{type: "integer"}}, required: ["bar"]} in json do
-      :ok ->
-        :ok
+defmodule :"anyOf-anyOf complex types-gpt-3.5" do
+  def validate(%{"bar" => bar}) when is_integer(bar) do
+    :ok
+  end
 
-      _ ->
-        case %{properties: %{foo: %{type: "string"}}, required: ["foo"]} in json do
-          :ok -> :ok
-          _ -> :error
-        end
-    end
+  def validate(%{"foo" => foo}) when is_binary(foo) do
+    :ok
   end
 
   def validate(_) do

@@ -1,6 +1,5 @@
-defmodule :"propertyNames validation-gpt-3.5" do
-  def validate(object)
-      when is_map(object) and Map.keys(object) |> Enum.all?(&(String.length(&1) <= 3)) do
+defmodule :"propertyNames-propertyNames validation-gpt-3.5" do
+  def validate(map) when is_map(map) and map_size(map) <= 3 do
     :ok
   end
 

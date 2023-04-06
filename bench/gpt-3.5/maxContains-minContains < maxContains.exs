@@ -1,32 +1,33 @@
-defmodule :"minContains < maxContains-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    case Map.fetch(object, "contains") do
-      {:ok, contains} when is_list(contains) ->
-        case Map.fetch(object, "maxContains") do
-          {:ok, max} when is_integer(max) ->
-            case Map.fetch(object, "minContains") do
-              {:ok, min} when is_integer(min) ->
-                if Enum.count(contains, &(&1 == 1)) >= min &&
-                     Enum.count(contains, &(&1 == 1)) <= max do
-                  :ok
-                else
-                  :error
-                end
+defmodule :"maxContains-minContains < maxContains-gpt-3.5" do
+  def validate(json) when is_list(json) do
+    validate_list(json, 0)
+  end
 
-              _, _ ->
-                :error
-            end
+  defp validate_list([], _) do
+    :error
+  end
 
-          _, _ ->
-            :error
+  defp validate_list(_, max) when max > 3 do
+    :error
+  end
+
+  defp validate_list([elem | rest], max) do
+    case contains(elem) do
+      :ok ->
+        validate_list(rest, max + 1)
+
+      :error ->
+        case max do
+          0 -> validate_list(rest, 1)
+          _ -> validate_list(rest, max)
         end
-
-      _, _ ->
-        :error
     end
   end
 
-  def validate(_) do
-    :error
+  defp contains(elem) do
+    case elem do
+      1 -> :ok
+      _ -> :error
+    end
   end
 end

@@ -4,8 +4,8 @@ defmodule :"ref-escaped pointer ref" do
 
     percent_valid? =
       cond do
-        :percent in keys ->
-          is_integer(Map.get(map, :percent))
+        "percent" in keys ->
+          is_integer(Map.get(map, "percent"))
 
         true ->
           true
@@ -13,8 +13,8 @@ defmodule :"ref-escaped pointer ref" do
 
     slash_valid? =
       cond do
-        :slash in keys ->
-          is_integer(Map.get(map, :slash))
+        "slash" in keys ->
+          is_integer(Map.get(map, "slash"))
 
         true ->
           true
@@ -22,8 +22,8 @@ defmodule :"ref-escaped pointer ref" do
 
     tilde_valid? =
       cond do
-        :tilde in keys ->
-          is_integer(Map.get(map, :tilde))
+        "tilde" in keys ->
+          is_integer(Map.get(map, "tilde"))
 
         true ->
           true

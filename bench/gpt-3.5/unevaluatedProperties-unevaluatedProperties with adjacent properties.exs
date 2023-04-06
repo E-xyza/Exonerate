@@ -1,6 +1,6 @@
-defmodule :"unevaluatedProperties with adjacent properties-gpt-3.5" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with adjacent properties-gpt-3.5" do
   def validate(object) when is_map(object) do
-    case Map.has_key?(object, :foo) do
+    case Map.has_key?(object, "foo") do
       true -> :ok
       false -> :error
     end

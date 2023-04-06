@@ -1,5 +1,5 @@
-defmodule :"oneOf with boolean schemas, all false-gpt-3.5" do
-  def validate([false, false, false]) do
+defmodule :"oneOf-oneOf with boolean schemas, all false-gpt-3.5" do
+  def validate(false) do
     :ok
   end
 

@@ -1,13 +1,17 @@
-defmodule :"exclusiveMaximum validation-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    if Map.get(object, "exclusiveMaximum") <= 3.0 do
-      :ok
-    else
-      :error
-    end
-  end
+defmodule :"exclusiveMaximum-exclusiveMaximum validation-gpt-3.5" do
+  def validate(schema_result) do
+    case schema_result do
+      %{exclusiveMaximum: max} ->
+        fn value ->
+          if is_number(value) and value < max do
+            :ok
+          else
+            :error
+          end
+        end
 
-  def validate(_) do
-    :error
+      _ ->
+        fn _ -> :error end
+    end
   end
 end

@@ -1,72 +1,88 @@
-defmodule :"unevaluatedProperties with if/then/else" do
-   elixir
-defmodule :"unevaluatedProperties-unevaluatedProperties with if/then/else" do
-  def validate(%{type: "object"} = object) do
-    if Map.is_map(object) do
-      :ok
+defmodule :"unevaluatedProperties-unevaluatedProperties with if/then/else-gpt-3.5" do
+  def validate(
+        %{
+          "unevaluatedProperties" => false,
+          "type" => "object",
+          "if" => if_schema,
+          "then" => then_schema,
+          "else" => else_schema
+        } = object
+      )
+      when is_map(object) do
+    if_result =
+      if if_schema && match_schema(if_schema, object) do
+        :ok
+      else
+        :error
+      end
+
+    if if_result == :ok do
+      if then_schema && match_schema(then_schema, object) do
+        :ok
+      else
+        :error
+      end
     else
-      :error
+      if else_schema && match_schema(else_schema, object) do
+        :ok
+      else
+        :error
+      end
     end
   end
 
-  def validate(object) do
+  def validate(_) do
     :error
   end
 
-  def validate(%{type: "object", properties: properties} = object) do
-    if Map.is_map(object) do
-      case validate_properties(properties, object) do
-        true -> :ok
-        false -> :error
-      end
-    else
-      :error
-    end
-  end
-
-  def validate_properties(properties, object) do
-    Enum.all?(properties, fn({key, value}) ->
-      valid_property?(key, value, object)
+  defp match_schema(schema, object) do
+    Enum.all?(schema["required"], fn key ->
+      (map =
+         Map.take(
+           object,
+           [key]
+         )) == map && validate_type(schema["properties"][key], map[key])
     end)
   end
 
-  def valid_property?("properties", prop_schema, object) do
-    case Map.get(object, "properties") do
-      nil -> true
-      props ->
-        case validate_properties(prop_schema, props) do
-          true -> true
-          false ->
-            case prop_schema.unevaluatedProperties do
-              true -> false
-              false -> true
-            end
-        end
-    end
+  defp validate_type(nil, _) do
+    true
   end
 
-  def valid_property?(key, value, object) do
-    case Map.get(object, key) do
-      nil -> value.required == []
-      prop ->
-        case validate(value{properties: prop}) do
-          :ok -> true
-          :error ->
-            case value.unevaluatedProperties do
-              true -> false
-              false -> true
-            end
-        end
-    end
+  defp validate_type(%{"type" => "string"}, value) do
+    is_binary(value)
   end
 
-  def valid_property?("required", required, object) do
-    Enum.all?(required, fn(key) ->
-      Map.has_key?(object, key)
-    end)
+  defp validate_type(%{"type" => "number"}, value) do
+    is_number(value)
   end
 
-  def valid_property?(_, _, _), do: true
-end
+  defp validate_type(%{"type" => "integer"}, value) do
+    is_integer(value)
+  end
 
+  defp validate_type(%{"type" => "boolean"}, value) do
+    is_boolean(value)
+  end
+
+  defp validate_type(%{"type" => "null"}, value) do
+    is_nil(value)
+  end
+
+  defp validate_type(%{"type" => "array", "items" => items_schema}, value) do
+    is_list(value) &&
+      Enum.all?(value, fn item -> is_map(item) && match_schema(items_schema, item) end)
+  end
+
+  defp validate_type(%{"type" => "object"}, value) do
+    is_map(value)
+  end
+
+  defp validate_type(%{"const" => const_value}, value) do
+    value == const_value
+  end
+
+  defp validate_type(_schema, _value) do
+    false
+  end
 end

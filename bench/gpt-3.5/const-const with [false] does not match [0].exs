@@ -1,5 +1,5 @@
-defmodule :"const with [false] does not match [0]-gpt-3.5" do
-  def validate(false) do
+defmodule :"const-const with [false] does not match [0]-gpt-3.5" do
+  def validate(value) when value == false do
     :ok
   end
 

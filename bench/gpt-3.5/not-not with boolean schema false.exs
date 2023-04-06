@@ -1,5 +1,5 @@
-defmodule :"not with boolean schema false-gpt-3.5" do
-  def validate(%{"not" => false}) do
+defmodule :"not-not with boolean schema false-gpt-3.5" do
+  def validate(object) when object == false do
     :ok
   end
 

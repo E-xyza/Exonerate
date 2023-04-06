@@ -1,21 +1,14 @@
-defmodule :"if and then without else-gpt-3.5" do
+defmodule :"if-then-else-if and then without else-gpt-3.5" do
   def validate(object) when is_map(object) do
-    if Map.has_key?(object, "exclusiveMaximum") do
-      if object["exclusiveMaximum"] > 0 do
-        :error
-      else
-        if Map.has_key?(object, "minimum") do
-          if object["minimum"] >= -10 do
-            :ok
-          else
-            :error
-          end
-        else
-          :ok
+    case Map.fetch(object, "exclusiveMaximum") do
+      {:ok, exclusive_max} when exclusive_max < 0 ->
+        case Map.fetch(object, "minimum") do
+          {:ok, min} when min >= -10 -> :ok
+          _ -> :error
         end
-      end
-    else
-      :ok
+
+      _ ->
+        :ok
     end
   end
 

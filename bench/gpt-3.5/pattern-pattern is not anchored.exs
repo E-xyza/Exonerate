@@ -1,17 +1,12 @@
-defmodule :"pattern is not anchored-gpt-3.5" do
-  def validate(json) do
-    case json do
-      %{"pattern" => pattern} ->
-        result =
-          case Regex.run(pattern, "a+") do
-            nil -> :error
-            _ -> :ok
-          end
+defmodule :"pattern-pattern is not anchored-gpt-3.5" do
+  
+defmodule :"pattern-pattern is not anchored" do
+  @jsonschema %{
+    "pattern": "a+"
+  }
 
-        result
+  def validate(object) when is_map(object) andmatch?(@jsonschema, object), do: :ok
+  def validate(_), do: :error
+end
 
-      _ ->
-        :error
-    end
-  end
 end

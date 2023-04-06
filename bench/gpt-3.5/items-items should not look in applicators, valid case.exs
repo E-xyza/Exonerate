@@ -1,109 +1,126 @@
-defmodule :"items should not look in applicators, valid case-gpt-3.5" do
+defmodule :"items-items should not look in applicators, valid case-gpt-3.5" do
   def validate(object) when is_map(object) do
-    validate(object, schema())
+    if validate_all_of(object) and validate_items(object) do
+      :ok
+    else
+      :error
+    end
   end
 
   def validate(_) do
     :error
   end
 
-  defp schema do
-    %{"allOf" => [%{"prefixItems" => [%{"minimum" => 3}]}], "items" => %{"minimum" => 5}}
+  defp validate_all_of(object) do
+    all_of = ["allOf", [], [{"prefixItems", [], [{"minimum", 3, []}]}]]
+
+    all(all_of, fn {key, [], value} ->
+      case key do
+        "prefixItems" -> validate_prefix_items(object, value)
+        _ -> true
+      end
+    end)
   end
 
-  defp validate(object, schema) do
-    case validate_allOf(object, schema["allOf"]) do
-      {:ok, _} = result -> validate_items(result, schema["items"])
-      result -> result
+  defp validate_prefix_items(object, prefix_items) do
+    Enum.all?(prefix_items, fn {key, _, value} ->
+      case key do
+        "minimum" -> validate_minimum(object, value)
+        _ -> true
+      end
+    end)
+  end
+
+  defp validate_minimum(object, min) when is_integer(min) do
+    if is_list(object) do
+      length = length(object)
+      length >= min
+    else
+      case Map.fetch(object, "length") do
+        {:ok, length} -> length >= min
+        :error -> false
+      end
     end
   end
 
-  defp validate_allOf(object, []) do
-    {:ok, object}
+  defp validate_items(object) do
+    items = ["items", [], {"minimum", 5, []}]
+
+    case fetch_or_match_item(object, items) do
+      :match -> true
+      value -> validate_minimum(value, 5)
+    end
   end
 
-  defp validate_allOf(object, [validator | rest_validators]) do
-    case validate_prefixItems(object, validator["prefixItems"]) do
-      {:ok, _} = result ->
-        case validate_allOf(object, rest_validators) do
-          {:ok, _} = nested_result -> nested_result
-          _ -> result
+  defp all(list, fun) do
+    Enum.all?(list, fun)
+  end
+
+  defp fetch_or_match_item(object, items) do
+    case items do
+      ["items", [], schema_value] ->
+        case Map.fetch(object, "items") do
+          {:ok, value} -> match(schema_value, value)
+          :error -> :no_match
         end
 
-      result ->
-        result
+      [key, [], child_items] ->
+        case Map.fetch(object, key) do
+          {:ok, value} ->
+            case match(child_items, value) do
+              :match -> :match
+              _ -> validate(child_items, value)
+            end
+
+          :error ->
+            :no_match
+        end
+
+      [key, child_key_values, child_items] ->
+        case Map.fetch(object, key) do
+          {:ok, value} ->
+            case Map.fetch(value, child_key_values) do
+              {:ok, child_value} ->
+                case match(child_items, child_value) do
+                  :match -> :match
+                  _ -> validate(child_items, child_value)
+                end
+
+              :error ->
+                :no_match
+            end
+
+          :error ->
+            :no_match
+        end
     end
   end
 
-  defp validate_prefixItems([], _) do
-    {:ok, []}
-  end
+  defp match(schema_value, value) do
+    case schema_value do
+      [] ->
+        :match
 
-  defp validate_prefixItems([first | rest], []) do
-    case validate_object(first, %{"minimum" => 3}) do
-      :ok ->
-        case validate_prefixItems(rest, []) do
-          {:ok, _} = result -> result
-          _ -> :error
+      [{key, [], []} | tail] ->
+        case Map.has_key?(value, key) do
+          true -> match(tail, value)
+          false -> :no_match
+        end
+
+      [{key, child_key_values, []} | tail] ->
+        case Map.fetch(value, key) do
+          {:ok, child_value} ->
+            case match(child_key_values, child_value) do
+              :match -> match(tail, value)
+              _ -> :no_match
+            end
+
+          :error ->
+            :no_match
         end
 
       _ ->
-        :error
+        :no_match
     end
-  end
-
-  defp validate_prefixItems([first | rest], [validator | rest_validators]) do
-    case validate_object(first, validator) do
-      :ok ->
-        case validate_prefixItems(rest, rest_validators) do
-          {:ok, _} = result -> result
-          _ -> :error
-        end
-
-      _ ->
-        :error
-    end
-  end
-
-  defp validate_items([], _) do
-    {:ok, []}
-  end
-
-  defp validate_items([first | rest], validator) do
-    case validate_object(first, validator) do
-      :ok ->
-        case validate_items(rest, validator) do
-          {:ok, _} = result -> result
-          _ -> :error
-        end
-
-      _ ->
-        :error
-    end
-  end
-
-  defp validate_object(_, %{"minimum" => minimum}) when minimum != nil do
-    {:ok} = validate_object(_, %{"type" => "number"})
-
-    case validate_object(_, %{"minimum" => minimum}) do
-      {:ok} = result -> result
-      _ -> :error
-    end
-  end
-
-  defp validate_object(_, %{"type" => "number"}) do
-    :ok
-  end
-
-  defp validate_object(_, %{"type" => "object"}) do
-    :ok
-  end
-
-  defp validate_object(_, %{"type" => "array"}) do
-    :ok
-  end
-
-  defp validate_object(_, _) do
-    :error
   end
 end

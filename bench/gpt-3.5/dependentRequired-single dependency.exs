@@ -1,15 +1,12 @@
-defmodule :"single dependency-gpt-3.5" do
+defmodule :"dependentRequired-single dependency-gpt-3.5" do
   def validate(object) when is_map(object) do
-    case Map.has_key?(object, :bar) do
-      true ->
-        case Map.has_key?(object, :foo) do
-          true -> :ok
-          false -> :error
-        end
+    required_fields = Map.get(object, "bar", [])
 
-      false ->
-        :ok
+    for field <- required_fields, Map.get(object, field) == nil do
+      return(:error)
     end
+
+    :ok
   end
 
   def validate(_) do

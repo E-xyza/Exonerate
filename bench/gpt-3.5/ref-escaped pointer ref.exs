@@ -1,63 +1,26 @@
-defmodule :"escaped pointer ref-gpt-3.5" do
+defmodule :"ref-escaped pointer ref-gpt-3.5" do
   def validate(object) when is_map(object) do
-    :ok
+    validate_properties(object)
   end
 
-  def validate(_) do
+  def validate(object) do
     :error
   end
 
-  def validate(%{"$defs" => defs, "properties" => props}) when is_map(defs) and is_map(props) do
-    defs_valid = defs |> Enum.map(&match_def(&1)) |> Enum.all?(&(&1 == :ok))
-    props_valid = props |> Enum.map(&match_prop(&1, defs)) |> Enum.all?(&(&1 == :ok))
-
-    if defs_valid and props_valid do
-      :ok
-    else
-      :error
-    end
-  end
-
-  def validate(_) do
-    :error
-  end
-
-  def match_def({k, v}) when is_atom(k) and is_map(v) do
-    case v["type"] do
-      "integer" -> :ok
+  defp validate_properties(object) do
+    case Map.keys(object) do
+      ["percent", "slash", "tilde"] -> validate_ref_properties(object)
       _ -> :error
     end
   end
 
-  def match_def(_) do
-    :error
-  end
-
-  def match_prop({k, %{"$ref" => ref}}, defs) when is_atom(k) and is_binary(ref) do
-    case resolve_ref(ref, defs) do
-      :ok -> :ok
-      _ -> :error
-    end
-  end
-
-  def match_prop({k, _}, _) do
-    :error
-  end
-
-  def resolve_ref(ref, defs) when is_binary(ref) do
-    case Regex.run(~r/^#\/(\$defs)?\/(\w+[\w\/\%\~]*)$/, ref) do
-      [[_, _, path]] ->
-        path
-        |> String.split("~/")
-        |> Enum.reduce_while(defs, fn name, map ->
-          map[key_to_atom(name)]
-          |> case do
-            nil -> {:halt, :error}
-            v -> {:cont, v}
-          end
-        end)
-        |> case do
-          %{"type" => "integer"} -> :ok
+  defp validate_ref_properties(object) do
+    case {Map.get(object, "percent"), Map.get(object, "slash"), Map.get(object, "tilde")} do
+      {percent_ref, slash_ref, tilde_ref} ->
+        case {validate_ref(percent_ref, "#/$defs/percent%field"),
+              validate_ref(slash_ref, "#/$defs/slash~1field"),
+              validate_ref(tilde_ref, "#/$defs/tilde~0field")} do
+          {:ok, :ok, :ok} -> :ok
           _ -> :error
         end
 
@@ -66,15 +29,11 @@ defmodule :"escaped pointer ref-gpt-3.5" do
     end
   end
 
-  def resolve_ref(_, _) do
-    :error
-  end
-
-  def key_to_atom(key) do
-    key
-    |> String.replace("%", "%25")
-    |> String.replace("/", "~1")
-    |> String.replace("~", "~0")
-    |> String.to_atom()
+  defp validate_ref(ref, pointer) do
+    cond do
+      ref == nil -> :ok
+      Map.get(ref, "$ref") == pointer -> :ok
+      true -> :error
+    end
   end
 end

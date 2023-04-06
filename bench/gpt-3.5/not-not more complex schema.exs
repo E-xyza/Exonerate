@@ -1,17 +1,10 @@
-defmodule :"not more complex schema-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    validate_object(object)
-  end
-
-  def validate(_) do
-    :error
-  end
-
-  defp validate_object(object) do
-    if Map.has_key?(object, "foo") do
-      :error
-    else
-      :ok
+defmodule :"not-not more complex schema-gpt-3.5" do
+  @spec validate(decoded_json_value) :: :ok | :error
+  def validate(json) do
+    case json do
+      %{"foo" => _} -> :error
+      %{} -> :ok
+      _ -> :ok
     end
   end
 end

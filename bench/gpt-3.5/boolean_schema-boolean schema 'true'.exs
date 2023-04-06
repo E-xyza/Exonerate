@@ -1,5 +1,5 @@
-defmodule :"boolean schema 'true'-gpt-3.5" do
-  def validate(object) when object == true do
+defmodule :"boolean_schema-boolean schema 'true'-gpt-3.5" do
+  def validate(true) do
     :ok
   end
 

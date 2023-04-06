@@ -1,8 +1,8 @@
-defmodule :"unevaluatedItems as schema-gpt-3.5" do
-  def validate(value) when is_list(value) do
-    case Enum.all?(value, &is_binary/1) do
-      true -> :ok
-      false -> :error
+defmodule :"unevaluatedItems-unevaluatedItems as schema-gpt-3.5" do
+  def validate(array) when is_list(array) do
+    case Enum.find_index(array, fn item -> not is_binary(item) end) do
+      nil -> :ok
+      _ -> :error
     end
   end
 

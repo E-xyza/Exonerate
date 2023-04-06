@@ -1,4 +1,4 @@
-defmodule :"array type matches arrays-gpt-3.5" do
+defmodule :"type-array type matches arrays-gpt-3.5" do
   def validate(array) when is_list(array) do
     :ok
   end

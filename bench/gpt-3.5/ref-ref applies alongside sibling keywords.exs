@@ -1,39 +1,32 @@
-defmodule :"ref applies alongside sibling keywords-gpt-3.5" do
-  def validate(json) when is_map(json) do
-    if validate_properties(json) do
-      :ok
-    else
-      :error
-    end
+defmodule :"ref-ref applies alongside sibling keywords-gpt-3.5" do
+  def validate(object) when is_map(object) do
+    :ok
   end
 
   def validate(_) do
     :error
   end
 
-  defp validate_properties(json) do
-    case Map.get(json, "foo") do
-      nil ->
-        true
+  def validate(%{"$defs" => defs, "properties" => props} = schema) do
+    check_refs(defs) and check_props(props) and :ok
+  end
 
-      array when is_list(array) ->
-        if length(array) <= 2 do
-          validate_refs(array)
-        else
-          false
-        end
+  def validate(_) do
+    :error
+  end
 
-      _ ->
-        false
+  def check_refs(%{"reffed" => %{"type" => "array"}}) do
+    true
+  end
+
+  def check_refs(_) do
+    false
+  end
+
+  def check_props(props) do
+    case props["foo"] do
+      %{"$ref" => "#/$defs/reffed", "maxItems" => 2} -> true
+      _ -> false
     end
-  end
-
-  defp validate_refs(array) do
-    refs = get_refs()
-    Enum.all?(array, &Map.has_key?(refs, &1))
-  end
-
-  defp get_refs() do
-    %{"#/$defs/reffed" => true}
   end
 end

@@ -1,5 +1,5 @@
-defmodule :"anyOf with one empty schema-gpt-3.5" do
-  def validate(number) when is_number(number) do
+defmodule :"anyOf-anyOf with one empty schema-gpt-3.5" do
+  def validate(num) when is_number(num) do
     :ok
   end
 

@@ -1,85 +1,123 @@
-defmodule :"properties, patternProperties, additionalProperties interaction-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    case validate_properties(object) do
-      :error ->
-        :error
+defmodule :"properties-properties, patternProperties, additionalProperties interaction-gpt-3.5" do
+  def validate(json) do
+    case json do
+      %{} ->
+        :ok
+
+      %{additionalProperties: additional_props} ->
+        validate_additional_props(additional_props, json)
 
       _ ->
-        case validate_pattern_properties(object) do
-          :error -> :error
-          _ -> :ok
-        end
+        :error
     end
   end
 
-  def validate(_) do
+  defp validate_additional_props(true, _) do
+    :ok
+  end
+
+  defp validate_additional_props(false, _) do
     :error
   end
 
-  defp validate_properties(object) do
-    properties = object |> Map.keys() |> Enum.filter(fn key -> key in ["bar", "foo"] end)
-
-    valid =
-      Enum.all?(properties, fn key ->
-        case key do
-          "bar" -> validate_array(object[key], "integer")
-          "foo" -> validate_array(object[key], "integer", max_items: 3)
+  defp validate_additional_props(schema, json) do
+    case validate_properties(schema, json) do
+      :ok ->
+        case validate_pattern_properties(schema, json) do
+          :ok -> :ok
+          _ -> :error
         end
-      end)
 
-    if valid do
-      :ok
-    else
-      :error
+      _ ->
+        :error
     end
   end
 
-  defp validate_pattern_properties(object) do
-    pattern_properties =
-      object |> Map.keys() |> Enum.filter(fn key -> String.match?(key, ~r/f\.o\d*/) end)
-
-    valid =
-      Enum.reduce(pattern_properties, true, fn key, acc ->
-        case acc do
-          false ->
-            false
-
+  defp validate_properties(properties_schema, json) do
+    properties_schema
+    |> Map.keys()
+    |> Enum.reduce(
+      :ok,
+      fn key, acc ->
+        case Map.has_key?(json, key) do
           true ->
-            case validate_array(object[key], "integer", min_items: 2) do
-              :error -> false
-              _ -> true
+            case validate_value(properties_schema[key], Map.get(json, key)) do
+              :ok -> acc
+              _ -> :error
             end
-        end
-      end)
 
-    if valid do
-      :ok
-    else
-      :error
-    end
+          false ->
+            :error
+        end
+      end
+    )
   end
 
-  defp validate_array(array, type, opts \\ []) do
-    valid =
-      case Keyword.get(opts, :max_items) do
-        nil -> true
-        max_items -> length(array) <= max_items
-      end
+  defp validate_pattern_properties(schema, json) do
+    schema
+    |> Map.keys()
+    |> Enum.reduce(
+      :ok,
+      fn key, acc ->
+        case String.contains?(key, ".") do
+          true ->
+            [prop, subprop] =
+              String.split(
+                key,
+                ".",
+                parts: 2
+              )
 
-    if valid do
-      case Keyword.get(opts, :min_items) do
-        nil ->
-          :ok
+            case Map.has_key?(json, prop) do
+              true ->
+                case Map.get(json, prop) do
+                  [] ->
+                    :ok
 
-        min_items ->
-          if length(array) >= min_items do
-            :ok
-          else
+                  [subjson | _] when is_map(subjson) ->
+                    case validate_value(schema[key], subjson) do
+                      :ok -> acc
+                      _ -> :error
+                    end
+
+                  [_ | _] ->
+                    :error
+                end
+
+              false ->
+                :error
+            end
+
+          false ->
             :error
-          end
+        end
       end
-    else
-      :error
+    )
+  end
+
+  defp validate_value(schema, json) do
+    case schema do
+      "array" ->
+        case json do
+          [] -> :ok
+          _ when is_list(json) -> :ok
+          _ -> :error
+        end
+
+      "integer" ->
+        (is_integer(json) and :ok) or :error
+
+      "object" ->
+        (is_map(json) and :ok) or :error
+
+      "string" ->
+        (is_binary(json) and :ok) or :error
+
+      "number" ->
+        (is_number(json) and :ok) or :error
+
+      _ ->
+        :error
     end
   end
 end

@@ -1,24 +1,13 @@
-defmodule :"dependencies with escaped characters-gpt-3.5" do
+defmodule :"dependentRequired-dependencies with escaped characters-gpt-3.5" do
   def validate(object) when is_map(object) do
-    try do
-      Map.get(
-        object,
-        "foo\nbar"
-      )
-
-      Map.get(
-        object,
-        "foo\rbar"
-      )
-
-      Map.get(
-        object,
-        "foo\"bar"
-      )
-
+    if Map.has_key?(object, "foo\nbar") || Map.has_key?(object, "foo\"bar") do
+      if Map.has_key?(object, "foo\rbar") || Map.has_key?(object, "foo'bar") do
+        :ok
+      else
+        :error
+      end
+    else
       :ok
-    catch
-      _ -> :error
     end
   end
 

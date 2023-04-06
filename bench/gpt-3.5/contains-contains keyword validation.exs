@@ -1,13 +1,14 @@
-defmodule :"contains keyword validation-gpt-3.5" do
-  def validate(object)
-      when is_map(object) and tuple_size(:maps.find(object, "contains", :error)) == 2 do
-    {key, value} =
-      :maps.find(
-        object,
-        "contains"
-      )
+defmodule :"contains-contains keyword validation-gpt-3.5" do
+  def validate(object) when is_integer(object) do
+    if object >= 5 do
+      :ok
+    else
+      :error
+    end
+  end
 
-    if is_list(value) and length(value) >= get_minimum(key) do
+  def validate(object) when is_list(object) do
+    if length(object) >= 5 do
       :ok
     else
       :error
@@ -16,15 +17,5 @@ defmodule :"contains keyword validation-gpt-3.5" do
 
   def validate(_) do
     :error
-  end
-
-  defp get_minimum(key) do
-    minimum = tuple_size(:maps.find(key, "minimum", :error))
-
-    if minimum == 2 do
-      :maps.get(key, "minimum", :error)
-    else
-      0
-    end
   end
 end

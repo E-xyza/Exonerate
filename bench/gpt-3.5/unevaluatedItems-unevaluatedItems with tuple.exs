@@ -1,6 +1,6 @@
-defmodule :"unevaluatedItems with tuple-gpt-3.5" do
-  def validate(object) when is_list(object) do
-    case Enum.all?(object, fn item -> is_binary(item) end) do
+defmodule :"unevaluatedItems-unevaluatedItems with tuple-gpt-3.5" do
+  def validate(data) when is_list(data) do
+    case Enum.all?(data, fn item -> is_binary(item) end) do
       true -> :ok
       false -> :error
     end

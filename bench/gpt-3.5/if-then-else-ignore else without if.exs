@@ -1,21 +1,9 @@
-defmodule :"ignore else without if" do
-  
-defmodule :"if-then-else-ignore else without if" do
-  
-  def validate(schema) do
-    case schema do
-      %{"else" => %{"const" => 0}} ->
-        fn(_) -> :ok end
-
-      %{"type" => "object"} ->
-        fn(object) when is_map(object) -> :ok
-        fn(_) -> :error end
-
-      _ ->
-        fn(_) -> :error end
-    end
+defmodule :"if-then-else-ignore else without if-gpt-3.5" do
+  def validate(%{"else" => %{"const" => 0}} = _) do
+    :ok
   end
 
-end
-
+  def validate(_) do
+    :error
+  end
 end

@@ -1,6 +1,5 @@
-defmodule :"validation of URI references-gpt-3.5" do
-  def validate(object)
-      when is_binary(object) and Regex.match?(~r/^[a-zA-Z][a-zA-Z0-9+.-]*:/, object) do
+defmodule :"format-validation of URI references-gpt-3.5" do
+  def validate(object) when is_string(object) and String.valid?(object, :url) do
     :ok
   end
 

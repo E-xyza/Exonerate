@@ -1,8 +1,14 @@
-defmodule :"unevaluatedItems with anyOf-gpt-3.5" do
-  def validate(object) when is_list(object) do
-    case object do
-      [{"foo" | tail}] -> any_of_validate(tail)
-      _ -> :error
+defmodule :"unevaluatedItems-unevaluatedItems with anyOf-gpt-3.5" do
+  def validate(data) when is_list(data) do
+    case data do
+      [{"foo"} | tail] ->
+        case tail do
+          [true | rest] -> validate_any_of(rest)
+          _ -> :error
+        end
+
+      _ ->
+        :error
     end
   end
 
@@ -10,23 +16,12 @@ defmodule :"unevaluatedItems with anyOf-gpt-3.5" do
     :error
   end
 
-  defp any_of_validate([]) do
-    :ok
-  end
-
-  defp any_of_validate([h | tail]) do
-    case h do
-      true ->
-        case tail do
-          [{"bar" | _}] -> :ok
-          _ -> any_of_validate(tail)
-        end
-
-      [true, true, {"baz" | _}] ->
-        :ok
-
-      _ ->
-        any_of_validate(tail)
+  defp validate_any_of(data) do
+    case data do
+      [{"bar"} | _] -> :ok
+      [true, {"baz"} | _] -> :ok
+      [_ | rest] -> validate_any_of(rest)
+      _ -> :error
     end
   end
 end

@@ -1,12 +1,13 @@
-defmodule :"maximum validation-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    cond do
-      Map.has_key?(object, "maximum") and is_number(Map.get(object, "maximum")) and
-          Map.get(object, "maximum") <= 3.0 ->
-        :ok
+defmodule :"maximum-maximum validation-gpt-3.5" do
+  def validate(number) do
+    validate(number, %{"maximum" => 3.0})
+  end
 
-      true ->
-        :error
+  def validate(number, %{"maximum" => maximum}) when is_number(number) do
+    if number <= maximum do
+      :ok
+    else
+      :error
     end
   end
 

@@ -1,5 +1,5 @@
-defmodule :"boolean type matches booleans-gpt-3.5" do
-  def validate(value) when value === true or value === false do
+defmodule :"type-boolean type matches booleans-gpt-3.5" do
+  def validate(object) when is_boolean(object) do
     :ok
   end
 

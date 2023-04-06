@@ -1,5 +1,5 @@
-defmodule :"properties with boolean schema-gpt-3.5" do
-  def validate(%{"foo" => foo, "bar" => bar}) when is_boolean(foo) and is_boolean(bar) do
+defmodule :"properties-properties with boolean schema-gpt-3.5" do
+  def validate(%{"foo" => true, "bar" => false}) do
     :ok
   end
 

@@ -1,9 +1,6 @@
-defmodule :"nul characters in strings-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    case Map.fetch(object, "enum") do
-      {:ok, ["hello\0there"]} -> :ok
-      _ -> :error
-    end
+defmodule :"enum-nul characters in strings-gpt-3.5" do
+  def validate(object) when is_binary(object) and object == "hello\0there" do
+    :ok
   end
 
   def validate(_) do

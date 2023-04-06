@@ -1,9 +1,9 @@
-defmodule :"const with false does not match 0-gpt-3.5" do
+defmodule :"const-const with false does not match 0-gpt-3.5" do
   def validate(false) do
-    :ok
+    :error
   end
 
   def validate(_) do
-    :error
+    :ok
   end
 end

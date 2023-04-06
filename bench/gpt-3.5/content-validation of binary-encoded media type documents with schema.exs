@@ -1,29 +1,43 @@
-defmodule :"validation of binary-encoded media type documents with schema-gpt-3.5" do
-  def validate(decoded_json) do
-    case :jiffy.decode(decoded_json) do
-      {:ok, json_doc} ->
-        schema = %{"properties" => %{"foo" => %{"type" => "string"}}, "required" => ["foo"]}
+defmodule :"content-validation of binary-encoded media type documents with schema-gpt-3.5" do
+  def validate(json) when is_binary(json) do
+    {:ok, decoded_json} =
+      Jason.decode(json,
+        keys: :atoms!
+      )
 
-        case validate_doc(json_doc, schema) do
-          true -> :ok
-          false -> :error
-        end
+    validate(decoded_json)
+  end
+
+  def validate(decoded_json) do
+    case decoded_json do
+      %{
+        "contentEncoding" => "base64",
+        "contentMediaType" => "application/json",
+        "contentSchema" => schema
+      } ->
+        validate_content_schema(schema)
 
       _ ->
         :error
     end
   end
 
-  defp validate_doc(doc, schema) when is_map(doc) and is_map(schema) do
-    Map.keys(schema["properties"]) -- Map.keys(doc) == [] and
-      schema["required"] -- Map.keys(doc) == []
-  end
+  defp validate_content_schema(schema) do
+    case schema do
+      %{"type" => "object"} ->
+        fn object when is_map(object) -> :ok end
 
-  defp validate_doc(_doc, %{"type" => "object"}) do
-    true
-  end
+      %{"properties" => properties, "required" => required} ->
+        fn object when is_map(object) ->
+          if Map.has_key?(object, required) && Map.keys(object) -- required == [] do
+            :ok
+          else
+            :error
+          end
+        end
 
-  defp validate_doc(_doc, _schema) do
-    false
+      _ ->
+        fn _ -> :error end
+    end
   end
 end

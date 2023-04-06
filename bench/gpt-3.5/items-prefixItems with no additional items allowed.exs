@@ -1,34 +1,21 @@
-defmodule :"prefixItems with no additional items allowed-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    validate(object, %{})
-  end
+defmodule :"items-prefixItems with no additional items allowed-gpt-3.5" do
+  def validate(object) when is_map(object), do: validate_object(object)
+  def validate(_), do: :error
 
-  def validate(object, _acc) when is_map(object) do
-    validate(prefix_items(object), %{})
-  end
-
-  def validate(object, _acc) when is_list(object) do
-    case object do
-      [] -> :ok
-      _ -> :error
+  defp validate_object(object) do
+    case Map.has_key?(object, :items) and Map.has_key?(object, :prefixItems) and not Map.has_key?(object, :additionalItems) do
+      true -> Map.get(object, :prefixItems)
+              |> Enum.all?(fn _ -> %{} end)
+              |> :json_schema.validate(:#{false})
+              |> handle_validation_result()
+      false -> :error
     end
   end
 
-  def validate(_, _) do
-    :error
-  end
-
-  defp prefix_items(map) do
-    if map[:items] == false do
-      Enum.reduce(map[:prefixItems], %{}, fn item, acc ->
-        if is_map(item) do
-          Map.merge(acc, item, fn _, _, _ -> :error end)
-        else
-          :error
-        end
-      end)
-    else
-      :error
+  defp handle_validation_result(result) do
+    case result do
+      {:ok, _} -> :ok
+      {:error, _, _} -> :error
     end
   end
 end

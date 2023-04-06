@@ -1,14 +1,14 @@
-defmodule :"unevaluatedItems with nested tuple-gpt-3.5" do
-  def validate(value) when is_list(value) do
-    if Enum.reduce(value, {true, :ok}, fn item, {valid, _} ->
-         case validate_item(item) do
-           :error -> {false, :error}
-           _ -> {valid, :ok}
-         end
-       end) == {true, :ok} do
-      :ok
-    else
-      :error
+defmodule :"unevaluatedItems-unevaluatedItems with nested tuple-gpt-3.5" do
+  def validate(json) when is_list(json) do
+    case validate_items(json) do
+      :ok ->
+        case validate_prefix_items(json) do
+          :ok -> :ok
+          _ -> :error
+        end
+
+      _ ->
+        :error
     end
   end
 
@@ -16,41 +16,63 @@ defmodule :"unevaluatedItems with nested tuple-gpt-3.5" do
     :error
   end
 
-  defp validate_item(value) when is_binary(value) do
-    :ok
-  end
+  defp validate_items(json) do
+    case Keyword.get(json, "type") do
+      "array" ->
+        case Keyword.get(json, "unevaluatedItems", true) do
+          false ->
+            {prefix_items, all_of} = extract_items(json)
+            validate_all_of_items(prefix_items, all_of, [])
 
-  defp validate_item(value) when is_number(value) do
-    :ok
-  end
+          _ ->
+            :ok
+        end
 
-  defp validate_item(value) when is_list(value) do
-    items = Enum.reverse(value) |> Enum.drop(1) |> Enum.reverse()
-    prefix_items = Enum.reverse(value) |> Enum.take(1)
-
-    case Enum.reduce(items, {true, :ok}, fn item, {valid, _} ->
-           case validate_item(item) do
-             :error -> {false, :error}
-             _ -> {valid, :ok}
-           end
-         end) do
-      {_, :error} ->
+      _ ->
         :error
+    end
+  end
 
-      {true, _} ->
-        case Enum.reduce(prefix_items, {true, :ok}, fn item, {valid, _} ->
-               case validate_item(item) do
-                 :error -> {false, :error}
-                 _ -> {valid, :ok}
-               end
-             end) do
-          {false, _} -> :error
-          _ -> :ok
+  defp extract_items(json) do
+    prefix_items = Keyword.get(json, "prefixItems", [])
+    all_of = Keyword.get(json, "allOf", [])
+    {prefix_items, all_of}
+  end
+
+  defp validate_all_of_items(prefix_items, all_of, acc) do
+    case all_of do
+      [] ->
+        validate_prefix_items(prefix_items, acc)
+
+      [current_item | rest] ->
+        case validate_prefix_items(current_item, acc) do
+          :ok -> validate_all_of_items(prefix_items, rest, [current_item | acc])
+          _ -> :error
         end
     end
   end
 
-  defp validate_item(_, _) do
-    :error
+  defp validate_prefix_items(json, all_of) do
+    case json do
+      {"type", "array"} ->
+        case Keyword.get(json, "unevaluatedItems") do
+          false -> validate_items(json)
+          _ -> :ok
+        end
+
+      {"type", type} ->
+        Enum.each(all_of, fn item ->
+          case Keyword.get(item, "type") do
+            nil -> :ok
+            type -> :ok
+            _ -> :error
+          end
+        end)
+
+        :ok
+
+      _ ->
+        :error
+    end
   end
 end

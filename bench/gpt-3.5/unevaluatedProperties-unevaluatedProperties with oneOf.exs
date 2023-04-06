@@ -1,6 +1,6 @@
-defmodule :"unevaluatedProperties with oneOf-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    case validate_object(object) do
+defmodule :"unevaluatedProperties-unevaluatedProperties with oneOf-gpt-3.5" do
+  def validate(%{"type" => "object", "properties" => props} = object) do
+    case validate_properties(props, object) do
       :ok -> :ok
       _ -> :error
     end
@@ -10,55 +10,49 @@ defmodule :"unevaluatedProperties with oneOf-gpt-3.5" do
     :error
   end
 
-  defp validate_object(object) do
-    case validate_properties(object) do
-      :ok -> :ok
-      _ -> validate_one_of(object)
+  defp validate_properties(props, object) do
+    props
+    |> Enum.reduce(
+      :ok,
+      fn {key, schema}, result ->
+        case Map.fetch(object, key) do
+          {:ok, value} ->
+            case validate_value(schema, value) do
+              :ok -> result
+              _ -> :error
+            end
+
+          _ ->
+            if is_required(schema, key) do
+              :error
+            else
+              result
+            end
+        end
+      end
+    )
+  end
+
+  defp is_required(schema, key) do
+    with ["required" | _] <- schema["oneOf"],
+         one_of_schema <- schema["oneOf"],
+         %{"properties" => properties} = one_of_schema,
+         key in Map.keys(properties) do
+      true
+    else
+      _ -> false
     end
   end
 
-  defp validate_properties(object) do
-    case Map.has_key?(object, :foo) do
-      true ->
-        case Map.get(object, :foo) do
-          s when is_binary(s) -> :ok
-          _ -> :error
-        end
-
-      false ->
-        :error
-    end
+  defp validate_value(%{"const" => value}, object) when object == value do
+    :ok
   end
 
-  defp validate_one_of(object) do
-    case validate_one_of_clause(object, %{bar: "bar"}) do
-      :ok ->
-        :ok
-
-      _ ->
-        case validate_one_of_clause(object, %{baz: "baz"}) do
-          :ok -> :ok
-          _ -> :error
-        end
-    end
+  defp validate_value(%{"type" => "string"}, object) when is_binary(object) do
+    :ok
   end
 
-  defp validate_one_of_clause(object, clause) do
-    case Map.has_key?(object, :foo) do
-      true ->
-        :error
-
-      false ->
-        case Map.has_key?(object, Keyword.keys(clause)) do
-          true ->
-            Enum.all?(
-              Enum.map(Keyword.keys(clause), fn k -> Map.get(object, k) == Map.get(clause, k) end),
-              & &1
-            ) && :ok
-
-          false ->
-            :error
-        end
-    end
+  defp validate_value(_schema, _object) do
+    :error
   end
 end

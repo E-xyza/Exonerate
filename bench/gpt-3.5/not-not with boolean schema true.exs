@@ -1,9 +1,9 @@
-defmodule :"not with boolean schema true-gpt-3.5" do
-  def validate(bool) when is_boolean(bool) and bool == false do
-    :ok
+defmodule :"not-not with boolean schema true-gpt-3.5" do
+  def validate(true) do
+    :error
   end
 
   def validate(_) do
-    :error
+    :ok
   end
 end

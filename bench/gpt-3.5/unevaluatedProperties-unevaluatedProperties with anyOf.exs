@@ -1,21 +1,8 @@
-defmodule :"unevaluatedProperties with anyOf-gpt-3.5" do
+defmodule :"unevaluatedProperties-unevaluatedProperties with anyOf-gpt-3.5" do
   def validate(object) when is_map(object) do
-    any_of_valid =
-      object
-      |> Map.keys()
-      |> Enum.reduce(
-        [],
-        fn key, valid ->
-          case any_of_key_valid?(key) do
-            true -> [key | valid]
-            false -> valid
-          end
-        end
-      )
-
-    case length(any_of_valid) do
-      0 -> :error
-      _ -> :ok
+    case do_validate(object) do
+      true -> :ok
+      false -> :error
     end
   end
 
@@ -23,27 +10,58 @@ defmodule :"unevaluatedProperties with anyOf-gpt-3.5" do
     :error
   end
 
-  defp any_of_key_valid?("foo") do
-    map_key_valid?("foo", :string)
+  defp do_validate(object) do
+    case object["foo"] do
+      nil -> false
+      _ -> do_any_of(object)
+    end
   end
 
-  defp any_of_key_valid?("bar") do
-    map_key_valid?("bar", :constant, "bar")
+  defp do_any_of(object) do
+    any_of = object["anyOf"]
+
+    if any_of do
+      Enum.any?(any_of, fn map ->
+        case do_schema(map, object) do
+          true -> true
+          false -> false
+        end
+      end)
+    else
+      do_properties(object)
+    end
   end
 
-  defp any_of_key_valid?("baz") do
-    map_key_valid?("baz", :constant, "baz")
+  defp do_properties(object) do
+    properties = object["properties"]
+
+    if properties do
+      Enum.all?(Map.keys(properties), fn key ->
+        case do_property(key, properties, object) do
+          true -> true
+          false -> false
+        end
+      end)
+    else
+      true
+    end
   end
 
-  defp any_of_key_valid?("quux") do
-    map_key_valid?("quux", :constant, "quux")
+  defp do_property(key, properties, object) do
+    case properties[key] do
+      %{"const" => value} -> object[key] == value
+      %{"type" => "string"} -> is_binary(object[key])
+      _ -> true
+    end
   end
 
-  defp map_key_valid?(key, :string) do
-    is_binary(Map.get(object, key))
-  end
+  defp do_schema(map, object) do
+    case map do
+      %{"properties" => properties, "required" => required} ->
+        Enum.all?(required, fn key -> object[key] != nil end) and do_properties(properties)
 
-  defp map_key_valid?(key, :constant, val) do
-    Map.get(object, key) === val
+      _ ->
+        true
+    end
   end
 end

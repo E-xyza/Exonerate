@@ -1,9 +1,8 @@
-defmodule :"exclusiveMinimum validation-gpt-3.5" do
+defmodule :"exclusiveMinimum-exclusiveMinimum validation-gpt-3.5" do
   def validate(value) do
-    if is_number(value) and value > 1.1 do
-      :ok
-    else
-      :error
+    case value do
+      x when is_number(x) and x > 1.1 -> :ok
+      _ -> :error
     end
   end
 end

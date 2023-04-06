@@ -1,34 +1,69 @@
-defmodule :"if appears at the end when serialized (keyword processing sequence)-gpt-3.5" do
-  def validate(object) when is_map(object) do
-    if_max_length =
-      case Map.get(object, "maxLength") do
-        nil -> true
-        value -> value <= 4
-      end
-
-    if_const =
-      case Map.get(object, "const") do
-        "other" -> false
-        _ -> true
-      end
-
-    if if_max_length and if_const do
-      case Map.get(object, "else") do
-        "other" ->
-          case Map.get(object, "then") do
-            "yes" -> :ok
-            _ -> :error
-          end
-
-        _ ->
-          :error
-      end
-    else
-      :error
+defmodule :"if-then-else-if appears at the end when serialized (keyword processing sequence)-gpt-3.5" do
+  def validate(%{} = object) do
+    case validate_object(object) do
+      :ok -> :ok
+      _ -> :error
     end
   end
 
   def validate(_) do
+    :error
+  end
+
+  defp validate_object(object) do
+    case object do
+      %{
+        "else" => %{"const" => "other"},
+        "if" => %{"maxLength" => 4},
+        "then" => %{"const" => "yes"}
+      } ->
+        :ok
+
+      map ->
+        validate_map(map)
+
+      _ ->
+        :error
+    end
+  end
+
+  defp validate_map(%{"type" => "object"} = map) do
+    :ok
+  end
+
+  defp validate_map(_) do
+    :error
+  end
+
+  defp validate_array([]) do
+    :ok
+  end
+
+  defp validate_array(_) do
+    :error
+  end
+
+  defp validate_string("") do
+    :ok
+  end
+
+  defp validate_string(_) do
+    :error
+  end
+
+  defp validate_number(_) do
+    :ok
+  end
+
+  defp validate_bool(_) do
+    :ok
+  end
+
+  defp validate_null(nil) do
+    :ok
+  end
+
+  defp validate_null(_) do
     :error
   end
 end
