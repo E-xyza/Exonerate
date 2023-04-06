@@ -2,6 +2,8 @@
 
 # Should I use GPT to autogenerate schema validations?
 
+by [@dnautics](https://twitter.com/dnautics)
+
 > This md file can be run as a livebook found at the following location:
 > The full chart has interactive tooltips not available in the "non-live"
 > markdown form.
