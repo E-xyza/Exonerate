@@ -115,9 +115,7 @@ Future studies, possibly involving schema generation and a property testing appr
 more comprehensive understanding of GPT code generation
 
 Note that the source data for GPT is more heavily biased towards imperative programming languages, 
-so despite the claim that AI-assisted code-generation is likely to be more fruitful for languages 
-(like Elixir) with term-immutability, any deficiencies in the code may also be a result of a 
-deficiency in the LLM's understanding of Elixir.
+so deficiencies in the code may also be a result of a deficiency in the LLM's understanding of Elixir.
 
 ## Benchmarking Accuracy
 
