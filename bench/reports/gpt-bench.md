@@ -60,7 +60,10 @@ answer the question **"Should I use GPT to autogenerate schema validations?"**
 
 ## Methodology
 
-To test this question, the following prompt was generated against ~> 250 JSONSchemas provided as a part of the JSONSchema engine validation suite (website).  Each of these was injected into the following templated query and GPT3.5 and GPT4 were asked to provide a response.
+To test this question, the following prompt was generated against ~> 250 JSONSchemas provided 
+as a part of the JSONSchema engine validation suite (https://github.com/json-schema-org/JSON-Schema-Test-Suite).  
+Each of these was injected into the following templated query and GPT3.5 and GPT4 were asked
+to provide a response.
 
 ````
 Hi, ChatGPT! I would love your help writing an Elixir public function `validate/1`, which takes
