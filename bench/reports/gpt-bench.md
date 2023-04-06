@@ -40,7 +40,7 @@ little bit like John Henry battling against the iron tracklayer, only to win but
 
 With the advent of LLM-based code generation, we are seeing programmers leveraging the power of
 LLMs, such as GPT, to generate difficult or fussy code and rapidly create code.  Is this a good
-idea?  I wanted to test this out.
+idea?
 
 Note that compared to a schema compiler, LLM-generated code may be able to see some nice
 optimizations for simple schemas.  This is roughly equivalent to a human claiming to be able to
