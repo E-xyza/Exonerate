@@ -860,6 +860,8 @@ an Elixir-style module name.
 
 ## Accuracy Evaluation
 
+Next, let's look at how accurately GPT-3.5 and GPT-4 perform across all of the JSONSchema tests:
+
 ```elixir
 defmodule Benchmark.Plotter do
   def format_passes(result) do

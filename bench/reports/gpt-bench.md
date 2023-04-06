@@ -438,6 +438,8 @@ an Elixir-style module name.
 
 ## Accuracy Evaluation
 
+Next, let's look at how accurately GPT-3.5 and GPT-4 perform across all of the JSONSchema tests:
+
 ```elixir
 defmodule Benchmark.Plotter do
   def format_passes(result) do
@@ -534,7 +536,8 @@ Benchmark.Plotter.plot("gpt-3.5": gpt_3_results, "gpt-4": gpt_4_results)
 
 
 In the above chart, blue dots are 100% correct, green dots are partially correct, orange dots
-are completely incorrect, and red dots are compilation errors.
+are completely incorrect, and red dots are compilation errors.  Note that dot positions may
+not be at the exact percentage, so that the count of overlapping tests can be easily seen.
 
 ## Selected Observations of interest
 
