@@ -330,7 +330,7 @@ end
 
 ### Filters only apply to their own types
 
-This common error, which is common to both GPT-3.5 and GPT-4, stems because GPT does not
+This error, which is common to both GPT-3.5 and GPT-4, occurs because GPT does not
 understand that a filter will not reject a type it is not designed to operate on.  A good
 example of such code is the following (derived from the schema `{"maxItems": 2}`):
 
@@ -343,7 +343,7 @@ defmodule :"maxItems-maxItems validation" do
 end
 ```
 
-GPT-4 will Note that `validate/1` will return `:error` when confronted with a string, even 
+Note that `validate/1` will return `:error` when confronted with a string, even 
 though the JSONSchema spec says that the `maxItems` filter should not apply, defaulting to
 successful validation.
 
