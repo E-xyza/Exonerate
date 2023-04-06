@@ -628,7 +628,8 @@ in this case simply
 if Map.has_key?(object, "foo"), do: :ok, else: :error
 ```
 
-would have done the trick.
+would have done the trick, and is O(1) in the size of the map; `Map.keys/1` is
+O(N) by virtue of synthesizing the entire array. 
 
 ### Hallucinations
 
