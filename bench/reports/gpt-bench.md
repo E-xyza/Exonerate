@@ -38,9 +38,10 @@ This entire month (March, 2023), I had been spending a ton of effort completing 
 refactor of my json-schema library for Elixir.  As I was toiling away handcrafting macros to 
 generate optimized, bespoke, yet generalizable code, GPT-4 rolled onto the scene and awed all of
 us in the industry with its almost magical ability to craft code out of whole cloth.  I felt a
-little bit like John Henry battling against the steam drill[^1], only to win but expire from his exertion. <img src="https://upload.wikimedia.org/wikipedia/commons/0/00/John_Henry-27527.jpg" width="50%"/>
-
+little bit like John Henry battling against the steam drill[^1], only to win but expire from his exertion. 
 [^1]: thanks JackFr
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/0/00/John_Henry-27527.jpg" width="50%"/>
 
 With the advent of LLM-based code generation, we are seeing programmers leveraging the power of
 LLMs, such as GPT, to generate difficult or fussy code and rapidly create code.  Is this a good
