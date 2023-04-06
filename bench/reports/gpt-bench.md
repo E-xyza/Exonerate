@@ -1179,19 +1179,18 @@ Although indeed GPT appears to be able to perform compiler optimizations that ge
 efficient code, this code is not composable, and the attention of the current state of the art 
 LLM models may not scale to more complex schemas.  In the small, GPT makes performance errors 
 that are likely due to its lack of understanding of the VM architecture; without repeating this
-experiment in other languages, it's not entirely clear, though, that this wouldn't be better.
-In some sense it's a pity that LLMs are overwhelmingly trained on languages like javascript,
-python, ruby, C#, etc. because due to the limitations of LLM attention, the safety of 
-LLMs as coding copilots is likely to be better for languages where higher order structures
-(arrays, dicts) are not mutable across function calls.
+experiment in other languages, though, I can't be certain.  In some sense it's a pity that LLMs 
+are overwhelmingly trained on languages like javascript, python, ruby, C#, etc. because due to 
+the limitations of LLM attention, the safety of LLMs as coding copilots is better for languages 
+where higher order structures (arrays, dicts) are not mutable across function calls.
 
-The use case for autogenerating code in GPT, especially for something like this, is likely to
-be a developer with low experience in OpenAPI and/or low experience in Elixir.  Accordingly,
-a one-shot usecase model (like what is tested here) is representative of how some may want
+The use case for autogenerating JSONSchema code in GPT is likely to be a developer with low 
+experience in JSONSchema and/or low experience in Elixir.  Accordingly, a one-shot usecase 
+model (like what is tested here) is representative of how some may want
 to use GPT.  Because using GPT to generate validation should probably involve the review by 
-someone who is experienced in Elixir AND JsonSchema, for these practicioners, using GPT in 
+someone who is experienced in Elixir AND JSONSchema, for these practicioners, using GPT in 
 lieu of the compiler is still generally not a good idea.  Interestingly, since GPT-4's API 
 plugin architecture understands OpenAPI (and thus JSONSchema) one wonders if some data 
 marshalling/unmarshalling errors exist its interfaces.  I'm looking forward to repeating this
-experiment with GPT-6, and maybe GPT-7 will be able to generate an OpenAPI compiler and 
+experiment with GPT-6, and maybe GPT-7 will be able to generate an JSONSchema compiler and 
 replace this library altogether.
