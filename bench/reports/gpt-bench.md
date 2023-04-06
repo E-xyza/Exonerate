@@ -7,6 +7,8 @@
 > markdown form.
 >
 > https://github.com/E-xyza/Exonerate/blob/master/bench/gpt-bench.livemd
+>
+> For more information on livebook see: https://livebook.dev/
 
 ```elixir
 Mix.install([
@@ -544,7 +546,7 @@ not be at the exact percentage, so that the count of overlapping tests can be ea
 ### Incorrect Elixir
 
 GPT-3.5 and GPT-4 are not aware that only certain functions can be called in function guards,
-causing a compilation error:
+so this example from GPT-4 causes a compilation error:
 
 <!-- livebook:{"force_markdown":true} -->
 
@@ -557,7 +559,9 @@ end
 
 ### Misunderstanding Elixir
 
-GPT-4 attempts to directly match the result of `Map.keys/1`.  This likely works, but in  general there is no guarantee that the result of this function will have any order.
+GPT-4 attempts to directly match the result of `Map.keys/1`.  (see second function header)  This likely works
+in this case, but in general there is no guarantee that the list result of this function will return the
+keys in any given order see: https://www.erlang.org/doc/man/maps.html#keys-1.
 
 <!-- livebook:{"force_markdown":true} -->
 
