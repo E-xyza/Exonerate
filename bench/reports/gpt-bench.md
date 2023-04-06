@@ -1028,7 +1028,7 @@ VegaLite.new(width: 500)
 |> VegaLite.encode_field(:color, "group")
 ```
 
-![](oneOf-perf.svg)
+![](uniqueItems-perf.svg)
 
 In the worst case scenario for Exonerate, we see that the relative speeds stay about the same: 
 This makes sense, as both processes are O(N) in the size of the list, and the Exonerate overhead
@@ -1157,7 +1157,7 @@ VegaLite.new(width: 500)
 |> VegaLite.encode_field(:color, "group")
 ```
 
-![](uniqueItems-perf.svg)
+![](oneOf-perf.svg)
 
 Indeed, we see exactly the relationship we expect:  maps with "foo/baz" and "foo/none" have a
 more dramatic performance improvement over maps with "foo/bar".  Moreover, we see a "kink" in
