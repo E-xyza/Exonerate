@@ -12,7 +12,7 @@ Documentation is available at: https://hexdocs.pm/exonerate
 
 [Accuracy benchmark relative to GPT-3.5 and GPT-4](bench/reports/gpt-bench.md)
 
-[Performance (speed) benchmark relative to other elixir JSONSchema libraries](bench/reports/gpt-bench.md)
+[Performance (speed) benchmark relative to other elixir JSONSchema libraries](bench/reports/lib-bench.md)
 
 ## JsonSchema support scope:
 
