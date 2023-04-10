@@ -29,7 +29,7 @@ defmodule Exonerate.MixProject do
   end
 
   def elixirc_paths(:test), do: ["lib", "test/support"]
-  def elixirc_paths(:bench), do: ["lib", "bench"]
+  def elixirc_paths(:bench), do: ["lib", "bench", "test/support"]
   def elixirc_paths(_), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.

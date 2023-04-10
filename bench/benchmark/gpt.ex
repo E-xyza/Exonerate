@@ -51,7 +51,7 @@ defmodule Benchmark.GPT do
         schema.schema
         |> Jason.encode!()
         |> fetch_schema_code!(schema.group, schema.description, model)
-        |> Tools.if(&(&1), &trim_elixir/1)
+        |> Tools.if(& &1, &trim_elixir/1)
 
       code =
         try do

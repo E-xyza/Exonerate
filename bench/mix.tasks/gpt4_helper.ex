@@ -16,10 +16,10 @@ defmodule Mix.Tasks.Gpt4Helper do
       directory
       |> Schema.stream_from_directory(omit: @omit)
       |> Enum.each(fn schema ->
-
-        new_file = result_dir
-        |> Path.join("#{schema.group}-#{schema.description}.exs")
-        |> Path.expand()
+        new_file =
+          result_dir
+          |> Path.join("#{schema.group}-#{schema.description}.exs")
+          |> Path.expand()
 
         schema.schema
         |> Jason.encode!()

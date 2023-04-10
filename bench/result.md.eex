@@ -1,0 +1,11 @@
+## <%= @group %> - <%= @test %>
+
+
+group: result.schema.group,
+      test: result.schema.description,
+      schema: Jason.encode!(result.schema.schema),
+      pct: round(result.pct / @granularity) * @granularity,
+      color: color,
+      pass: format_passes(result),
+      fail: format_fails(result)
+    }

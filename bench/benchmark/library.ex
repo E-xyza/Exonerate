@@ -1,153 +1,145 @@
 defmodule Benchmark.Library do
-  @moduledoc false
-  alias Benchmark.Schema
+  defstruct [:group, :description, :test, :exonerate, :ex_json_schema, :json_xema]
 
-  @spec build_module(Schema.t()) :: Schema.t()
-
-  def build_module(schema) do
-    exonerate_compiled? = build_exonerate_module(schema)
-    build_test_module(schema, exonerate_compiled?)
-    schema
+  def stream_schema(schema, opts \\ []) do
+    schema.tests
+    |> Stream.reject(&file_exists?(schema, &1))
+    |> Stream.reject(&omitted_test?(schema, &1, opts))
+    |> Stream.map(&run_one_test(schema, &1))
   end
 
-  def build_exonerate_module(schema) do
-    exonerate_module = exonerate_module(schema)
-    schema_string = Jason.encode!(schema.schema)
+  defp file_exists?(schema, test) do
+    normalized = String.replace(test.description, "/", "-")
 
-    module_code =
-      quote do
-        defmodule unquote(exonerate_module) do
-          require Exonerate
+    filename =
+      Path.join(__DIR__, "../results/#{schema.group}-#{schema.description}-#{normalized}.bin")
 
-          Exonerate.function_from_string(:def, :validate, unquote(schema_string))
-        end
-      end
+    File.exists?(filename)
+  end
 
-    try do
-      Code.eval_quoted(module_code)
-      true
-    rescue
-      _ -> false
+  defp omitted_test?(schema, test, opts) do
+    case Keyword.get(opts, :omit) do
+      nil ->
+        false
+
+      omit ->
+        {schema.group, schema.description} in omit or
+          {schema.group, schema.description, test.description} in omit
     end
   end
 
-  def build_test_module(schema, exonerate_compiled?) do
-    module = test_module(schema)
-    exonerate_module = if exonerate_compiled?, do: exonerate_module(schema)
+  defp run_one_test(schema, test) do
+    # try to compile the exonerate module.
+    IO.puts("compiling #{schema.group}-#{schema.description}-#{test.description}")
 
-    test_data =
-      schema.tests
-      |> Enum.map(& &1.data)
-      |> Macro.escape()
+    try do
+      {{_, module, _, _}, _} =
+        schema
+        |> attempt_compilation(test, true)
+        |> Code.eval_quoted()
 
-    test_valids = Enum.map(schema.tests, & &1.valid)
+      module.run()
+    rescue
+      err ->
+        IO.inspect(err)
+        IO.inspect(__STACKTRACE__)
+        IO.puts("=======================")
+        []
+    end
+  end
+
+  defp normalize(string), do: String.replace(string, "/", "-")
+
+  defp attempt_compilation(schema, test, with_exonerate) do
+    module_name = :"#{schema.group}-#{schema.description}-#{normalize(test.description)}"
+
+    schema_str = Jason.encode!(schema.schema)
+
+    exonerate_code =
+      if with_exonerate do
+        quote do
+          require Exonerate
+
+          Exonerate.function_from_string(:defp, :validate, unquote(schema_str),
+            force_remote: true,
+            cache: false
+          )
+
+          defp exonerate, do: validate(@test_data)
+
+          defp maybe_add_exonerate(map), do: Map.put(map, :exonerate, &exonerate/0)
+        end
+      else
+        quote do
+          defp maybe_add_exonerate(map), do: map
+        end
+      end
 
     schema_ast = Macro.escape(schema.schema)
 
     quote do
-      defmodule unquote(module) do
-        require ExJsonSchema
-        require JsonXema
+      defmodule unquote(module_name) do
+        @test_data unquote(Macro.escape(test.data))
 
-        @schema unquote(schema_ast)
-        @jsonxema JsonXema.new(@schema)
+        unquote(exonerate_code)
 
-        @tests unquote(test_data)
-               |> Enum.zip(unquote(test_valids))
-               |> Map.new()
+        @ex_json_schema_resolved (try do
+                                    ExJsonSchema.Schema.resolve(unquote(schema_ast))
+                                  rescue
+                                    _ -> nil
+                                  end)
 
-        unquote(ex_json_schema_function(schema))
-        unquote(exonerate_function(schema, exonerate_compiled?))
-
-        defp jsonxema(input) do
-          JsonXema.validate(@jsonxema, input)
+        defp maybe_add_ex_json_schema(map) do
+          if @ex_json_schema_resolved do
+            try do
+              ex_json_schema()
+              Map.put(map, :ex_json_schema, &ex_json_schema/0)
+            rescue
+              _ -> map
+            end
+          else
+            map
+          end
         end
 
-        defp benchmark_map(input) do
-          %{
-            "Exonerate" => fn -> exonerate(input) end,
-            "ExJsonSchema" => fn -> ex_json_schema(input) end,
-            "JsonXema" => fn -> jsonxema(input) end
-          }
+        defp ex_json_schema do
+          ExJsonSchema.Validator.valid?(@ex_json_schema_resolved, @test_data)
         end
 
-        defp benchmark_one({input, valid?}) do
-          input
-          |> benchmark_map()
-          |> Benchmark.Library.validate(valid?)
-          |> Benchee.run()
+        @json_xema_preparsed (try do
+                                JsonXema.new(unquote(schema_ast))
+                              rescue
+                                _ -> nil
+                              end)
+
+        defp maybe_add_json_xema(map) do
+          if @json_xema_preparsed do
+            try do
+              json_xema()
+              Map.put(map, :json_xema, &json_xema/0)
+            rescue
+              _ -> map
+            end
+          else
+            map
+          end
         end
 
-        def benchmark do
-          # run the benchmark once in ExJsonSchema and JsonXema and verify that they produce the
-          # correct answer.
-          @tests
-          |> Enum.map(&benchmark_one/1)
-          |> Benchmark.Library.save_results(unquote(schema.description))
+        defp json_xema do
+          JsonXema.validate(@json_xema_preparsed, @test_data)
+        end
+
+        def run do
+          benchee =
+            %{}
+            |> maybe_add_ex_json_schema()
+            |> maybe_add_json_xema()
+            |> maybe_add_exonerate()
+            |> Benchee.run()
+
+          {unquote(module_name), benchee}
         end
       end
     end
-    |> Code.eval_quoted()
   end
-
-  def validate(benchmark_map, valid?) do
-    benchmark_map
-    |> Enum.flat_map(fn pair = {name, benchmark} ->
-      List.wrap(if verify(benchmark.(), valid?), do: pair)
-    end)
-    |> Map.new()
-  end
-
-  @spec verify(nil | :ok | {:error, term}, boolean()) :: boolean
-  def verify(result, valid?) do
-    # NB: result might be `nil` if we've marked that the function doesn't run at all.
-    if result do
-      result === :ok === valid?
-    end
-  end
-
-  defp ex_json_schema_function(schema) do
-    # ex_json_schema doesn't tolerate openapi schemas that are just boolean.  In this case,
-    # just create a function that returns nil.
-    if is_map(schema.schema) do
-      quote do
-        defp ex_json_schema(input) do
-          ExJsonSchema.Validator.validate(@schema, input)
-        end
-      end
-    else
-      quote do
-        defp ex_json_schema(_), do: nil
-      end
-    end
-  end
-
-  defp exonerate_function(schema, exonerate_compiled?) do
-    # the exonerate module may not exist if the schema did not compile.
-    # In this case, just create a function that returns nil.
-    if exonerate_compiled? do
-      quote do
-        defp exonerate(input) do
-          unquote(exonerate_module(schema)).validate(input)
-        end
-      end
-    else
-      quote do
-        defp exonerate(_), do: nil
-      end
-    end
-  end
-
-  @results_file __DIR__
-                |> Path.join("../results")
-                |> Path.expand()
-
-  def save_results(results, description) do
-    file = Path.join(@results_file, "#{description}.bin")
-
-    raise "not implemented"
-  end
-
-  defp test_module(schema), do: :"#{schema.description}"
-  defp exonerate_module(schema), do: :"#{schema.description}-exonerate"
 end

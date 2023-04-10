@@ -7,7 +7,8 @@ defmodule ExonerateTest.FilePlug do
 
   match _ do
     content =
-      @test_dir
+      :exonerate
+      |> Application.get_env(:file_plug, @test_dir)
       |> Path.join(conn.request_path)
       |> File.read!()
 
