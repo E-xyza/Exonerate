@@ -27,3 +27,6 @@
 # 0.3.0
 - switch to using `:json_ptr` library
 - implementation of `unevaluatedItems` and `unevaluatedProperties`
+
+# 0.3.1
+- pinned elixir version to minimum 1.14.1, due to use of Macro.expand_literals
