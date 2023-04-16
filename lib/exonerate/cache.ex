@@ -22,59 +22,108 @@ defmodule Exonerate.Cache do
     end
   end
 
-  @type resource :: String.t() | {:file, Path.t()}
+  defmodule Resource do
+    @moduledoc false
+    defstruct [:uri, :sha, :schema, :opts]
+    @type t :: %__MODULE__{
+      uri: URI.t,
+      sha: String.t,
+      schema: String.t,
+      opts: keyword
+    }
+  end
 
-  # SCHEMAS
+  # RESOURCES
 
-  @spec fetch_schema(module, resource) :: {:ok, Type.json()} | :error
-  def fetch_schema(module, resource) do
-    case :ets.lookup(get_table(), {module, resource}) do
+  defmatchspecp get_res_ms(module, name) do
+    {{:resource, ^module, ^name}, resource} -> resource
+  end
+
+  defp hash(schema) do
+    :sha256
+    |> :crypto.hash(schema)
+    |> Base.encode16
+  end
+
+  @spec register_resource(module, schema :: Type.json, name :: String.t, keyword) :: :ok
+  def register_resource(module, schema, name, opts) do
+    hash = hash(schema)
+    resource = %Resource{
+      uri: URI.parse("exonerate://#{hash}/"),
+      sha: hash,
+      schema: schema,
+      opts: opts
+    }
+    :ets.insert(get_table(), {{:resource, module, name}, resource})
+  end
+
+  @spec fetch_resource(module, name :: String.t) :: {:ok, String.t} | :error
+  def fetch_resource(module, name) do
+    case :ets.select(get_table(), get_res_ms(module, name)) do
       [] -> :error
-      [{{^module, ^resource}, {:cached, id}}] when is_binary(id) -> fetch_schema(module, id)
-      [{{^module, ^resource}, json}] -> {:ok, json}
+      [resource] -> {:ok, resource}
     end
   end
 
-  @spec fetch_schema!(module, resource) :: Type.json()
-  def fetch_schema!(module, resource) do
-    case fetch_schema(module, resource) do
+  def fetch_resource!(module, name) do
+    case fetch_resource(module, name) do
+      :error -> raise KeyError, message: "resource named #{name} not found in cache"
+      {:ok, resource} -> resource
+    end
+  end
+
+  # SCHEMAS
+  @type resource_uri :: String.t
+
+  @spec fetch_schema(module, resource_uri) :: {:ok, Type.json()} | :error
+  def fetch_schema(module, resource_uri) do
+    case :ets.lookup(get_table(), {module, resource_uri}) do
+      [] -> :error
+      [{{^module, ^resource_uri}, {:cached, id}}] when is_binary(id) -> fetch_schema(module, id)
+      [{{^module, ^resource_uri}, json}] -> {:ok, json}
+    end
+  end
+
+  @spec fetch_schema!(module, resource_uri) :: Type.json()
+  def fetch_schema!(module, resource_uri) do
+    case fetch_schema(module, resource_uri) do
       {:ok, json} ->
         json
 
       :error ->
         raise KeyError,
           message:
-            "key `#{resource}` not found in the exonerate cache for the module #{inspect(module)}"
+            "key `#{resource_uri}` not found in the exonerate cache for the module #{inspect(module)}"
     end
   end
 
-  @spec put_schema(module, resource :: String.t(), schema :: Type.json()) :: :ok
-  def put_schema(module, resource, schema) do
-    :ets.insert(get_table(), {{module, resource}, schema})
+  @spec put_schema(module, resource_uri :: String.t(), schema :: Type.json()) :: :ok
+  def put_schema(module, resource_uri, schema) do
+    :ets.insert(get_table(), {{module, resource_uri}, schema})
     :ok
   end
 
   @spec update_schema!(
           module,
-          resource :: String.t(),
+          resource_uri :: String.t(),
           JsonPointer.t(),
           (Type.json() -> Type.json())
         ) ::
           :ok
-  def update_schema!(module, resource, pointer, transformation) do
+  def update_schema!(module, resource_uri, pointer, transformation) do
     new_schema =
       module
-      |> fetch_schema!(resource)
+      |> fetch_schema!(resource_uri)
       |> JsonPointer.update_json!(pointer, transformation)
 
-    put_schema(module, resource, new_schema)
+    put_schema(module, resource_uri, new_schema)
 
     :ok
   end
 
-  @spec has_schema?(module, resource :: String.t()) :: boolean
-  def has_schema?(module, resource) do
-    case :ets.lookup(get_table(), {module, resource}) do
+  @spec has_schema?(module, resource_uri :: String.t()) :: boolean
+  def has_schema?(module, resource_uri) do
+    case :ets.lookup(get_table(), {module, resource_uri}) do
       [] -> false
       [_] -> true
     end

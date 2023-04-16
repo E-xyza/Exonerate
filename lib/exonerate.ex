@@ -324,6 +324,48 @@ defmodule Exonerate do
   alias Exonerate.Schema
 
   @doc """
+  saves in the compile-time registry a schema under the given name.  The schema
+  can then be used to generate a validation function with
+  `function_from_resource/3`.  This is useful for clearly reusing a string
+  schema across multiple functions with potentially different entrypoints, but
+  without having to repeat the (potentially large) schema string literal in
+  your module code.
+
+  > ### Note {: .info}
+  >
+  > this function is optional, `function_from_string/4` will also create a
+  > resource for the string and reuse private functions between calls.
+
+  > ### File schemas {: .info}
+  >
+  > `function_from_file/4` will perform the equivalent of this process under
+  > the hood, so don't run this function for file functions.
+
+  ### Extra options
+
+  - `:content_type`: specifies the content-type of the provided schema string
+    literal. Defaults to `application/json` if the file extension is `.json`,
+    and `application/yaml` if the file extension is `.yaml`  If `:content_type`
+    is unspecified and the file extension is unrecognized, Exonerate will
+    not be able to compile.
+  - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples.
+    This is used to determine the content-type of the schema if the file
+    extension is unrecognized.  E.g. `[{".html", "text/html"}]`.  The mappings
+    `{".json", "application/json"}` and `{".yaml", "application/yaml"}` are not
+    overrideable.
+  """
+  defmacro register_resource(schema, name, opts \\ []) do
+    schema = Macro.expand(schema, __CALLER__)
+    opts = opts
+    |> Macro.expand(__CALLER__)
+    |> Macro.expand_literals(__CALLER__)
+    |> Keyword.put_new(:content_type, "application/json")
+    |> Tools.set_decoders()
+
+    Cache.register_resource(__CALLER__.module, schema, name, opts)
+  end
+
+  @doc """
   generates a series of functions that validates a provided JSONSchema.
 
   Note that the `schema` parameter must be a string literal.
@@ -338,11 +380,17 @@ defmodule Exonerate do
     extension is unrecognized.  E.g. `[{".html", "text/html"}]`.  The mappings
     `{".json", "application/json"}` and `{".yaml", "application/yaml"}` are not
     overrideable.
+
+  > ### Conflicting options {: .warning}
+  >
+  > if you call this macro twice with different extra options, it will check raise
+  > with a compiler error.
   """
   defmacro function_from_string(type, function_name, schema_ast, opts \\ []) do
     # expand literals (aliases) in ast.
     opts =
       opts
+      |> Macro.expand(__CALLER__)
       |> Macro.expand_literals(__CALLER__)
       |> Keyword.put_new(:content_type, "application/json")
       |> Tools.set_decoders()
@@ -424,16 +472,42 @@ defmodule Exonerate do
     )
   end
 
+  defmacro function_from_resource(type, function_name, resource, opts) do
+    # expand literals (aliases) in ast.
+    opts = Macro.expand_literals(opts, __CALLER__)
+
+    # prewalk the schema text
+    root_pointer = Tools.entrypoint(opts)
+
+    # TODO: also attempt to obtain this from the schema.
+    draft = Keyword.get(opts, :draft, "2020-12")
+    opts = Keyword.put(opts, :draft, draft)
+
+    resource = Cache.fetch_resource!(__CALLER__.module, resource)
+
+    # set decoder options for the schema
+
+    build_code(
+      __CALLER__,
+      resource.schema,
+      type,
+      function_name,
+      "#{resource.uri}",
+      root_pointer,
+      Keyword.merge(opts, resource.opts)
+    )
+  end
+
   defp build_code(
          caller,
          schema_string,
          type,
          function_name,
-         function_resource,
+         resource_uri,
          root_pointer,
          opts
        ) do
-    schema = Schema.ingest(schema_string, caller, function_resource, opts)
+    schema = Schema.ingest(schema_string, caller, resource_uri, opts)
 
     opts = Draft.set_opts(opts, schema)
 
@@ -443,7 +517,7 @@ defmodule Exonerate do
         Cache.put_schema(caller.module, resource, schema)
         resource
       else
-        function_resource
+        resource_uri
       end
 
     schema_fn = Metadata.schema(schema_string, type, function_name, opts)
