@@ -7,7 +7,7 @@ defmodule ExonerateTest.ResourceTest do
     "foo"
   )
 
-  Exonerate.function_from_resource(:defp, :resource, "foo",  entrypoint: "/foo")
+  Exonerate.function_from_resource(:defp, :resource, "foo", entrypoint: "/foo")
 
   test "resource" do
     assert :ok = resource("bar")

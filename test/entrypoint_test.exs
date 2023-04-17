@@ -18,23 +18,25 @@ defmodule ExonerateTest.EntrypointTest do
     :defp,
     :multi_1,
     """
-      {
-        "one": {"type": "string"},
-        "two": {"type": "integer"}
-     }
-     """,
-     entrypoint: "/one")
+     {
+       "one": {"type": "string"},
+       "two": {"type": "integer"}
+    }
+    """,
+    entrypoint: "/one"
+  )
 
   Exonerate.function_from_string(
     :defp,
     :multi_2,
     """
-      {
-        "one": {"type": "string"},
-        "two": {"type": "integer"}
-     }
-     """,
-     entrypoint: "/two")
+     {
+       "one": {"type": "string"},
+       "two": {"type": "integer"}
+    }
+    """,
+    entrypoint: "/two"
+  )
 
   test "multi" do
     assert :ok = multi_1("bar")

@@ -258,7 +258,7 @@ defmodule Exonerate.Tools do
     |> uri_merge(JsonPointer.to_uri(pointer))
     |> if(opts[:trim], fn
       uri = %{scheme: "file"} -> %URI{fragment: uri.fragment}
-      uri = %{scheme: "function"} -> %URI{fragment: uri.fragment}
+      uri = %{scheme: "exonerate"} -> %URI{fragment: uri.fragment}
       uri -> uri
     end)
   end

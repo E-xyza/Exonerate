@@ -30,7 +30,7 @@ defmodule Exonerate.Combining.Ref do
     call = Tools.call(resource, pointer, opts)
 
     call_path =
-      if String.starts_with?(resource, "function://") do
+      if String.starts_with?(resource,"exonerate://") do
         JsonPointer.to_path(pointer)
       else
         {resource, JsonPointer.to_path(pointer)}

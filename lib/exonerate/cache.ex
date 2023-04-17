@@ -25,39 +25,51 @@ defmodule Exonerate.Cache do
   defmodule Resource do
     @moduledoc false
     defstruct [:uri, :sha, :schema, :opts]
+
     @type t :: %__MODULE__{
-      uri: URI.t,
-      sha: String.t,
-      schema: String.t,
-      opts: keyword
-    }
+            uri: URI.t(),
+            sha: String.t(),
+            schema: String.t(),
+            opts: keyword
+          }
   end
 
   # RESOURCES
+  @resource_opts ~w(content_type mimetype_mapping decoders)a
 
   defmatchspecp get_res_ms(module, name) do
     {{:resource, ^module, ^name}, resource} -> resource
   end
 
-  defp hash(schema) do
+  defp hash(schema, opts) do
+    opts =
+      opts
+      |> Keyword.take(@resource_opts)
+      |> Enum.sort()
+
     :sha256
-    |> :crypto.hash(schema)
-    |> Base.encode16
+    |> :crypto.hash(:erlang.term_to_binary({schema, opts}))
+    |> Base.encode16()
   end
 
-  @spec register_resource(module, schema :: Type.json, name :: String.t, keyword) :: :ok
+  @spec register_resource(module, schema :: Type.json(), name :: String.t(), keyword) ::
+          Resource.t()
   def register_resource(module, schema, name, opts) do
-    hash = hash(schema)
+    opts = Keyword.take(opts, @resource_opts)
+    hash = hash(schema, opts)
+
     resource = %Resource{
       uri: URI.parse("exonerate://#{hash}/"),
       sha: hash,
       schema: schema,
       opts: opts
     }
+
     :ets.insert(get_table(), {{:resource, module, name}, resource})
+    resource
   end
 
-  @spec fetch_resource(module, name :: String.t) :: {:ok, String.t} | :error
+  @spec fetch_resource(module, name :: String.t()) :: {:ok, Resource.t()} | :error
   def fetch_resource(module, name) do
     case :ets.select(get_table(), get_res_ms(module, name)) do
       [] -> :error
@@ -65,6 +77,7 @@ defmodule Exonerate.Cache do
     end
   end
 
+  @spec fetch_resource!(module, name :: String.t()) :: Resource.t()
   def fetch_resource!(module, name) do
     case fetch_resource(module, name) do
       :error -> raise KeyError, message: "resource named #{name} not found in cache"
@@ -72,8 +85,37 @@ defmodule Exonerate.Cache do
     end
   end
 
+  defmatchspecp find_res_ms(module, hash) do
+    {{:resource, ^module, _}, resource} when resource.hash === hash -> resource
+  end
+
+  @spec find_resource(module, schema :: String.t(), keyword) :: :error | {:ok, Resource.t()}
+  def find_resource(module, schema, opts) do
+    opts = Keyword.take(opts, @resource_opts)
+    hash = hash(schema, opts)
+
+    case :ets.select(get_table(), find_res_ms(module, hash)) do
+      [] -> :error
+      [resource] -> {:ok, resource}
+    end
+  end
+
+  @spec find_or_make_resource(module, schema :: String.t(), name :: String.t() | nil, keyword) ::
+          Resource.t()
+  def find_or_make_resource(module, schema, name \\ nil, opts) do
+    name = name || hash(schema, opts)
+
+    case find_resource(module, schema, opts) do
+      :error ->
+        register_resource(module, schema, name, opts)
+
+      {:ok, resource} ->
+        resource
+    end
+  end
+
   # SCHEMAS
-  @type resource_uri :: String.t
+  @type resource_uri :: String.t()
 
   @spec fetch_schema(module, resource_uri) :: {:ok, Type.json()} | :error
   def fetch_schema(module, resource_uri) do

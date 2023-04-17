@@ -293,7 +293,7 @@ defmodule Exonerate.Filter.Format do
         |> JsonPointer.to_uri()
         |> to_string
         |> Tools.if(
-          String.starts_with?(resource, "function://"),
+          String.starts_with?(resource, "exonerate://"),
           &String.replace_leading(&1, resource, "")
         )
 
@@ -385,7 +385,7 @@ defmodule Exonerate.Filter.Format do
 
   defp find_at_override(resource, pointer, format_opts) do
     prefix =
-      if String.starts_with?(resource, "function://") do
+      if String.starts_with?(resource, "exonerate://") do
         ""
       else
         resource

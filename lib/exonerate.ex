@@ -356,13 +356,10 @@ defmodule Exonerate do
   """
   defmacro register_resource(schema, name, opts \\ []) do
     schema = Macro.expand(schema, __CALLER__)
-    opts = opts
-    |> Macro.expand(__CALLER__)
-    |> Macro.expand_literals(__CALLER__)
-    |> Keyword.put_new(:content_type, "application/json")
-    |> Tools.set_decoders()
+    opts = set_resource_opts(__CALLER__, opts)
 
     Cache.register_resource(__CALLER__.module, schema, name, opts)
+    quote do end
   end
 
   @doc """
@@ -380,20 +377,12 @@ defmodule Exonerate do
     extension is unrecognized.  E.g. `[{".html", "text/html"}]`.  The mappings
     `{".json", "application/json"}` and `{".yaml", "application/yaml"}` are not
     overrideable.
-
-  > ### Conflicting options {: .warning}
-  >
-  > if you call this macro twice with different extra options, it will check raise
-  > with a compiler error.
   """
   defmacro function_from_string(type, function_name, schema_ast, opts \\ []) do
-    # expand literals (aliases) in ast.
-    opts =
-      opts
-      |> Macro.expand(__CALLER__)
-      |> Macro.expand_literals(__CALLER__)
-      |> Keyword.put_new(:content_type, "application/json")
-      |> Tools.set_decoders()
+    opts = set_resource_opts(__CALLER__, opts)
+
+    # find or register the function.
+    resource = Cache.find_or_make_resource(__CALLER__.module, schema_ast, opts)
 
     # prewalk the schema text
     root_pointer = Tools.entrypoint(opts)
@@ -402,8 +391,6 @@ defmodule Exonerate do
     draft = Keyword.get(opts, :draft, "2020-12")
     opts = Keyword.put(opts, :draft, draft)
 
-    function_resource = to_string(%URI{scheme: "function", host: "#{function_name}", path: "/"})
-
     schema_string = Macro.expand(schema_ast, __CALLER__)
 
     build_code(
@@ -411,7 +398,7 @@ defmodule Exonerate do
       schema_string,
       type,
       function_name,
-      function_resource,
+      "#{resource.uri}",
       root_pointer,
       opts
     )
@@ -551,5 +538,13 @@ defmodule Exonerate do
     Keyword.put_new_lazy(opts, :content_type, fn ->
       Tools.content_type_from_extension(path, opts)
     end)
+  end
+
+  defp set_resource_opts(caller, opts) do
+    opts
+    |> Macro.expand(caller)
+    |> Macro.expand_literals(caller)
+    |> Keyword.put_new(:content_type, "application/json")
+    |> Tools.set_decoders()
   end
 end
