@@ -17,38 +17,49 @@ defmodule Exonerate.Type.Array.FilterIterator do
     |> Tools.maybe_dump(opts)
   end
 
+  def params(_context, _resource, _pointer, _opts) do
+    [:array, 0, :path]
+  end
+
   # at its core, the iterator is a reduce-while that encapsulates a with statement.
   # the reduce-while operates over the entire array.
 
+  @base_parameters (quote do
+                      [[item | rest], index, path]
+                    end)
+
+  @next_parameters (quote do
+                      [rest, index, path]
+                    end)
+
+  @end_parameters (quote do
+                     [[], _index, _path]
+                   end)
+
   defp build_iterator(context, resource, pointer, opts) do
-    call = Iterator.call(resource, pointer, opts)
-    accumulator = accumulator(context)
-    tracked = !!opts[:tracked]
-
-    reduction = reduction(context, accumulator, resource, pointer, opts)
-
-    if finalizer = finalizer_for(context, tracked, accumulator, resource, pointer) do
-      quote do
-        defp unquote(call)(unquote_splicing(call_parameters(context))) do
-          unquote(reduction)
-          |> unquote(finalizer)
-        end
-      end
-    else
-      quote do
-        defp unquote(call)(unquote_splicing(call_parameters(context))) do
-          unquote(reduction)
-        end
-      end
+    quote do
+      unquote(item_iterator(context, resource, pointer, opts))
     end
   end
 
-  defp reduction(context, accumulator, resource, pointer, opts) do
+  defp item_iterator(_context, resource, pointer, opts) do
+    call = Iterator.call(resource, pointer, opts)
+    items_call = Tools.call(resource, JsonPointer.join(pointer, "items"), opts)
+
     quote do
-      Enum.reduce_while(array, {:ok, unquote(init(accumulator))}, fn
-        item, {:ok, accumulator} ->
-          unquote(with_statement(context, accumulator, resource, pointer, opts))
-      end)
+      defp unquote(call)(unquote_splicing(@base_parameters)) do
+        case unquote(items_call)(item, path) do
+          :ok ->
+            unquote(call)(unquote_splicing(@next_parameters))
+
+          error = {:error, _} ->
+            error
+        end
+      end
+
+      defp unquote(call)(unquote_splicing(@end_parameters)) do
+        :ok
+      end
     end
   end
 

@@ -359,7 +359,9 @@ defmodule Exonerate do
     opts = set_resource_opts(__CALLER__, opts)
 
     Cache.register_resource(__CALLER__.module, schema, name, opts)
-    quote do end
+
+    quote do
+    end
   end
 
   @doc """

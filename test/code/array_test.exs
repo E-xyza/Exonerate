@@ -81,7 +81,8 @@ defmodule ExonerateTest.Code.ArrayTest do
     test "trivial array" do
       assert_filter(
         quote do
-          defp unquote(:"exonerate://tracked/#/:tracked_array")(array, path) when is_list(array) do
+          defp unquote(:"exonerate://tracked/#/:tracked_array")(array, path)
+               when is_list(array) do
             first_unseen_index = 0
 
             with do

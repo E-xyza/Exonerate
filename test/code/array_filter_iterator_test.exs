@@ -123,7 +123,9 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       #  no special iteration, just return :ok
       assert_filter(
         quote do
-          defp unquote(:"exonerate://untracked_no_prefix_items_unevaluatedItems/#/:array_iterator")(
+          defp unquote(
+                 :"exonerate://untracked_no_prefix_items_unevaluatedItems/#/:array_iterator"
+               )(
                  array,
                  path
                ) do
@@ -156,7 +158,9 @@ defmodule ExonerateTest.Code.ArrayFilterIteratorTest do
       # include the last index in the entrypoint tuple
       assert_filter(
         quote do
-          defp unquote(:"exonerate://untracked_no_prefix_items_unevaluatedItems/#/:array_iterator")(
+          defp unquote(
+                 :"exonerate://untracked_no_prefix_items_unevaluatedItems/#/:array_iterator"
+               )(
                  array,
                  path,
                  first_unseen_index

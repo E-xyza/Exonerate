@@ -35,60 +35,29 @@ defmodule Exonerate.Type.Array do
   def build_filter(context, resource, pointer, opts) do
     call = Tools.call(resource, pointer, opts)
 
-    seen = needs_combining_seen?(context)
+    # TODO: check if the iterator is necessary at all.
+    iterator_call = Iterator.call(resource, pointer, opts)
 
-    filter_clauses =
-      for filter <- @combining_filters, is_map_key(context, filter), reduce: [] do
-        calls -> calls ++ filter_clauses(resource, pointer, opts, filter, seen)
-      end
-
-    iterator_clause =
-      List.wrap(
-        if Iterator.mode(context, opts) do
-          iterator_clause(resource, pointer, opts, seen)
+    if iterator_params = Iterator.params(context, resource, pointer, opts) do
+      quote do
+        defp unquote(call)(array, path) when is_list(array) do
+          unquote(iterator_call)(unquote_splicing(to_param_vars(iterator_params)))
         end
-      )
-
-    if seen or opts[:tracked] do
-      build_seen(call, filter_clauses, iterator_clause, opts)
+      end
     else
-      build_trivial(call, filter_clauses, iterator_clause)
-    end
-  end
-
-  def build_seen(call, filter_clauses, iterator_clause, opts) do
-    clauses = filter_clauses ++ iterator_clause
-
-    return =
-      if opts[:tracked] do
-        quote do
-          {:ok, first_unseen_index}
-        end
-      else
-        :ok
-      end
-
-    quote do
-      defp unquote(call)(array, path) when is_list(array) do
-        first_unseen_index = 0
-
-        with unquote_splicing(clauses) do
-          unquote(return)
-        end
-      end
-    end
-  end
-
-  def build_trivial(call, filter_clauses, iterator_clause) do
-    clauses = filter_clauses ++ iterator_clause
-
-    quote do
-      defp unquote(call)(array, path) when is_list(array) do
-        with unquote_splicing(clauses) do
+      quote do
+        defp unquote(call)(array, _path) when is_list(array) do
           :ok
         end
       end
     end
+  end
+
+  defp to_param_vars(list) do
+    Enum.map(list, fn
+      atom when is_atom(atom) -> {atom, [], __MODULE__}
+      number -> number
+    end)
   end
 
   @seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
@@ -133,33 +102,8 @@ defmodule Exonerate.Type.Array do
 
     iterator_call = Tools.call(resource, pointer, :array_iterator, call_opts)
 
-    case {needs_combining_seen, opts[:tracked]} do
-      {true, :array} ->
-        quote do
-          [
-            {:ok, new_index} <- unquote(iterator_call)(array, path, first_unseen_index),
-            first_unseen_index = max(new_index, first_unseen_index)
-          ]
-        end
-
-      {true, _} ->
-        quote do
-          {:ok, _} <- unquote(iterator_call)(array, path, first_unseen_index)
-        end
-
-      {false, :array} ->
-        # TODO: the second line could be optimized away!
-        quote do
-          [
-            {:ok, new_index} <- unquote(iterator_call)(array, path),
-            first_unseen_index = max(first_unseen_index, new_index)
-          ]
-        end
-
-      {false, _} ->
-        quote do
-          :ok <- unquote(iterator_call)(array, path)
-        end
+    quote do
+      unquote(iterator_call)(array, 0, path)
     end
   end
 

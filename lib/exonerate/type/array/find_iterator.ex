@@ -17,6 +17,10 @@ defmodule Exonerate.Type.Array.FindIterator do
     |> Tools.maybe_dump(opts)
   end
 
+  def params(_, _, _, _) do
+    [:array, :path]
+  end
+
   # at its core, the iterator is a reduce-while that encapsulates a with
   # statement.  The reduce-while operates over the entire array, and halts when
   # :ok is encountered.

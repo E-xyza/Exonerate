@@ -63,6 +63,12 @@ defmodule Exonerate.Type.Array.Iterator do
     Tools.call(resource, pointer, :array_iterator, opts)
   end
 
+  def params(context, resource, pointer, opts) do
+    if mode = mode(context, opts) do
+      mode.params(context, resource, pointer, opts)
+    end
+  end
+
   defmacro filter(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
