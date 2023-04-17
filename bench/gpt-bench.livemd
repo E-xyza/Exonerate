@@ -1218,60 +1218,60 @@ By contrast, this is what Exonerate creates:
 
 ```elixir
 def validate(data) do
-  unquote(:"function://validate/#/")(data, "/")
+  unquote(:"exonerate://validate/#/")(data, "/")
 end
 
-defp unquote(:"function://validate/#/")(array, path) when is_list(array) do
-  with :ok <- unquote(:"function://validate/#/allOf")(array, path) do
+defp unquote(:"exonerate://validate/#/")(array, path) when is_list(array) do
+  with :ok <- unquote(:"exonerate://validate/#/allOf")(array, path) do
     :ok
   end
 end
-defp unquote(:"function://validate/#/")(boolean, path) when is_boolean(boolean) do
-  with :ok <- unquote(:"function://validate/#/allOf")(boolean, path) do
+defp unquote(:"exonerate://validate/#/")(boolean, path) when is_boolean(boolean) do
+  with :ok <- unquote(:"exonerate://validate/#/allOf")(boolean, path) do
     :ok
   end
 end
-defp unquote(:"function://validate/#/")(integer, path) when is_integer(integer) do
-  with :ok <- unquote(:"function://validate/#/allOf")(integer, path) do
+defp unquote(:"exonerate://validate/#/")(integer, path) when is_integer(integer) do
+  with :ok <- unquote(:"exonerate://validate/#/allOf")(integer, path) do
     :ok
   end
 end
-defp unquote(:"function://validate/#/")(null, path) when is_nil(null) do
-  with :ok <- unquote(:"function://validate/#/allOf")(null, path) do
+defp unquote(:"exonerate://validate/#/")(null, path) when is_nil(null) do
+  with :ok <- unquote(:"exonerate://validate/#/allOf")(null, path) do
     :ok
   end
 end
-defp unquote(:"function://validate/#/")(float, path) when is_float(float) do
-  with :ok <- unquote(:"function://validate/#/allOf")(float, path) do
+defp unquote(:"exonerate://validate/#/")(float, path) when is_float(float) do
+  with :ok <- unquote(:"exonerate://validate/#/allOf")(float, path) do
     :ok
   end
 end
-defp unquote(:"function://validate/#/")(object, path) when is_map(object) do
-  with :ok <- unquote(:"function://validate/#/allOf")(object, path) do
+defp unquote(:"exonerate://validate/#/")(object, path) when is_map(object) do
+  with :ok <- unquote(:"exonerate://validate/#/allOf")(object, path) do
     :ok
   end
 end
-defp unquote(:"function://validate/#/")(string, path) when is_binary(string) do
+defp unquote(:"exonerate://validate/#/")(string, path) when is_binary(string) do
   if String.valid?(string) do
-    with :ok <- unquote(:"function://validate/#/allOf")(string, path) do
+    with :ok <- unquote(:"exonerate://validate/#/allOf")(string, path) do
       :ok
     end
   else
     require Exonerate.Tools
-    Exonerate.Tools.mismatch(string, "function://validate/", ["type"], path)
+    Exonerate.Tools.mismatch(string, "exonerate://validate/", ["type"], path)
   end
 end
-defp unquote(:"function://validate/#/")(content, path) do
+defp unquote(:"exonerate://validate/#/")(content, path) do
   require Exonerate.Tools
-  Exonerate.Tools.mismatch(content, "function://validate/", ["type"], path)
+  Exonerate.Tools.mismatch(content, "exonerate://validate/", ["type"], path)
 end
 
-defp unquote(:"function://validate/#/allOf")(data, path) do
+defp unquote(:"exonerate://validate/#/allOf")(data, path) do
   require Exonerate.Tools
 
   Enum.reduce_while([
-    &unquote(:"function://validate/#/allOf/0")/2, 
-    &unquote(:"function://validate/#/allOf/1")/2
+    &unquote(:"exonerate://validate/#/allOf/0")/2, 
+    &unquote(:"exonerate://validate/#/allOf/1")/2
     ], 
     :ok, 
     fn fun, :ok ->
@@ -1282,22 +1282,22 @@ defp unquote(:"function://validate/#/allOf")(data, path) do
   end)
 end
 
-defp unquote(:"function://validate/#/allOf/0")(integer, path) when is_integer(integer) do
-  with :ok <- unquote(:"function://validate/#/allOf/0/maximum")(integer, path) do
+defp unquote(:"exonerate://validate/#/allOf/0")(integer, path) when is_integer(integer) do
+  with :ok <- unquote(:"exonerate://validate/#/allOf/0/maximum")(integer, path) do
     :ok
   end
 end
 
 # ... SNIP ...
 
-defp unquote(:"function://validate/#/allOf/1/minimum")(number, path) do
+defp unquote(:"exonerate://validate/#/allOf/1/minimum")(number, path) do
   case number do
     number when number >= 20 ->
       :ok
 
     _ ->
       require Exonerate.Tools
-      Exonerate.Tools.mismatch(number, "function://validate/", ["allOf", "1", "minimum"], path)
+      Exonerate.Tools.mismatch(number, "exonerate://validate/", ["allOf", "1", "minimum"], path)
   end
 end
 ```

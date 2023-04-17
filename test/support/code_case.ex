@@ -1,7 +1,7 @@
 defmodule ExonerateTest.CodeCase do
   defmacro assert_filter(code, module, function, schema, opts \\ []) do
     root = Keyword.get(opts, :root, [])
-    resource = "function://#{function}/"
+    resource = "exonerate://#{function}/"
 
     [
       quote do

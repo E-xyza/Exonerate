@@ -8,12 +8,12 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
     test "works with properties" do
       assert_filter(
         quote do
-          defp unquote(:"function://properties/#/:object_iterator")(object, path) do
+          defp unquote(:"exonerate://properties/#/:object_iterator")(object, path) do
             require Exonerate.Tools
 
             Enum.reduce_while(object, :ok, fn
               {key, value}, :ok ->
-                with :ok <- unquote(:"function://properties/#/properties")({key, value}, path) do
+                with :ok <- unquote(:"exonerate://properties/#/properties")({key, value}, path) do
                   {:cont, :ok}
                 else
                   Exonerate.Tools.error_match(error) -> {:halt, error}
@@ -32,7 +32,7 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
     test "works with additionalProperties alone" do
       assert_filter(
         quote do
-          defp unquote(:"function://additional/#/:object_iterator")(object, path) do
+          defp unquote(:"exonerate://additional/#/:object_iterator")(object, path) do
             require Exonerate.Tools
 
             Enum.reduce_while(object, :ok, fn
@@ -41,7 +41,7 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
 
                 with false <- visited do
                   {:cont,
-                   unquote(:"function://additional/#/additionalProperties")(
+                   unquote(:"exonerate://additional/#/additionalProperties")(
                      value,
                      Path.join(path, key)
                    )}
@@ -67,7 +67,7 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
     test "works with patternProperties and additionalProperties" do
       assert_filter(
         quote do
-          defp unquote(:"function://additional_pattern/#/:object_iterator")(object, path) do
+          defp unquote(:"exonerate://additional_pattern/#/:object_iterator")(object, path) do
             require Exonerate.Tools
 
             Enum.reduce_while(object, :ok, fn
@@ -76,7 +76,7 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
 
                 with {:ok, new_visited} <-
                        unquote(
-                         :"function://additional_pattern/#/patternProperties/:tracked_object"
+                         :"exonerate://additional_pattern/#/patternProperties/:tracked_object"
                        )(
                          {key, value},
                          path
@@ -84,7 +84,7 @@ defmodule ExonerateTest.Code.ObjectIteratorTest do
                      visited = visited or new_visited,
                      false <- visited do
                   {:cont,
-                   unquote(:"function://additional_pattern/#/additionalProperties")(
+                   unquote(:"exonerate://additional_pattern/#/additionalProperties")(
                      value,
                      Path.join(path, key)
                    )}
