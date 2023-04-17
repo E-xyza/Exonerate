@@ -103,7 +103,7 @@ defmodule Exonerate.Type.Array do
     iterator_call = Tools.call(resource, pointer, :array_iterator, call_opts)
 
     quote do
-      unquote(iterator_call)(array, 0, path)
+      unquote(iterator_call)(array, array, 0, path)
     end
   end
 

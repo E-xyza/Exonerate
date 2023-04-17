@@ -27,9 +27,10 @@ defmodule Exonerate.Type.Array.Iterator do
     "unevaluatedItems" => Exonerate.Filter.UnevaluatedItems
   }
 
+  @context_filters ~w(items contains additionalItems prefixItems unevaluatedItems)
+
   @filters Map.keys(@modules)
 
-  def filter_modules, do: @modules
   def filters, do: @filters
 
   def needed?(context) do
@@ -95,7 +96,7 @@ defmodule Exonerate.Type.Array.Iterator do
   end
 
   defp build_accessories(context, resource, pointer, opts) do
-    for filter <- @filters, is_map_key(context, filter) do
+    for filter <- @context_filters, is_map_key(context, filter) do
       module = @modules[filter]
       pointer = JsonPointer.join(pointer, filter)
 

@@ -2,98 +2,53 @@ defmodule Exonerate.Filter.Items do
   @moduledoc false
   alias Exonerate.Tools
 
+  # NOTE this generates an iterator function
+  # !! important this generator gets called regardless of if the items property
+  # is present in the subschema object
+
   defmacro filter(resource, pointer, opts) do
-    parent_pointer = JsonPointer.backtrack!(pointer)
+
+    # The pointer in this case is the pointer to the array context, because
+    # this filter is an iterator function.
 
     __CALLER__
-    |> Tools.subschema(resource, parent_pointer)
-    |> build_filter(resource, parent_pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  # legacy "items" which is now "prefixItems"
-  defp build_filter(%{"items" => subschema}, resource, parent_pointer, opts)
-       when is_list(subschema) do
-    this_pointer = JsonPointer.join(parent_pointer, "items")
-
-    call = Tools.call(resource, this_pointer, opts)
-
-    {calls, filters} =
-      subschema
-      |> Enum.with_index(&build_filter(&1, &2, call, resource, this_pointer, opts))
-      |> Enum.unzip()
+  # items which is now "additionalItems"
+  def build_filter(%{"items" => subschema}, resource, pointer, opts) when is_list(subschema) do
+    iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
+    items_call = Tools.call(resource, JsonPointer.join(pointer, "items") , opts)
 
     quote do
-      require Exonerate.Context
-      unquote(calls)
-      defp unquote(call)({item, _index}, path), do: :ok
-      unquote(filters)
+      defp unquote(iterator_call)(array, [item | rest], index, path) do
+        case unquote(items_call)(item, Path.join(path, "#{index}")) do
+          :ok ->
+            unquote(iterator_call)(array, rest, index + 1, path)
+
+          error = {:error, _} ->
+            error
+        end
+      end
+
+      defp unquote(iterator_call)(_, [], index, path) do
+        :ok
+      end
     end
   end
 
-  defp build_filter(context = %{"items" => subschema}, resource, parent_pointer, opts)
-       when is_map(subschema) or is_boolean(subschema) do
-    entrypoint_pointer = JsonPointer.join(parent_pointer, "items")
-    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
+  def build_filter(_, resource, pointer, opts) do
+    iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
+    quote do
+      defp unquote(iterator_call)(array, [_item | rest], index, path) do
+        unquote(iterator_call)(array, rest, index + 1, path)
+      end
 
-    context_opts = Tools.scrub(opts)
-    context_pointer = JsonPointer.join(parent_pointer, "items")
-    context_call = Tools.call(resource, context_pointer, context_opts)
-
-    case context do
-      %{"prefixItems" => prefix} ->
-        prefix_length = length(prefix)
-
-        quote do
-          defp unquote(entrypoint_call)({item, index}, path) when index < unquote(prefix_length),
-            do: :ok
-
-          defp unquote(entrypoint_call)({item, _index}, path) do
-            unquote(context_call)(item, path)
-          end
-
-          require Exonerate.Context
-
-          Exonerate.Context.filter(
-            unquote(resource),
-            unquote(context_pointer),
-            unquote(context_opts)
-          )
-        end
-
-      _ ->
-        quote do
-          defp unquote(entrypoint_call)({item, _index}, path) do
-            unquote(context_call)(item, path)
-          end
-
-          require Exonerate.Context
-
-          Exonerate.Context.filter(
-            unquote(resource),
-            unquote(context_pointer),
-            unquote(context_opts)
-          )
-        end
+      defp unquote(iterator_call)(_, [], index, path) do
+        :ok
+      end
     end
-  end
-
-  defp build_filter(_, index, call, resource, pointer, opts) do
-    context_pointer = JsonPointer.join(pointer, "#{index}")
-    context_opts = Tools.scrub(opts)
-    context_call = Tools.call(resource, context_pointer, context_opts)
-
-    {quote do
-       defp unquote(call)({item, unquote(index)}, path) do
-         unquote(context_call)(item, path)
-       end
-     end,
-     quote do
-       Exonerate.Context.filter(
-         unquote(resource),
-         unquote(context_pointer),
-         unquote(context_opts)
-       )
-     end}
   end
 end
