@@ -19,8 +19,11 @@ defmodule Exonerate.Filter.MaxItems do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
     maxitems_pointer = JsonPointer.join(pointer, "maxItems")
 
+    # note that this has to be index > limit, because there will be an iteration with the
+    # empty list when the index equals the limit.
+
     quote do
-      defp unquote(iterator_call)(array, _, index, path) when index >= unquote(limit) do
+      defp unquote(iterator_call)(array, _, index, path) when index > unquote(limit) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(array, unquote(resource), unquote(maxitems_pointer), path)
       end
