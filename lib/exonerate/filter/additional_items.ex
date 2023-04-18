@@ -7,11 +7,8 @@ defmodule Exonerate.Filter.AdditionalItems do
     # The pointer in this case is the pointer to the array context, because
     # this filter is an iterator function.
 
-    IO.puts(IO.ANSI.red() <> "===============================" <> IO.ANSI.reset())
-
     __CALLER__
     |> Tools.subschema(resource, pointer)
-    |> IO.inspect()
     |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end

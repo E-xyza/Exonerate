@@ -74,8 +74,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
   defp build_filter(context, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
 
-    case Map.take(context, ~w(items additionalItems unevaluatedItems)) do
-      map when map_size(map) === 0 ->
+    List.wrap(if needs_default_terminator(context) do
         quote do
           defp unquote(iterator_call)(array, [item | rest], index, path) do
             unquote(iterator_call)(array, rest, index + 1, path)
@@ -83,9 +82,11 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
           defp unquote(iterator_call)(array, [], index, path), do: :ok
         end
-
-      _ ->
-        []
-    end
+    end)
   end
+
+  defp needs_default_terminator(%{"additionalItems" => _}), do: false
+  defp needs_default_terminator(%{"unevaluatedItems" => _}), do: false
+  defp needs_default_terminator(%{"items" => %{}}), do: false
+  defp needs_default_terminator(_), do: true
 end
