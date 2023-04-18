@@ -18,7 +18,8 @@ defmodule Exonerate.Type.Array.FindIterator do
   end
 
   def params(_, _, _, _) do
-    [:array, :path]
+    # includes "contains count"
+    [:array, :array, :path, 0]
   end
 
   # at its core, the iterator is a reduce-while that encapsulates a with
@@ -40,10 +41,11 @@ defmodule Exonerate.Type.Array.FindIterator do
     needed = Map.get(context, "minContains", 1)
 
     quote do
-      defp unquote(call)(content, path) do
+      defp unquote(call)(array, path) do
+        raise "foo"
         require Exonerate.Tools
 
-        content
+        array
         |> Enum.reduce_while(
           {Exonerate.Tools.mismatch(content, unquote(resource), unquote(contains_pointer), path),
            0, 0},
@@ -115,29 +117,25 @@ defmodule Exonerate.Type.Array.FindIterator do
     needed = Map.get(context, "minContains", 1)
 
     quote do
-      defp unquote(call)(content, path) do
+      defp unquote(call)(_array, _leftovers, _path, unquote(needed)), do: :ok
+
+      defp unquote(call)(array, [head | rest], path, count) do
+        # NOTE: technically, the path here is wrong, but there is no way that this path
+        # data is used downstream, so we should't pass it into anything further.
         require Exonerate.Tools
 
-        content
-        |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(resource), unquote(contains_pointer), path),
-           0, 0},
-          fn
-            item, {{:error, params}, index, count} ->
-              case unquote(contains_call)(item, path) do
-                :ok when count < unquote(needed - 1) ->
-                  {:cont, {{:error, params}, index, count + 1}}
+        case unquote(contains_call)(head, path) do
+          :ok ->
+            unquote(call)(array, rest, path, count + 1)
 
-                :ok ->
-                  {:halt, {:ok}}
+          Exonerate.Tools.error_match(_error) ->
+            unquote(call)(array, rest, path, count)
+        end
+      end
 
-                Exonerate.Tools.error_match(error) ->
-                  new_params = Keyword.update(params, :errors, [error], &[error | &1])
-                  {:cont, {{:error, params}, index + 1, count}}
-              end
-          end
-        )
-        |> elem(0)
+      defp unquote(call)(array, [], path, count) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(array, unquote(resource), unquote(contains_pointer), path)
       end
     end
   end

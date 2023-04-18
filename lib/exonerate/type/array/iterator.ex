@@ -102,7 +102,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
       quote do
         require unquote(module)
-        unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
+        unquote(module).context(unquote(resource), unquote(pointer), unquote(opts))
       end
     end
   end

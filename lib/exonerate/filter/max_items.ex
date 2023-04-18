@@ -6,7 +6,6 @@ defmodule Exonerate.Filter.MaxItems do
   alias Exonerate.Tools
 
   defmacro filter(resource, pointer, opts) do
-
     # The pointer in this case is the pointer to the array context, because this filter
     # is an iterator function.
 

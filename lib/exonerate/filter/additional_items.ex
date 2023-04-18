@@ -4,58 +4,85 @@ defmodule Exonerate.Filter.AdditionalItems do
   alias Exonerate.Tools
 
   defmacro filter(resource, pointer, opts) do
-    parent_pointer = JsonPointer.backtrack!(pointer)
+    # The pointer in this case is the pointer to the array context, because
+    # this filter is an iterator function.
+
+    IO.puts(IO.ANSI.red() <> "===============================" <> IO.ANSI.reset())
 
     __CALLER__
-    |> Tools.subschema(resource, parent_pointer)
-    |> build_filter(resource, parent_pointer, opts)
+    |> Tools.subschema(resource, pointer)
+    |> IO.inspect()
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(context, resource, parent_pointer, opts) do
-    entrypoint_pointer = JsonPointer.join(parent_pointer, "additionalItems")
-    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
-    context_pointer = JsonPointer.join(parent_pointer, "additionalItems")
+  # this is equivalent to the array form of "items"
+  defp build_filter(%{"additionalItems" => false}, resource, pointer, opts) do
+    iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
+    additional_items_pointer = JsonPointer.join(pointer, "additionalItems")
 
-    context_opts = Tools.scrub(opts)
-    context_call = Tools.call(resource, context_pointer, context_opts)
+    quote do
+      defp unquote(iterator_call)(_, [], _, _), do: :ok
 
-    case context do
-      # TODO: add a compiler error if this isn't a list
-      %{"items" => prefix} when is_list(prefix) ->
-        prefix_length = length(prefix)
+      defp unquote(iterator_call)(array, [item | _], index, path) do
+        require Exonerate.Tools
 
-        quote do
-          defp unquote(entrypoint_call)({item, index}, path) when index < unquote(prefix_length),
-            do: :ok
+        Exonerate.Tools.mismatch(
+          item,
+          unquote(resource),
+          unquote(additional_items_pointer),
+          Path.join(path, "#{index}")
+        )
+      end
+    end
+  end
 
-          defp unquote(entrypoint_call)({item, _index}, path) do
-            unquote(context_call)(item, path)
-          end
+  defp build_filter(%{"additionalItems" => subschema}, resource, pointer, opts)
+       when is_map(subschema) do
+    iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
+    items_call = Tools.call(resource, JsonPointer.join(pointer, "additionalItems"), opts)
 
-          require Exonerate.Context
+    quote do
+      defp unquote(iterator_call)(array, [item | rest], index, path) do
+        require Exonerate.Tools
 
-          Exonerate.Context.filter(
-            unquote(resource),
-            unquote(context_pointer),
-            unquote(context_opts)
-          )
+        case unquote(items_call)(item, Path.join(path, "#{index}")) do
+          :ok ->
+            unquote(iterator_call)(array, rest, index + 1, path)
+
+          Exonerate.Tools.error_match(error) ->
+            error
         end
+      end
 
-      _ ->
-        quote do
-          defp unquote(entrypoint_call)({item, _index}, path) do
-            unquote(context_call)(item, path)
-          end
+      defp unquote(iterator_call)(_, [], index, path) do
+        :ok
+      end
+    end
+  end
 
-          require Exonerate.Context
+  defp build_filter(_, _, _, _), do: []
 
-          Exonerate.Context.filter(
-            unquote(resource),
-            unquote(context_pointer),
-            unquote(context_opts)
-          )
-        end
+  defmacro context(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_context(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
+
+  defp build_context(false, _, _, _), do: []
+
+  defp build_context(_context, resource, pointer, opts) do
+    opts = Tools.scrub(opts)
+
+    quote do
+      require Exonerate.Context
+
+      Exonerate.Context.filter(
+        unquote(resource),
+        unquote(pointer),
+        unquote(opts)
+      )
     end
   end
 end
