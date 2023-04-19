@@ -37,9 +37,9 @@ defmodule Exonerate.Type.Array do
 
     iterator_call = Iterator.call(resource, pointer, opts)
 
-    if iterator_params = Iterator.params(context, resource, pointer, opts) do
+    if iterator_args = Iterator.args(context, opts) do
       uniqueness_initializer =
-        if :unique in iterator_params do
+        if :unique in iterator_args do
           uniqueness_opts = Keyword.take(opts, [:use_xor_filter])
 
           quote do
@@ -51,7 +51,7 @@ defmodule Exonerate.Type.Array do
       quote do
         defp unquote(call)(array, path) when is_list(array) do
           unquote(uniqueness_initializer)
-          unquote(iterator_call)(unquote_splicing(to_param_vars(iterator_params)))
+          unquote(iterator_call)(unquote_splicing(to_arg_vars(iterator_args)))
         end
       end
     else
@@ -63,7 +63,7 @@ defmodule Exonerate.Type.Array do
     end
   end
 
-  defp to_param_vars(list) do
+  defp to_arg_vars(list) do
     Enum.map(list, fn
       atom when is_atom(atom) -> {atom, [], __MODULE__}
       number -> number

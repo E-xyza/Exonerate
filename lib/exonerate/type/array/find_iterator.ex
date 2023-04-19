@@ -6,6 +6,30 @@ defmodule Exonerate.Type.Array.FindIterator do
   # when the rejecting the array occurs when a single item fails with error.
   #
   # modes are selected using Exonerate.Type.Array.Filter.Iterator.mode/1
+  #
+  # In order to be selected for "find mode", it should contain only the following
+  # filters:
+  #
+  # - "minItems"
+  # - "contains"
+  # - "minContains"
+  # - "items" (array)
+  # - "prefixItems"
+  #
+  # The iterator for this function can have different number of call parameters
+  # depending on which filters the context applies.  The following call parameters
+  # are ALWAYS present:
+  #
+  # - full array
+  # - array looked at so far
+  # - path
+  #
+  # the following call parameters are loaded to the end of the params
+  # if their respective filters exists
+  #
+  # - "minItems" -> index
+  # - "Items" (array) / "prefixItems" -> index
+  # - "minContains" / "contains" -> contains_count
 
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
@@ -17,10 +41,17 @@ defmodule Exonerate.Type.Array.FindIterator do
     |> Tools.maybe_dump(opts)
   end
 
-  def params(_, _, _, _) do
+  def args(context, _opts) do
     # includes "contains count"
-    [:array, :array, :path, 0]
+    [:array, :array, :path] ++
+      List.wrap(if needs_index?(context), do: 0) ++
+      List.wrap(if is_map_key(context, "contains"), do: 0)
   end
+
+  defp needs_index?(%{"minItems" => _}), do: true
+  defp needs_index?(%{"prefixItems" => _}), do: true
+  defp needs_index?(%{"items" => list}) when is_list(list), do: true
+  defp needs_index?(_), do: false
 
   # at its core, the iterator is a reduce-while that encapsulates a with
   # statement.  The reduce-while operates over the entire array, and halts when
@@ -29,144 +60,120 @@ defmodule Exonerate.Type.Array.FindIterator do
   # note that there are only three cases for this mode to be activated, and
   # we're going to write out each of these cases by hand.
 
-  defp build_iterator(
-         context = %{"contains" => _, "minItems" => length},
-         resource,
-         pointer,
-         opts
-       ) do
+  defp build_iterator(_context, resource, pointer, opts) do
+    quote do
+      # the items filter is special-cased at the top because it can be a filter iterator
+
+      # require Exonerate.Filter.Items
+      # Exonerate.Filter.Items.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      # the following filters encode terminal conditions
+      require Exonerate.Filter.MinItems
+      Exonerate.Filter.MinItems.find_filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Filter.MinContains
+      Exonerate.Filter.MinContains.find_filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Filter.Contains
+      Exonerate.Filter.Contains.find_filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Type.Array.FindIterator
+
+      Exonerate.Type.Array.FindIterator.default_filter(
+        unquote(resource),
+        unquote(pointer),
+        unquote(opts)
+      )
+    end
+  end
+
+  defmacro default_filter(resource, pointer, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_default_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
+
+  def build_default_filter(context, resource, pointer, opts) do
     call = Iterator.call(resource, pointer, opts)
-    contains_pointer = JsonPointer.join(pointer, "contains")
-    contains_call = Tools.call(resource, contains_pointer, opts)
-    needed = Map.get(context, "minContains", 1)
+
+    head_params =
+      quote do
+        [array, [_ | rest], path, index, contains_count]
+      end
+
+    next_params =
+      quote do
+        [array, rest, path, index + 1, contains_count]
+      end
+
+    end_params =
+      quote do
+        [array, [], path, index, contains_count]
+      end
 
     quote do
-      defp unquote(call)(array, path) do
-        raise "foo"
-        require Exonerate.Tools
-
-        array
-        |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(content, unquote(resource), unquote(contains_pointer), path),
-           0, 0},
-          fn
-            _item, {:ok, index, count} when index >= unquote(length) ->
-              {:halt, {:ok, index, count}}
-
-            _item, {:ok, index, count} ->
-              {:halt, {:ok, index + 1, count}}
-
-            item, {{:error, error_so_far}, index, count} ->
-              case unquote(contains_call)(item, Path.join(path, "#{index}")) do
-                :ok when count >= unquote(needed) ->
-                  {:cont, {:ok, index + 1, count}}
-
-                :ok ->
-                  {:cont, {{:error, error_so_far}, index + 1, count + 1}}
-
-                Exonerate.Tools.error_match(error) ->
-                  new_params = Keyword.update(error_so_far, :errors, [error], &[error | &1])
-                  {:cont, {{:error, error_so_far}, index + 1, count}}
-              end
-          end
-        )
-        |> case do
-          {:ok, index, _count} when index < unquote(length) - 1 ->
-            Exonerate.Tools.mismatch(
-              content,
-              unquote(resource),
-              unquote(JsonPointer.join(pointer, "minItems")),
-              path
-            )
-
-          {:ok, _index, count} when count < unquote(needed) ->
-            Exonerate.Tools.mismatch(
-              content,
-              unquote(resource),
-              unquote(JsonPointer.join(pointer, "minContains")),
-              path
-            )
-
-          {:ok, _, _} ->
-            :ok
-
-          {Exonerate.Tools.error_match(error), count, unquote(needed)}
-          when count >= unquote(length) ->
-            :ok
-
-          {Exonerate.Tools.error_match(error), count, unquote(needed)} ->
-            Exonerate.Tools.mismatch(
-              content,
-              unquote(resource),
-              unquote(JsonPointer.join(pointer, "minContains")),
-              path
-            )
-
-          {Exonerate.Tools.error_match(error), _, _} ->
-            error
+      defp unquote(call)(unquote_splicing(select_params(context, head_params))) do
+        if unquote(success_condition(context)) do
+          :ok
+        else
+          unquote(call)(unquote_splicing(select_params(context, next_params)))
         end
+      end
+
+      defp unquote(call)(unquote_splicing(select_params(context, end_params))) do
+        :ok
       end
     end
   end
 
-  # contains-only case
-  defp build_iterator(context = %{"contains" => _}, resource, pointer, opts) do
-    call = Iterator.call(resource, pointer, opts)
-    contains_pointer = JsonPointer.join(pointer, "contains")
-    contains_call = Tools.call(resource, contains_pointer, opts)
-    needed = Map.get(context, "minContains", 1)
-
-    quote do
-      defp unquote(call)(_array, _leftovers, _path, unquote(needed)), do: :ok
-
-      defp unquote(call)(array, [head | rest], path, count) do
-        # NOTE: technically, the path here is wrong, but there is no way that this path
-        # data is used downstream, so we should't pass it into anything further.
-        require Exonerate.Tools
-
-        case unquote(contains_call)(head, path) do
-          :ok ->
-            unquote(call)(array, rest, path, count + 1)
-
-          Exonerate.Tools.error_match(_error) ->
-            unquote(call)(array, rest, path, count)
+  def success_condition(context) do
+    case context do
+      %{"minItems" => items, "minContains" => min_contains} ->
+        quote do
+          index >= unquote(items) and contains_count >= unquote(min_contains)
         end
-      end
 
-      defp unquote(call)(array, [], path, count) do
-        require Exonerate.Tools
-        Exonerate.Tools.mismatch(array, unquote(resource), unquote(contains_pointer), path)
-      end
+      %{"minItems" => items, "contains" => _} ->
+        quote do
+          index >= unquote(items) and contains_count >= 1
+        end
+
+      %{"minItems" => items} ->
+        quote do
+          index >= unquote(items)
+        end
+
+      %{"minContains" => min_contains} ->
+        quote do
+          contains_count >= unquote(min_contains)
+        end
+
+      %{"contains" => _} ->
+        quote do
+          contains_count >= 1
+        end
+
+      %{"items" => items} ->
+        length = length(items)
+
+        quote do
+          index >= unquote(length)
+        end
+
+      %{"prefixItems" => items} ->
+        length = length(items)
+
+        quote do
+          index >= unquote(length)
+        end
     end
   end
 
-  # minItems-only case
-
-  defp build_iterator(%{"minItems" => length}, resource, pointer, opts) do
-    call = Iterator.call(resource, pointer, opts)
-
-    quote do
-      defp unquote(call)(content, path) do
-        require Exonerate.Tools
-
-        content
-        |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(
-             content,
-             unquote(resource),
-             unquote(JsonPointer.join(pointer, "minItems")),
-             path
-           ), 0},
-          fn
-            _item, {error, index} when index < unquote(length - 1) ->
-              {:cont, {error, index + 1}}
-
-            _item, {error, index} ->
-              {:halt, {:ok}}
-          end
-        )
-        |> elem(0)
-      end
-    end
+  # allows to select which parameters are looked at in the iterator, based on the context
+  def select_params(context, [array, array_so_far, path, index, contains_count]) do
+    [array, array_so_far, path] ++
+      List.wrap(if needs_index?(context), do: index) ++
+      List.wrap(if is_map_key(context, "contains"), do: contains_count)
   end
 end

@@ -37,4 +37,35 @@ defmodule Exonerate.Filter.MinItems do
       end
     end
   end
+
+  defmacro find_filter(resource, pointer, opts) do
+    # The pointer in this case is the pointer to the array context, because this filter
+    # is an iterator function.
+
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_find_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(opts)
+  end
+
+  defp build_find_filter(context = %{"minItems" => min_items}, resource, pointer, opts) do
+    call = Iterator.call(resource, pointer, opts)
+    min_items_pointer = JsonPointer.join(pointer, "minItems")
+
+    terminator_params =
+      Iterator.select_params(
+        context,
+        quote do
+          [array, [], path, index, _]
+        end,
+        opts
+      )
+
+    quote do
+      defp unquote(call)(unquote_splicing(terminator_params)) when index < unquote(min_items) do
+        require Exonerate.Tools
+        Exonerate.Tools.mismatch(array, unquote(resource), unquote(min_items_pointer), path)
+      end
+    end
+  end
 end

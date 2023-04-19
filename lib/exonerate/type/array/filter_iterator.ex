@@ -32,7 +32,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     |> Tools.maybe_dump(opts)
   end
 
-  def params(context, _resource, _pointer, _opts) do
+  def params(context, _opts) do
     [:array, :array, 0, :path] ++
       List.wrap(if is_map_key(context, "unevaluatedParameters"), do: :first_unseen_index) ++
       List.wrap(if is_map_key(context, "uniqueItems"), do: :unique)
@@ -81,7 +81,12 @@ defmodule Exonerate.Type.Array.FilterIterator do
         [
           quote do
             require Exonerate.Filter.UniqueItems
-            Exonerate.Filter.UniqueItems.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+            Exonerate.Filter.UniqueItems.filter(
+              unquote(resource),
+              unquote(pointer),
+              unquote(opts)
+            )
           end
         ]
 

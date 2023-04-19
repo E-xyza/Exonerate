@@ -64,9 +64,9 @@ defmodule Exonerate.Type.Array.Iterator do
     Tools.call(resource, pointer, :array_iterator, opts)
   end
 
-  def params(context, resource, pointer, opts) do
+  def args(context, opts) do
     if mode = mode(context, opts) do
-      mode.params(context, resource, pointer, opts)
+      mode.args(context, opts)
     end
   end
 
