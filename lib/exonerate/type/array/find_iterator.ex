@@ -41,7 +41,7 @@ defmodule Exonerate.Type.Array.FindIterator do
     |> Tools.maybe_dump(opts)
   end
 
-  def args(context, _opts) do
+  def args(context) do
     # includes "contains count"
     [:array, :array, :path] ++
       List.wrap(if needs_index?(context), do: 0) ++
@@ -99,7 +99,7 @@ defmodule Exonerate.Type.Array.FindIterator do
 
     head_params =
       quote do
-        [array, [_ | rest], path, index, contains_count]
+        [array, [item | rest], path, index, contains_count]
       end
 
     next_params =
@@ -117,6 +117,13 @@ defmodule Exonerate.Type.Array.FindIterator do
         if unquote(success_condition(context)) do
           :ok
         else
+          Exonerate.Filter.Contains.next_contains(
+            unquote(resource),
+            unquote(pointer),
+            [contains_count, item, path],
+            unquote(opts)
+          )
+
           unquote(call)(unquote_splicing(select_params(context, next_params)))
         end
       end

@@ -28,8 +28,7 @@ defmodule Exonerate.Filter.Items do
         context,
         quote do
           [array, [item | rest], index, path, first_unseen_index, unique]
-        end,
-        opts
+        end
       )
 
     iteration_next =
@@ -37,8 +36,7 @@ defmodule Exonerate.Filter.Items do
         context,
         quote do
           [array, rest, index + 1, path, first_unseen_index, unique]
-        end,
-        opts
+        end
       )
 
     terminator_head =
@@ -46,8 +44,7 @@ defmodule Exonerate.Filter.Items do
         context,
         quote do
           [_, [], _index, _path, _, _]
-        end,
-        opts
+        end
       )
 
     quote do
@@ -92,8 +89,7 @@ defmodule Exonerate.Filter.Items do
           context,
           quote do
             [array, [item | rest], unquote(index), path, first_unseen_index, unique]
-          end,
-          opts
+          end
         )
 
       iteration_next =
@@ -101,8 +97,7 @@ defmodule Exonerate.Filter.Items do
           context,
           quote do
             [array, rest, unquote(index + 1), path, first_unseen_index, unique]
-          end,
-          opts
+          end
         )
 
       quote do
@@ -150,4 +145,6 @@ defmodule Exonerate.Filter.Items do
       end
     end)
   end
+
+  defp build_context(_, _, _, _), do: []
 end

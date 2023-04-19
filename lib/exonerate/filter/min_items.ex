@@ -25,8 +25,7 @@ defmodule Exonerate.Filter.MinItems do
         context,
         quote do
           [array, [], index, path, first_unseen_index, unique]
-        end,
-        opts
+        end
       )
 
     quote do
@@ -57,8 +56,7 @@ defmodule Exonerate.Filter.MinItems do
         context,
         quote do
           [array, [], path, index, _]
-        end,
-        opts
+        end
       )
 
     quote do
@@ -68,4 +66,6 @@ defmodule Exonerate.Filter.MinItems do
       end
     end
   end
+
+  defp build_find_filter(_, _, _, _), do: []
 end

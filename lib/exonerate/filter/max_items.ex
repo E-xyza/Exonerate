@@ -28,8 +28,7 @@ defmodule Exonerate.Filter.MaxItems do
         context,
         quote do
           [array, _, index, path, _, _]
-        end,
-        opts
+        end
       )
 
     quote do

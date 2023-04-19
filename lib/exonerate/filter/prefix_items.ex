@@ -15,15 +15,15 @@ defmodule Exonerate.Filter.PrefixItems do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
 
     Enum.with_index(subschema, fn _, index ->
-      items_call = Tools.call(resource, JsonPointer.join(pointer, ["prefixItems", "#{index}"]), opts)
+      items_call =
+        Tools.call(resource, JsonPointer.join(pointer, ["prefixItems", "#{index}"]), opts)
 
       iteration_head =
         Iterator.select_params(
           context,
           quote do
             [array, [item | rest], unquote(index), path, first_unseen_index, unique]
-          end,
-          opts
+          end
         )
 
       iteration_next =
@@ -31,8 +31,7 @@ defmodule Exonerate.Filter.PrefixItems do
           context,
           quote do
             [array, rest, unquote(index + 1), path, first_unseen_index, unique]
-          end,
-          opts
+          end
         )
 
       quote do

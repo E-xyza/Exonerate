@@ -34,8 +34,7 @@ defmodule Exonerate.Filter.UniqueItems do
         context,
         quote do
           [array, _, index, path, first_unseen_index, false]
-        end,
-        opts
+        end
       )
 
     quote do

@@ -24,8 +24,7 @@ defmodule Exonerate.Filter.AdditionalItems do
         context,
         quote do
           [array, [item | rest], index, path, _, _]
-        end,
-        opts
+        end
       )
 
     terminator_head =
@@ -33,8 +32,7 @@ defmodule Exonerate.Filter.AdditionalItems do
         context,
         quote do
           [_, [], _index, _path, _, _]
-        end,
-        opts
+        end
       )
 
     quote do
@@ -63,8 +61,7 @@ defmodule Exonerate.Filter.AdditionalItems do
         context,
         quote do
           [array, [item | rest], index, path, first_unseen_index, unique]
-        end,
-        opts
+        end
       )
 
     iteration_next =
@@ -72,8 +69,7 @@ defmodule Exonerate.Filter.AdditionalItems do
         context,
         quote do
           [array, rest, index + 1, path, first_unseen_index, unique]
-        end,
-        opts
+        end
       )
 
     terminator_head =
@@ -81,8 +77,7 @@ defmodule Exonerate.Filter.AdditionalItems do
         context,
         quote do
           [_, [], _index, _path, _, _]
-        end,
-        opts
+        end
       )
 
     quote do

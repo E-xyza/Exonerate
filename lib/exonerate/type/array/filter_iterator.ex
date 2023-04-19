@@ -32,11 +32,18 @@ defmodule Exonerate.Type.Array.FilterIterator do
     |> Tools.maybe_dump(opts)
   end
 
-  def args(context, _opts) do
+  def args(context) do
     [:array, :array, 0, :path] ++
-      List.wrap(if is_map_key(context, "unevaluatedParameters"), do: :first_unseen_index) ++
+      List.wrap(if needs_unseen_index?(context), do: :first_unseen_index) ++
       List.wrap(if is_map_key(context, "uniqueItems"), do: :unique)
   end
+
+  @seen_keys ~w(allOf anyOf if oneOf dependentSchemas $ref)
+  def needs_unseen_index?(context = %{"unevaluatedItems" => _}) do
+    Enum.any?(@seen_keys, &is_map_key(context, &1))
+  end
+
+  def needs_unseen_index?(_), do: false
 
   defp build_iterator(context, resource, pointer, opts) do
     quote do
@@ -51,6 +58,9 @@ defmodule Exonerate.Type.Array.FilterIterator do
 
       require Exonerate.Filter.AdditionalItems
       Exonerate.Filter.AdditionalItems.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Filter.UnevaluatedItems
+      Exonerate.Filter.UnevaluatedItems.filter(unquote(resource), unquote(pointer), unquote(opts))
 
       require Exonerate.Type.Array.FilterIterator
 
@@ -99,29 +109,12 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   # allows to select which parameters are looked at in the iterator, based on the context
-  def select_params(%{"unevaluatedItems" => _, "uniqueItems" => _}, [
-        array,
-        array_so_far,
-        index,
-        path,
-        unevaluated,
-        unique
-      ]) do
-    [array, array_so_far, index, path, unevaluated, unique]
+  def select_params(context, [array, array_so_far, index, path, unevaluated, unique]) do
+    [array, array_so_far, index, path] ++
+    List.wrap(if needs_unseen_index?(context), do: unevaluated) ++
+    List.wrap(if Map.get(context, "unique"), do: unique)
   end
-
-  def select_params(%{"unevaluatedItems" => _}, [array, array_so_far, index, path, unevaluated, _]) do
-    [array, array_so_far, index, path, unevaluated]
-  end
-
-  def select_params(%{"uniqueItems" => _}, [array, array_so_far, index, path, _, unique]) do
-    [array, array_so_far, index, path, unique]
-  end
-
-  def select_params(_, [array, array_so_far, index, path, _, _]) do
-    [array, array_so_far, index, path]
-  end
-
+  
   defmacro default_filter(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
@@ -137,8 +130,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
         context,
         quote do
           [array, [item | rest], index, path, first_unseen_index, unique]
-        end,
-        opts
+        end
       )
 
     iteration_next =
@@ -146,8 +138,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
         context,
         quote do
           [array, rest, index + 1, path, first_unseen_index, unique]
-        end,
-        opts
+        end
       )
 
     terminator_head =
@@ -155,8 +146,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
         context,
         quote do
           [_array, [], _index, _path, _, _]
-        end,
-        opts
+        end
       )
 
     List.wrap(

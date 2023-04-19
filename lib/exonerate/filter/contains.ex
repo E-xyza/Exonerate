@@ -26,15 +26,14 @@ defmodule Exonerate.Filter.Contains do
       Iterator.select_params(
         context,
         quote do
-          [array, [], path, _index, _]
-        end,
-        opts
+          [array, [], path, _index, contains_count]
+        end
       )
 
     contains_pointer = JsonPointer.join(pointer, "contains")
 
     quote do
-      defp unquote(call)(unquote_splicing(terminal_params)) do
+      defp unquote(call)(unquote_splicing(terminal_params)) when contains_count === 0 do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(array, unquote(resource), unquote(contains_pointer), path)
       end
@@ -55,4 +54,32 @@ defmodule Exonerate.Filter.Contains do
       Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(Tools.scrub(opts)))
     end
   end
+
+  defmacro next_contains(resource, pointer, ast, opts) do
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_next_contains(ast, resource, pointer, opts)
+  end
+
+  defp build_next_contains(context = %{"contains" => _}, ast, resource, pointer, opts) do
+    [contains_count_ast, item_ast, path_ast] = ast
+    needed = Map.get(context, "minContains", 1)
+    contains_call = Tools.call(resource, JsonPointer.join(pointer, "contains"), opts)
+
+    quote do
+      unquote(contains_count_ast) =
+        cond do
+          unquote(contains_count_ast) >= unquote(needed) ->
+            unquote(contains_count_ast)
+
+          :ok === unquote(contains_call)(unquote(item_ast), unquote(path_ast)) ->
+            unquote(contains_count_ast) + 1
+
+          true ->
+            unquote(contains_count_ast)
+        end
+    end
+  end
+
+  defp build_next_contains(_, _, _, _, _), do: []
 end

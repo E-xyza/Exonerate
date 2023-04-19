@@ -45,17 +45,15 @@ defmodule Exonerate.Type.Array.Iterator do
     ["contains", "minContains", "minItems"]
   ]
 
-  @spec mode(Type.json(), keyword) :: FindIterator | FilterIterator | nil
-  def mode(context, opts) do
-    tracked = opts[:tracked]
-
+  @spec mode(Type.json()) :: FindIterator | FilterIterator | nil
+  def mode(context) do
     context
     |> Map.take(@filters)
     |> Map.keys()
     |> Enum.sort()
     |> case do
       [] -> nil
-      keys when keys in @find_key_sets and is_nil(tracked) -> FindIterator
+      keys when keys in @find_key_sets -> FindIterator
       _ -> FilterIterator
     end
   end
@@ -64,9 +62,9 @@ defmodule Exonerate.Type.Array.Iterator do
     Tools.call(resource, pointer, :array_iterator, opts)
   end
 
-  def args(context, opts) do
-    if mode = mode(context, opts) do
-      mode.args(context, opts)
+  def args(context) do
+    if mode = mode(context) do
+      mode.args(context)
     end
   end
 
@@ -79,7 +77,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   defp build_filter(context, resource, pointer, opts) do
     List.wrap(
-      if execution_mode = mode(context, opts) do
+      if execution_mode = mode(context) do
         quote do
           require unquote(execution_mode)
           unquote(execution_mode).filter(unquote(resource), unquote(pointer), unquote(opts))
@@ -88,8 +86,8 @@ defmodule Exonerate.Type.Array.Iterator do
     )
   end
 
-  def select_params(context, parameters, opts) do
-    if mode = mode(context, opts) do
+  def select_params(context, parameters) do
+    if mode = mode(context) do
       mode.select_params(context, parameters)
     end
   end

@@ -37,7 +37,7 @@ defmodule Exonerate.Type.Array do
 
     iterator_call = Iterator.call(resource, pointer, opts)
 
-    if iterator_args = Iterator.args(context, opts) do
+    if iterator_args = Iterator.args(context) do
       uniqueness_initializer =
         if :unique in iterator_args do
           uniqueness_opts = Keyword.take(opts, [:use_xor_filter])
@@ -156,7 +156,7 @@ defmodule Exonerate.Type.Array do
 
   defp build_iterator(context, resource, pointer, opts) do
     List.wrap(
-      if Iterator.mode(context, opts) do
+      if Iterator.mode(context) do
         quote do
           require Exonerate.Type.Array.Iterator
 
