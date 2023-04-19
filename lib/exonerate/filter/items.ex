@@ -79,7 +79,7 @@ defmodule Exonerate.Filter.Items do
   end
 
   # the list form of items is technically supposed to be "prefixItems" but
-  # it's supposed to be supported in newer versions of the spec.
+  # it's still supported in newer versions of the spec.
   def build_filter(context = %{"items" => subschema}, resource, pointer, opts)
       when is_list(subschema) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)

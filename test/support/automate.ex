@@ -66,6 +66,8 @@ defmodule ExonerateTest.Automate do
     schema_name = :"#{basename}_#{index}"
     schema! = Jason.encode!(schema!)
 
+    opts = Keyword.merge(opts, description: description!)
+
     test_blocks =
       tests
       |> Enum.with_index()
