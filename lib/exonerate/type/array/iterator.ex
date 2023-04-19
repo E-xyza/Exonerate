@@ -88,6 +88,12 @@ defmodule Exonerate.Type.Array.Iterator do
     )
   end
 
+  def select_params(context, parameters, opts) do
+    if mode = mode(context, opts) do
+      mode.select_params(context, parameters)
+    end
+  end
+
   defmacro accessories(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)

@@ -4,25 +4,36 @@ defmodule Exonerate.Filter.MinItems do
   # This module generates an iterator function
 
   alias Exonerate.Tools
+  alias Exonerate.Type.Array.Iterator
 
   defmacro filter(resource, pointer, opts) do
     # The pointer in this case is the pointer to the array context, because this filter
     # is an iterator function.
 
     __CALLER__
-    |> Tools.subschema(resource, JsonPointer.join(pointer, "minItems"))
+    |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_filter(limit, resource, pointer, opts) do
+  defp build_filter(context = %{"minItems" => minimum}, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    maxitems_pointer = JsonPointer.join(pointer, "minItems")
+    minitems_pointer = JsonPointer.join(pointer, "minItems")
+
+    filter_params =
+      Iterator.select_params(
+        context,
+        quote do
+          [array, [], index, path, first_unseen_index, unique]
+        end,
+        opts
+      )
 
     quote do
-      defp unquote(iterator_call)(array, [], index, path) when index < unquote(limit) do
+      defp unquote(iterator_call)(unquote_splicing(filter_params))
+           when index < unquote(minimum) do
         require Exonerate.Tools
-        Exonerate.Tools.mismatch(array, unquote(resource), unquote(maxitems_pointer), path)
+        Exonerate.Tools.mismatch(array, unquote(resource), unquote(minitems_pointer), path)
       end
     end
   end

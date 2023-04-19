@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.Items do
   @moduledoc false
   alias Exonerate.Tools
+  alias Exonerate.Type.Array.Iterator
 
   # NOTE this generates an iterator function
   # !! important this generator gets called regardless of if the items property
@@ -17,24 +18,61 @@ defmodule Exonerate.Filter.Items do
   end
 
   # items which is now "additionalItems"
-  def build_filter(%{"items" => subschema}, resource, pointer, opts) when is_map(subschema) do
+  def build_filter(context = %{"items" => subschema}, resource, pointer, opts)
+      when is_map(subschema) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
     items_call = Tools.call(resource, JsonPointer.join(pointer, "items"), opts)
 
+    iteration_head =
+      Iterator.select_params(
+        context,
+        quote do
+          [array, [item | rest], index, path, first_unseen_index, unique]
+        end,
+        opts
+      )
+
+    iteration_next =
+      Iterator.select_params(
+        context,
+        quote do
+          [array, rest, index + 1, path, first_unseen_index, unique]
+        end,
+        opts
+      )
+
+    terminator_head =
+      Iterator.select_params(
+        context,
+        quote do
+          [_, [], _index, _path, _, _]
+        end,
+        opts
+      )
+
     quote do
-      defp unquote(iterator_call)(array, [item | rest], index, path) do
+      defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
         require Exonerate.Tools
+        require Exonerate.Filter.UniqueItems
+
+        Exonerate.Filter.UniqueItems.next_unique(
+          unquote(resource),
+          unquote(pointer),
+          unique,
+          item,
+          unquote(opts)
+        )
 
         case unquote(items_call)(item, Path.join(path, "#{index}")) do
           :ok ->
-            unquote(iterator_call)(array, rest, index + 1, path)
+            unquote(iterator_call)(unquote_splicing(iteration_next))
 
           Exonerate.Tools.error_match(error) ->
             error
         end
       end
 
-      defp unquote(iterator_call)(_, [], index, path) do
+      defp unquote(iterator_call)(unquote_splicing(terminator_head)) do
         :ok
       end
     end
@@ -42,19 +80,38 @@ defmodule Exonerate.Filter.Items do
 
   # the list form of items is technically supposed to be "prefixItems" but
   # it's supposed to be supported in newer versions of the spec.
-  def build_filter(%{"items" => subschema}, resource, pointer, opts) when is_list(subschema) do
+  def build_filter(context = %{"items" => subschema}, resource, pointer, opts)
+      when is_list(subschema) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
 
     Enum.with_index(subschema, fn _, index ->
       items_call = Tools.call(resource, JsonPointer.join(pointer, ["items", "#{index}"]), opts)
 
+      iteration_head =
+        Iterator.select_params(
+          context,
+          quote do
+            [array, [item | rest], unquote(index), path, first_unseen_index, unique]
+          end,
+          opts
+        )
+
+      iteration_next =
+        Iterator.select_params(
+          context,
+          quote do
+            [array, rest, unquote(index + 1), path, first_unseen_index, unique]
+          end,
+          opts
+        )
+
       quote do
-        defp unquote(iterator_call)(array, [item | rest], unquote(index), path) do
+        defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
           require Exonerate.Tools
 
           case unquote(items_call)(item, Path.join(path, "#{unquote(index)}")) do
             :ok ->
-              unquote(iterator_call)(array, rest, unquote(index + 1), path)
+              unquote(iterator_call)(unquote_splicing(iteration_next))
 
             Exonerate.Tools.error_match(error) ->
               error

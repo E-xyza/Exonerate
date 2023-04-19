@@ -2,6 +2,7 @@ defmodule Exonerate.Filter.AdditionalItems do
   @moduledoc false
 
   alias Exonerate.Tools
+  alias Exonerate.Type.Array.Iterator
 
   defmacro filter(resource, pointer, opts) do
     # The pointer in this case is the pointer to the array context, because
@@ -14,14 +15,30 @@ defmodule Exonerate.Filter.AdditionalItems do
   end
 
   # this is equivalent to the array form of "items"
-  defp build_filter(%{"additionalItems" => false}, resource, pointer, opts) do
+  defp build_filter(context = %{"additionalItems" => false}, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
     additional_items_pointer = JsonPointer.join(pointer, "additionalItems")
 
-    quote do
-      defp unquote(iterator_call)(_, [], _, _), do: :ok
+    iteration_head =
+      Iterator.select_params(
+        context,
+        quote do
+          [array, [item | rest], index, path, _, _]
+        end,
+        opts
+      )
 
-      defp unquote(iterator_call)(array, [item | _], index, path) do
+    terminator_head =
+      Iterator.select_params(
+        context,
+        quote do
+          [_, [], _index, _path, _, _]
+        end,
+        opts
+      )
+
+    quote do
+      defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
         require Exonerate.Tools
 
         Exonerate.Tools.mismatch(
@@ -31,28 +48,66 @@ defmodule Exonerate.Filter.AdditionalItems do
           Path.join(path, "#{index}")
         )
       end
+
+      defp unquote(iterator_call)(unquote_splicing(terminator_head)), do: :ok
     end
   end
 
-  defp build_filter(%{"additionalItems" => subschema}, resource, pointer, opts)
+  defp build_filter(context = %{"additionalItems" => subschema}, resource, pointer, opts)
        when is_map(subschema) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
     items_call = Tools.call(resource, JsonPointer.join(pointer, "additionalItems"), opts)
 
+    iteration_head =
+      Iterator.select_params(
+        context,
+        quote do
+          [array, [item | rest], index, path, first_unseen_index, unique]
+        end,
+        opts
+      )
+
+    iteration_next =
+      Iterator.select_params(
+        context,
+        quote do
+          [array, rest, index + 1, path, first_unseen_index, unique]
+        end,
+        opts
+      )
+
+    terminator_head =
+      Iterator.select_params(
+        context,
+        quote do
+          [_, [], _index, _path, _, _]
+        end,
+        opts
+      )
+
     quote do
-      defp unquote(iterator_call)(array, [item | rest], index, path) do
+      defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
         require Exonerate.Tools
+        require Exonerate.Filter.UniqueItems
+
+        Exonerate.Filter.UniqueItems.next_unique(
+          unquote(resource),
+          unquote(pointer),
+          unique,
+          item,
+          unquote(opts)
+        )
 
         case unquote(items_call)(item, Path.join(path, "#{index}")) do
           :ok ->
-            unquote(iterator_call)(array, rest, index + 1, path)
+            unquote(iterator_call)(unquote_splicing(iteration_next))
 
           Exonerate.Tools.error_match(error) ->
             error
         end
       end
 
-      defp unquote(iterator_call)(_, [], index, path) do
+      defp unquote(iterator_call)(unquote_splicing(terminator_head)) do
         :ok
       end
     end

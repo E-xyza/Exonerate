@@ -35,12 +35,22 @@ defmodule Exonerate.Type.Array do
   def build_filter(context, resource, pointer, opts) do
     call = Tools.call(resource, pointer, opts)
 
-    # TODO: check if the iterator is necessary at all.
     iterator_call = Iterator.call(resource, pointer, opts)
 
     if iterator_params = Iterator.params(context, resource, pointer, opts) do
+      uniqueness_initializer =
+        if :unique in iterator_params do
+          uniqueness_opts = Keyword.take(opts, [:use_xor_filter])
+
+          quote do
+            require Exonerate.Filter.UniqueItems
+            unique = Exonerate.Filter.UniqueItems.initialize(unquote(uniqueness_opts))
+          end
+        end
+
       quote do
         defp unquote(call)(array, path) when is_list(array) do
+          unquote(uniqueness_initializer)
           unquote(iterator_call)(unquote_splicing(to_param_vars(iterator_params)))
         end
       end

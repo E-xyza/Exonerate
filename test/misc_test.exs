@@ -96,4 +96,6 @@ defmodule ExonerateTest.MiscTest do
       assert :ok == minitems_contains(["foo", "bar"])
     end
   end
+
+  test "items + contains/mincontains"
 end
