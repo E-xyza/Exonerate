@@ -23,7 +23,7 @@ defmodule Exonerate.Filter.AdditionalItems do
       Iterator.select_params(
         context,
         quote do
-          [array, [item | rest], index, path, _, _]
+          [array, [item | rest], path, index, _, _]
         end
       )
 
@@ -31,7 +31,7 @@ defmodule Exonerate.Filter.AdditionalItems do
       Iterator.select_params(
         context,
         quote do
-          [_, [], _index, _path, _, _]
+          [_, [], _path, _index, _, _]
         end
       )
 
@@ -60,7 +60,7 @@ defmodule Exonerate.Filter.AdditionalItems do
       Iterator.select_params(
         context,
         quote do
-          [array, [item | rest], index, path, first_unseen_index, unique]
+          [array, [item | rest], path, index, first_unseen_index, unique]
         end
       )
 
@@ -68,7 +68,7 @@ defmodule Exonerate.Filter.AdditionalItems do
       Iterator.select_params(
         context,
         quote do
-          [array, rest, index + 1, path, first_unseen_index, unique]
+          [array, rest, path, index + 1, first_unseen_index, unique]
         end
       )
 
@@ -76,7 +76,7 @@ defmodule Exonerate.Filter.AdditionalItems do
       Iterator.select_params(
         context,
         quote do
-          [_, [], _index, _path, _, _]
+          [_, [], _path, _index, _, _]
         end
       )
 

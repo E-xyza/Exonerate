@@ -33,28 +33,21 @@ defmodule Exonerate.Type.Array.Iterator do
 
   def filters, do: @filters
 
-  def needed?(context) do
-    Enum.any?(@filters, &is_map_key(context, &1))
-  end
-
-  @find_key_sets [
-    ["contains"],
-    ["minItems"],
-    ["contains", "minItems"],
-    ["contains", "minContains"],
-    ["contains", "minContains", "minItems"]
-  ]
-
   @spec mode(Type.json()) :: FindIterator | FilterIterator | nil
   def mode(context) do
     context
     |> Map.take(@filters)
-    |> Map.keys()
-    |> Enum.sort()
     |> case do
-      [] -> nil
-      keys when keys in @find_key_sets -> FindIterator
-      _ -> FilterIterator
+      empty when empty === %{} -> nil
+      # the following filters must "go to completion".
+      %{"items" => %{}} -> FilterIterator
+      %{"maxContains" => _} -> FilterIterator
+      %{"maxItems" => _} -> FilterIterator
+      %{"uniqueItems" => true} -> FilterIterator
+      %{"additionalItems" => _} -> FilterIterator
+      %{"unevaluatedItems" => _} -> FilterIterator
+      # everything else can be subjected to a find iterator
+      _ -> FindIterator
     end
   end
 

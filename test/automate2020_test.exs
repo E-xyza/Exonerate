@@ -3,7 +3,9 @@ directory2020 =
   |> Path.join("_draft2020-12")
   |> Path.expand()
 
-omit_modules = ~w(defs.json anchor.json dynamicRef.json id.json)
+omit_modules =
+  ~w(defs.json anchor.json dynamicRef.json id.json) ++
+    Application.get_env(:exonerate, :omit_modules)
 
 omit_describes = [
   # integer filters do not match float values:

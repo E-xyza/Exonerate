@@ -82,6 +82,9 @@ defmodule Exonerate.Degeneracy do
           canonicalize_purged(context, "exclusiveMaximum", opts)
 
         ## degenerate-OK filters
+        context = %{"items" => true} ->
+          canonicalize_purged(context, "items", opts)
+
         context = %{"exclusiveMinimum" => false} ->
           canonicalize_purged(context, "exclusiveMinimum", opts)
 

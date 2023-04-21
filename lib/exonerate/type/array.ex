@@ -10,6 +10,8 @@ defmodule Exonerate.Type.Array do
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
 
+  @seen_filters ~w(allOf anyOf if oneOf $ref)
+
   defmacro filter(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
@@ -18,9 +20,23 @@ defmodule Exonerate.Type.Array do
   end
 
   #########################################################
-  # trivial exception
+  # trivial exceptions
+  defguardp trivial_contains(context)
+            when is_map_key(context, "contains") and
+                   :erlang.map_get("contains", context) === false and
+                   (not is_map_key(context, "minContains") or
+                      :erlang.map_get("minContains", context) > 0)
 
-  def build_filter(%{"contains" => false}, resource, pointer, opts) do
+  defguardp trivial_items(context)
+            when is_map_key(context, "items") and :erlang.map_get("items", context) === false
+
+  defguardp trivial_max_items(context)
+            when is_map_key(context, "maxItems") and :erlang.map_get("maxItems", context) === 0
+
+  defguardp trivial(context)
+            when trivial_contains(context) or trivial_items(context) or trivial_max_items(context)
+
+  defp build_filter(context, resource, pointer, opts) when trivial_contains(context) do
     call = Tools.call(resource, pointer, opts)
     pointer = JsonPointer.join(pointer, "contains")
 
@@ -32,34 +48,140 @@ defmodule Exonerate.Type.Array do
     end
   end
 
-  def build_filter(context, resource, pointer, opts) do
+  defp build_filter(context, resource, pointer, opts) when trivial_items(context) do
+    empty_only(context, "items", resource, pointer, opts)
+  end
+
+  defp build_filter(context, resource, pointer, opts) when trivial_max_items(context) do
+    empty_only(context, "maxItems", resource, pointer, opts)
+  end
+
+  defp build_filter(context, resource, pointer, opts) do
     call = Tools.call(resource, pointer, opts)
+    combining_prong = List.wrap(combining(context, resource, pointer, opts))
+    iterator_prong = List.wrap(iterator(context, resource, pointer, opts))
 
-    iterator_call = Iterator.call(resource, pointer, opts)
-
-    if iterator_args = Iterator.args(context) do
-      uniqueness_initializer =
-        if :unique in iterator_args do
-          uniqueness_opts = Keyword.take(opts, [:use_xor_filter])
-
-          quote do
-            require Exonerate.Filter.UniqueItems
-            unique = Exonerate.Filter.UniqueItems.initialize(unquote(uniqueness_opts))
-          end
-        end
-
-      quote do
-        defp unquote(call)(array, path) when is_list(array) do
-          unquote(uniqueness_initializer)
-          unquote(iterator_call)(unquote_splicing(to_arg_vars(iterator_args)))
-        end
-      end
-    else
-      quote do
-        defp unquote(call)(array, _path) when is_list(array) do
+    quote do
+      defp unquote(call)(array, path) when is_list(array) do
+        with unquote_splicing(combining_prong ++ iterator_prong) do
           :ok
         end
       end
+    end
+  end
+
+  defp empty_only(context, reason, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
+    case context do
+      # these three cases have no solutions because arrays will always fail
+      # because one condition requires empty and the other condition requires
+      # the existence of at least one.
+      %{"contains" => _, "minContains" => min} when min > 0 ->
+        fatal("minContains", resource, pointer, opts)
+
+      %{"contains" => _} when not is_map_key(context, "minContains") ->
+        fatal("contains", resource, pointer, opts)
+
+      %{"minItems" => min} when min > 0 ->
+        fatal("minItems", resource, pointer, opts)
+
+      _ ->
+        quote do
+          defp unquote(call)([], _path), do: :ok
+
+          defp unquote(call)(array, path) when is_list(array) do
+            require Exonerate.Tools
+
+            Exonerate.Tools.mismatch(
+              array,
+              unquote(resource),
+              unquote(JsonPointer.join(pointer, reason)),
+              path
+            )
+          end
+        end
+    end
+  end
+
+  defp fatal(reason, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
+    quote do
+      defp unquote(call)(array, path) when is_list(array) do
+        require Exonerate.Tools
+
+        Exonerate.Tools.mismatch(
+          array,
+          unquote(resource),
+          unquote(JsonPointer.join(pointer, reason)),
+          path
+        )
+      end
+    end
+  end
+
+  defp combining(context, resource, pointer, opts) do
+    needs_unseen_index = needs_combining_seen?(context) or opts[:tracked] === :array
+
+    Enum.flat_map(
+      context,
+      fn
+        {filter, _} when filter in @seen_filters and needs_unseen_index ->
+          combining_call =
+            Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+
+          [
+            quote do
+              {:ok, next_last_unseen_index} <- unquote(combining_call)(array, path)
+            end,
+            quote do
+              last_unseen_index = max(last_unseen_index, next_last_unseen_index)
+            end
+          ]
+
+        {filter, _} when filter in @combining_filters ->
+          combining_call =
+            Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+
+          [
+            quote do
+              :ok <- unquote(combining_call)(array, path)
+            end
+          ]
+
+        _ ->
+          []
+      end
+    )
+  end
+
+  defp iterator(context, resource, pointer, opts) do
+    if iterator_args = Iterator.args(context) do
+      iterator_call = Iterator.call(resource, pointer, opts)
+
+      uniqueness_initializer =
+        List.wrap(
+          if :unique_items in iterator_args do
+            uniqueness_opts = Keyword.take(opts, [:use_xor_filter])
+
+            [
+              quote do
+                require Exonerate.Filter.UniqueItems
+              end,
+              quote do
+                unique_items = Exonerate.Filter.UniqueItems.initialize(unquote(uniqueness_opts))
+              end
+            ]
+          end
+        )
+
+      uniqueness_initializer ++
+        [
+          quote do
+            :ok <- unquote(iterator_call)(unquote_splicing(to_arg_vars(iterator_args)))
+          end
+        ]
     end
   end
 
@@ -69,8 +191,6 @@ defmodule Exonerate.Type.Array do
       number -> number
     end)
   end
-
-  @seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
 
   def needs_combining_seen?(context) do
     is_map_key(context, "unevaluatedItems") and Enum.any?(@seen_filters, &is_map_key(context, &1))
@@ -123,6 +243,8 @@ defmodule Exonerate.Type.Array do
     |> build_accessories(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
+
+  defp build_accessories(context, _, _, _) when trivial(context), do: []
 
   defp build_accessories(context, resource, pointer, opts) do
     opts =

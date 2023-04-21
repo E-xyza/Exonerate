@@ -27,7 +27,7 @@ defmodule Exonerate.Filter.MaxItems do
       Iterator.select_params(
         context,
         quote do
-          [array, _, index, path, _, _]
+          [array, _, path, index, _, _]
         end
       )
 

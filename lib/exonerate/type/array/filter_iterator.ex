@@ -13,8 +13,8 @@ defmodule Exonerate.Type.Array.FilterIterator do
   #
   # - full array
   # - array looked at so far
-  # - index
   # - path
+  # - index
   #
   # the following call parameters are loaded to the end of the params
   # if their respective filters exists
@@ -33,9 +33,9 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   def args(context) do
-    [:array, :array, 0, :path] ++
+    [:array, :array, :path, 0] ++
       List.wrap(if needs_unseen_index?(context), do: :first_unseen_index) ++
-      List.wrap(if is_map_key(context, "uniqueItems"), do: :unique)
+      List.wrap(if is_map_key(context, "uniqueItems"), do: :unique_items)
   end
 
   @seen_keys ~w(allOf anyOf if oneOf dependentSchemas $ref)
@@ -109,12 +109,12 @@ defmodule Exonerate.Type.Array.FilterIterator do
   end
 
   # allows to select which parameters are looked at in the iterator, based on the context
-  def select_params(context, [array, array_so_far, index, path, unevaluated, unique]) do
+  def select_params(context, [array, array_so_far, index, path, unevaluated, unique_items]) do
     [array, array_so_far, index, path] ++
-    List.wrap(if needs_unseen_index?(context), do: unevaluated) ++
-    List.wrap(if Map.get(context, "unique"), do: unique)
+      List.wrap(if needs_unseen_index?(context), do: unevaluated) ++
+      List.wrap(if Map.get(context, "uniqueItems"), do: unique_items)
   end
-  
+
   defmacro default_filter(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
@@ -129,7 +129,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
       Iterator.select_params(
         context,
         quote do
-          [array, [item | rest], index, path, first_unseen_index, unique]
+          [array, [item | rest], path, index, first_unseen_index, unique]
         end
       )
 
@@ -137,7 +137,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
       Iterator.select_params(
         context,
         quote do
-          [array, rest, index + 1, path, first_unseen_index, unique]
+          [array, rest, path, index + 1, first_unseen_index, unique]
         end
       )
 
@@ -145,7 +145,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
       Iterator.select_params(
         context,
         quote do
-          [_array, [], _index, _path, _, _]
+          [_array, [], _path, _index, _, _]
         end
       )
 

@@ -24,7 +24,7 @@ defmodule Exonerate.Filter.MinItems do
       Iterator.select_params(
         context,
         quote do
-          [array, [], index, path, first_unseen_index, unique]
+          [array, [], path, index, first_unseen_index, unique]
         end
       )
 

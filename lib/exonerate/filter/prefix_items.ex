@@ -22,7 +22,7 @@ defmodule Exonerate.Filter.PrefixItems do
         Iterator.select_params(
           context,
           quote do
-            [array, [item | rest], unquote(index), path, first_unseen_index, unique]
+            [array, [item | rest], path, unquote(index), first_unseen_index, unique]
           end
         )
 
@@ -30,7 +30,7 @@ defmodule Exonerate.Filter.PrefixItems do
         Iterator.select_params(
           context,
           quote do
-            [array, rest, unquote(index + 1), path, first_unseen_index, unique]
+            [array, rest, path, unquote(index + 1), first_unseen_index, unique]
           end
         )
 

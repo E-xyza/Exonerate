@@ -1,10 +1,14 @@
 defmodule ExonerateTest.Automate do
   def directory(directory, opts \\ []) do
-    opts = Keyword.merge([omit_modules: [], omit_describes: [], omit_tests: [], prefix: X], opts)
+    opts = Keyword.merge([omit_modules: [], omit_describes: [], omit_tests: []], opts)
 
-    directory
-    |> File.ls!()
-    |> Enum.reject(&(&1 in opts[:omit_modules]))
+    if only = opts[:only] do
+      only
+    else
+      directory
+      |> File.ls!()
+      |> Enum.reject(&(&1 in opts[:omit_modules]))
+    end
     |> Enum.flat_map(fn filename ->
       cond do
         Path.extname(filename) == ".json" ->
@@ -20,16 +24,28 @@ defmodule ExonerateTest.Automate do
       end
     end)
     |> Enum.each(fn path ->
-      path
-      |> File.read!()
-      |> Jason.decode!()
-      |> to_test_module(Path.basename(path, ".json"), Path.basename(path), opts)
-      |> Code.eval_quoted([], file: path)
+      run_lambda =
+        Keyword.get(
+          opts,
+          :lambda,
+          &to_test_module(&1, Path.basename(path, ".json"), Path.basename(path), opts)
+        )
+
+      quoted =
+        path
+        |> File.read!()
+        |> Jason.decode!()
+        |> then(run_lambda)
+
+      if Keyword.get(opts, :eval, true) do
+        Code.eval_quoted(quoted, [], file: path)
+      end
     end)
   end
 
   defp to_test_module(test_list, modulename, path, opts) do
-    module = Module.concat([ExonerateTest, opts[:prefix], String.capitalize(modulename), Test])
+    prefix = Keyword.fetch!(opts, :prefix)
+    module = Module.concat([ExonerateTest, prefix, String.capitalize(modulename), Test])
 
     describe_blocks =
       test_list

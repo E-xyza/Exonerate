@@ -33,7 +33,7 @@ defmodule Exonerate.Filter.UniqueItems do
       Iterator.select_params(
         context,
         quote do
-          [array, _, index, path, first_unseen_index, false]
+          [array, _, path, index, first_unseen_index, false]
         end
       )
 
