@@ -83,7 +83,7 @@ defmodule Exonerate.Tools do
   # scrub macros helps to make "dump: true" output more legible, by removing
   # the scar tissue of macro calls that are going to be dumped anyways.
 
-  @drop_macros ~w(filter accessories fallthrough iterator context default_filter functions find_filter)a
+  @drop_macros ~w(filter accessories fallthrough iterator context default_filter functions)a
 
   defp scrub_macros({:__block__, _meta, []}), do: []
 

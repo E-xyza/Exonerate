@@ -24,10 +24,10 @@ defmodule Exonerate.Filter.MaxItems do
     # empty list when the index equals the limit.
 
     filter_params =
-      Iterator.select_params(
+      Iterator.select(
         context,
         quote do
-          [array, _, path, index, _, _]
+          [array, _, path, index, _contains_count, _first_unseen_index, _unique_items]
         end
       )
 

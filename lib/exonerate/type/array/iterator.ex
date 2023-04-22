@@ -55,10 +55,30 @@ defmodule Exonerate.Type.Array.Iterator do
     Tools.call(resource, pointer, :array_iterator, opts)
   end
 
+  # The iterator can have different number of call parameters depending on
+  # which filters the context applies.  The following call parameters are
+  # ALWAYS present:
+  #
+  # - full array
+  # - remaining array
+  # - path
+  #
+  # the following parameters are otional, and in the following order.  Their
+  # use in the iterator depends on which iterator mode (filter/find) is selected,
+  # and which filters are present.
+  #
+  # The args/2 function generates a canonical set of arguments for these values,
+  # with an atom when it needs to be a variable and a number when it needs to be
+  # a specific value.
+  #
+  # - index
+  # - contains_count
+  # - first_unseen_index
+  # - unique_items
+
+  @initial_args [:array, :array, :path, 0, 0, :first_unseen_index, :unique_items]
   def args(context) do
-    if mode = mode(context) do
-      mode.args(context)
-    end
+    select(context, @initial_args)
   end
 
   defmacro filter(resource, pointer, opts) do
@@ -79,9 +99,9 @@ defmodule Exonerate.Type.Array.Iterator do
     )
   end
 
-  def select_params(context, parameters) do
+  def select(context, parameters) do
     if mode = mode(context) do
-      mode.select_params(context, parameters)
+      mode.select(context, parameters)
     end
   end
 

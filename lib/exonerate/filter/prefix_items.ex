@@ -19,18 +19,34 @@ defmodule Exonerate.Filter.PrefixItems do
         Tools.call(resource, JsonPointer.join(pointer, ["prefixItems", "#{index}"]), opts)
 
       iteration_head =
-        Iterator.select_params(
+        Iterator.select(
           context,
           quote do
-            [array, [item | rest], path, unquote(index), first_unseen_index, unique]
+            [
+              array,
+              [item | rest],
+              path,
+              unquote(index),
+              contains_count,
+              first_unseen_index,
+              unique_items
+            ]
           end
         )
 
       iteration_next =
-        Iterator.select_params(
+        Iterator.select(
           context,
           quote do
-            [array, rest, path, unquote(index + 1), first_unseen_index, unique]
+            [
+              array,
+              rest,
+              path,
+              unquote(index + 1),
+              contains_count,
+              first_unseen_index,
+              unique_items
+            ]
           end
         )
 

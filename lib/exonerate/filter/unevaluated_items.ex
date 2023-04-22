@@ -29,26 +29,26 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     items_call = Tools.call(resource, JsonPointer.join(pointer, "unevaluatedItems"), opts)
 
     iteration_head =
-      Iterator.select_params(
+      Iterator.select(
         context,
         quote do
-          [array, [item | rest], path, index, first_unseen_index, unique]
+          [array, [item | rest], path, index, contains_count, first_unseen_index, unique_items]
         end
       )
 
     iteration_next =
-      Iterator.select_params(
+      Iterator.select(
         context,
         quote do
-          [array, rest, path, index + 1, first_unseen_index, unique]
+          [array, rest, path, index + 1, contains_count, first_unseen_index, unique_items]
         end
       )
 
     terminator_head =
-      Iterator.select_params(
+      Iterator.select(
         context,
         quote do
-          [_, [], _path, _index, _, _]
+          [_, [], _path, _index, _contains_count, _first_unseen_index, _unique_items]
         end
       )
 
@@ -61,7 +61,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
         Exonerate.Filter.UniqueItems.next_unique(
           unquote(resource),
           unquote(pointer),
-          unique,
+          unique_items,
           item,
           unquote(opts)
         )
@@ -90,26 +90,26 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     items_call = Tools.call(resource, JsonPointer.join(pointer, "unevaluatedItems"), opts)
 
     iteration_head =
-      Iterator.select_params(
+      Iterator.select(
         context,
         quote do
-          [array, [item | rest], path, index, first_unseen_index, unique]
+          [array, [item | rest], path, index, contains_count, first_unseen_index, unique_items]
         end
       )
 
     iteration_next =
-      Iterator.select_params(
+      Iterator.select(
         context,
         quote do
-          [array, rest, path, index + 1, first_unseen_index, unique]
+          [array, rest, path, index + 1, contains_count, first_unseen_index, unique_items]
         end
       )
 
     terminator_head =
-      Iterator.select_params(
+      Iterator.select(
         context,
         quote do
-          [_, [], _path, _index, _, _]
+          [_, [], _path, _index, _contains_count, _first_unseen_index, _unique_items]
         end
       )
 
@@ -121,7 +121,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
         Exonerate.Filter.UniqueItems.next_unique(
           unquote(resource),
           unquote(pointer),
-          unique,
+          unique_items,
           item,
           unquote(opts)
         )

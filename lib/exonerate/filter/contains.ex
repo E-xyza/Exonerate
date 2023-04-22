@@ -6,27 +6,27 @@ defmodule Exonerate.Filter.Contains do
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
-  defmacro find_filter(resource, pointer, opts) do
+  defmacro filter(resource, pointer, opts) do
     # The pointer in this case is the pointer to the array context, because this filter
     # is an iterator function.
 
     __CALLER__
     |> Tools.subschema(resource, pointer)
-    |> build_find_filter(resource, pointer, opts)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   # if there's a minContains filter, don't create the find filter
-  defp build_find_filter(%{"minContains" => _}, _, _, _), do: []
+  defp build_filter(%{"minContains" => _}, _, _, _), do: []
 
-  defp build_find_filter(context = %{"contains" => _}, resource, pointer, opts) do
+  defp build_filter(context = %{"contains" => _}, resource, pointer, opts) do
     call = Iterator.call(resource, pointer, opts)
 
     terminal_params =
-      Iterator.select_params(
+      Iterator.select(
         context,
         quote do
-          [array, [], path, _index, contains_count]
+          [array, [], path, _index, contains_count, _first_unseen_index, _unique_items]
         end
       )
 
@@ -40,7 +40,7 @@ defmodule Exonerate.Filter.Contains do
     end
   end
 
-  defp build_find_filter(_, _, _, _), do: []
+  defp build_filter(_, _, _, _), do: []
 
   defmacro context(resource, pointer, opts) do
     resource

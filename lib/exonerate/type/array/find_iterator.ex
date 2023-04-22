@@ -7,21 +7,12 @@ defmodule Exonerate.Type.Array.FindIterator do
   #
   # modes are selected using Exonerate.Type.Array.Filter.Iterator.mode/1
   #
-  # In order to be selected for "find mode", it should contain only the following
-  # filters:
-  #
-  # - "minItems"
-  # - "contains"
-  # - "minContains"
-  # - "items" (array)
-  # - "prefixItems"
-  #
   # The iterator for this function can have different number of call parameters
   # depending on which filters the context applies.  The following call parameters
   # are ALWAYS present:
   #
   # - full array
-  # - array looked at so far
+  # - remaining array
   # - path
   #
   # the following call parameters are loaded to the end of the params
@@ -69,13 +60,13 @@ defmodule Exonerate.Type.Array.FindIterator do
 
       # the following filters encode terminal conditions
       require Exonerate.Filter.MinItems
-      Exonerate.Filter.MinItems.find_filter(unquote(resource), unquote(pointer), unquote(opts))
+      Exonerate.Filter.MinItems.filter(unquote(resource), unquote(pointer), unquote(opts))
 
       require Exonerate.Filter.MinContains
-      Exonerate.Filter.MinContains.find_filter(unquote(resource), unquote(pointer), unquote(opts))
+      Exonerate.Filter.MinContains.filter(unquote(resource), unquote(pointer), unquote(opts))
 
       require Exonerate.Filter.Contains
-      Exonerate.Filter.Contains.find_filter(unquote(resource), unquote(pointer), unquote(opts))
+      Exonerate.Filter.Contains.filter(unquote(resource), unquote(pointer), unquote(opts))
 
       require Exonerate.Type.Array.FindIterator
 
@@ -98,22 +89,31 @@ defmodule Exonerate.Type.Array.FindIterator do
     call = Iterator.call(resource, pointer, opts)
 
     head_params =
-      quote do
-        [array, [item | rest], path, index, contains_count]
-      end
+      Iterator.select(
+        context,
+        quote do
+          [array, [item | rest], path, index, contains_count, first_unseen_index, unique_items]
+        end
+      )
 
     next_params =
-      quote do
-        [array, rest, path, index + 1, contains_count]
-      end
+      Iterator.select(
+        context,
+        quote do
+          [array, rest, path, index + 1, contains_count, first_unseen_index, unique_items]
+        end
+      )
 
     end_params =
-      quote do
-        [array, [], path, index, contains_count]
-      end
+      Iterator.select(
+        context,
+        quote do
+          [array, [], path, index, contains_count, _first_unseen_index, _unique_items]
+        end
+      )
 
     quote do
-      defp unquote(call)(unquote_splicing(select_params(context, head_params))) do
+      defp unquote(call)(unquote_splicing(head_params)) do
         if unquote(success_condition(context)) do
           :ok
         else
@@ -124,11 +124,11 @@ defmodule Exonerate.Type.Array.FindIterator do
             unquote(opts)
           )
 
-          unquote(call)(unquote_splicing(select_params(context, next_params)))
+          unquote(call)(unquote_splicing(next_params))
         end
       end
 
-      defp unquote(call)(unquote_splicing(select_params(context, end_params))) do
+      defp unquote(call)(unquote_splicing(end_params)) do
         :ok
       end
     end
@@ -178,7 +178,7 @@ defmodule Exonerate.Type.Array.FindIterator do
   end
 
   # allows to select which parameters are looked at in the iterator, based on the context
-  def select_params(context, [array, array_so_far, path, index, contains_count]) do
+  def select(context, [array, array_so_far, path, index, contains_count, _unevaluated, _unique_items]) do
     [array, array_so_far, path] ++
       List.wrap(if needs_index?(context), do: index) ++
       List.wrap(if is_map_key(context, "contains"), do: contains_count)

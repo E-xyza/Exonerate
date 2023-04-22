@@ -30,10 +30,10 @@ defmodule Exonerate.Filter.UniqueItems do
     minitems_pointer = JsonPointer.join(pointer, "uniqueItems")
 
     failure_params =
-      Iterator.select_params(
+      Iterator.select(
         context,
         quote do
-          [array, _, path, index, first_unseen_index, false]
+          [array, _, path, _index, _contains_count, _first_unseen_index, false]
         end
       )
 
@@ -45,18 +45,18 @@ defmodule Exonerate.Filter.UniqueItems do
     end
   end
 
-  defmacro next_unique(resource, pointer, unique, item, _opts) do
+  defmacro next_unique(resource, pointer, unique_items, item, _opts) do
     # TODO: let this be generalizable to xor_filter
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> case do
       %{"uniqueItems" => true} ->
         quote do
-          unquote(unique) =
-            unquote(unique) === true or
-              if MapSet.member?(unquote(unique), unquote(item)),
+          unquote(unique_items) =
+            unquote(unique_items) === true or
+              if MapSet.member?(unquote(unique_items), unquote(item)),
                 do: false,
-                else: MapSet.put(unquote(unique), unquote(item))
+                else: MapSet.put(unquote(unique_items), unquote(item))
         end
 
       _ ->
