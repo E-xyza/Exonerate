@@ -38,4 +38,6 @@ defmodule Exonerate.Filter.MaxItems do
       end
     end
   end
+
+  defp build_filter(_, _, _, _), do: []
 end

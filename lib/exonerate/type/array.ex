@@ -27,14 +27,11 @@ defmodule Exonerate.Type.Array do
                    (not is_map_key(context, "minContains") or
                       :erlang.map_get("minContains", context) > 0)
 
-  defguardp trivial_items(context)
-            when is_map_key(context, "items") and :erlang.map_get("items", context) === false
-
   defguardp trivial_max_items(context)
             when is_map_key(context, "maxItems") and :erlang.map_get("maxItems", context) === 0
 
   defguardp trivial(context)
-            when trivial_contains(context) or trivial_items(context) or trivial_max_items(context)
+            when trivial_contains(context) or trivial_max_items(context)
 
   defp build_filter(context, resource, pointer, opts) when trivial_contains(context) do
     call = Tools.call(resource, pointer, opts)
@@ -46,10 +43,6 @@ defmodule Exonerate.Type.Array do
         Exonerate.Tools.mismatch(array, unquote(resource), unquote(pointer), path)
       end
     end
-  end
-
-  defp build_filter(context, resource, pointer, opts) when trivial_items(context) do
-    empty_only(context, "items", resource, pointer, opts)
   end
 
   defp build_filter(context, resource, pointer, opts) when trivial_max_items(context) do

@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.PrefixItems do
   @moduledoc false
 
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
@@ -14,7 +15,7 @@ defmodule Exonerate.Filter.PrefixItems do
   defp build_filter(context = %{"prefixItems" => subschema}, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
 
-    Enum.with_index(subschema, fn _, index ->
+    Enum.with_index(subschema, fn item_subschema, index ->
       items_call =
         Tools.call(resource, JsonPointer.join(pointer, ["prefixItems", "#{index}"]), opts)
 
@@ -50,18 +51,71 @@ defmodule Exonerate.Filter.PrefixItems do
           end
         )
 
-      quote do
-        defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
-          require Exonerate.Tools
+      case Degeneracy.class(item_subschema) do
+        :ok ->
+          quote do
+            defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
+              require Exonerate.Filter.Contains
+              require Exonerate.Filter.UniqueItems
 
-          case unquote(items_call)(item, Path.join(path, "#{unquote(index)}")) do
-            :ok ->
+              Exonerate.Filter.Contains.next_contains(
+                unquote(resource),
+                unquote(pointer),
+                [contains_count, item, path],
+                unquote(opts)
+              )
+
+              Exonerate.Filter.UniqueItems.next_unique(
+                unquote(resource),
+                unquote(pointer),
+                unique_items,
+                item,
+                unquote(opts)
+              )
+
               unquote(iterator_call)(unquote_splicing(iteration_next))
-
-            Exonerate.Tools.error_match(error) ->
-              error
+            end
           end
-        end
+
+        :error ->
+          quote do
+            defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
+              unquote(items_call)(item, Path.join(path, "#{unquote(index)}"))
+            end
+          end
+
+        :unknown ->
+          quote do
+            defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
+              require Exonerate.Tools
+
+              case unquote(items_call)(item, Path.join(path, "#{unquote(index)}")) do
+                :ok ->
+                  require Exonerate.Filter.Contains
+                  require Exonerate.Filter.UniqueItems
+
+                  Exonerate.Filter.Contains.next_contains(
+                    unquote(resource),
+                    unquote(pointer),
+                    [contains_count, item, path],
+                    unquote(opts)
+                  )
+
+                  Exonerate.Filter.UniqueItems.next_unique(
+                    unquote(resource),
+                    unquote(pointer),
+                    unique_items,
+                    item,
+                    unquote(opts)
+                  )
+
+                  unquote(iterator_call)(unquote_splicing(iteration_next))
+
+                Exonerate.Tools.error_match(error) ->
+                  error
+              end
+            end
+          end
       end
     end)
   end

@@ -10,7 +10,7 @@ defmodule Exonerate.Filter.MinContains do
 
     __CALLER__
     |> Tools.subschema(resource, pointer)
-    |> build_find_filter(resource, pointer, opts)
+    |> build_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
@@ -36,5 +36,5 @@ defmodule Exonerate.Filter.MinContains do
     end
   end
 
-  defp build_find_filter(_, _, _, _), do: []
+  defp build_filter(_, _, _, _), do: []
 end

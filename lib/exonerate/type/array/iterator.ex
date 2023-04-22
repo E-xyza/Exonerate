@@ -41,6 +41,7 @@ defmodule Exonerate.Type.Array.Iterator do
       empty when empty === %{} -> nil
       # the following filters must "go to completion".
       %{"items" => %{}} -> FilterIterator
+      %{"items" => boolean} when is_boolean(boolean) -> FilterIterator
       %{"maxContains" => _} -> FilterIterator
       %{"maxItems" => _} -> FilterIterator
       %{"uniqueItems" => true} -> FilterIterator

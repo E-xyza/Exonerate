@@ -12,14 +12,14 @@ defmodule Exonerate.Filter.Contains do
 
     __CALLER__
     |> Tools.subschema(resource, pointer)
-    |> build_filter(resource, pointer, opts)
+    |> build_find_filter(resource, pointer, opts)
     |> Tools.maybe_dump(opts)
   end
 
   # if there's a minContains filter, don't create the find filter
-  defp build_filter(%{"minContains" => _}, _, _, _), do: []
+  defp build_find_filter(%{"minContains" => _}, _, _, _), do: []
 
-  defp build_filter(context = %{"contains" => _}, resource, pointer, opts) do
+  defp build_find_filter(context = %{"contains" => _}, resource, pointer, opts) do
     call = Iterator.call(resource, pointer, opts)
 
     terminal_params =
@@ -40,7 +40,7 @@ defmodule Exonerate.Filter.Contains do
     end
   end
 
-  defp build_filter(_, _, _, _), do: []
+  defp build_find_filter(_, _, _, _), do: []
 
   defmacro context(resource, pointer, opts) do
     resource
@@ -59,6 +59,29 @@ defmodule Exonerate.Filter.Contains do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_next_contains(ast, resource, pointer, opts)
+  end
+
+  defp build_next_contains(
+         context = %{"contains" => _, "maxContains" => _},
+         ast,
+         resource,
+         pointer,
+         opts
+       ) do
+    [contains_count_ast, item_ast, path_ast] = ast
+    needed = Map.get(context, "minContains", 1)
+    contains_call = Tools.call(resource, JsonPointer.join(pointer, "contains"), opts)
+
+    quote do
+      unquote(contains_count_ast) =
+        case unquote(contains_call)(unquote(item_ast), unquote(path_ast)) do
+          :ok ->
+            unquote(contains_count_ast) + 1
+
+          {:error, _} ->
+            unquote(contains_count_ast)
+        end
+    end
   end
 
   defp build_next_contains(context = %{"contains" => _}, ast, resource, pointer, opts) do

@@ -33,16 +33,30 @@ defmodule Exonerate.Type.Array.FilterIterator do
     |> Tools.maybe_dump(opts)
   end
 
-  defp build_iterator(context, resource, pointer, opts) do
+  defp build_iterator(_context, resource, pointer, opts) do
     quote do
-      unquote(guard_iterators(context, resource, pointer, opts))
-      # the items filter is special-cased at the top because it can both be a guard iterator
-      # and a default iterator
-      require Exonerate.Filter.Items
-      Exonerate.Filter.Items.filter(unquote(resource), unquote(pointer), unquote(opts))
+      require Exonerate.Filter.MinItems
+      Exonerate.Filter.MinItems.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Filter.MaxItems
+      Exonerate.Filter.MaxItems.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Filter.MinContains
+      Exonerate.Filter.MinContains.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Filter.MaxContains
+      Exonerate.Filter.MaxContains.filter(unquote(resource), unquote(pointer), unquote(opts))
 
       require Exonerate.Filter.Contains
       Exonerate.Filter.Contains.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Filter.UniqueItems
+      Exonerate.Filter.UniqueItems.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      # the items filter is special-cased at the top of the it can both be a guard iterator
+      # and a default iterator
+      require Exonerate.Filter.Items
+      Exonerate.Filter.Items.filter(unquote(resource), unquote(pointer), unquote(opts))
 
       require Exonerate.Filter.PrefixItems
       Exonerate.Filter.PrefixItems.filter(unquote(resource), unquote(pointer), unquote(opts))
@@ -63,42 +77,6 @@ defmodule Exonerate.Type.Array.FilterIterator do
     end
   end
 
-  defp guard_iterators(context, resource, pointer, opts) do
-    Enum.flat_map(context, fn
-      {"maxItems", _} ->
-        [
-          quote do
-            require Exonerate.Filter.MaxItems
-            Exonerate.Filter.MaxItems.filter(unquote(resource), unquote(pointer), unquote(opts))
-          end
-        ]
-
-      {"minItems", _} ->
-        [
-          quote do
-            require Exonerate.Filter.MinItems
-            Exonerate.Filter.MinItems.filter(unquote(resource), unquote(pointer), unquote(opts))
-          end
-        ]
-
-      {"uniqueItems", _} ->
-        [
-          quote do
-            require Exonerate.Filter.UniqueItems
-
-            Exonerate.Filter.UniqueItems.filter(
-              unquote(resource),
-              unquote(pointer),
-              unquote(opts)
-            )
-          end
-        ]
-
-      _ ->
-        []
-    end)
-  end
-
   # - full array
   # - remaining array
   # - path
@@ -112,7 +90,15 @@ defmodule Exonerate.Type.Array.FilterIterator do
   # - "unique" -> unique_items
 
   # allows to select which parameters are looked at in the iterator, based on the context
-  def select(context, [array, array_so_far, path, index, contains_count, unevaluated, unique_items]) do
+  def select(context, [
+        array,
+        array_so_far,
+        path,
+        index,
+        contains_count,
+        unevaluated,
+        unique_items
+      ]) do
     [array, array_so_far, index, path] ++
       List.wrap(if Map.has_key?(context, "contains"), do: contains_count) ++
       List.wrap(if needs_unseen_index?(context), do: unevaluated) ++
@@ -164,7 +150,15 @@ defmodule Exonerate.Type.Array.FilterIterator do
       if needs_default_terminator(context) do
         quote do
           defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
+            require Exonerate.Filter.Contains
             require Exonerate.Filter.UniqueItems
+
+            Exonerate.Filter.Contains.next_contains(
+              unquote(resource),
+              unquote(pointer),
+              [contains_count, item, path],
+              unquote(opts)
+            )
 
             Exonerate.Filter.UniqueItems.next_unique(
               unquote(resource),

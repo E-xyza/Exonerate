@@ -83,7 +83,16 @@ defmodule Exonerate.Filter.AdditionalItems do
     quote do
       defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
         require Exonerate.Tools
+
+        require Exonerate.Filter.Contains
         require Exonerate.Filter.UniqueItems
+
+        Exonerate.Filter.Contains.next_contains(
+          unquote(resource),
+          unquote(pointer),
+          [contains_count, item, path],
+          unquote(opts)
+        )
 
         Exonerate.Filter.UniqueItems.next_unique(
           unquote(resource),

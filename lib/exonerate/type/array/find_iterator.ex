@@ -53,11 +53,6 @@ defmodule Exonerate.Type.Array.FindIterator do
 
   defp build_iterator(_context, resource, pointer, opts) do
     quote do
-      # the items filter is special-cased at the top because it can be a filter iterator
-
-      # require Exonerate.Filter.Items
-      # Exonerate.Filter.Items.filter(unquote(resource), unquote(pointer), unquote(opts))
-
       # the following filters encode terminal conditions
       require Exonerate.Filter.MinItems
       Exonerate.Filter.MinItems.filter(unquote(resource), unquote(pointer), unquote(opts))
@@ -67,6 +62,12 @@ defmodule Exonerate.Type.Array.FindIterator do
 
       require Exonerate.Filter.Contains
       Exonerate.Filter.Contains.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Filter.PrefixItems
+      Exonerate.Filter.PrefixItems.filter(unquote(resource), unquote(pointer), unquote(opts))
+
+      require Exonerate.Filter.Items
+      Exonerate.Filter.Items.filter(unquote(resource), unquote(pointer), unquote(opts))
 
       require Exonerate.Type.Array.FindIterator
 
@@ -114,18 +115,14 @@ defmodule Exonerate.Type.Array.FindIterator do
 
     quote do
       defp unquote(call)(unquote_splicing(head_params)) do
-        if unquote(success_condition(context)) do
-          :ok
-        else
-          Exonerate.Filter.Contains.next_contains(
-            unquote(resource),
-            unquote(pointer),
-            [contains_count, item, path],
-            unquote(opts)
-          )
+        Exonerate.Filter.Contains.next_contains(
+          unquote(resource),
+          unquote(pointer),
+          [contains_count, item, path],
+          unquote(opts)
+        )
 
-          unquote(call)(unquote_splicing(next_params))
-        end
+        unquote(call)(unquote_splicing(next_params))
       end
 
       defp unquote(call)(unquote_splicing(end_params)) do
@@ -134,51 +131,16 @@ defmodule Exonerate.Type.Array.FindIterator do
     end
   end
 
-  def success_condition(context) do
-    case context do
-      %{"minItems" => items, "minContains" => min_contains} ->
-        quote do
-          index >= unquote(items) and contains_count >= unquote(min_contains)
-        end
-
-      %{"minItems" => items, "contains" => _} ->
-        quote do
-          index >= unquote(items) and contains_count >= 1
-        end
-
-      %{"minItems" => items} ->
-        quote do
-          index >= unquote(items)
-        end
-
-      %{"minContains" => min_contains} ->
-        quote do
-          contains_count >= unquote(min_contains)
-        end
-
-      %{"contains" => _} ->
-        quote do
-          contains_count >= 1
-        end
-
-      %{"items" => items} ->
-        length = length(items)
-
-        quote do
-          index >= unquote(length)
-        end
-
-      %{"prefixItems" => items} ->
-        length = length(items)
-
-        quote do
-          index >= unquote(length)
-        end
-    end
-  end
-
   # allows to select which parameters are looked at in the iterator, based on the context
-  def select(context, [array, array_so_far, path, index, contains_count, _unevaluated, _unique_items]) do
+  def select(context, [
+        array,
+        array_so_far,
+        path,
+        index,
+        contains_count,
+        _unevaluated,
+        _unique_items
+      ]) do
     [array, array_so_far, path] ++
       List.wrap(if needs_index?(context), do: index) ++
       List.wrap(if is_map_key(context, "contains"), do: contains_count)
