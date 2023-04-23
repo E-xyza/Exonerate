@@ -216,9 +216,13 @@ defmodule Exonerate.Type.Array do
 
   defp result_expr(context, opts) do
     # we only need to return result_expr if we are being tracked
+    local_length = local_length(context)
     cond do
       opts[:tracked] !== :array ->
         :ok
+
+      local_length === :length ->
+        {:ok, :length}
 
       Enum.any?(context, &match?({key, _} when key in @seen_filters, &1)) ->
         local_length = local_length(context)
@@ -228,7 +232,7 @@ defmodule Exonerate.Type.Array do
         end
 
       true ->
-        {:ok, local_length(context)}
+        {:ok, local_length}
     end
   end
 

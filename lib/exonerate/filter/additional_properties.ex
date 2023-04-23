@@ -2,7 +2,6 @@ defmodule Exonerate.Filter.AdditionalProperties do
   @moduledoc false
 
   alias Exonerate.Context
-  alias Exonerate.Tools
 
   defmacro filter(name, pointer, opts) do
     quote do

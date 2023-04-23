@@ -70,7 +70,7 @@ defmodule Exonerate.Filter.Contains do
   end
 
   defp build_next_contains(
-         context = %{"contains" => _, "maxContains" => _},
+         %{"contains" => _, "maxContains" => _},
          ast,
          resource,
          pointer,

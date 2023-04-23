@@ -28,8 +28,6 @@ defmodule Exonerate.Combining do
   def adjust("if"), do: ["if", ":entrypoint"]
   def adjust(other), do: [other]
 
-  @seen_filters ~w(anyOf allOf oneOf $ref if)
-
   defmacro initializer(first_unseen_index_var_ast, resource, pointer, opts) do
     context = Tools.subschema(__CALLER__, resource, pointer)
 
