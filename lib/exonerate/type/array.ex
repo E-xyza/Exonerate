@@ -217,6 +217,7 @@ defmodule Exonerate.Type.Array do
   defp result_expr(context, opts) do
     # we only need to return result_expr if we are being tracked
     local_length = local_length(context)
+
     cond do
       opts[:tracked] !== :array ->
         :ok
