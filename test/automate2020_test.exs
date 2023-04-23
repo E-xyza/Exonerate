@@ -5,7 +5,7 @@ directory2020 =
 
 omit_modules =
   ~w(defs.json anchor.json dynamicRef.json id.json) ++
-    Application.get_env(:exonerate, :omit_modules)
+    Application.get_env(:exonerate, :omit_modules, [])
 
 omit_describes = [
   # integer filters do not match float values:

@@ -131,7 +131,7 @@ defmodule Exonerate.Type.Array do
       fn {filter, _} ->
         List.wrap(
           if filter in @combining_filters,
-            do: filter_clauses(resource, pointer, opts, filter, true)
+            do: filter_clauses(resource, pointer, opts, filter, needs_ok_tuple)
         )
       end
     )

@@ -5,7 +5,7 @@ directory2019 =
 
 omit_modules =
   ~w(anchor.json dynamicRef.json defs.json id.json) ++
-    Application.get_env(:exonerate, :omit_modules)
+    Application.get_env(:exonerate, :omit_modules, [])
 
 omit_describes = [
   # references the openAPI schema document, which contains currently unparseable filters.

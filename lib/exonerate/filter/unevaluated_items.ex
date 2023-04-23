@@ -2,6 +2,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
   @moduledoc false
 
   alias Exonerate.Context
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
@@ -25,7 +26,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     end
   end
 
-  defp build_combining(context = %{"unevaluatedItems" => _}, resource, pointer, opts) do
+  defp build_combining(context = %{"unevaluatedItems" => items_context}, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
 
     items_call =
@@ -73,13 +74,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           unquote(opts)
         )
 
-        case unquote(items_call)(item, Path.join(path, "#{index}")) do
-          :ok ->
-            unquote(iterator_call)(unquote_splicing(iteration_next))
-
-          Exonerate.Tools.error_match(error) ->
-            error
-        end
+        unquote(unevaluated_clause(items_context, iterator_call, items_call, iteration_next))
       end
 
       defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
@@ -105,7 +100,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
 
   defp build_combining(_, _, _, _), do: []
 
-  defp build_trivial(context = %{"unevaluatedItems" => _}, resource, pointer, opts) do
+  defp build_trivial(context = %{"unevaluatedItems" => items_context}, resource, pointer, opts) do
     # this is identical to the "additionalItems" result.
 
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
@@ -148,13 +143,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           unquote(opts)
         )
 
-        case unquote(items_call)(item, Path.join(path, "#{index}")) do
-          :ok ->
-            unquote(iterator_call)(unquote_splicing(iteration_next))
-
-          Exonerate.Tools.error_match(error) ->
-            error
-        end
+        unquote(unevaluated_clause(items_context, iterator_call, items_call, iteration_next))
       end
 
       defp unquote(iterator_call)(unquote_splicing(terminator_head)) do
@@ -164,6 +153,31 @@ defmodule Exonerate.Filter.UnevaluatedItems do
   end
 
   defp build_trivial(_, _, _, _), do: []
+
+  defp unevaluated_clause(items_context, iterator_call, items_call, iteration_next) do
+    case Degeneracy.class(items_context) do
+      :ok ->
+        quote do
+          unquote(iterator_call)(unquote_splicing(iteration_next))
+        end
+
+      :error ->
+        quote do
+          unquote(items_call)(item, Path.join(path, "#{index}"))
+        end
+
+      :unknown ->
+        quote do
+          case unquote(items_call)(item, Path.join(path, "#{index}")) do
+            :ok ->
+              unquote(iterator_call)(unquote_splicing(iteration_next))
+
+            Exonerate.Tools.error_match(error) ->
+              error
+          end
+        end
+    end
+  end
 
   # this is identical to additionalItems
 

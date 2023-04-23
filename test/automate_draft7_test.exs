@@ -4,7 +4,7 @@ directory_draft7 =
   |> Path.expand()
 
 omit_modules =
-  ~w(refRemote.json definitions.json) ++ Application.get_env(:exonerate, :omit_modules)
+  ~w(refRemote.json definitions.json) ++ Application.get_env(:exonerate, :omit_modules, [])
 
 omit_describes = [
   # references the openAPI schema document, which contains currently unparseable filters.

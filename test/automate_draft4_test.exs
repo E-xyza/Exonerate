@@ -4,7 +4,7 @@ directory_draft4 =
   |> Path.expand()
 
 omit_modules =
-  ~w(refRemote.json definitions.json) ++ Application.get_env(:exonerate, :omit_modules)
+  ~w(refRemote.json definitions.json) ++ Application.get_env(:exonerate, :omit_modules, [])
 
 omit_describes = [
   # no support for relative uri (for now)
