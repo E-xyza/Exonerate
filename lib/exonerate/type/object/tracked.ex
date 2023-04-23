@@ -21,7 +21,7 @@ defmodule Exonerate.Type.Object.Tracked do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   @empty_map_only [%{"unevaluatedProperties" => false}, %{"additionalProperties" => false}]
@@ -155,7 +155,7 @@ defmodule Exonerate.Type.Object.Tracked do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_accessories(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_accessories(context, _, _, _) when context in @empty_map_only do

@@ -11,7 +11,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   @seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
@@ -149,7 +149,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_context(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_context(_context, resource, pointer, opts) do

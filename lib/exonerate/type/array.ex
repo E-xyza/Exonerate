@@ -16,7 +16,7 @@ defmodule Exonerate.Type.Array do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   #########################################################
@@ -56,6 +56,15 @@ defmodule Exonerate.Type.Array do
 
     quote do
       defp unquote(call)(array, path) when is_list(array) do
+        require Exonerate.Combining
+
+        Exonerate.Combining.initializer(
+          first_unseen_index,
+          unquote(resource),
+          unquote(pointer),
+          unquote(opts)
+        )
+
         with unquote_splicing(combining_prong ++ iterator_prong) do
           :ok
         end
@@ -126,10 +135,10 @@ defmodule Exonerate.Type.Array do
 
           [
             quote do
-              {:ok, next_last_unseen_index} <- unquote(combining_call)(array, path)
+              {:ok, next_first_unseen_index} <- unquote(combining_call)(array, path)
             end,
             quote do
-              last_unseen_index = max(last_unseen_index, next_last_unseen_index)
+              first_unseen_index = max(first_unseen_index, next_first_unseen_index)
             end
           ]
 
@@ -234,20 +243,20 @@ defmodule Exonerate.Type.Array do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_accessories(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_accessories(context, _, _, _) when trivial(context), do: []
 
   defp build_accessories(context, resource, pointer, opts) do
-    opts =
+    filter_opts =
       if needs_combining_seen?(context) or opts[:tracked] do
         Keyword.merge(opts, only: ["array"], tracked: :array)
       else
         opts
       end
 
-    build_tracked_filters(context, resource, pointer, opts) ++
+    build_tracked_filters(context, resource, pointer, filter_opts) ++
       build_iterator(context, resource, pointer, opts)
   end
 

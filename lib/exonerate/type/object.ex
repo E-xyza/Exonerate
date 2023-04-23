@@ -29,7 +29,7 @@ defmodule Exonerate.Type.Object do
       __CALLER__
       |> Tools.subschema(resource, pointer)
       |> build_filter(resource, pointer, opts)
-      |> Tools.maybe_dump(opts)
+      |> Tools.maybe_dump(__CALLER__, opts)
     end
   end
 
@@ -177,7 +177,7 @@ defmodule Exonerate.Type.Object do
       __CALLER__
       |> Tools.subschema(resource, pointer)
       |> build_accessories(resource, pointer, opts)
-      |> Tools.maybe_dump(opts)
+      |> Tools.maybe_dump(__CALLER__, opts)
     end
   end
 

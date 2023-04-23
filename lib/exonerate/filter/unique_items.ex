@@ -21,7 +21,7 @@ defmodule Exonerate.Filter.UniqueItems do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   # note that if uniqueItems is false, it will get eliminated at at the stage of

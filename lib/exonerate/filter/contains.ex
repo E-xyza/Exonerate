@@ -13,7 +13,7 @@ defmodule Exonerate.Filter.Contains do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_find_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   # if there's a minContains filter, don't create the find filter
@@ -45,7 +45,7 @@ defmodule Exonerate.Filter.Contains do
   defmacro context(resource, pointer, opts) do
     resource
     |> build_context(pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_context(resource, pointer, opts) do
@@ -69,7 +69,6 @@ defmodule Exonerate.Filter.Contains do
          opts
        ) do
     [contains_count_ast, item_ast, path_ast] = ast
-    needed = Map.get(context, "minContains", 1)
     contains_call = Tools.call(resource, JsonPointer.join(pointer, "contains"), opts)
 
     quote do

@@ -29,7 +29,7 @@ defmodule Exonerate.Type.Array.FindIterator do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_iterator(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   def args(context) do
@@ -83,7 +83,7 @@ defmodule Exonerate.Type.Array.FindIterator do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_default_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   def build_default_filter(context, resource, pointer, opts) do

@@ -11,7 +11,7 @@ defmodule Exonerate.Filter.AdditionalItems do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   # this is equivalent to the array form of "items"
@@ -123,7 +123,7 @@ defmodule Exonerate.Filter.AdditionalItems do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_context(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_context(false, _, _, _), do: []

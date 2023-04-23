@@ -13,7 +13,7 @@ defmodule Exonerate.Filter.MinItems do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(context = %{"minItems" => minimum}, resource, pointer, opts) do

@@ -16,7 +16,7 @@ defmodule Exonerate.Context do
       caller
       |> Tools.subschema(resource, pointer)
       |> build_filter(resource, pointer, opts)
-      |> Tools.maybe_dump(opts)
+      |> Tools.maybe_dump(caller, opts)
     else
       []
     end
@@ -219,6 +219,7 @@ defmodule Exonerate.Context do
           )
         end
       end,
+      __CALLER__,
       opts
     )
   end

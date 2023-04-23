@@ -6,7 +6,7 @@ defmodule Exonerate.Filter.PropertyNames do
   defmacro filter(resource, pointer, opts) do
     resource
     |> build_filter(pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(resource, pointer, opts) do

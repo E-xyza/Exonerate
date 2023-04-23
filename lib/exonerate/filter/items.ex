@@ -14,7 +14,7 @@ defmodule Exonerate.Filter.Items do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   def build_filter(context = %{"items" => false}, resource, pointer, opts) do
@@ -238,7 +238,7 @@ defmodule Exonerate.Filter.Items do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_context(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_context(subschema, resource, pointer, opts)

@@ -30,7 +30,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_iterator(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_iterator(_context, resource, pointer, opts) do
@@ -116,7 +116,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(context, resource, pointer, opts) do

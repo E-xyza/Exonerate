@@ -8,7 +8,7 @@ defmodule Exonerate.Combining.AllOf do
     |> Enum.with_index(&call_and_context(&1, &2, resource, pointer, opts))
     |> Enum.unzip()
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter({[all_of_call], [context]}, resource, pointer, opts) do

@@ -36,7 +36,7 @@ defmodule Exonerate.Type.Object.Iterator do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   # RENAME TRACKED TO SEEN
@@ -282,7 +282,7 @@ defmodule Exonerate.Type.Object.Iterator do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_accessories(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_accessories(context, resource, pointer, opts) do

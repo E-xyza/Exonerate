@@ -8,7 +8,7 @@ defmodule Exonerate.Filter.Dependencies do
     |> Enum.map(&make_dependencies(&1, resource, pointer, opts))
     |> Enum.unzip()
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp make_dependencies({key, subschema}, resource, pointer, opts) do

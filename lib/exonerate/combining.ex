@@ -1,6 +1,8 @@
 defmodule Exonerate.Combining do
   @moduledoc false
 
+  alias Exonerate.Tools
+
   @modules %{
     "anyOf" => Exonerate.Combining.AnyOf,
     "allOf" => Exonerate.Combining.AllOf,
@@ -24,4 +26,23 @@ defmodule Exonerate.Combining do
   def adjust("not"), do: ["not", ":entrypoint"]
   def adjust("if"), do: ["if", ":entrypoint"]
   def adjust(other), do: [other]
+
+  @seen_filters ~w(anyOf allOf oneOf $ref if)
+
+  defmacro initializer(first_unseen_index_var_ast, resource, pointer, opts) do
+    context = Tools.subschema(__CALLER__, resource, pointer)
+
+    List.wrap(
+      if needs_combining_seen?(context, opts),
+        do:
+          (quote do
+             unquote(first_unseen_index_var_ast) = 0
+           end)
+    )
+  end
+
+  def needs_combining_seen?(context, opts) do
+    category_needs = opts[:tracked] == :array or is_map_key(context, "unevaluatedItems")
+    category_needs and Enum.any?(@seen_filters, &is_map_key(context, &1))
+  end
 end

@@ -8,7 +8,7 @@ defmodule Exonerate.Combining.AnyOf do
     |> Enum.with_index(&call_and_context(&1, &2, resource, pointer, opts))
     |> Enum.unzip()
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   # special case, only one item

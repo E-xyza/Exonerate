@@ -9,6 +9,7 @@ defmodule Exonerate.Combining.Then do
         require Exonerate.Context
         Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(opts))
       end,
+      __CALLER__,
       opts
     )
   end
