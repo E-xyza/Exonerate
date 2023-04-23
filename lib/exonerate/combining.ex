@@ -2,6 +2,7 @@ defmodule Exonerate.Combining do
   @moduledoc false
 
   alias Exonerate.Tools
+  alias Exonerate.Type.Array
 
   @modules %{
     "anyOf" => Exonerate.Combining.AnyOf,
@@ -33,16 +34,11 @@ defmodule Exonerate.Combining do
     context = Tools.subschema(__CALLER__, resource, pointer)
 
     List.wrap(
-      if needs_combining_seen?(context, opts),
+      if Array.needs_seen_tracking?(context, opts),
         do:
           (quote do
              unquote(first_unseen_index_var_ast) = 0
            end)
     )
-  end
-
-  def needs_combining_seen?(context, opts) do
-    category_needs = opts[:tracked] == :array or is_map_key(context, "unevaluatedItems")
-    category_needs and Enum.any?(@seen_filters, &is_map_key(context, &1))
   end
 end

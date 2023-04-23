@@ -1,10 +1,11 @@
 defmodule Exonerate.Filter.UnevaluatedProperties do
   @moduledoc false
 
+  alias Exonerate.Context
   alias Exonerate.Tools
 
   defmacro filter(name, pointer, opts) do
-    context_opts = Tools.scrub(opts)
+    context_opts = Context.scrub_opts(opts)
 
     quote do
       require Exonerate.Context

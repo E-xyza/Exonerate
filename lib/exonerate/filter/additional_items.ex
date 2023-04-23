@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.AdditionalItems do
   @moduledoc false
 
+  alias Exonerate.Context
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
@@ -54,7 +55,9 @@ defmodule Exonerate.Filter.AdditionalItems do
   defp build_filter(context = %{"additionalItems" => subschema}, resource, pointer, opts)
        when is_map(subschema) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    items_call = Tools.call(resource, JsonPointer.join(pointer, "additionalItems"), opts)
+
+    items_call =
+      Tools.call(resource, JsonPointer.join(pointer, "additionalItems"), Context.scrub_opts(opts))
 
     iteration_head =
       Iterator.select(
@@ -120,6 +123,8 @@ defmodule Exonerate.Filter.AdditionalItems do
   defp build_filter(_, _, _, _), do: []
 
   defmacro context(resource, pointer, opts) do
+    opts = Context.scrub_opts(opts)
+
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_context(resource, pointer, opts)
@@ -129,7 +134,7 @@ defmodule Exonerate.Filter.AdditionalItems do
   defp build_context(false, _, _, _), do: []
 
   defp build_context(_context, resource, pointer, opts) do
-    opts = Tools.scrub(opts)
+    opts = Context.scrub_opts(opts)
 
     quote do
       require Exonerate.Context

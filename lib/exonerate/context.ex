@@ -8,6 +8,18 @@ defmodule Exonerate.Context do
   alias Exonerate.Tools
   alias Exonerate.Type
 
+  @doc """
+  scrubs an options keyword prior to entry into a non-combining context.  The following
+  keywords should be scrubbed:
+
+  - :only
+  - :tracked
+  - :seen
+  """
+  def scrub_opts(opts) do
+    Keyword.drop(opts, ~w(only tracked seen)a)
+  end
+
   defmacro filter(resource, pointer, opts) do
     caller = __CALLER__
     call = Tools.call(resource, pointer, opts)

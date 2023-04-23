@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.Properties do
   @moduledoc false
 
+  alias Exonerate.Context
   alias Exonerate.Tools
 
   defmacro filter(resource, pointer, opts) do
@@ -33,7 +34,7 @@ defmodule Exonerate.Filter.Properties do
   end
 
   defp filters_for({key, _schema}, main_call, resource, pointer, opts) do
-    context_opts = Tools.scrub(opts)
+    context_opts = Context.scrub_opts(opts)
     context_pointer = JsonPointer.join(pointer, key)
     context_call = Tools.call(resource, context_pointer, context_opts)
 

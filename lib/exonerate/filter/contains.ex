@@ -3,6 +3,7 @@ defmodule Exonerate.Filter.Contains do
 
   # NOTE this generates an iterator function
 
+  alias Exonerate.Context
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
@@ -43,6 +44,8 @@ defmodule Exonerate.Filter.Contains do
   defp build_find_filter(_, _, _, _), do: []
 
   defmacro context(resource, pointer, opts) do
+    opts = Context.scrub_opts(opts)
+
     resource
     |> build_context(pointer, opts)
     |> Tools.maybe_dump(__CALLER__, opts)
@@ -51,7 +54,12 @@ defmodule Exonerate.Filter.Contains do
   defp build_context(resource, pointer, opts) do
     quote do
       require Exonerate.Context
-      Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(Tools.scrub(opts)))
+
+      Exonerate.Context.filter(
+        unquote(resource),
+        unquote(pointer),
+        unquote(Context.scrub_opts(opts))
+      )
     end
   end
 

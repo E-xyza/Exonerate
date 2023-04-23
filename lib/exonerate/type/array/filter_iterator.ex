@@ -99,7 +99,7 @@ defmodule Exonerate.Type.Array.FilterIterator do
         unevaluated,
         unique_items
       ]) do
-    [array, array_so_far, index, path] ++
+    [array, array_so_far, path, index] ++
       List.wrap(if Map.has_key?(context, "contains"), do: contains_count) ++
       List.wrap(if needs_unseen_index?(context), do: unevaluated) ++
       List.wrap(if Map.get(context, "uniqueItems"), do: unique_items)

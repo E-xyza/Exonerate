@@ -66,7 +66,7 @@ defmodule Exonerate.Type.Array do
         )
 
         with unquote_splicing(combining_prong ++ iterator_prong) do
-          :ok
+          unquote(result_expr(context, opts))
         end
       end
     end
@@ -124,36 +124,15 @@ defmodule Exonerate.Type.Array do
   end
 
   defp combining(context, resource, pointer, opts) do
-    needs_unseen_index = needs_combining_seen?(context) or opts[:tracked] === :array
+    needs_ok_tuple = needs_seen_tracking?(context, opts)
 
     Enum.flat_map(
       context,
-      fn
-        {filter, _} when filter in @seen_filters and needs_unseen_index ->
-          combining_call =
-            Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
-
-          [
-            quote do
-              {:ok, next_first_unseen_index} <- unquote(combining_call)(array, path)
-            end,
-            quote do
-              first_unseen_index = max(first_unseen_index, next_first_unseen_index)
-            end
-          ]
-
-        {filter, _} when filter in @combining_filters ->
-          combining_call =
-            Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
-
-          [
-            quote do
-              :ok <- unquote(combining_call)(array, path)
-            end
-          ]
-
-        _ ->
-          []
+      fn {filter, _} ->
+        List.wrap(
+          if filter in @combining_filters,
+            do: filter_clauses(resource, pointer, opts, filter, true)
+        )
       end
     )
   end
@@ -192,10 +171,6 @@ defmodule Exonerate.Type.Array do
       atom when is_atom(atom) -> {atom, [], __MODULE__}
       number -> number
     end)
-  end
-
-  def needs_combining_seen?(context) do
-    is_map_key(context, "unevaluatedItems") and Enum.any?(@seen_filters, &is_map_key(context, &1))
   end
 
   defp filter_clauses(resource, pointer, opts, filter, true) when filter in @seen_filters do
@@ -239,6 +214,31 @@ defmodule Exonerate.Type.Array do
     end
   end
 
+  defp result_expr(context, opts) do
+    # we only need to return result_expr if we are being tracked
+    cond do
+      opts[:tracked] !== :array ->
+        :ok
+
+      Enum.any?(context, &match?({key, _} when key in @seen_filters, &1)) ->
+        local_length = local_length(context)
+
+        quote do
+          {:ok, max(first_unseen_index, unquote(local_length))}
+        end
+
+      true ->
+        {:ok, local_length(context)}
+    end
+  end
+
+  defp local_length(%{"unevaluatedItems" => _}), do: :length
+  defp local_length(%{"additionalItems" => _}), do: :length
+  defp local_length(%{"items" => list}) when is_list(list), do: length(list)
+  defp local_length(%{"items" => _}), do: :length
+  defp local_length(%{"prefixItems" => list}), do: length(list)
+  defp local_length(_), do: 0
+
   defmacro accessories(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
@@ -249,22 +249,34 @@ defmodule Exonerate.Type.Array do
   defp build_accessories(context, _, _, _) when trivial(context), do: []
 
   defp build_accessories(context, resource, pointer, opts) do
-    filter_opts =
-      if needs_combining_seen?(context) or opts[:tracked] do
-        Keyword.merge(opts, only: ["array"], tracked: :array)
-      else
-        opts
-      end
+    combining_opts = combining_opts(context, opts)
 
-    build_tracked_filters(context, resource, pointer, filter_opts) ++
+    build_tracked_filters(context, resource, pointer, combining_opts) ++
       build_iterator(context, resource, pointer, opts)
+  end
+
+  def needs_combining_seen?(context) do
+    is_map_key(context, "unevaluatedItems") and Enum.any?(@seen_filters, &is_map_key(context, &1))
+  end
+
+  def needs_seen_tracking?(context, opts) do
+    needs_combining_seen?(context) or opts[:tracked] === :array
+  end
+
+  # appends special options to the passed otions of combining functions.
+  defp combining_opts(context, opts) do
+    if needs_seen_tracking?(context, opts) do
+      Keyword.merge(opts, only: ["array"], tracked: :array)
+    else
+      opts
+    end
   end
 
   defp build_tracked_filters(context, resource, pointer, opts) do
     # if we're tracked, then we need to rebuild all the filters, with the
     # tracked appendage.
     List.wrap(
-      if needs_combining_seen?(context) or opts[:tracked] do
+      if needs_seen_tracking?(context, opts) do
         for filter <- @seen_filters, is_map_key(context, filter) do
           module = @combining_modules[filter]
           pointer = JsonPointer.join(pointer, filter)

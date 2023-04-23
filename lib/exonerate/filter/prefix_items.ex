@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.PrefixItems do
   @moduledoc false
 
+  alias Exonerate.Context
   alias Exonerate.Degeneracy
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
@@ -17,7 +18,11 @@ defmodule Exonerate.Filter.PrefixItems do
 
     Enum.with_index(subschema, fn item_subschema, index ->
       items_call =
-        Tools.call(resource, JsonPointer.join(pointer, ["prefixItems", "#{index}"]), opts)
+        Tools.call(
+          resource,
+          JsonPointer.join(pointer, ["prefixItems", "#{index}"]),
+          Context.scrub_opts(opts)
+        )
 
       iteration_head =
         Iterator.select(
@@ -125,6 +130,8 @@ defmodule Exonerate.Filter.PrefixItems do
   defmacro context(resource, pointer, opts) do
     # The pointer in this case is the pointer to the array context, because
     # this filter is an iterator function.
+
+    opts = Context.scrub_opts(opts)
 
     __CALLER__
     |> Tools.subschema(resource, pointer)

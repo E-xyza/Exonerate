@@ -240,18 +240,6 @@ defmodule Exonerate.Tools do
 
   # options tools
 
-  @doc """
-  scrubs an options keyword prior to entry into a non-combining context.  The following
-  keywords should be scrubbed:
-
-  - :only
-  - :tracked
-  - :seen
-  """
-  def scrub(opts) do
-    Keyword.drop(opts, ~w(only tracked seen)a)
-  end
-
   def entrypoint(opts) do
     opts
     |> Keyword.get(:entrypoint, "/")

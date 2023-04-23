@@ -1,6 +1,7 @@
 defmodule Exonerate.Filter.UnevaluatedItems do
   @moduledoc false
 
+  alias Exonerate.Context
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
@@ -26,7 +27,13 @@ defmodule Exonerate.Filter.UnevaluatedItems do
 
   defp build_combining(context = %{"unevaluatedItems" => _}, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    items_call = Tools.call(resource, JsonPointer.join(pointer, "unevaluatedItems"), opts)
+
+    items_call =
+      Tools.call(
+        resource,
+        JsonPointer.join(pointer, "unevaluatedItems"),
+        Context.scrub_opts(opts)
+      )
 
     iteration_head =
       Iterator.select(
@@ -73,6 +80,21 @@ defmodule Exonerate.Filter.UnevaluatedItems do
           Exonerate.Tools.error_match(error) ->
             error
         end
+      end
+
+      defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
+        require Exonerate.Tools
+        require Exonerate.Filter.UniqueItems
+
+        Exonerate.Filter.UniqueItems.next_unique(
+          unquote(resource),
+          unquote(pointer),
+          unique_items,
+          item,
+          unquote(opts)
+        )
+
+        unquote(iterator_call)(unquote_splicing(iteration_next))
       end
 
       defp unquote(iterator_call)(unquote_splicing(terminator_head)) do
@@ -146,6 +168,8 @@ defmodule Exonerate.Filter.UnevaluatedItems do
   # this is identical to additionalItems
 
   defmacro context(resource, pointer, opts) do
+    opts = Context.scrub_opts(opts)
+
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_context(resource, pointer, opts)
@@ -153,7 +177,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
   end
 
   defp build_context(_context, resource, pointer, opts) do
-    opts = Tools.scrub(opts)
+    opts = Context.scrub_opts(opts)
 
     quote do
       require Exonerate.Context

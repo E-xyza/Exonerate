@@ -101,6 +101,7 @@ defmodule Exonerate.Type.Array.Iterator do
   end
 
   def select(context, parameters) do
+    # parameters |> dbg(limit: 25)
     if mode = mode(context) do
       mode.select(context, parameters)
     end

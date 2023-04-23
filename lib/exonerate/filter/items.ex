@@ -1,5 +1,7 @@
 defmodule Exonerate.Filter.Items do
   @moduledoc false
+
+  alias Exonerate.Context
   alias Exonerate.Degeneracy
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
@@ -58,7 +60,12 @@ defmodule Exonerate.Filter.Items do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
 
     Enum.with_index(subschema, fn item_subschema, index ->
-      items_call = Tools.call(resource, JsonPointer.join(pointer, ["items", "#{index}"]), opts)
+      items_call =
+        Tools.call(
+          resource,
+          JsonPointer.join(pointer, ["items", "#{index}"]),
+          Context.scrub_opts(opts)
+        )
 
       iteration_head =
         Iterator.select(
@@ -166,7 +173,9 @@ defmodule Exonerate.Filter.Items do
   def build_filter(context = %{"items" => subschema}, resource, pointer, opts)
       when is_map(subschema) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    items_call = Tools.call(resource, JsonPointer.join(pointer, "items"), opts)
+
+    items_call =
+      Tools.call(resource, JsonPointer.join(pointer, "items"), Context.scrub_opts(opts))
 
     iteration_head =
       Iterator.select(
@@ -234,6 +243,8 @@ defmodule Exonerate.Filter.Items do
   defmacro context(resource, pointer, opts) do
     # The pointer in this case is the pointer to the array context, because
     # this filter is an iterator function.
+
+    opts = Context.scrub_opts(opts)
 
     __CALLER__
     |> Tools.subschema(resource, pointer)
