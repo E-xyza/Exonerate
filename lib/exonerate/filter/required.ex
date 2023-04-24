@@ -7,7 +7,7 @@ defmodule Exonerate.Filter.Required do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(required_list, resource, pointer, opts) do

@@ -66,7 +66,10 @@ defmodule Exonerate do
 
   The following options are available:
 
-  - `:dump`: `true` to dump the generated code to the console.
+  - `:dump`: `true` to dump the generated code to the console.  Note that this
+    will create function names that aren't the function names when compiled otherwise,
+    but adjusted so that you can copy/paste them into the elixir console.  This could
+    cause collisions when more than one dumped templates are present in the same module.
 
   - `:metadata`: `true` to enable all metadata decorator functions or a list of
     atoms parameters to enable.  The following metadata are accessible by passing
@@ -359,7 +362,9 @@ defmodule Exonerate do
     opts = set_resource_opts(__CALLER__, opts)
 
     Cache.register_resource(__CALLER__.module, schema, name, opts)
-    quote do end
+
+    quote do
+    end
   end
 
   @doc """
@@ -530,6 +535,7 @@ defmodule Exonerate do
         require Exonerate.Context
         Exonerate.Context.filter(unquote(resource), unquote(root_pointer), unquote(opts))
       end,
+      caller,
       opts
     )
   end

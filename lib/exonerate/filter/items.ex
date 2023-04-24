@@ -1,99 +1,273 @@
 defmodule Exonerate.Filter.Items do
   @moduledoc false
+
+  alias Exonerate.Context
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
+  alias Exonerate.Type.Array.Iterator
+
+  # NOTE this generates an iterator function
+  # !! important this generator gets called regardless of if the items property
+  # is present in the subschema object
 
   defmacro filter(resource, pointer, opts) do
-    parent_pointer = JsonPointer.backtrack!(pointer)
-
+    # The pointer in this case is the pointer to the array context, because
+    # this filter is an iterator function.
     __CALLER__
-    |> Tools.subschema(resource, parent_pointer)
-    |> build_filter(resource, parent_pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.subschema(resource, pointer)
+    |> build_filter(resource, pointer, opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
-  # legacy "items" which is now "prefixItems"
-  defp build_filter(%{"items" => subschema}, resource, parent_pointer, opts)
-       when is_list(subschema) do
-    this_pointer = JsonPointer.join(parent_pointer, "items")
+  def build_filter(context = %{"items" => false}, resource, pointer, opts) do
+    bad_index =
+      context
+      |> Map.get("prefixItems", [])
+      |> length
 
-    call = Tools.call(resource, this_pointer, opts)
+    iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
+    items_pointer = JsonPointer.join(pointer, "items")
 
-    {calls, filters} =
-      subschema
-      |> Enum.with_index(&build_filter(&1, &2, call, resource, this_pointer, opts))
-      |> Enum.unzip()
+    termination_head =
+      Iterator.select(
+        context,
+        quote do
+          [
+            array,
+            [_ | _],
+            path,
+            unquote(bad_index),
+            _contains_count,
+            _first_unseen_index,
+            _unique_items
+          ]
+        end
+      )
 
     quote do
-      require Exonerate.Context
-      unquote(calls)
-      defp unquote(call)({item, _index}, path), do: :ok
-      unquote(filters)
+      defp unquote(iterator_call)(unquote_splicing(termination_head)) do
+        require Exonerate.Tools
+
+        Exonerate.Tools.mismatch(array, unquote(resource), unquote(items_pointer), path)
+      end
     end
   end
 
-  defp build_filter(context = %{"items" => subschema}, resource, parent_pointer, opts)
+  # the list form of items is technically supposed to be "prefixItems" but
+  # it's still supported in newer versions of the spec.
+  def build_filter(context = %{"items" => subschema}, resource, pointer, opts)
+      when is_list(subschema) do
+    iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
+
+    Enum.with_index(subschema, fn item_subschema, index ->
+      items_call =
+        Tools.call(
+          resource,
+          JsonPointer.join(pointer, ["items", "#{index}"]),
+          Context.scrub_opts(opts)
+        )
+
+      iteration_head =
+        Iterator.select(
+          context,
+          quote do
+            [
+              array,
+              [item | rest],
+              path,
+              unquote(index),
+              contains_count,
+              first_unseen_index,
+              unique_items
+            ]
+          end
+        )
+
+      iteration_next =
+        Iterator.select(
+          context,
+          quote do
+            [
+              array,
+              rest,
+              path,
+              unquote(index + 1),
+              contains_count,
+              first_unseen_index,
+              unique_items
+            ]
+          end
+        )
+
+      case Degeneracy.class(item_subschema) do
+        :ok ->
+          quote do
+            defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
+              require Exonerate.Filter.Contains
+              require Exonerate.Filter.UniqueItems
+
+              Exonerate.Filter.Contains.next_contains(
+                unquote(resource),
+                unquote(pointer),
+                [contains_count, item, path],
+                unquote(opts)
+              )
+
+              Exonerate.Filter.UniqueItems.next_unique(
+                unquote(resource),
+                unquote(pointer),
+                unique_items,
+                item,
+                unquote(opts)
+              )
+
+              unquote(iterator_call)(unquote_splicing(iteration_next))
+            end
+          end
+
+        :error ->
+          quote do
+            defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
+              unquote(items_call)(item, Path.join(path, "#{unquote(index)}"))
+            end
+          end
+
+        :unknown ->
+          quote do
+            defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
+              require Exonerate.Tools
+
+              require Exonerate.Filter.Contains
+              require Exonerate.Filter.UniqueItems
+
+              Exonerate.Filter.Contains.next_contains(
+                unquote(resource),
+                unquote(pointer),
+                [contains_count, item, path],
+                unquote(opts)
+              )
+
+              Exonerate.Filter.UniqueItems.next_unique(
+                unquote(resource),
+                unquote(pointer),
+                unique_items,
+                item,
+                unquote(opts)
+              )
+
+              case unquote(items_call)(item, Path.join(path, "#{unquote(index)}")) do
+                :ok ->
+                  unquote(iterator_call)(unquote_splicing(iteration_next))
+
+                Exonerate.Tools.error_match(error) ->
+                  error
+              end
+            end
+          end
+      end
+    end)
+  end
+
+  # items which is now "additionalItems"; this is an object and is applied to
+  # everything after prefixItems
+  def build_filter(context = %{"items" => subschema}, resource, pointer, opts)
+      when is_map(subschema) do
+    iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
+
+    items_call =
+      Tools.call(resource, JsonPointer.join(pointer, "items"), Context.scrub_opts(opts))
+
+    iteration_head =
+      Iterator.select(
+        context,
+        quote do
+          [array, [item | rest], path, index, contains_count, first_unseen_index, unique_items]
+        end
+      )
+
+    iteration_next =
+      Iterator.select(
+        context,
+        quote do
+          [array, rest, path, index + 1, contains_count, first_unseen_index, unique_items]
+        end
+      )
+
+    terminator_head =
+      Iterator.select(
+        context,
+        quote do
+          [_, [], _path, _index, _contains_count, _first_unseen_index, _unique_items]
+        end
+      )
+
+    quote do
+      defp unquote(iterator_call)(unquote_splicing(iteration_head)) do
+        require Exonerate.Tools
+
+        case unquote(items_call)(item, Path.join(path, "#{index}")) do
+          :ok ->
+            require Exonerate.Filter.Contains
+            require Exonerate.Filter.UniqueItems
+
+            Exonerate.Filter.Contains.next_contains(
+              unquote(resource),
+              unquote(pointer),
+              [contains_count, item, path],
+              unquote(opts)
+            )
+
+            Exonerate.Filter.UniqueItems.next_unique(
+              unquote(resource),
+              unquote(pointer),
+              unique_items,
+              item,
+              unquote(opts)
+            )
+
+            unquote(iterator_call)(unquote_splicing(iteration_next))
+
+          Exonerate.Tools.error_match(error) ->
+            error
+        end
+      end
+
+      defp unquote(iterator_call)(unquote_splicing(terminator_head)) do
+        :ok
+      end
+    end
+  end
+
+  def build_filter(_, _resource, _pointer, _opts), do: []
+
+  defmacro context(resource, pointer, opts) do
+    # The pointer in this case is the pointer to the array context, because
+    # this filter is an iterator function.
+
+    opts = Context.scrub_opts(opts)
+
+    __CALLER__
+    |> Tools.subschema(resource, pointer)
+    |> build_context(resource, pointer, opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
+  end
+
+  defp build_context(subschema, resource, pointer, opts)
        when is_map(subschema) or is_boolean(subschema) do
-    entrypoint_pointer = JsonPointer.join(parent_pointer, "items")
-    entrypoint_call = Tools.call(resource, entrypoint_pointer, :entrypoint, opts)
-
-    context_opts = Tools.scrub(opts)
-    context_pointer = JsonPointer.join(parent_pointer, "items")
-    context_call = Tools.call(resource, context_pointer, context_opts)
-
-    case context do
-      %{"prefixItems" => prefix} ->
-        prefix_length = length(prefix)
-
-        quote do
-          defp unquote(entrypoint_call)({item, index}, path) when index < unquote(prefix_length),
-            do: :ok
-
-          defp unquote(entrypoint_call)({item, _index}, path) do
-            unquote(context_call)(item, path)
-          end
-
-          require Exonerate.Context
-
-          Exonerate.Context.filter(
-            unquote(resource),
-            unquote(context_pointer),
-            unquote(context_opts)
-          )
-        end
-
-      _ ->
-        quote do
-          defp unquote(entrypoint_call)({item, _index}, path) do
-            unquote(context_call)(item, path)
-          end
-
-          require Exonerate.Context
-
-          Exonerate.Context.filter(
-            unquote(resource),
-            unquote(context_pointer),
-            unquote(context_opts)
-          )
-        end
+    quote do
+      require Exonerate.Context
+      Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(opts))
     end
   end
 
-  defp build_filter(_, index, call, resource, pointer, opts) do
-    context_pointer = JsonPointer.join(pointer, "#{index}")
-    context_opts = Tools.scrub(opts)
-    context_call = Tools.call(resource, context_pointer, context_opts)
+  defp build_context(subschema, resource, pointer, opts) when is_list(subschema) do
+    Enum.with_index(subschema, fn _, index ->
+      pointer = JsonPointer.join(pointer, "#{index}")
 
-    {quote do
-       defp unquote(call)({item, unquote(index)}, path) do
-         unquote(context_call)(item, path)
-       end
-     end,
-     quote do
-       Exonerate.Context.filter(
-         unquote(resource),
-         unquote(context_pointer),
-         unquote(context_opts)
-       )
-     end}
+      quote do
+        require Exonerate.Context
+        Exonerate.Context.filter(unquote(resource), unquote(pointer), unquote(opts))
+      end
+    end)
   end
 end

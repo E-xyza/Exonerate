@@ -23,14 +23,15 @@ defmodule Exonerate.Combining.Ref do
     __CALLER__
     |> Tools.subschema(ref_resource, ref_pointer)
     |> build_filter(resource, pointer, ref_resource, ref_pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Combining.dedupe(__CALLER__, resource, pointer, opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(context, resource, pointer, ref_resource, ref_pointer, opts) do
     call = Tools.call(resource, pointer, opts)
 
     call_path =
-      if String.starts_with?(resource,"exonerate://") do
+      if String.starts_with?(resource, "exonerate://") do
         JsonPointer.to_path(pointer)
       else
         {resource, JsonPointer.to_path(pointer)}

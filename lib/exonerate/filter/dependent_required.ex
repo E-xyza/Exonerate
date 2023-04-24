@@ -12,7 +12,7 @@ defmodule Exonerate.Filter.DependentRequired do
     |> Enum.map(&make_prong_and_accessory(&1, resource, pointer, opts))
     |> Enum.unzip()
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp make_prong_and_accessory({key, subschema}, resource, pointer, opts) do

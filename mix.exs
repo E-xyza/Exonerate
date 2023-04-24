@@ -17,7 +17,15 @@ defmodule Exonerate.MixProject do
       ],
       source_url: "https://github.com/E-xyza/exonerate/",
       docs: [main: "Exonerate", source_ref: "master"],
-      preferred_cli_env: [bench_lib: :bench, gpt4_helper: :bench, gpt_fetch: :bench]
+      preferred_cli_env: [
+        bench_lib: :bench,
+        gpt4_helper: :bench,
+        gpt_fetch: :bench,
+        find_by_resource: :test
+      ],
+      test_coverage: [
+        ignore_modules: [SchemaModule, ExonerateTest.Automate, Exonerate.Cache.Resource]
+      ]
     ]
   end
 

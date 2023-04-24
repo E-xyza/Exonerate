@@ -3,7 +3,9 @@ directory2019 =
   |> Path.join("_draft2019-09")
   |> Path.expand()
 
-omit_modules = ~w(anchor.json dynamicRef.json defs.json id.json)
+omit_modules =
+  ~w(anchor.json dynamicRef.json defs.json id.json) ++
+    Application.get_env(:exonerate, :omit_modules, [])
 
 omit_describes = [
   # references the openAPI schema document, which contains currently unparseable filters.
@@ -29,6 +31,7 @@ ExonerateTest.Automate.directory(
   omit_describes: omit_describes,
   omit_tests: omit_tests,
   draft: "2019-09",
+  # only: ["minContains.json"],
   proxy: [{"http://localhost:1234", "http://localhost:1234/_draft2019-09/remotes"}],
   force_remote: true,
   cache: false

@@ -22,7 +22,7 @@ defmodule Exonerate.Type.String do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(context = %{"format" => "binary"}, resource, pointer, opts) do
@@ -86,7 +86,7 @@ defmodule Exonerate.Type.String do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_accessories(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_accessories(context, resource, pointer, opts) do

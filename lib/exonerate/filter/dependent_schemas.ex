@@ -4,6 +4,7 @@ defmodule Exonerate.Filter.DependentSchemas do
   # NB "dependentSchemas" is just a repackaging of "dependencies" except only permitting the
   # maps (specification of a full subschema to be applied to the object)
 
+  alias Exonerate.Context
   alias Exonerate.Tools
 
   defmacro filter(resource, pointer, opts) do
@@ -12,7 +13,7 @@ defmodule Exonerate.Filter.DependentSchemas do
     |> Enum.map(&prong_and_accessory(&1, resource, pointer, opts))
     |> Enum.unzip()
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp prong_and_accessory({key, _schema}, resource, pointer, opts) do
@@ -35,7 +36,7 @@ defmodule Exonerate.Filter.DependentSchemas do
   end
 
   defp accessory(call, key, resource, pointer, opts) do
-    context_opts = Tools.scrub(opts)
+    context_opts = Context.scrub_opts(opts)
     pointer = JsonPointer.join(pointer, key)
     context_call = Tools.call(resource, pointer, context_opts)
 

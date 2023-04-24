@@ -21,9 +21,9 @@ defmodule Exonerate.Filter.Format do
 
   defmacro filter(resource, pointer, opts) do
     __CALLER__
-    |> Exonerate.Tools.subschema(resource, pointer)
+    |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Exonerate.Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   @default_filters Map.keys(@format_filters) ++

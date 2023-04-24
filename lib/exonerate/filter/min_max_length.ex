@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.MinMaxLength do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, binary_mode, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter([min, max], resource, pointer, true, opts) do
