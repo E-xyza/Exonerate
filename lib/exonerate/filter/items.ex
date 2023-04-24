@@ -270,6 +270,4 @@ defmodule Exonerate.Filter.Items do
       end
     end)
   end
-
-  defp build_context(_, _, _, _), do: []
 end

@@ -6,7 +6,7 @@ defmodule Exonerate.Degeneracy do
   alias Exonerate.Tools
   alias Exonerate.Type
 
-  @all_types Type.all()
+  @all_types Enum.sort(Type.all())
 
   @spec canonicalize(Type.json(), keyword) :: Type.json()
   @doc """
@@ -64,6 +64,14 @@ defmodule Exonerate.Degeneracy do
         context = %{"minimum" => min, "exclusiveMinimum" => emin}
         when is_number(emin) and min <= emin ->
           canonicalize_purged(context, "minimum", opts)
+
+        context = %{"maximum" => max, "exclusiveMaximum" => emax}
+        when is_number(emax) and max < emax ->
+          canonicalize_purged(context, "exclusiveMaximum", opts)
+
+        context = %{"minimum" => min, "exclusiveMinimum" => emin}
+        when is_number(emin) and min > emin ->
+          canonicalize_purged(context, "exclusiveMinimum", opts)
 
         context = %{"maxContains" => _} when not is_map_key(context, "contains") ->
           canonicalize_purged(context, "maxContains", opts)
@@ -267,13 +275,16 @@ defmodule Exonerate.Degeneracy do
   def class(false), do: :error
 
   def class(context = %{"type" => t}) do
-    if Enum.sort(List.wrap(t)) in @all_types do
+    if Enum.sort(t) == @all_types do
       context
       |> Map.delete("type")
       |> class()
       |> matches(true)
     else
-      :unknown
+      context
+      |> Map.delete("type")
+      |> class()
+      |> matches(false)
     end
   end
 
@@ -339,22 +350,25 @@ defmodule Exonerate.Degeneracy do
     end
   end
 
-  def class(context = %{"minItems" => 0}) do
+  def class(context = %{"type" => ["array"], "minItems" => 0}) do
     context
     |> Map.delete("minItems")
     |> class
+    |> matches(true)
   end
 
-  def class(context = %{"minProperties" => 0}) do
+  def class(context = %{"type" => ["object"], "minProperties" => 0}) do
     context
     |> Map.delete("minProperties")
     |> class
+    |> matches(true)
   end
 
-  def class(context = %{"minContains" => 0}) do
+  def class(context = %{"type" => ["string"], "minLength" => 0}) do
     context
     |> Map.delete("minContains")
     |> class
+    |> matches(true)
   end
 
   def class(empty_map) when empty_map == %{} do
@@ -367,15 +381,6 @@ defmodule Exonerate.Degeneracy do
     case class(rest_schema) do
       ^data -> data
       _ -> :unknown
-    end
-  end
-
-  # general convenience functions
-  def if(item, boolean, predicate) do
-    if boolean do
-      predicate.(item)
-    else
-      item
     end
   end
 end

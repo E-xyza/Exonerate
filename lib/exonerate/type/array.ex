@@ -110,13 +110,24 @@ defmodule Exonerate.Type.Array do
     call = Tools.call(resource, pointer, opts)
 
     quote do
+      defp unquote(call)([], path) do
+        require Exonerate.Tools
+
+        Exonerate.Tools.mismatch(
+          [],
+          unquote(resource),
+          unquote(JsonPointer.join(pointer, reason)),
+          path
+        )
+      end
+
       defp unquote(call)(array, path) when is_list(array) do
         require Exonerate.Tools
 
         Exonerate.Tools.mismatch(
           array,
           unquote(resource),
-          unquote(JsonPointer.join(pointer, reason)),
+          unquote(JsonPointer.join(pointer, "maxItems")),
           path
         )
       end
@@ -226,8 +237,6 @@ defmodule Exonerate.Type.Array do
         {:ok, :length}
 
       Enum.any?(context, &match?({key, _} when key in @seen_filters, &1)) ->
-        local_length = local_length(context)
-
         quote do
           {:ok, max(first_unseen_index, unquote(local_length))}
         end

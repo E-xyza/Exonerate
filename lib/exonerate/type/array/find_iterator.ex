@@ -32,13 +32,6 @@ defmodule Exonerate.Type.Array.FindIterator do
     |> Tools.maybe_dump(__CALLER__, opts)
   end
 
-  def args(context) do
-    # includes "contains count"
-    [:array, :array, :path] ++
-      List.wrap(if needs_index?(context), do: 0) ++
-      List.wrap(if is_map_key(context, "contains"), do: 0)
-  end
-
   defp needs_index?(%{"minItems" => _}), do: true
   defp needs_index?(%{"prefixItems" => _}), do: true
   defp needs_index?(%{"items" => list}) when is_list(list), do: true

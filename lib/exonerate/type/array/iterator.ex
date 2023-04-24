@@ -31,8 +31,6 @@ defmodule Exonerate.Type.Array.Iterator do
 
   @filters Map.keys(@modules)
 
-  def filters, do: @filters
-
   @spec mode(Type.json()) :: FindIterator | FilterIterator | nil
   def mode(context) do
     context
@@ -90,14 +88,14 @@ defmodule Exonerate.Type.Array.Iterator do
   end
 
   defp build_filter(context, resource, pointer, opts) do
-    List.wrap(
-      if execution_mode = mode(context) do
-        quote do
-          require unquote(execution_mode)
-          unquote(execution_mode).filter(unquote(resource), unquote(pointer), unquote(opts))
-        end
+    execution_mode = mode(context)
+
+    [
+      quote do
+        require unquote(execution_mode)
+        unquote(execution_mode).filter(unquote(resource), unquote(pointer), unquote(opts))
       end
-    )
+    ]
   end
 
   def select(context, parameters) do

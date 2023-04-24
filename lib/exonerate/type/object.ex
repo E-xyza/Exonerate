@@ -34,46 +34,47 @@ defmodule Exonerate.Type.Object do
   end
 
   @empty_map_only [%{"unevaluatedProperties" => false}, %{"additionalProperties" => false}]
-  # empty map optimization
-  defp build_filter(context, resource, pointer, opts) when context in @empty_map_only do
-    pointer = JsonPointer.join(pointer, Map.keys(context))
-    call = Tools.call(resource, pointer, opts)
-
-    quote do
-      defp unquote(call)(object, path) when object === %{}, do: :ok
-
-      defp unquote(call)(object, path) when is_map(object) do
-        require Exonerate.Tools
-        Exonerate.Tools.mismatch(object, unquote(resource), unquote(pointer), path)
-      end
-    end
-  end
 
   defp build_filter(context, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
     filter_clauses =
       outer_filters(context, resource, pointer, opts) ++
         seen_filters(context, resource, pointer, opts) ++
         unseen_filters(context, resource, pointer, opts) ++
         iterator_filter(context, resource, pointer, opts)
 
-    if needs_seen?(context) do
-      quote do
-        defp unquote(Tools.call(resource, pointer, opts))(object, path) when is_map(object) do
-          seen = MapSet.new()
+    cond do
+      Map.delete(context, "type") in @empty_map_only ->
+        # empty map optimization
+        quote do
+          defp unquote(call)(object, path) when object === %{}, do: :ok
 
-          with unquote_splicing(filter_clauses) do
-            :ok
+          defp unquote(call)(object, path) when is_map(object) do
+            require Exonerate.Tools
+            Exonerate.Tools.mismatch(object, unquote(resource), unquote(pointer), path)
           end
         end
-      end
-    else
-      quote do
-        defp unquote(Tools.call(resource, pointer, opts))(object, path) when is_map(object) do
-          with unquote_splicing(filter_clauses) do
-            :ok
+
+      needs_seen?(context) ->
+        quote do
+          defp unquote(call)(object, path) when is_map(object) do
+            seen = MapSet.new()
+
+            with unquote_splicing(filter_clauses) do
+              :ok
+            end
           end
         end
-      end
+
+      true ->
+        quote do
+          defp unquote(call)(object, path) when is_map(object) do
+            with unquote_splicing(filter_clauses) do
+              :ok
+            end
+          end
+        end
     end
   end
 

@@ -1,6 +1,7 @@
 defmodule Exonerate.Combining do
   @moduledoc false
 
+  alias Exonerate.Cache
   alias Exonerate.Tools
   alias Exonerate.Type.Array
 
@@ -38,5 +39,14 @@ defmodule Exonerate.Combining do
              unquote(first_unseen_index_var_ast) = 0
            end)
     )
+  end
+
+  def dedupe(macro, caller, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+    if Cache.register_context(caller.module, call) do
+      macro
+    else
+      []
+    end
   end
 end

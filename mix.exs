@@ -22,6 +22,9 @@ defmodule Exonerate.MixProject do
         gpt4_helper: :bench,
         gpt_fetch: :bench,
         find_by_resource: :test
+      ],
+      test_coverage: [
+        ignore_modules: [SchemaModule, ExonerateTest.Automate, Exonerate.Cache.Resource]
       ]
     ]
   end

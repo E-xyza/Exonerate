@@ -15,8 +15,6 @@ defmodule Exonerate.Type.Object.Tracked do
 
   @outer_filters Map.keys(@modules)
 
-  @combining_filters Combining.filters() ++ ["dependentSchemas"]
-
   defmacro filter(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
@@ -25,8 +23,22 @@ defmodule Exonerate.Type.Object.Tracked do
   end
 
   @empty_map_only [%{"unevaluatedProperties" => false}, %{"additionalProperties" => false}]
-  # empty map optimization
-  defp build_filter(context, resource, pointer, opts) when context in @empty_map_only do
+  defp build_filter(context, resource, pointer, opts) do
+    call = Tools.call(resource, pointer, opts)
+
+    cond do
+      Map.delete(context, "type") in @empty_map_only ->
+        empty_filter(context, resource, pointer, opts)
+
+      is_map_key(context, "unevaluatedProperties") or is_map_key(context, "additionalProperties") ->
+        trivial_filter(call, context, resource, pointer, Keyword.delete(opts, :tracked))
+
+      true ->
+        general_filter(call, context, resource, pointer, opts)
+    end
+  end
+
+  defp empty_filter(context, resource, pointer, opts) do
     pointer = JsonPointer.join(pointer, Map.keys(context))
     call = Tools.call(resource, pointer, opts)
 
@@ -37,16 +49,6 @@ defmodule Exonerate.Type.Object.Tracked do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(object, unquote(resource), unquote(pointer), path)
       end
-    end
-  end
-
-  defp build_filter(context, resource, pointer, opts) do
-    call = Tools.call(resource, pointer, opts)
-
-    if is_map_key(context, "unevaluatedProperties") or is_map_key(context, "additionalProperties") do
-      trivial_filter(call, context, resource, pointer, Keyword.delete(opts, :tracked))
-    else
-      general_filter(call, context, resource, pointer, opts)
     end
   end
 
@@ -85,7 +87,6 @@ defmodule Exonerate.Type.Object.Tracked do
   end
 
   @seen_filters ~w(allOf anyOf if oneOf $ref)
-  @unseen_filters @combining_filters -- @seen_filters
 
   defp outer_filters(context, resource, pointer, opts) do
     for filter <- @outer_filters, is_map_key(context, filter) do
@@ -120,14 +121,20 @@ defmodule Exonerate.Type.Object.Tracked do
   end
 
   defp unseen_filters(context, resource, pointer, opts) do
-    for filter <- @unseen_filters, is_map_key(context, filter) do
-      filter_call =
-        Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+    List.wrap(
+      if is_map_key(context, "not") do
+        filter_call =
+          Tools.call(
+            resource,
+            JsonPointer.join(pointer, Combining.adjust("not")),
+            Keyword.delete(opts, :tracked)
+          )
 
-      quote do
-        :ok <- unquote(filter_call)(object, path)
+        quote do
+          :ok <- unquote(filter_call)(object, path)
+        end
       end
-    end
+    )
   end
 
   defp iterator_filter(context, resource, pointer, opts) do
@@ -158,23 +165,24 @@ defmodule Exonerate.Type.Object.Tracked do
     |> Tools.maybe_dump(__CALLER__, opts)
   end
 
-  defp build_accessories(context, _, _, _) when context in @empty_map_only do
-    []
-  end
-
   defp build_accessories(context, name, pointer, opts) do
     # TODO: check the logic on this.
 
-    if is_map_key(context, "unevaluatedProperties") or
-         is_map_key(context, "additionalProperties") do
-      opts = Keyword.delete(opts, :tracked)
+    cond do
+      Map.delete(context, "type") in @empty_map_only ->
+        []
 
-      filter_accessories(context, name, pointer, opts) ++
-        tracked_accessories(context, name, pointer, opts)
-    else
-      iterator_accessory(context, name, pointer, opts) ++
+      is_map_key(context, "unevaluatedProperties") or
+          is_map_key(context, "additionalProperties") ->
+        opts = Keyword.delete(opts, :tracked)
+
         filter_accessories(context, name, pointer, opts) ++
-        tracked_accessories(context, name, pointer, opts)
+          tracked_accessories(context, name, pointer, opts)
+
+      true ->
+        iterator_accessory(context, name, pointer, opts) ++
+          filter_accessories(context, name, pointer, opts) ++
+          tracked_accessories(context, name, pointer, opts)
     end
   end
 

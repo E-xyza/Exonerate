@@ -26,8 +26,6 @@ defmodule Exonerate.Type.Object.Iterator do
   @filters @iterators ++ @finalizers
   @modules Map.merge(@iterator_modules, @finalizer_modules)
 
-  def fliters, do: @filters
-
   def needed?(context) do
     Enum.any?(@filters, &is_map_key(context, &1))
   end
