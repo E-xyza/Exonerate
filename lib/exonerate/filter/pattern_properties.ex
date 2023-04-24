@@ -1,12 +1,14 @@
 defmodule Exonerate.Filter.PatternProperties do
   @moduledoc false
+
+  alias Exonerate.Context
   alias Exonerate.Tools
 
   defmacro filter(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(subschema, resource, pointer, opts) do
@@ -81,7 +83,7 @@ defmodule Exonerate.Filter.PatternProperties do
   end
 
   defp filters_for({regex, _}, resource, pointer, opts) do
-    opts = Tools.scrub(opts)
+    opts = Context.scrub_opts(opts)
     pointer = JsonPointer.join(pointer, regex)
     fun = Tools.call(resource, pointer, opts)
 

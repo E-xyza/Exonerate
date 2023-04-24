@@ -1,5 +1,7 @@
 defmodule Exonerate.Combining.If do
   @moduledoc false
+
+  alias Exonerate.Combining
   alias Exonerate.Degeneracy
   alias Exonerate.Tools
 
@@ -11,7 +13,8 @@ defmodule Exonerate.Combining.If do
     __CALLER__
     |> Tools.subschema(resource, parent_pointer)
     |> build_filter(resource, parent_pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Combining.dedupe(__CALLER__, resource, pointer, :entrypoint, opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(context, resource, parent_pointer, opts) do

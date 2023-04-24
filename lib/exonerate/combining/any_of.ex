@@ -1,5 +1,7 @@
 defmodule Exonerate.Combining.AnyOf do
   @moduledoc false
+
+  alias Exonerate.Combining
   alias Exonerate.Tools
 
   defmacro filter(resource, pointer, opts) do
@@ -8,7 +10,8 @@ defmodule Exonerate.Combining.AnyOf do
     |> Enum.with_index(&call_and_context(&1, &2, resource, pointer, opts))
     |> Enum.unzip()
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Combining.dedupe(__CALLER__, resource, pointer, opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   # special case, only one item

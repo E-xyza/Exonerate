@@ -30,3 +30,12 @@
 
 # 0.3.1
 - pinned elixir version to minimum 1.14.1, due to use of Macro.expand_literals
+
+# 0.3.2
+- changed common uri to exonerate:// over function:// -- this allows for resources
+  to be pinned based on sha256 of the schema
+- store string content using resource id.
+- refactors array processing for performance
+- changes `dump: true` to provide function names which can be copy/pasted into
+  elixir and recompiled.
+- `maybe_dump` function now expands macros inside of functions.

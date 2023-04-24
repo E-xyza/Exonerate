@@ -20,9 +20,11 @@ defmodule Mix.Tasks.BenchLib do
     Application.ensure_all_started(:req)
     Application.ensure_all_started(:bandit)
     Application.put_env(:exonerate, :file_plug, @remotes_dir)
+
     Application.put_env(:ex_json_schema, :remote_schema_resolver, fn url ->
-      Req.get!(url).body |> Jason.decode!
+      Req.get!(url).body |> Jason.decode!()
     end)
+
     Application.put_env(:xema, :loader, JsonXema.Loader)
 
     Bandit.start_link(plug: ExonerateTest.FilePlug, scheme: :http, options: [port: 1234])

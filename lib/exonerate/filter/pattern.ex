@@ -6,7 +6,7 @@ defmodule Exonerate.Filter.Pattern do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(pattern, resource, pointer, opts) do

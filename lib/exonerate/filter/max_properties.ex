@@ -7,7 +7,7 @@ defmodule Exonerate.Filter.MaxProperties do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(maximum, resource, pointer, opts) do

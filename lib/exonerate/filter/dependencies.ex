@@ -1,5 +1,7 @@
 defmodule Exonerate.Filter.Dependencies do
   @moduledoc false
+
+  alias Exonerate.Context
   alias Exonerate.Tools
 
   defmacro filter(resource, pointer, opts) do
@@ -8,7 +10,7 @@ defmodule Exonerate.Filter.Dependencies do
     |> Enum.map(&make_dependencies(&1, resource, pointer, opts))
     |> Enum.unzip()
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp make_dependencies({key, subschema}, resource, pointer, opts) do
@@ -73,7 +75,7 @@ defmodule Exonerate.Filter.Dependencies do
   defp accessory(call, key, subschema, resource, pointer, opts)
        when is_map(subschema) or is_boolean(subschema) do
     pointer = JsonPointer.join(pointer, key)
-    context_opts = Tools.scrub(opts)
+    context_opts = Context.scrub_opts(opts)
     context_call = Tools.call(resource, pointer, context_opts)
 
     quote do

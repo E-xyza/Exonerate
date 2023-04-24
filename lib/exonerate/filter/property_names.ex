@@ -1,12 +1,13 @@
 defmodule Exonerate.Filter.PropertyNames do
   @moduledoc false
 
+  alias Exonerate.Context
   alias Exonerate.Tools
 
   defmacro filter(resource, pointer, opts) do
     resource
     |> build_filter(pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(resource, pointer, opts) do
@@ -15,7 +16,7 @@ defmodule Exonerate.Filter.PropertyNames do
     # TODO: make sure we don't drop the only if this has been reffed.
     context_opts =
       opts
-      |> Tools.scrub()
+      |> Context.scrub_opts()
       |> Keyword.put(:only, ["string"])
 
     subfilter =

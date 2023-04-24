@@ -27,35 +27,26 @@ defmodule Exonerate.Type.Array.Iterator do
     "unevaluatedItems" => Exonerate.Filter.UnevaluatedItems
   }
 
+  @context_filters ~w(items contains additionalItems prefixItems unevaluatedItems)
+
   @filters Map.keys(@modules)
 
-  def filter_modules, do: @modules
-  def filters, do: @filters
-
-  def needed?(context) do
-    Enum.any?(@filters, &is_map_key(context, &1))
-  end
-
-  @find_key_sets [
-    ["contains"],
-    ["minItems"],
-    ["contains", "minItems"],
-    ["contains", "minContains"],
-    ["contains", "minContains", "minItems"]
-  ]
-
-  @spec mode(Type.json(), keyword) :: FindIterator | FilterIterator | nil
-  def mode(context, opts) do
-    tracked = opts[:tracked]
-
+  @spec mode(Type.json()) :: FindIterator | FilterIterator | nil
+  def mode(context) do
     context
     |> Map.take(@filters)
-    |> Map.keys()
-    |> Enum.sort()
     |> case do
-      [] -> nil
-      keys when keys in @find_key_sets and is_nil(tracked) -> FindIterator
-      _ -> FilterIterator
+      empty when empty === %{} -> nil
+      # the following filters must "go to completion".
+      %{"items" => %{}} -> FilterIterator
+      %{"items" => boolean} when is_boolean(boolean) -> FilterIterator
+      %{"maxContains" => _} -> FilterIterator
+      %{"maxItems" => _} -> FilterIterator
+      %{"uniqueItems" => true} -> FilterIterator
+      %{"additionalItems" => _} -> FilterIterator
+      %{"unevaluatedItems" => _} -> FilterIterator
+      # everything else can be subjected to a find iterator
+      _ -> FindIterator
     end
   end
 
@@ -63,39 +54,71 @@ defmodule Exonerate.Type.Array.Iterator do
     Tools.call(resource, pointer, :array_iterator, opts)
   end
 
+  # The iterator can have different number of call parameters depending on
+  # which filters the context applies.  The following call parameters are
+  # ALWAYS present:
+  #
+  # - full array
+  # - remaining array
+  # - path
+  #
+  # the following parameters are otional, and in the following order.  Their
+  # use in the iterator depends on which iterator mode (filter/find) is selected,
+  # and which filters are present.
+  #
+  # The args/2 function generates a canonical set of arguments for these values,
+  # with an atom when it needs to be a variable and a number when it needs to be
+  # a specific value.
+  #
+  # - index
+  # - contains_count
+  # - first_unseen_index
+  # - unique_items
+
+  @initial_args [:array, :array, :path, 0, 0, :first_unseen_index, :unique_items]
+  def args(context) do
+    select(context, @initial_args)
+  end
+
   defmacro filter(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_filter(context, resource, pointer, opts) do
-    List.wrap(
-      if execution_mode = mode(context, opts) do
-        quote do
-          require unquote(execution_mode)
-          unquote(execution_mode).filter(unquote(resource), unquote(pointer), unquote(opts))
-        end
+    execution_mode = mode(context)
+
+    [
+      quote do
+        require unquote(execution_mode)
+        unquote(execution_mode).filter(unquote(resource), unquote(pointer), unquote(opts))
       end
-    )
+    ]
+  end
+
+  def select(context, parameters) do
+    if mode = mode(context) do
+      mode.select(context, parameters)
+    end
   end
 
   defmacro accessories(resource, pointer, opts) do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_accessories(resource, pointer, opts)
-    |> Tools.maybe_dump(opts)
+    |> Tools.maybe_dump(__CALLER__, opts)
   end
 
   defp build_accessories(context, resource, pointer, opts) do
-    for filter <- @filters, is_map_key(context, filter) do
+    for filter <- @context_filters, is_map_key(context, filter) do
       module = @modules[filter]
       pointer = JsonPointer.join(pointer, filter)
 
       quote do
         require unquote(module)
-        unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
+        unquote(module).context(unquote(resource), unquote(pointer), unquote(opts))
       end
     end
   end

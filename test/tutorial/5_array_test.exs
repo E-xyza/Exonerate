@@ -377,8 +377,8 @@ defmodule ExonerateTest.Tutorial.ArrayTest do
       assert {:error, list} = Uniqueness.unique([1, 2, 3, 3, 4])
 
       assert list[:absolute_keyword_location] == "#/uniqueItems"
-      assert list[:error_value] == 3
-      assert list[:instance_location] == "/3"
+      assert list[:error_value] == [1, 2, 3, 3, 4]
+      assert list[:instance_location] == "/"
     end
 
     test "empty array always passes" do

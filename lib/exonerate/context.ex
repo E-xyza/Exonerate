@@ -8,6 +8,18 @@ defmodule Exonerate.Context do
   alias Exonerate.Tools
   alias Exonerate.Type
 
+  @doc """
+  scrubs an options keyword prior to entry into a non-combining context.  The following
+  keywords should be scrubbed:
+
+  - :only
+  - :tracked
+  - :seen
+  """
+  def scrub_opts(opts) do
+    Keyword.drop(opts, ~w(only tracked seen)a)
+  end
+
   defmacro filter(resource, pointer, opts) do
     caller = __CALLER__
     call = Tools.call(resource, pointer, opts)
@@ -16,7 +28,7 @@ defmodule Exonerate.Context do
       caller
       |> Tools.subschema(resource, pointer)
       |> build_filter(resource, pointer, opts)
-      |> Tools.maybe_dump(opts)
+      |> Tools.maybe_dump(caller, opts)
     else
       []
     end
@@ -24,6 +36,7 @@ defmodule Exonerate.Context do
 
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
+  @seen_filters @combining_filters -- ["not"]
 
   defp build_filter(true, resource, pointer, opts) do
     call = Tools.call(resource, pointer, opts)
@@ -177,11 +190,9 @@ defmodule Exonerate.Context do
       end)
       |> Enum.unzip()
 
-    # |> Tools.inspect
-
     combining =
-      for filter <- @combining_filters, is_map_key(context, filter) do
-        combining_module = @combining_modules[filter]
+      for filter <- @seen_filters, is_map_key(context, filter) do
+        combining_module = Map.fetch!(@combining_modules, filter)
         combining_pointer = JsonPointer.join(pointer, filter)
 
         quote do
@@ -193,7 +204,20 @@ defmodule Exonerate.Context do
             unquote(opts)
           )
         end
-      end
+      end ++
+        List.wrap(
+          if is_map_key(context, "not") do
+            quote do
+              require Exonerate.Combining.Not
+
+              Exonerate.Combining.Not.filter(
+                unquote(resource),
+                unquote(JsonPointer.join(pointer, "not")),
+                unquote(Keyword.delete(opts, :tracked))
+              )
+            end
+          end
+        )
 
     quote do
       unquote(filters)
@@ -219,6 +243,7 @@ defmodule Exonerate.Context do
           )
         end
       end,
+      __CALLER__,
       opts
     )
   end

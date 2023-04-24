@@ -83,7 +83,7 @@ defmodule Exonerate.Tools do
   # scrub macros helps to make "dump: true" output more legible, by removing
   # the scar tissue of macro calls that are going to be dumped anyways.
 
-  @drop_macros ~w(filter accessories fallthrough iterator)a
+  @drop_macros ~w(filter accessories fallthrough iterator context default_filter functions)a
 
   defp scrub_macros({:__block__, _meta, []}), do: []
 
@@ -109,9 +109,41 @@ defmodule Exonerate.Tools do
 
   defp scrub_macros(other), do: other
 
-  def maybe_dump(macro, opts) do
-    __MODULE__.inspect(macro, Keyword.get(opts, :dump))
+  def maybe_dump(macro, env, opts) do
+    macro
+    |> evaluate_internal_macros(env)
+    |> __MODULE__.inspect(Keyword.get(opts, :dump))
   end
+
+  defp evaluate_internal_macros(macro, env) do
+    macro
+    |> Macro.prewalk([], &expand_some(&1, &2, env))
+    |> elem(0)
+  end
+
+  @expanded_names ~w(initializer next_contains next_unique)a
+
+  # some macros exist inside of the function bodies and we need to explicitly expand these
+  # to make debugging possible.
+  defp expand_some(macro = {{:., _, [_, name]}, _, _}, [], env) when name in @expanded_names do
+    # a little bit of a bad thing to do, but this is a debug operation, so this will be
+    # updated if needs be.
+    augmented_env =
+      quote do
+        (fn ->
+           require Exonerate.Combining
+           require Exonerate.Filter.Contains
+           require Exonerate.Filter.UniqueItems
+           __ENV__
+         end).()
+      end
+      |> Code.eval_quoted([], env)
+      |> elem(0)
+
+    {Macro.expand(macro, augmented_env), []}
+  end
+
+  defp expand_some(macro, [], _), do: {macro, []}
 
   # SUBSCHEMA MANIPULATION
 
@@ -139,6 +171,7 @@ defmodule Exonerate.Tools do
     |> append_suffix(suffix)
     |> append_tracked(opts[:tracked])
     |> adjust_length
+    |> escape_debug_names(opts)
     |> String.to_atom()
   end
 
@@ -162,6 +195,17 @@ defmodule Exonerate.Tools do
     last = g |> Enum.reverse() |> Enum.take(50) |> Enum.reverse()
     middle = Base.encode16(<<:erlang.phash2(string)::32>>)
     IO.iodata_to_binary([first, "..", middle, "..", last])
+  end
+
+  defp escape_debug_names(name, opts) do
+    if opts[:dump] do
+      name
+      |> String.replace(~r/exonerate:\/\/[A-F0-9]{64}/, "entrypoint")
+      |> String.replace("#", "at")
+      |> String.replace(~r/[-:\/]/, "_")
+    else
+      name
+    end
   end
 
   # scans an entire jsonschema by reducing over it and returns certain things back.
@@ -195,18 +239,6 @@ defmodule Exonerate.Tools do
   end
 
   # options tools
-
-  @doc """
-  scrubs an options keyword prior to entry into a non-combining context.  The following
-  keywords should be scrubbed:
-
-  - :only
-  - :tracked
-  - :seen
-  """
-  def scrub(opts) do
-    Keyword.drop(opts, ~w(only tracked seen)a)
-  end
 
   def entrypoint(opts) do
     opts
@@ -258,7 +290,7 @@ defmodule Exonerate.Tools do
     |> uri_merge(JsonPointer.to_uri(pointer))
     |> if(opts[:trim], fn
       uri = %{scheme: "file"} -> %URI{fragment: uri.fragment}
-      uri = %{scheme: "function"} -> %URI{fragment: uri.fragment}
+      uri = %{scheme: "exonerate"} -> %URI{fragment: uri.fragment}
       uri -> uri
     end)
   end
