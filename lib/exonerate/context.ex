@@ -36,6 +36,7 @@ defmodule Exonerate.Context do
 
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
+  @seen_filters @combining_filters -- ["not"]
 
   defp build_filter(true, resource, pointer, opts) do
     call = Tools.call(resource, pointer, opts)
@@ -189,11 +190,9 @@ defmodule Exonerate.Context do
       end)
       |> Enum.unzip()
 
-    # |> Tools.inspect
-
     combining =
-      for filter <- @combining_filters, is_map_key(context, filter) do
-        combining_module = @combining_modules[filter]
+      for filter <- @seen_filters, is_map_key(context, filter) do
+        combining_module = Map.fetch!(@combining_modules, filter)
         combining_pointer = JsonPointer.join(pointer, filter)
 
         quote do
@@ -205,7 +204,20 @@ defmodule Exonerate.Context do
             unquote(opts)
           )
         end
-      end
+      end ++
+        List.wrap(
+          if is_map_key(context, "not") do
+            quote do
+              require Exonerate.Combining.Not
+
+              Exonerate.Combining.Not.filter(
+                unquote(resource),
+                unquote(JsonPointer.join(pointer, "not")),
+                unquote(Keyword.delete(opts, :tracked))
+              )
+            end
+          end
+        )
 
     quote do
       unquote(filters)

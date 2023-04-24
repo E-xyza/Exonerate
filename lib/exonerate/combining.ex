@@ -43,8 +43,16 @@ defmodule Exonerate.Combining do
 
   def dedupe(macro, caller, resource, pointer, opts) do
     call = Tools.call(resource, pointer, opts)
+    dedupe(macro, caller.module, call)
+  end
 
-    if Cache.register_context(caller.module, call) do
+  def dedupe(macro, caller, resource, pointer, extension, opts) do
+    call = Tools.call(resource, pointer, extension, opts)
+    dedupe(macro, caller.module, call)
+  end
+
+  defp dedupe(macro, module, call) do
+    if Cache.register_context(module, call) do
       macro
     else
       []

@@ -9,7 +9,7 @@ defmodule Exonerate.Combining.Not do
     __CALLER__
     |> Tools.subschema(resource, pointer)
     |> build_filter(resource, pointer, opts)
-    |> Combining.dedupe(__CALLER__, resource, pointer, opts)
+    |> Combining.dedupe(__CALLER__, resource, pointer, :entrypoint, opts)
     |> Tools.maybe_dump(__CALLER__, opts)
   end
 
