@@ -1,5 +1,7 @@
 defmodule Exonerate.Combining.Not do
   @moduledoc false
+
+  alias Exonerate.Combining
   alias Exonerate.Tools
   alias Exonerate.Degeneracy
 

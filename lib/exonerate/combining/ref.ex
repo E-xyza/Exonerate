@@ -1,6 +1,7 @@
 defmodule Exonerate.Combining.Ref do
   @moduledoc false
 
+  alias Exonerate.Combining
   alias Exonerate.Cache
   alias Exonerate.Degeneracy
   alias Exonerate.Tools

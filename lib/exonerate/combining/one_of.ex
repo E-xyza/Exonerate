@@ -1,5 +1,7 @@
 defmodule Exonerate.Combining.OneOf do
   @moduledoc false
+
+  alias Exonerate.Combining
   alias Exonerate.Tools
 
   defmacro filter(resource, pointer, opts) do
