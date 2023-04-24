@@ -16,10 +16,14 @@ defmodule Exonerate do
 
   Exonerate is automatically tested against the JSONSchema test suite.
 
+  Note that Exonerate does *not* generally validate that the schema presented to it
+  is valid, unless the violation results in an uncompilable entity.
+
   ## Usage
 
-  Exonerate is 100% compile-time generated.  You should include Exonerate with
-  the `runtime: false` option in `mix.exs`.
+  Exonerate yields 100% compile-time generated code.  You may include Exonerate
+  with the `runtime: false` option in `mix.exs`, unless you believe you will
+  need to edit and recompile modules with Exonerate at runtime.
 
   ### In your module:
 
@@ -374,14 +378,8 @@ defmodule Exonerate do
 
   ### Extra options
 
-  - `:content_type`: specifies the content-type of the provided schema string literal.
-    Defaults to `"application/json"`.  This is used to determine which decoder to use
-    to parse the schema.
-  - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples.
-    This is used to determine the content-type of the schema if the file
-    extension is unrecognized.  E.g. `[{".html", "text/html"}]`.  The mappings
-    `{".json", "application/json"}` and `{".yaml", "application/yaml"}` are not
-    overrideable.
+  The options described at the top of the module are available to this macro,
+  in addition to the options described in `register_resource/3`
   """
   defmacro function_from_string(type, function_name, schema_ast, opts \\ []) do
     opts = set_resource_opts(__CALLER__, opts)
@@ -416,20 +414,13 @@ defmodule Exonerate do
   generates a series of functions that validates a JSONschema in a file at
   the provided path.
 
-  Note that the `path` parameter must be a `t:Path.t/0` value.
+  Note that the `path` parameter must be a `t:Path.t/0` value.  The function
+  names will contain the file url.
 
-  ### Extra options
+  ### Options
 
-  - `:content_type`: specifies the content-type of the provided schema string
-    literal. Defaults to `application/json` if the file extension is `.json`,
-    and `application/yaml` if the file extension is `.yaml`  If `:content_type`
-    is unspecified and the file extension is unrecognized, Exonerate will
-    not be able to compile.
-  - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples.
-    This is used to determine the content-type of the schema if the file
-    extension is unrecognized.  E.g. `[{".html", "text/html"}]`.  The mappings
-    `{".json", "application/json"}` and `{".yaml", "application/yaml"}` are not
-    overrideable.
+  The options described at the top of the module are available to this macro,
+  in addition to the options described in `register_resource/3`
   """
   defmacro function_from_file(type, function_name, path, opts \\ [])
 
@@ -464,7 +455,19 @@ defmodule Exonerate do
     )
   end
 
-  defmacro function_from_resource(type, function_name, resource, opts) do
+  @doc """
+  generates a series of functions from a previously provided JSONSchema found
+  registered using `register_resource/3`.
+
+  Note that the `resource` parameter must be a string literal defined earlier
+  in a `register_resource/3` call
+
+  ### Options
+
+  Only supply options described in the module section.
+  """
+
+  defmacro function_from_resource(type, function_name, resource, opts \\ []) do
     # expand literals (aliases) in ast.
     opts = Macro.expand_literals(opts, __CALLER__)
 
