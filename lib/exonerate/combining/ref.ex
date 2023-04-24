@@ -23,6 +23,7 @@ defmodule Exonerate.Combining.Ref do
     __CALLER__
     |> Tools.subschema(ref_resource, ref_pointer)
     |> build_filter(resource, pointer, ref_resource, ref_pointer, opts)
+    |> Combining.dedupe(__CALLER__, resource, pointer, opts)
     |> Tools.maybe_dump(__CALLER__, opts)
   end
 

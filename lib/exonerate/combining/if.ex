@@ -11,6 +11,7 @@ defmodule Exonerate.Combining.If do
     __CALLER__
     |> Tools.subschema(resource, parent_pointer)
     |> build_filter(resource, parent_pointer, opts)
+    |> Combining.dedupe(__CALLER__, resource, pointer, opts)
     |> Tools.maybe_dump(__CALLER__, opts)
   end
 
