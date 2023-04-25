@@ -46,7 +46,7 @@ Add the following lines to your mix.exs
 ```elixir
   defp deps do
     [
-      {:exonerate, "~> 0.3.2", runtime: false},
+      {:exonerate, "~> 0.3.3", runtime: false},
     ]
   end
 ```

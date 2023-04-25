@@ -39,3 +39,6 @@
 - changes `dump: true` to provide function names which can be copy/pasted into
   elixir and recompiled.
 - `maybe_dump` function now expands macros inside of functions.
+
+# 0.3.3
+- fixes a bug where prefixItems are never evaluted before items
