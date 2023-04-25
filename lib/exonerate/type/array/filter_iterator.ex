@@ -53,13 +53,13 @@ defmodule Exonerate.Type.Array.FilterIterator do
       require Exonerate.Filter.UniqueItems
       Exonerate.Filter.UniqueItems.filter(unquote(resource), unquote(pointer), unquote(opts))
 
+      require Exonerate.Filter.PrefixItems
+      Exonerate.Filter.PrefixItems.filter(unquote(resource), unquote(pointer), unquote(opts))
+
       # the items filter is special-cased at the top of the it can both be a guard iterator
       # and a default iterator
       require Exonerate.Filter.Items
       Exonerate.Filter.Items.filter(unquote(resource), unquote(pointer), unquote(opts))
-
-      require Exonerate.Filter.PrefixItems
-      Exonerate.Filter.PrefixItems.filter(unquote(resource), unquote(pointer), unquote(opts))
 
       require Exonerate.Filter.AdditionalItems
       Exonerate.Filter.AdditionalItems.filter(unquote(resource), unquote(pointer), unquote(opts))
