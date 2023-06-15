@@ -42,3 +42,7 @@
 
 # 0.3.3
 - fixes a bug where prefixItems are never evaluted before items
+
+# 1.0.0
+- fixes regression where id properties are labelled as ids
+- moves to using JsonPtr 
