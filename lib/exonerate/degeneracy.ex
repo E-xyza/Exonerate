@@ -45,7 +45,7 @@ defmodule Exonerate.Degeneracy do
 
     canonicalized =
       source
-      |> JsonPointer.resolve_json!(entrypoint)
+      |> JsonPtr.resolve_json!(entrypoint)
       |> canonicalize_recursive(opts)
       |> case do
         ## very trivial
@@ -166,7 +166,7 @@ defmodule Exonerate.Degeneracy do
       end
       |> canonicalize_finalize
 
-    JsonPointer.update_json!(source, entrypoint, fn _ -> canonicalized end)
+    JsonPtr.update_json!(source, entrypoint, fn _ -> canonicalized end)
   end
 
   defp canonicalize_purged(context, what, opts) when is_binary(what) do

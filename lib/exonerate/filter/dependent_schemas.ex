@@ -17,7 +17,7 @@ defmodule Exonerate.Filter.DependentSchemas do
   end
 
   defp prong_and_accessory({key, _schema}, resource, pointer, opts) do
-    call = Tools.call(resource, JsonPointer.join(pointer, key), :entrypoint, opts)
+    call = Tools.call(resource, JsonPtr.join(pointer, key), :entrypoint, opts)
 
     prong =
       if opts[:tracked] do
@@ -37,7 +37,7 @@ defmodule Exonerate.Filter.DependentSchemas do
 
   defp accessory(call, key, resource, pointer, opts) do
     context_opts = Context.scrub_opts(opts)
-    pointer = JsonPointer.join(pointer, key)
+    pointer = JsonPtr.join(pointer, key)
     context_call = Tools.call(resource, pointer, context_opts)
 
     fallthrough =

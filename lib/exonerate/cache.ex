@@ -148,7 +148,7 @@ defmodule Exonerate.Cache do
   @spec update_schema!(
           module,
           resource_uri :: String.t(),
-          JsonPointer.t(),
+          JsonPtr.t(),
           (Type.json() -> Type.json())
         ) ::
           :ok
@@ -156,7 +156,7 @@ defmodule Exonerate.Cache do
     new_schema =
       module
       |> fetch_schema!(resource_uri)
-      |> JsonPointer.update_json!(pointer, transformation)
+      |> JsonPtr.update_json!(pointer, transformation)
 
     put_schema(module, resource_uri, new_schema)
 

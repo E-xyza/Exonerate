@@ -21,22 +21,22 @@ defmodule Exonerate.Id do
     resource_map =
       Tools.scan(
         schema,
-        %{JsonPointer.from_path("/") => root_resource},
+        %{JsonPtr.from_path("/") => root_resource},
         &id_walk(module, &1, &2, &3, opts)
       )
 
     {schema, resource_map}
   end
 
-  @type resource_map :: %{optional(JsonPointer.t()) => URI.t()}
-  @spec id_walk(module, Type.json(), JsonPointer.t(), resource_map, keyword) :: resource_map
+  @type resource_map :: %{optional(JsonPtr.t()) => URI.t()}
+  @spec id_walk(module, Type.json(), JsonPtr.t(), resource_map, keyword) :: resource_map
 
   defp id_walk(module, schema = %{"$id" => id}, pointer, resource_map, opts) do
     register(module, schema, id, pointer, resource_map, opts)
   end
 
   defp id_walk(module, schema = %{"id" => id}, pointer, resource_map, opts) do
-    if match?({_, "properties"}, JsonPointer.pop(pointer)) do
+    if match?({_, "properties"}, JsonPtr.pop(pointer)) do
       # don't register an "id" which is underneath the "properties" key
       resource_map
     else
@@ -70,21 +70,21 @@ defmodule Exonerate.Id do
     Map.put(resource_map, pointer, new_uri)
   end
 
-  @spec find_resource_uri(resource_map, JsonPointer.t()) :: {URI.t(), JsonPointer.t()}
+  @spec find_resource_uri(resource_map, JsonPtr.t()) :: {URI.t(), JsonPtr.t()}
   @doc """
   given a resource map and pointer, find the resource that matches the jsonpointer.
 
   Note that resource map is a map of JsonPointer -> URI.
 
-  This function proceeds by reveres induction over JsonPointer.  The execution time
+  This function proceeds by reveres induction over JsonPtr.  The execution time
   might be very bad, but this function should be called rarely.
   """
   def find_resource_uri(map, pointer) when is_map_key(map, pointer),
-    do: {map[pointer], JsonPointer.from_path("/")}
+    do: {map[pointer], JsonPtr.from_path("/")}
 
   def find_resource_uri(map, pointer) do
-    {prev, leaf} = JsonPointer.pop(pointer)
+    {prev, leaf} = JsonPtr.pop(pointer)
     {resource_uri, root} = find_resource_uri(map, prev)
-    {resource_uri, JsonPointer.join(root, leaf)}
+    {resource_uri, JsonPtr.join(root, leaf)}
   end
 end

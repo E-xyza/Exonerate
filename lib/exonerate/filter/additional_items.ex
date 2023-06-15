@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.AdditionalItems do
   # this is equivalent to the array form of "items"
   defp build_filter(context = %{"additionalItems" => false}, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    additional_items_pointer = JsonPointer.join(pointer, "additionalItems")
+    additional_items_pointer = JsonPtr.join(pointer, "additionalItems")
 
     iteration_head =
       Iterator.select(
@@ -57,7 +57,7 @@ defmodule Exonerate.Filter.AdditionalItems do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
 
     items_call =
-      Tools.call(resource, JsonPointer.join(pointer, "additionalItems"), Context.scrub_opts(opts))
+      Tools.call(resource, JsonPtr.join(pointer, "additionalItems"), Context.scrub_opts(opts))
 
     iteration_head =
       Iterator.select(

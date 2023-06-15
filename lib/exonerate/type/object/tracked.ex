@@ -39,7 +39,7 @@ defmodule Exonerate.Type.Object.Tracked do
   end
 
   defp empty_filter(context, resource, pointer, opts) do
-    pointer = JsonPointer.join(pointer, Map.keys(context))
+    pointer = JsonPtr.join(pointer, Map.keys(context))
     call = Tools.call(resource, pointer, opts)
 
     quote do
@@ -91,7 +91,7 @@ defmodule Exonerate.Type.Object.Tracked do
   defp outer_filters(context, resource, pointer, opts) do
     for filter <- @outer_filters, is_map_key(context, filter) do
       filter_call =
-        Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       quote do
         :ok <- unquote(filter_call)(object, path)
@@ -102,7 +102,7 @@ defmodule Exonerate.Type.Object.Tracked do
   defp seen_filters(context, resource, pointer, opts) do
     for filter <- @seen_filters, is_map_key(context, filter) do
       filter_call =
-        Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       if opts[:tracked] do
         quote do
@@ -126,7 +126,7 @@ defmodule Exonerate.Type.Object.Tracked do
         filter_call =
           Tools.call(
             resource,
-            JsonPointer.join(pointer, Combining.adjust("not")),
+            JsonPtr.join(pointer, Combining.adjust("not")),
             Keyword.delete(opts, :tracked)
           )
 
@@ -215,7 +215,7 @@ defmodule Exonerate.Type.Object.Tracked do
 
     for filter <- filters, is_map_key(context, filter), not Combining.filter?(filter) do
       module = @outer_modules[filter]
-      pointer = JsonPointer.join(pointer, filter)
+      pointer = JsonPtr.join(pointer, filter)
 
       quote do
         require unquote(module)
@@ -233,7 +233,7 @@ defmodule Exonerate.Type.Object.Tracked do
   defp tracked_accessories(context, name, pointer, opts) do
     for filter <- @seen_filters, is_map_key(context, filter) do
       module = @combining_modules[filter]
-      pointer = JsonPointer.join(pointer, filter)
+      pointer = JsonPtr.join(pointer, filter)
       opts = Keyword.merge(opts, tracked: :object, only: "object")
 
       quote do

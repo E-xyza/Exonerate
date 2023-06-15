@@ -147,26 +147,26 @@ defmodule Exonerate.Tools do
 
   # SUBSCHEMA MANIPULATION
 
-  @spec subschema(Macro.Env.t(), String.t(), JsonPointer.t()) :: Type.json()
+  @spec subschema(Macro.Env.t(), String.t(), JsonPtr.t()) :: Type.json()
   def subschema(caller, resource, pointer) do
     caller.module
     |> Cache.fetch_schema!(resource)
-    |> JsonPointer.resolve_json!(pointer)
+    |> JsonPtr.resolve_json!(pointer)
   end
 
-  @spec parent(Macro.Env.t(), String.t(), JsonPointer.t()) :: Type.json()
+  @spec parent(Macro.Env.t(), String.t(), JsonPtr.t()) :: Type.json()
   def parent(caller, resource, pointer) do
     caller.module
     |> Cache.fetch_schema!(resource)
-    |> JsonPointer.resolve_json!(JsonPointer.backtrack!(pointer))
+    |> JsonPtr.resolve_json!(JsonPtr.backtrack!(pointer))
   end
 
-  @spec call(String.t(), JsonPointer.t(), Keyword.t()) :: atom
-  @spec call(String.t(), JsonPointer.t(), atom, Keyword.t()) :: atom
+  @spec call(String.t(), JsonPtr.t(), Keyword.t()) :: atom
+  @spec call(String.t(), JsonPtr.t(), atom, Keyword.t()) :: atom
   def call(resource, pointer, suffix \\ nil, opts) when is_binary(resource) do
     resource
     |> URI.parse()
-    |> uri_merge(JsonPointer.to_uri(pointer))
+    |> uri_merge(JsonPtr.to_uri(pointer))
     |> to_string
     |> append_suffix(suffix)
     |> append_tracked(opts[:tracked])
@@ -209,9 +209,9 @@ defmodule Exonerate.Tools do
   end
 
   # scans an entire jsonschema by reducing over it and returns certain things back.
-  @spec scan(Type.json(), acc, (Type.json(), JsonPointer.t(), acc -> acc)) :: acc when acc: term
+  @spec scan(Type.json(), acc, (Type.json(), JsonPtr.t(), acc -> acc)) :: acc when acc: term
   def scan(object, acc, transformation) do
-    do_scan(object, JsonPointer.from_path("/"), acc, transformation)
+    do_scan(object, JsonPtr.from_path("/"), acc, transformation)
   end
 
   defp do_scan(object, pointer, acc, transformation) when is_map(object) do
@@ -219,7 +219,7 @@ defmodule Exonerate.Tools do
 
     Enum.reduce(object, acc, fn
       {k, v}, acc ->
-        do_scan(v, JsonPointer.join(pointer, k), acc, transformation)
+        do_scan(v, JsonPtr.join(pointer, k), acc, transformation)
     end)
   end
 
@@ -229,7 +229,7 @@ defmodule Exonerate.Tools do
     array
     |> Enum.reduce({acc, 0}, fn
       v, {acc, index} ->
-        {do_scan(v, JsonPointer.join(pointer, "#{index}"), acc, transformation), index + 1}
+        {do_scan(v, JsonPtr.join(pointer, "#{index}"), acc, transformation), index + 1}
     end)
     |> elem(0)
   end
@@ -243,7 +243,7 @@ defmodule Exonerate.Tools do
   def entrypoint(opts) do
     opts
     |> Keyword.get(:entrypoint, "/")
-    |> JsonPointer.from_path()
+    |> JsonPtr.from_path()
   end
 
   def set_decoders(opts) do
@@ -283,11 +283,11 @@ defmodule Exonerate.Tools do
     to_string(%{uri | fragment: nil})
   end
 
-  @spec resource_pointer_to_uri(String.t(), JsonPointer.t(), keyword) :: URI.t()
+  @spec resource_pointer_to_uri(String.t(), JsonPtr.t(), keyword) :: URI.t()
   def resource_pointer_to_uri(resource, pointer, opts \\ []) do
     resource
     |> URI.parse()
-    |> uri_merge(JsonPointer.to_uri(pointer))
+    |> uri_merge(JsonPtr.to_uri(pointer))
     |> if(opts[:trim], fn
       uri = %{scheme: "file"} -> %URI{fragment: uri.fragment}
       uri = %{scheme: "exonerate"} -> %URI{fragment: uri.fragment}

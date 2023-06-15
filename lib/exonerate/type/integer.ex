@@ -27,7 +27,7 @@ defmodule Exonerate.Type.Integer do
     filter_clauses =
       for filter <- @filters, is_map_key(context, filter) do
         filter_call =
-          Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+          Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
           :ok <- unquote(filter_call)(integer, path)
@@ -54,7 +54,7 @@ defmodule Exonerate.Type.Integer do
   defp build_accessories(context, name, pointer, opts) do
     for filter <- @filters, is_map_key(context, filter), not Combining.filter?(filter) do
       module = @modules[filter]
-      pointer = JsonPointer.join(pointer, filter)
+      pointer = JsonPtr.join(pointer, filter)
 
       quote do
         require unquote(module)

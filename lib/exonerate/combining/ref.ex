@@ -14,7 +14,7 @@ defmodule Exonerate.Combining.Ref do
     # - remote reference.
 
     # condition the options to accept unevaluatedProperties
-    {parent_pointer, "$ref"} = JsonPointer.pop(pointer)
+    {parent_pointer, "$ref"} = JsonPtr.pop(pointer)
 
     {ref_resource_uri, ref_pointer} =
       Cache.traverse_ref!(__CALLER__.module, resource, parent_pointer)
@@ -33,9 +33,9 @@ defmodule Exonerate.Combining.Ref do
 
     call_path =
       if String.starts_with?(resource, "exonerate://") do
-        JsonPointer.to_path(pointer)
+        JsonPtr.to_path(pointer)
       else
-        {resource, JsonPointer.to_path(pointer)}
+        {resource, JsonPtr.to_path(pointer)}
       end
 
     ref_call = Tools.call(ref_resource, ref_pointer, opts)

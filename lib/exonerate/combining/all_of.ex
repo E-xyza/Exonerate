@@ -123,7 +123,7 @@ defmodule Exonerate.Combining.AllOf do
   end
 
   defp call_and_context(_, index, resource, pointer, opts) do
-    pointer = JsonPointer.join(pointer, "#{index}")
+    pointer = JsonPtr.join(pointer, "#{index}")
     call = Tools.call(resource, pointer, opts)
 
     context =

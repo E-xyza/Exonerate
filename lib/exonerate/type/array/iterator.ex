@@ -114,7 +114,7 @@ defmodule Exonerate.Type.Array.Iterator do
   defp build_accessories(context, resource, pointer, opts) do
     for filter <- @context_filters, is_map_key(context, filter) do
       module = @modules[filter]
-      pointer = JsonPointer.join(pointer, filter)
+      pointer = JsonPtr.join(pointer, filter)
 
       quote do
         require unquote(module)

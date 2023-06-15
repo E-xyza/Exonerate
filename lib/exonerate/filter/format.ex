@@ -290,7 +290,7 @@ defmodule Exonerate.Filter.Format do
 
       uri =
         pointer
-        |> JsonPointer.to_uri()
+        |> JsonPtr.to_uri()
         |> to_string
         |> Tools.if(
           String.starts_with?(resource, "exonerate://"),
@@ -393,8 +393,8 @@ defmodule Exonerate.Filter.Format do
 
     selector =
       pointer
-      |> JsonPointer.backtrack!()
-      |> JsonPointer.to_uri()
+      |> JsonPtr.backtrack!()
+      |> JsonPtr.to_uri()
       |> to_string
       |> String.replace_prefix("", prefix)
 

@@ -89,7 +89,7 @@ defmodule Exonerate.Type.Object do
   defp outer_filters(context, resource, pointer, opts) do
     for filter <- @outer_filters, is_map_key(context, filter) do
       filter_call =
-        Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       quote do
         :ok <- unquote(filter_call)(object, path)
@@ -109,7 +109,7 @@ defmodule Exonerate.Type.Object do
 
     for filter <- @seen_filters, is_map_key(context, filter) do
       filter_call =
-        Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       if needs_seen do
         quote do
@@ -132,7 +132,7 @@ defmodule Exonerate.Type.Object do
   defp unseen_filters(context, resource, pointer, opts) do
     for filter <- @unseen_filters, is_map_key(context, filter) do
       filter_call =
-        Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       quote do
         :ok <- unquote(filter_call)(object, path)
@@ -221,7 +221,7 @@ defmodule Exonerate.Type.Object do
 
     for filter <- filters, is_map_key(context, filter), not Combining.filter?(filter) do
       module = @outer_modules[filter]
-      pointer = JsonPointer.join(pointer, filter)
+      pointer = JsonPtr.join(pointer, filter)
 
       quote do
         require unquote(module)
@@ -241,7 +241,7 @@ defmodule Exonerate.Type.Object do
       if needs_seen?(context) do
         for filter <- @seen_filters, is_map_key(context, filter) do
           module = @combining_modules[filter]
-          pointer = JsonPointer.join(pointer, filter)
+          pointer = JsonPtr.join(pointer, filter)
           opts = Keyword.merge(opts, tracked: :object, only: "object")
 
           quote do

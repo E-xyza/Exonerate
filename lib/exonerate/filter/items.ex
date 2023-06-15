@@ -26,7 +26,7 @@ defmodule Exonerate.Filter.Items do
       |> length
 
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    items_pointer = JsonPointer.join(pointer, "items")
+    items_pointer = JsonPtr.join(pointer, "items")
 
     termination_head =
       Iterator.select(
@@ -63,7 +63,7 @@ defmodule Exonerate.Filter.Items do
       items_call =
         Tools.call(
           resource,
-          JsonPointer.join(pointer, ["items", "#{index}"]),
+          JsonPtr.join(pointer, ["items", "#{index}"]),
           Context.scrub_opts(opts)
         )
 
@@ -175,7 +175,7 @@ defmodule Exonerate.Filter.Items do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
 
     items_call =
-      Tools.call(resource, JsonPointer.join(pointer, "items"), Context.scrub_opts(opts))
+      Tools.call(resource, JsonPtr.join(pointer, "items"), Context.scrub_opts(opts))
 
     iteration_head =
       Iterator.select(
@@ -262,7 +262,7 @@ defmodule Exonerate.Filter.Items do
 
   defp build_context(subschema, resource, pointer, opts) when is_list(subschema) do
     Enum.with_index(subschema, fn _, index ->
-      pointer = JsonPointer.join(pointer, "#{index}")
+      pointer = JsonPtr.join(pointer, "#{index}")
 
       quote do
         require Exonerate.Context

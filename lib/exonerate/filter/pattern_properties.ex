@@ -84,7 +84,7 @@ defmodule Exonerate.Filter.PatternProperties do
 
   defp filters_for({regex, _}, resource, pointer, opts) do
     opts = Context.scrub_opts(opts)
-    pointer = JsonPointer.join(pointer, regex)
+    pointer = JsonPtr.join(pointer, regex)
     fun = Tools.call(resource, pointer, opts)
 
     {quote do

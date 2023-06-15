@@ -35,11 +35,11 @@ defmodule Exonerate.Draft do
   def set_opts(opts, schema) do
     # if it's not at the root, check the entrypoint.
     if old_entrypoint = opts[:entrypoint] do
-      json_pointer = JsonPointer.from_path(old_entrypoint)
+      json_pointer = JsonPtr.from_path(old_entrypoint)
 
       opts
       |> Keyword.delete(:entrypoint)
-      |> set_opts(JsonPointer.resolve_json!(schema, json_pointer))
+      |> set_opts(JsonPtr.resolve_json!(schema, json_pointer))
       |> Keyword.put(:entrypoint, old_entrypoint)
     else
       # go with what we declared in the opts, or default to 2020-12

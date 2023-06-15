@@ -25,7 +25,7 @@ defmodule Exonerate.Filter.MinContains do
         end
       )
 
-    min_contains_pointer = JsonPointer.join(pointer, "minContains")
+    min_contains_pointer = JsonPtr.join(pointer, "minContains")
 
     quote do
       defp unquote(call)(unquote_splicing(terminal_params))

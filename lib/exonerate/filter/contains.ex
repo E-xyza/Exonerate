@@ -31,7 +31,7 @@ defmodule Exonerate.Filter.Contains do
         end
       )
 
-    contains_pointer = JsonPointer.join(pointer, "contains")
+    contains_pointer = JsonPtr.join(pointer, "contains")
 
     quote do
       defp unquote(call)(unquote_splicing(terminal_params)) when contains_count === 0 do
@@ -77,7 +77,7 @@ defmodule Exonerate.Filter.Contains do
          opts
        ) do
     [contains_count_ast, item_ast, path_ast] = ast
-    contains_call = Tools.call(resource, JsonPointer.join(pointer, "contains"), opts)
+    contains_call = Tools.call(resource, JsonPtr.join(pointer, "contains"), opts)
 
     quote do
       unquote(contains_count_ast) =
@@ -94,7 +94,7 @@ defmodule Exonerate.Filter.Contains do
   defp build_next_contains(context = %{"contains" => _}, ast, resource, pointer, opts) do
     [contains_count_ast, item_ast, path_ast] = ast
     needed = Map.get(context, "minContains", 1)
-    contains_call = Tools.call(resource, JsonPointer.join(pointer, "contains"), opts)
+    contains_call = Tools.call(resource, JsonPtr.join(pointer, "contains"), opts)
 
     quote do
       unquote(contains_count_ast) =

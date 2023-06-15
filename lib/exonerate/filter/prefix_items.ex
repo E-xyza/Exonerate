@@ -20,7 +20,7 @@ defmodule Exonerate.Filter.PrefixItems do
       items_call =
         Tools.call(
           resource,
-          JsonPointer.join(pointer, ["prefixItems", "#{index}"]),
+          JsonPtr.join(pointer, ["prefixItems", "#{index}"]),
           Context.scrub_opts(opts)
         )
 
@@ -141,7 +141,7 @@ defmodule Exonerate.Filter.PrefixItems do
 
   defp build_context(subschema, resource, pointer, opts) do
     Enum.with_index(subschema, fn _, index ->
-      pointer = JsonPointer.join(pointer, "#{index}")
+      pointer = JsonPtr.join(pointer, "#{index}")
 
       quote do
         require Exonerate.Context

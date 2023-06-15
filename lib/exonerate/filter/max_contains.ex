@@ -25,7 +25,7 @@ defmodule Exonerate.Filter.MaxContains do
         end
       )
 
-    max_contains_pointer = JsonPointer.join(pointer, "maxContains")
+    max_contains_pointer = JsonPtr.join(pointer, "maxContains")
 
     quote do
       defp unquote(call)(unquote_splicing(terminal_params))

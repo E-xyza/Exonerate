@@ -14,7 +14,7 @@ defmodule Exonerate.Filter.Dependencies do
   end
 
   defp make_dependencies({key, subschema}, resource, pointer, opts) do
-    call = Tools.call(resource, JsonPointer.join(pointer, key), :entrypoint, opts)
+    call = Tools.call(resource, JsonPtr.join(pointer, key), :entrypoint, opts)
 
     prong =
       quote do
@@ -42,7 +42,7 @@ defmodule Exonerate.Filter.Dependencies do
     prongs =
       Enum.with_index(deps_list, fn
         dependent_key, index ->
-          schema_pointer = JsonPointer.join(pointer, [key, "#{index}"])
+          schema_pointer = JsonPtr.join(pointer, [key, "#{index}"])
 
           quote do
             :ok <-
@@ -74,7 +74,7 @@ defmodule Exonerate.Filter.Dependencies do
 
   defp accessory(call, key, subschema, resource, pointer, opts)
        when is_map(subschema) or is_boolean(subschema) do
-    pointer = JsonPointer.join(pointer, key)
+    pointer = JsonPtr.join(pointer, key)
     context_opts = Context.scrub_opts(opts)
     context_call = Tools.call(resource, pointer, context_opts)
 

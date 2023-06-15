@@ -32,7 +32,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     items_call =
       Tools.call(
         resource,
-        JsonPointer.join(pointer, "unevaluatedItems"),
+        JsonPtr.join(pointer, "unevaluatedItems"),
         Context.scrub_opts(opts)
       )
 
@@ -104,7 +104,7 @@ defmodule Exonerate.Filter.UnevaluatedItems do
     # this is identical to the "additionalItems" result.
 
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    items_call = Tools.call(resource, JsonPointer.join(pointer, "unevaluatedItems"), opts)
+    items_call = Tools.call(resource, JsonPtr.join(pointer, "unevaluatedItems"), opts)
 
     iteration_head =
       Iterator.select(

@@ -8,7 +8,7 @@ defmodule Exonerate.Combining.If do
   defmacro filter(resource, pointer, opts) do
     # note we have to pull the parent pointer because we need to see the
     # "then"/"else" clauses.
-    parent_pointer = JsonPointer.backtrack!(pointer)
+    parent_pointer = JsonPtr.backtrack!(pointer)
 
     __CALLER__
     |> Tools.subschema(resource, parent_pointer)
@@ -172,11 +172,11 @@ defmodule Exonerate.Combining.If do
   end
 
   defp call(what, resource, parent_pointer, opts) do
-    Tools.call(resource, JsonPointer.join(parent_pointer, what), opts)
+    Tools.call(resource, JsonPtr.join(parent_pointer, what), opts)
   end
 
   defp context(what, resource, parent_pointer, opts) do
-    pointer = JsonPointer.join(parent_pointer, what)
+    pointer = JsonPtr.join(parent_pointer, what)
 
     quote do
       require Exonerate.Context

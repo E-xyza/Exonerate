@@ -22,7 +22,7 @@ defmodule Exonerate.Filter.MinMaxLength do
 
   defp build_filter([min, max], resource, pointer, true, opts) do
     call = Tools.call(resource, pointer, opts)
-    parent_pointer = JsonPointer.backtrack!(pointer)
+    parent_pointer = JsonPtr.backtrack!(pointer)
 
     quote do
       defp unquote(call)(string, path) when byte_size(string) < unquote(min) do
@@ -31,7 +31,7 @@ defmodule Exonerate.Filter.MinMaxLength do
         Exonerate.Tools.mismatch(
           string,
           unquote(resource),
-          unquote(JsonPointer.join(parent_pointer, "minLength")),
+          unquote(JsonPtr.join(parent_pointer, "minLength")),
           path
         )
       end
@@ -42,7 +42,7 @@ defmodule Exonerate.Filter.MinMaxLength do
         Exonerate.Tools.mismatch(
           string,
           unquote(resource),
-          unquote(JsonPointer.join(parent_pointer, "maxLength")),
+          unquote(JsonPtr.join(parent_pointer, "maxLength")),
           path
         )
       end
@@ -53,7 +53,7 @@ defmodule Exonerate.Filter.MinMaxLength do
 
   defp build_filter([min, max], resource, pointer, false, opts) do
     call = Tools.call(resource, pointer, opts)
-    parent_pointer = JsonPointer.backtrack!(pointer)
+    parent_pointer = JsonPtr.backtrack!(pointer)
 
     quote do
       defp unquote(call)(string, path) do
@@ -64,7 +64,7 @@ defmodule Exonerate.Filter.MinMaxLength do
             Exonerate.Tools.mismatch(
               string,
               unquote(resource),
-              unquote(JsonPointer.join(parent_pointer, "minLength")),
+              unquote(JsonPtr.join(parent_pointer, "minLength")),
               path
             )
 
@@ -74,7 +74,7 @@ defmodule Exonerate.Filter.MinMaxLength do
             Exonerate.Tools.mismatch(
               string,
               unquote(resource),
-              unquote(JsonPointer.join(parent_pointer, "maxLength")),
+              unquote(JsonPtr.join(parent_pointer, "maxLength")),
               path
             )
 

@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.MinItems do
 
   defp build_filter(context = %{"minItems" => minimum}, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    minitems_pointer = JsonPointer.join(pointer, "minItems")
+    minitems_pointer = JsonPtr.join(pointer, "minItems")
 
     filter_params =
       Iterator.select(

@@ -44,7 +44,7 @@ defmodule Exonerate.MixProject do
   defp deps do
     [
       {:match_spec, "~> 0.3.1"},
-      {:json_ptr, "~> 0.5"},
+      {:json_ptr, "~> 1.0"},
       {:jason, "~> 1.4.0"},
       # optional dependencies
       {:pegasus, "~> 0.2.2", optional: true},

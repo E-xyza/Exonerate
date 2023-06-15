@@ -18,7 +18,7 @@ defmodule Exonerate.Filter.MaxItems do
 
   defp build_filter(context = %{"maxItems" => limit}, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    maxitems_pointer = JsonPointer.join(pointer, "maxItems")
+    maxitems_pointer = JsonPtr.join(pointer, "maxItems")
 
     # note that this has to be index > limit, because there will be an iteration with the
     # empty list when the index equals the limit.

@@ -37,7 +37,7 @@ defmodule Exonerate.Type.String do
 
   defp build_filter(context, resource, pointer, opts) do
     filters = build_filter_with_clause(context, resource, pointer, opts)
-    non_utf_error_pointer = JsonPointer.join(pointer, "type")
+    non_utf_error_pointer = JsonPtr.join(pointer, "type")
 
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(string, path) when is_binary(string) do
@@ -62,7 +62,7 @@ defmodule Exonerate.Type.String do
       for filter <- @filters,
           is_map_key(context, filter),
           accept_format?(context, filter, resource, pointer, opts) do
-        call = Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+        call = Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
         quote do
           :ok <- unquote(call)(string, path)
@@ -77,7 +77,7 @@ defmodule Exonerate.Type.String do
   end
 
   defp accept_format?(context, "format", resource, pointer, opts) do
-    Format.should_format?(context["format"], resource, JsonPointer.join(pointer, "format"), opts)
+    Format.should_format?(context["format"], resource, JsonPtr.join(pointer, "format"), opts)
   end
 
   defp accept_format?(_context, _, _, _, _), do: true
@@ -95,7 +95,7 @@ defmodule Exonerate.Type.String do
         accept_format?(context, filter, resource, pointer, opts),
         not Combining.filter?(filter) do
       module = @modules[filter]
-      pointer = JsonPointer.join(pointer, filter)
+      pointer = JsonPtr.join(pointer, filter)
 
       quote do
         require unquote(module)

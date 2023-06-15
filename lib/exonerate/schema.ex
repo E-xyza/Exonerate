@@ -47,7 +47,7 @@ defmodule Exonerate.Schema do
       |> Remote.ensure_resource_loaded!(caller, opts)
 
     tgt_resource = Tools.uri_to_resource(new_uri)
-    tgt_pointer = JsonPointer.from_path(new_uri.fragment)
+    tgt_pointer = JsonPtr.from_path(new_uri.fragment)
 
     # next, update the cache to handle degeneracy
     Cache.update_schema!(

@@ -27,7 +27,7 @@ defmodule Exonerate.Filter.UniqueItems do
   # note that if uniqueItems is false, it will get eliminated at at the stage of
   defp build_filter(context = %{"uniqueItems" => true}, resource, pointer, opts) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
-    minitems_pointer = JsonPointer.join(pointer, "uniqueItems")
+    minitems_pointer = JsonPtr.join(pointer, "uniqueItems")
 
     failure_params =
       Iterator.select(

@@ -35,7 +35,7 @@ defmodule Exonerate.Type.Array do
 
   defp build_filter(context, resource, pointer, opts) when trivial_contains(context) do
     call = Tools.call(resource, pointer, opts)
-    pointer = JsonPointer.join(pointer, "contains")
+    pointer = JsonPtr.join(pointer, "contains")
 
     quote do
       defp unquote(call)(array, path) when is_list(array) do
@@ -98,7 +98,7 @@ defmodule Exonerate.Type.Array do
             Exonerate.Tools.mismatch(
               array,
               unquote(resource),
-              unquote(JsonPointer.join(pointer, reason)),
+              unquote(JsonPtr.join(pointer, reason)),
               path
             )
           end
@@ -116,7 +116,7 @@ defmodule Exonerate.Type.Array do
         Exonerate.Tools.mismatch(
           [],
           unquote(resource),
-          unquote(JsonPointer.join(pointer, reason)),
+          unquote(JsonPtr.join(pointer, reason)),
           path
         )
       end
@@ -127,7 +127,7 @@ defmodule Exonerate.Type.Array do
         Exonerate.Tools.mismatch(
           array,
           unquote(resource),
-          unquote(JsonPointer.join(pointer, "maxItems")),
+          unquote(JsonPtr.join(pointer, "maxItems")),
           path
         )
       end
@@ -188,7 +188,7 @@ defmodule Exonerate.Type.Array do
     filter_call =
       Tools.call(
         resource,
-        JsonPointer.join(pointer, Combining.adjust(filter)),
+        JsonPtr.join(pointer, Combining.adjust(filter)),
         Keyword.put(opts, :tracked, :array)
       )
 
@@ -201,7 +201,7 @@ defmodule Exonerate.Type.Array do
   end
 
   defp filter_clauses(resource, pointer, opts, filter, _) do
-    filter_call = Tools.call(resource, JsonPointer.join(pointer, Combining.adjust(filter)), opts)
+    filter_call = Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
     [
       quote do
@@ -293,7 +293,7 @@ defmodule Exonerate.Type.Array do
       if needs_seen_tracking?(context, opts) do
         for filter <- @seen_filters, is_map_key(context, filter) do
           module = @combining_modules[filter]
-          pointer = JsonPointer.join(pointer, filter)
+          pointer = JsonPtr.join(pointer, filter)
 
           quote do
             require unquote(module)

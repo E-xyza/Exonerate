@@ -115,7 +115,7 @@ defmodule Exonerate.Context do
 
   # intercept consts
   defp build_filter(context = %{"const" => const}, resource, pointer, opts) do
-    const_pointer = JsonPointer.join(pointer, "const")
+    const_pointer = JsonPtr.join(pointer, "const")
 
     rest_filter =
       context
@@ -137,7 +137,7 @@ defmodule Exonerate.Context do
 
   # intercept enums
   defp build_filter(context = %{"enum" => enum}, resource, pointer, opts) do
-    enum_pointer = JsonPointer.join(pointer, "enum")
+    enum_pointer = JsonPtr.join(pointer, "enum")
 
     types =
       enum
@@ -193,7 +193,7 @@ defmodule Exonerate.Context do
     combining =
       for filter <- @seen_filters, is_map_key(context, filter) do
         combining_module = Map.fetch!(@combining_modules, filter)
-        combining_pointer = JsonPointer.join(pointer, filter)
+        combining_pointer = JsonPtr.join(pointer, filter)
 
         quote do
           require unquote(combining_module)
@@ -212,7 +212,7 @@ defmodule Exonerate.Context do
 
               Exonerate.Combining.Not.filter(
                 unquote(resource),
-                unquote(JsonPointer.join(pointer, "not")),
+                unquote(JsonPtr.join(pointer, "not")),
                 unquote(Keyword.delete(opts, :tracked))
               )
             end
@@ -228,7 +228,7 @@ defmodule Exonerate.Context do
   end
 
   defmacro fallthrough(resource, pointer, opts) do
-    type_failure_pointer = JsonPointer.join(pointer, "type")
+    type_failure_pointer = JsonPtr.join(pointer, "type")
 
     Tools.maybe_dump(
       quote do
@@ -256,7 +256,7 @@ defmodule Exonerate.Context do
       |> update_resource_uri(resource)
       |> Tools.uri_to_resource()
 
-    updated_pointer = JsonPointer.from_path("/")
+    updated_pointer = JsonPtr.from_path("/")
 
     updated_call = Tools.call(updated_resource, updated_pointer, opts)
 

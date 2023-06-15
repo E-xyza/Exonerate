@@ -35,7 +35,7 @@ defmodule Exonerate.Filter.Properties do
 
   defp filters_for({key, _schema}, main_call, resource, pointer, opts) do
     context_opts = Context.scrub_opts(opts)
-    context_pointer = JsonPointer.join(pointer, key)
+    context_pointer = JsonPtr.join(pointer, key)
     context_call = Tools.call(resource, context_pointer, context_opts)
 
     subfilter =

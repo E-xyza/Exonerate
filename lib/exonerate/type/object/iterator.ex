@@ -50,7 +50,7 @@ defmodule Exonerate.Type.Object.Iterator do
         acc ->
           opts = adjust_opts(opts, filter, context)
 
-          filter_call = Tools.call(resource, JsonPointer.join(pointer, filter), opts)
+          filter_call = Tools.call(resource, JsonPtr.join(pointer, filter), opts)
 
           if filter in @visited and (tracked or visitor_call) do
             acc ++
@@ -86,10 +86,10 @@ defmodule Exonerate.Type.Object.Iterator do
   defp visitor_call(context, resource, pointer, opts) do
     case context do
       %{"additionalProperties" => _} ->
-        Tools.call(resource, JsonPointer.join(pointer, "additionalProperties"), opts)
+        Tools.call(resource, JsonPtr.join(pointer, "additionalProperties"), opts)
 
       %{"unevaluatedProperties" => _} ->
-        Tools.call(resource, JsonPointer.join(pointer, "unevaluatedProperties"), opts)
+        Tools.call(resource, JsonPtr.join(pointer, "unevaluatedProperties"), opts)
 
       _ ->
         nil
@@ -286,7 +286,7 @@ defmodule Exonerate.Type.Object.Iterator do
   defp build_accessories(context, resource, pointer, opts) do
     for filter <- @filters, is_map_key(context, filter) do
       module = @modules[filter]
-      pointer = JsonPointer.join(pointer, filter)
+      pointer = JsonPtr.join(pointer, filter)
 
       opts = adjust_opts(opts, filter, context)
 

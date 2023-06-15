@@ -16,7 +16,7 @@ defmodule Exonerate.Filter.DependentRequired do
   end
 
   defp make_prong_and_accessory({key, subschema}, resource, pointer, opts) do
-    call = Tools.call(resource, JsonPointer.join(pointer, key), :entrypoint, opts)
+    call = Tools.call(resource, JsonPtr.join(pointer, key), :entrypoint, opts)
 
     prong =
       quote do
@@ -46,7 +46,7 @@ defmodule Exonerate.Filter.DependentRequired do
     prongs =
       Enum.with_index(deps_list, fn
         dependent_key, index ->
-          pointer = JsonPointer.join(pointer, [key, "#{index}"])
+          pointer = JsonPtr.join(pointer, [key, "#{index}"])
 
           quote do
             :ok <-
