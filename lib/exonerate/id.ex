@@ -36,7 +36,7 @@ defmodule Exonerate.Id do
   end
 
   defp id_walk(module, schema = %{"id" => id}, pointer, resource_map, opts) do
-    if List.last(pointer) == "properties" do
+    if match?({_, "properties"}, JsonPointer.pop(pointer)) do
       # don't register an "id" which is underneath the "properties" key
       resource_map
     else
