@@ -36,7 +36,12 @@ defmodule Exonerate.Id do
   end
 
   defp id_walk(module, schema = %{"id" => id}, pointer, resource_map, opts) do
-    register(module, schema, id, pointer, resource_map, opts)
+    if List.last(pointer) == "properties" do
+      # don't register an "id" which is underneath the "properties" key
+      resource_map
+    else
+      register(module, schema, id, pointer, resource_map, opts)
+    end
   end
 
   defp id_walk(_, _, _, acc, _), do: acc
