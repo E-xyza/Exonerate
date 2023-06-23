@@ -88,8 +88,7 @@ defmodule Exonerate.Type.Object do
 
   defp outer_filters(context, resource, pointer, opts) do
     for filter <- @outer_filters, is_map_key(context, filter) do
-      filter_call =
-        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
+      filter_call = Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       quote do
         :ok <- unquote(filter_call)(object, path)
@@ -108,8 +107,7 @@ defmodule Exonerate.Type.Object do
       end
 
     for filter <- @seen_filters, is_map_key(context, filter) do
-      filter_call =
-        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
+      filter_call = Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       if needs_seen do
         quote do
@@ -131,8 +129,7 @@ defmodule Exonerate.Type.Object do
 
   defp unseen_filters(context, resource, pointer, opts) do
     for filter <- @unseen_filters, is_map_key(context, filter) do
-      filter_call =
-        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
+      filter_call = Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       quote do
         :ok <- unquote(filter_call)(object, path)

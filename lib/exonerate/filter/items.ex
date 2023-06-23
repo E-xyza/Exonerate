@@ -174,8 +174,7 @@ defmodule Exonerate.Filter.Items do
       when is_map(subschema) do
     iterator_call = Tools.call(resource, pointer, :array_iterator, opts)
 
-    items_call =
-      Tools.call(resource, JsonPtr.join(pointer, "items"), Context.scrub_opts(opts))
+    items_call = Tools.call(resource, JsonPtr.join(pointer, "items"), Context.scrub_opts(opts))
 
     iteration_head =
       Iterator.select(

@@ -11,8 +11,6 @@ defmodule Exonerate.Schema do
   alias Exonerate.Remote
 
   def ingest(binary, caller, resource, opts) do
-    {caller.module, resource}
-
     json_decoded = Tools.decode!(binary, opts)
     opts = Draft.set_opts(opts, json_decoded)
 
@@ -29,8 +27,11 @@ defmodule Exonerate.Schema do
   to be remembered.
   """
   def ref_prescan({schema, resource_map}, caller, resource, opts) do
-    Tools.scan(
-      schema,
+    entrypoint = get_entrypoint(opts)
+
+    schema
+    |> JsonPtr.resolve_json!(entrypoint)
+    |> Tools.scan(
       resource_map,
       &ref_walk(caller, &1, &2, &3, opts)
     )
@@ -39,7 +40,9 @@ defmodule Exonerate.Schema do
   end
 
   defp ref_walk(caller, %{"$ref" => ref}, pointer, resource_map, opts) when is_binary(ref) do
-    {ref_resource_uri, ref_pointer} = Id.find_resource_uri(resource_map, pointer)
+    resolved_pointer = JsonPtr.join(get_entrypoint(opts), pointer)
+
+    {ref_resource_uri, ref_pointer} = Id.find_resource_uri(resource_map, resolved_pointer)
 
     new_uri =
       ref_resource_uri
@@ -54,7 +57,7 @@ defmodule Exonerate.Schema do
       caller.module,
       tgt_resource,
       tgt_pointer,
-      &Degeneracy.canonicalize(&1, opts)
+      &Degeneracy.canonicalize(&1, Keyword.delete(opts, :entrypoint))
     )
 
     # update the ref registry with the current ref.
@@ -70,4 +73,10 @@ defmodule Exonerate.Schema do
   end
 
   defp ref_walk(_, _, _, resource_map, _), do: resource_map
+
+  defp get_entrypoint(opts) do
+    opts
+    |> Keyword.get(:entrypoint, "/")
+    |> JsonPtr.from_path
+  end
 end

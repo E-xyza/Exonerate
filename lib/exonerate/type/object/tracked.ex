@@ -90,8 +90,7 @@ defmodule Exonerate.Type.Object.Tracked do
 
   defp outer_filters(context, resource, pointer, opts) do
     for filter <- @outer_filters, is_map_key(context, filter) do
-      filter_call =
-        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
+      filter_call = Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       quote do
         :ok <- unquote(filter_call)(object, path)
@@ -101,8 +100,7 @@ defmodule Exonerate.Type.Object.Tracked do
 
   defp seen_filters(context, resource, pointer, opts) do
     for filter <- @seen_filters, is_map_key(context, filter) do
-      filter_call =
-        Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
+      filter_call = Tools.call(resource, JsonPtr.join(pointer, Combining.adjust(filter)), opts)
 
       if opts[:tracked] do
         quote do
