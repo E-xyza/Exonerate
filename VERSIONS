@@ -46,3 +46,6 @@
 # 1.0.0
 - fixes regression where id properties are labelled as ids
 - moves to using JsonPtr 
+
+# 1.0.1
+- fixes problem where $ref walking doesn't properly substitute location

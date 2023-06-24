@@ -505,7 +505,6 @@ defmodule Exonerate do
 
     schema = Schema.ingest(schema_string, caller, resource_uri, opts)
 
-
     opts = Draft.set_opts(opts, schema)
 
     resource =
