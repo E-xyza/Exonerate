@@ -8,7 +8,7 @@ includes =
     |> String.to_atom()
   end)
 
-Bandit.start_link(plug: ExonerateTest.FilePlug, scheme: :http, options: [port: 1234])
+Bandit.start_link(plug: ExonerateTest.FilePlug, scheme: :http, port: 1234)
 
 Calendar.put_time_zone_database(Tzdata.TimeZoneDatabase)
 
