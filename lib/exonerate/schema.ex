@@ -77,6 +77,6 @@ defmodule Exonerate.Schema do
   defp get_entrypoint(opts) do
     opts
     |> Keyword.get(:entrypoint, "/")
-    |> JsonPtr.from_path
+    |> JsonPtr.from_path()
   end
 end

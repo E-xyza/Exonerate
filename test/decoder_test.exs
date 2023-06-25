@@ -15,7 +15,7 @@ defmodule ExonerateTest.DecoderTest do
         type: string
     """,
     entrypoint: "/foo/bar",
-    content_type: "application/yaml"
+    encoding: "application/yaml"
   )
 
   test "yaml" do
@@ -66,7 +66,7 @@ defmodule ExonerateTest.DecoderTest do
     entrypoint: "/foo/bar",
     # note this is an alias!
     decoders: [{"custom", {Custom, :generate!}}],
-    content_type: "custom"
+    encoding: "custom"
   )
 
   test "custom" do

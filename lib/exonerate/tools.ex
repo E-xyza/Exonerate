@@ -260,11 +260,11 @@ defmodule Exonerate.Tools do
   end
 
   def decode!(string, opts) do
-    content_type = Keyword.fetch!(opts, :content_type)
+    encoding = Keyword.fetch!(opts, :encoding)
 
     opts
     |> Keyword.fetch!(:decoders)
-    |> List.keyfind(content_type, 0)
+    |> List.keyfind(encoding, 0)
     |> case do
       {_, Jason} ->
         Jason.decode!(string)
@@ -330,7 +330,7 @@ defmodule Exonerate.Tools do
     URI.merge(base, rel)
   end
 
-  def content_type_from_extension(uri_or_path, opts) do
+  def encoding_from_extension(uri_or_path, opts) do
     case Path.extname("#{uri_or_path}") do
       ".json" ->
         "application/json"
@@ -343,7 +343,7 @@ defmodule Exonerate.Tools do
         |> Keyword.get(:mimetype_mapping, [])
         |> List.keyfind(other, 0)
         |> case do
-          {_, content_type} -> content_type
+          {_, encoding} -> encoding
           nil -> "application/json"
         end
     end

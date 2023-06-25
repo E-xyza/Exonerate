@@ -46,7 +46,7 @@ Add the following lines to your mix.exs
 ```elixir
   defp deps do
     [
-      {:exonerate, "~> 1.0.1", runtime: false},
+      {:exonerate, "~> 1.1.0", runtime: false},
     ]
   end
 ```

@@ -35,7 +35,7 @@ defmodule Exonerate.Cache do
   end
 
   # RESOURCES
-  @resource_opts ~w(content_type mimetype_mapping decoders)a
+  @resource_opts ~w(encoding mimetype_mapping decoders)a
 
   defmatchspecp get_res_ms(module, name) do
     {{:resource, ^module, ^name}, resource} -> resource

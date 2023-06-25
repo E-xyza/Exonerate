@@ -49,3 +49,6 @@
 
 # 1.0.1
 - fixes problem where $ref walking doesn't properly substitute location
+
+# 1.1.0
+- deprecates `:content_type` option and renames it `:encoding`

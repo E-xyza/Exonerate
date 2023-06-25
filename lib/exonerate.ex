@@ -350,9 +350,9 @@ defmodule Exonerate do
 
   ### Extra options
 
-  - `:content_type`: specifies the content-type of the provided schema string
+  - `:encoding`: specifies the content-type of the provided schema string
     literal. Defaults to `application/json` if the file extension is `.json`,
-    and `application/yaml` if the file extension is `.yaml`  If `:content_type`
+    and `application/yaml` if the file extension is `.yaml`  If `:encoding`
     is unspecified and the file extension is unrecognized, Exonerate will
     not be able to compile.
   - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples.
@@ -429,7 +429,7 @@ defmodule Exonerate do
     opts =
       opts
       |> Macro.expand_literals(__CALLER__)
-      |> set_content_type(path)
+      |> set_encoding(path)
       |> Tools.set_decoders()
 
     # prewalk the schema text
@@ -502,7 +502,6 @@ defmodule Exonerate do
          root_pointer,
          opts
        ) do
-
     schema = Schema.ingest(schema_string, caller, resource_uri, opts)
 
     opts = Draft.set_opts(opts, schema)
@@ -544,9 +543,15 @@ defmodule Exonerate do
     )
   end
 
-  defp set_content_type(opts, path) do
-    Keyword.put_new_lazy(opts, :content_type, fn ->
-      Tools.content_type_from_extension(path, opts)
+  defp set_encoding(opts, path) do
+    # need to support "content_type" option for backwards compatibility
+    Keyword.put_new_lazy(opts, :encoding, fn ->
+      if content_type = Keyword.get(opts, :content_type) do
+        IO.warn("the `:content_type` option is deprecated.  use `:encoding` instead")
+        content_type
+      else
+        Tools.encoding_from_extension(path, opts)
+      end
     end)
   end
 
@@ -554,7 +559,7 @@ defmodule Exonerate do
     opts
     |> Macro.expand(caller)
     |> Macro.expand_literals(caller)
-    |> Keyword.put_new(:content_type, "application/json")
+    |> Keyword.put_new(:encoding, "application/json")
     |> Tools.set_decoders()
   end
 end
