@@ -52,3 +52,6 @@
 
 # 1.1.0
 - deprecates `:content_type` option and renames it `:encoding`
+
+# 1.1.1
+- updates elixir versioning requirements
