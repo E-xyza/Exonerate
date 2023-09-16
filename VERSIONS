@@ -55,3 +55,8 @@
 
 # 1.1.1
 - updates elixir versioning requirements
+
+# 1.1.2
+- adds extra message when the reference pointer is not found
+- fixes bug where references are not recursively cached when the entrypoint
+  isn't the root entrypoint

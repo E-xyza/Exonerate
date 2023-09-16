@@ -1,6 +1,5 @@
 defmodule ExonerateTest.FormatTest do
   use ExUnit.Case, async: true
-
   require Exonerate
 
   describe "builtin formats:" do

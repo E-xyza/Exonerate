@@ -510,6 +510,7 @@ defmodule Exonerate do
       if id = id_from(schema) do
         resource = id
         Cache.put_schema(caller.module, resource, schema)
+
         resource
       else
         resource_uri

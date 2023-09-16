@@ -161,6 +161,11 @@ defmodule Exonerate.Cache do
     put_schema(module, resource_uri, new_schema)
 
     :ok
+  rescue
+    KeyError ->
+      raise CompileError,
+        description:
+          "reference points to: #{JsonPtr.to_uri(pointer)}, this location not found in the schema"
   end
 
   @spec has_schema?(module, resource_uri :: String.t()) :: boolean
@@ -178,6 +183,10 @@ defmodule Exonerate.Cache do
       {tgt_resource, tgt_pointer}
   end
 
+  defmatchspecp get_ref_pointers_ms(module, tgt_resource) do
+    {{:ref, {^module, ^tgt_resource, _}}, {^module, ^tgt_resource, tgt_pointer}} -> tgt_pointer
+  end
+
   def register_ref(module, ref_resource, ref_pointer, tgt_resource, tgt_pointer) do
     :ets.insert(
       get_table(),
@@ -189,9 +198,15 @@ defmodule Exonerate.Cache do
 
   def traverse_ref!(module, ref_resource, ref_pointer) do
     case :ets.select(get_table(), get_ref_ms(module, ref_resource, ref_pointer)) do
-      [] -> raise "ref not found"
+      [] -> raise "ref at #{JsonPtr.to_uri(ref_pointer)} not found"
       [ref] -> ref
     end
+  end
+
+  def all_ref_pointers(module, ref_resource) do
+    get_table()
+    |> :ets.select(get_ref_pointers_ms(module, ref_resource))
+    |> MapSet.new()
   end
 
   # CONTEXTS
@@ -212,7 +227,6 @@ defmodule Exonerate.Cache do
     end
   end
 
-  require MatchSpec
   @all MatchSpec.fun2ms(fn any -> any end)
   def dump do
     :ets.select(get_table(), @all)

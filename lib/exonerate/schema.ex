@@ -17,8 +17,26 @@ defmodule Exonerate.Schema do
     json_decoded
     |> Degeneracy.canonicalize(opts)
     |> tap(&Cache.put_schema(caller.module, resource, &1))
+    |> cache_assignments(caller, resource, opts)
+  end
+
+  defp cache_assignments(schema, caller, resource, opts, seen \\ MapSet.new()) do
+    schema
     |> Id.prescan(caller.module, resource, opts)
     |> ref_prescan(caller, resource, opts)
+
+    # recursively jump into references and go ahead run cache assignments on them.
+    caller.module
+    |> Cache.all_ref_pointers(resource)
+    |> Enum.reject(&(&1 in seen))
+    |> Enum.reduce(seen, fn pointer, seen_so_far ->
+      new_seen = MapSet.put(seen_so_far, pointer)
+      new_opts = Keyword.replace(opts, :entrypoint, JsonPtr.to_path(pointer))
+      cache_assignments(schema, caller, resource, new_opts, new_seen)
+      Cache.all_ref_pointers(caller.module, resource)
+    end)
+
+    schema
   end
 
   @doc """
