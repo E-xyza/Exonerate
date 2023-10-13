@@ -60,3 +60,6 @@
 - adds extra message when the reference pointer is not found
 - fixes bug where references are not recursively cached when the entrypoint
   isn't the root entrypoint
+
+# 1.1.3
+- fixes bug in degeneracy calculations
