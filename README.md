@@ -4,6 +4,11 @@
 
 ![example workflow](https://github.com/E-xyza/exonerate/actions/workflows/elixir.yml/badge.svg)
 
+## Erlang 26.0 warning
+
+There is a bug in the Erlang compiler that causes Exonerate to fail on OTP version 26.0.  Please use
+26.1 or an earlier version or OTP.
+
 ## Documentation
 
 Documentation is available at: https://hexdocs.pm/exonerate
