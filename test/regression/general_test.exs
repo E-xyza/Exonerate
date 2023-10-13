@@ -1,4 +1,4 @@
-defmodule ExonerateTest.RegressionTest do
+defmodule ExonerateTest.Regression.GeneralTest do
   use ExUnit.Case, async: true
   require Exonerate
 

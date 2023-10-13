@@ -175,6 +175,7 @@ defmodule Exonerate.Context do
 
     {filters, accessories} =
       types
+      |> List.wrap()
       |> MapSet.new()
       |> MapSet.intersection(filtered_types)
       |> Enum.map(fn type ->

@@ -275,7 +275,8 @@ defmodule Exonerate.Degeneracy do
   def class(false), do: :error
 
   def class(context = %{"type" => t}) do
-    if Enum.sort(t) == @all_types do
+    types = List.wrap(t)
+    if Enum.sort(types) == @all_types do
       context
       |> Map.delete("type")
       |> class()
