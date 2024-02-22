@@ -306,18 +306,27 @@ defmodule Exonerate.Tools do
         base_path = path || "/"
         dest_path = target.path || ""
 
-        if String.ends_with?(path, "/") do
-          %URI{
-            path: Path.join(base_path, dest_path),
-            query: target.query,
-            fragment: target.fragment
-          }
-        else
-          %URI{
-            path: Path.join(Path.dirname(base_path), dest_path),
-            query: target.query,
-            fragment: target.fragment
-          }
+        cond do
+          String.starts_with?(dest_path, "/") ->
+            %URI{
+              path: dest_path,
+              query: target.query,
+              fragment: target.fragment
+            }
+
+          String.ends_with?(path, "/") ->
+            %URI{
+              path: Path.join(base_path, dest_path),
+              query: target.query,
+              fragment: target.fragment
+            }
+
+          true ->
+            %URI{
+              path: Path.join(Path.dirname(base_path), dest_path),
+              query: target.query,
+              fragment: target.fragment
+            }
         end
 
       # target is absolute.
