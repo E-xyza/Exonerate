@@ -15,7 +15,7 @@ defmodule ExonerateTest.RelativeRefTest do
     """
   )
 
-  test "ref tracing works through one hop" do
+  test "relative ref works with ./ prefix" do
     assert {:error, error} = ref1(%{"bar" => ["baz"]})
 
     assert [
