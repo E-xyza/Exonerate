@@ -56,6 +56,20 @@ defmodule Exonerate.Remote do
     raise "function resources can't loaded, (tried to load #{uri})"
   end
 
+  defp load_cache(caller, uri = %{scheme: "file"}, opts) do
+    resource = Tools.uri_to_resource(uri)
+
+    case File.read(uri.path) do
+      {:ok, binary} ->
+        Schema.ingest(binary, caller, resource, opts)
+
+      error ->
+        raise "failed to read from the local file #{uri}: #{error}"
+    end
+
+    :ok
+  end
+
   defp load_cache(caller, uri, opts) do
     remote_fetch_adapter = Keyword.get(opts, :remote_fetch_adapter, __MODULE__)
     resource = Tools.uri_to_resource(uri)
