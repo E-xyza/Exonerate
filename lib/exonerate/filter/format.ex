@@ -297,15 +297,11 @@ defmodule Exonerate.Filter.Format do
           &String.replace_leading(&1, resource, "")
         )
 
-      cond do
-        {_, spec} = List.keyfind(types, filter, 0) ->
-          build_custom(spec, resource, pointer, opts)
-
-        {_, spec} = List.keyfind(pointers, uri, 0) ->
-          build_custom(spec, resource, pointer, opts)
-
-        true ->
-          []
+      with nil <- List.keyfind(types, filter, 0),
+           nil <- List.keyfind(pointers, uri, 0) do
+        []
+      else
+        {_, spec} -> build_custom(spec, resource, pointer, opts)
       end
     else
       []

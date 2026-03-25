@@ -7,7 +7,7 @@ readme = Path.join(__DIR__, "../../README.md")
   |> File.read!()
   |> String.split("```elixir")
   |> Enum.map(&hd(String.split(&1, "```")))
-  |> Enum.slice(2..-1)
+  |> Enum.slice(2..-1//1)
 
 Code.eval_string(module)
 

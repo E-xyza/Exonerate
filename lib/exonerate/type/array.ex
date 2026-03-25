@@ -210,21 +210,6 @@ defmodule Exonerate.Type.Array do
     ]
   end
 
-  defp iterator_clause(resource, pointer, opts, needs_combining_seen) do
-    call_opts =
-      if needs_combining_seen do
-        Keyword.put(opts, :tracked, :array)
-      else
-        opts
-      end
-
-    iterator_call = Tools.call(resource, pointer, :array_iterator, call_opts)
-
-    quote do
-      unquote(iterator_call)(array, array, 0, path)
-    end
-  end
-
   defp result_expr(context, opts) do
     # we only need to return result_expr if we are being tracked
     local_length = local_length(context)

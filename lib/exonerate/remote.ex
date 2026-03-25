@@ -128,11 +128,14 @@ defmodule Exonerate.Remote do
       |> Req.get!(decode_body: false)
 
     content_type =
-      if List.keyfind(headers, "content-type", 0) do
-        List.keyfind(headers, "content-type", 0)
-        |> elem(1)
-        |> String.split(";")
-        |> List.first()
+      case headers["content-type"] do
+        [value | _] ->
+          value
+          |> String.split(";")
+          |> List.first()
+
+        _ ->
+          nil
       end
 
     {body, content_type}

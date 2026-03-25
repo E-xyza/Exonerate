@@ -100,7 +100,7 @@ defmodule Exonerate.Type.Array.Iterator do
 
   def select(context, parameters) do
     if mode = mode(context) do
-      mode.select(context, parameters)
+      apply(mode, :select, [context, parameters])
     end
   end
 

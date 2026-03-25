@@ -9,6 +9,7 @@ defmodule Exonerate.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
+      elixirc_options: [warnings_as_errors: true],
       package: [
         description: "JSON Schema macro generator",
         licenses: ["MIT"],
@@ -45,24 +46,24 @@ defmodule Exonerate.MixProject do
     [
       {:match_spec, "~> 0.3.1"},
       {:json_ptr, "~> 1.0"},
-      {:jason, "~> 1.4.0"},
+      {:jason, "~> 1.4"},
       # optional dependencies
-      {:pegasus, "~> 0.2.2", optional: true},
-      {:req, "~> 0.3", optional: true},
-      {:finch, "~> 0.15", optional: true},
-      {:yaml_elixir, "~> 2.7", optional: true},
+      {:pegasus, "~> 0.2.4", optional: true},
+      {:req, "~> 0.5", optional: true},
+      {:finch, "~> 0.19", optional: true},
+      {:yaml_elixir, "~> 2.11", optional: true},
       {:idna, "~> 6.1.1", optional: true},
       # dev tools
-      {:ex_doc, "~> 0.29", only: :dev},
-      {:dialyxir, "~> 1.2.0", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.35", only: :dev},
+      {:dialyxir, "~> 1.4", only: :dev, runtime: false},
       # test
-      {:bandit, "~> 0.7", only: [:test, :bench]},
-      {:tzdata, "~> 1.1.1", only: :test},
-      {:poison, "~> 5.0.0", only: :test},
+      {:bandit, "~> 1.6", only: [:test, :bench]},
+      {:tzdata, "~> 1.1", only: :test},
+      {:poison, "~> 6.0", only: :test},
       # benchmarking tools
-      {:ex_json_schema, "~> 0.9.2", only: :bench},
-      {:json_xema, "~> 0.3", only: :bench},
-      {:benchee, "~> 1.1.0", only: :bench}
+      {:ex_json_schema, "~> 0.10", only: :bench},
+      {:json_xema, "~> 0.6", only: :bench},
+      {:benchee, "~> 1.3", only: :bench}
     ]
   end
 end
