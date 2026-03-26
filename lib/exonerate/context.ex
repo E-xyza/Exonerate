@@ -4,7 +4,7 @@ defmodule Exonerate.Context do
   # a context is the representation of "parsing json at a given location"
   #
   # Naming conventions:
-  # - `context` = the JSON schema content (a map)
+  # - `local_schema` = the JSON schema content at current pointer (a map)
   # - `ctx` = CompilationContext struct (used internally)
   # - `opts` = keyword list (only at macro boundaries in quote blocks)
 
@@ -32,17 +32,17 @@ defmodule Exonerate.Context do
     call = Tools.call(resource, pointer, ctx)
 
     if Cache.register_context(caller.module, call) do
-      context = Tools.subschema(caller, resource, pointer)
+      local_schema = Tools.subschema(caller, resource, pointer)
 
       # Phase 1: Register declaration with degeneracy info
       decl =
         Declaration.new(resource, pointer, ctx)
-        |> Declaration.with_degeneracy(Degeneracy.class(context))
+        |> Declaration.with_degeneracy(Degeneracy.class(local_schema))
 
       Cache.register_declaration(caller.module, decl)
 
       # Phase 2: Generate code
-      context
+      local_schema
       |> build_filter(resource, pointer, ctx)
       |> Tools.maybe_dump(caller, ctx)
     else
@@ -63,16 +63,16 @@ defmodule Exonerate.Context do
 
   # Object tracking detection - mirrors Type.Object.needs_seen?
   @object_seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
-  defp needs_object_tracking?(context) do
-    is_map_key(context, "unevaluatedProperties") and
-      Enum.any?(@object_seen_filters, &is_map_key(context, &1))
+  defp needs_object_tracking?(local_schema) do
+    is_map_key(local_schema, "unevaluatedProperties") and
+      Enum.any?(@object_seen_filters, &is_map_key(local_schema, &1))
   end
 
   # Array tracking detection - mirrors Type.Array.needs_combining_seen?
   @array_seen_filters ~w(allOf anyOf if oneOf $ref)
-  defp needs_array_tracking?(context) do
-    is_map_key(context, "unevaluatedItems") and
-      Enum.any?(@array_seen_filters, &is_map_key(context, &1))
+  defp needs_array_tracking?(local_schema) do
+    is_map_key(local_schema, "unevaluatedItems") and
+      Enum.any?(@array_seen_filters, &is_map_key(local_schema, &1))
   end
 
   defp build_filter(true, resource, pointer, ctx) do
@@ -113,49 +113,49 @@ defmodule Exonerate.Context do
   end
 
   # metadata
-  defp build_filter(context = %{"title" => _}, resource, pointer, ctx) do
-    context
+  defp build_filter(local_schema = %{"title" => _}, resource, pointer, ctx) do
+    local_schema
     |> Map.delete("title")
     |> build_filter(resource, pointer, ctx)
   end
 
-  defp build_filter(context = %{"description" => _}, resource, pointer, ctx) do
-    context
+  defp build_filter(local_schema = %{"description" => _}, resource, pointer, ctx) do
+    local_schema
     |> Map.delete("description")
     |> build_filter(resource, pointer, ctx)
   end
 
-  defp build_filter(context = %{"examples" => _}, resource, pointer, ctx) do
-    context
+  defp build_filter(local_schema = %{"examples" => _}, resource, pointer, ctx) do
+    local_schema
     |> Map.delete("examples")
     |> build_filter(resource, pointer, ctx)
   end
 
-  defp build_filter(context = %{"default" => _}, resource, pointer, ctx) do
-    context
+  defp build_filter(local_schema = %{"default" => _}, resource, pointer, ctx) do
+    local_schema
     |> Map.delete("default")
     |> build_filter(resource, pointer, ctx)
   end
 
   # ID-swapping
-  defp build_filter(context = %{"id" => id}, resource, pointer, ctx) do
-    context
+  defp build_filter(local_schema = %{"id" => id}, resource, pointer, ctx) do
+    local_schema
     |> Map.delete("id")
     |> id_swap_with(id, resource, pointer, ctx)
   end
 
-  defp build_filter(context = %{"$id" => id}, resource, pointer, ctx) do
-    context
+  defp build_filter(local_schema = %{"$id" => id}, resource, pointer, ctx) do
+    local_schema
     |> Map.delete("$id")
     |> id_swap_with(id, resource, pointer, ctx)
   end
 
   # intercept consts
-  defp build_filter(context = %{"const" => const}, resource, pointer, ctx) do
+  defp build_filter(local_schema = %{"const" => const}, resource, pointer, ctx) do
     const_pointer = JsonPtr.join(pointer, "const")
 
     rest_filter =
-      context
+      local_schema
       |> Map.delete("const")
       |> build_filter(resource, pointer, CompilationContext.merge(ctx, type: Type.of(const)))
 
@@ -173,7 +173,7 @@ defmodule Exonerate.Context do
   end
 
   # intercept enums
-  defp build_filter(context = %{"enum" => enum}, resource, pointer, ctx) do
+  defp build_filter(local_schema = %{"enum" => enum}, resource, pointer, ctx) do
     enum_pointer = JsonPtr.join(pointer, "enum")
 
     types =
@@ -182,7 +182,7 @@ defmodule Exonerate.Context do
       |> Enum.uniq()
 
     rest_filter =
-      context
+      local_schema
       |> Map.delete("enum")
       |> build_filter(resource, pointer, CompilationContext.merge(ctx, type: types))
 
@@ -201,8 +201,8 @@ defmodule Exonerate.Context do
 
   @all_types Type.all()
 
-  # NB: context should always contain a type field as per Degeneracy.canonicalize/2 called from Tools.subschema/3
-  defp build_filter(context = %{"type" => types}, resource, pointer, ctx) do
+  # NB: local_schema should always contain a type field as per Degeneracy.canonicalize/2 called from Tools.subschema/3
+  defp build_filter(local_schema = %{"type" => types}, resource, pointer, ctx) do
     # condition the bindings
     filtered_types =
       ctx
@@ -238,12 +238,12 @@ defmodule Exonerate.Context do
     combining_opts = CompilationContext.to_opts(combining_ctx)
 
     # Check if we need to generate tracked versions of combining filters
-    needs_object_tracking = needs_object_tracking?(context)
-    needs_array_tracking = needs_array_tracking?(context)
+    needs_object_tracking = needs_object_tracking?(local_schema)
+    needs_array_tracking = needs_array_tracking?(local_schema)
 
     # Generate untracked combining filters (standard behavior)
     combining =
-      for filter <- @seen_filters, is_map_key(context, filter) do
+      for filter <- @seen_filters, is_map_key(local_schema, filter) do
         combining_module = Map.fetch!(@combining_modules, filter)
         combining_pointer = JsonPtr.join(pointer, filter)
 
@@ -258,7 +258,7 @@ defmodule Exonerate.Context do
         end
       end ++
         List.wrap(
-          if is_map_key(context, "not") do
+          if is_map_key(local_schema, "not") do
             not_ctx = CompilationContext.with_tracked(combining_ctx, nil)
             not_opts = CompilationContext.to_opts(not_ctx)
 
@@ -286,7 +286,7 @@ defmodule Exonerate.Context do
 
         tracked_object_opts = CompilationContext.to_opts(tracked_object_ctx)
 
-        for filter <- @object_seen_filters, is_map_key(context, filter) do
+        for filter <- @object_seen_filters, is_map_key(local_schema, filter) do
           combining_module = Map.fetch!(@object_combining_modules, filter)
           combining_pointer = JsonPtr.join(pointer, filter)
 
@@ -316,7 +316,7 @@ defmodule Exonerate.Context do
 
         tracked_array_opts = CompilationContext.to_opts(tracked_array_ctx)
 
-        for filter <- @array_seen_filters, is_map_key(context, filter) do
+        for filter <- @array_seen_filters, is_map_key(local_schema, filter) do
           combining_module = Map.fetch!(@combining_modules, filter)
           combining_pointer = JsonPtr.join(pointer, filter)
 
@@ -367,7 +367,7 @@ defmodule Exonerate.Context do
     )
   end
 
-  defp id_swap_with(context, id, resource, pointer, ctx) do
+  defp id_swap_with(local_schema, id, resource, pointer, ctx) do
     this_call = Tools.call(resource, pointer, ctx)
 
     updated_resource =
@@ -379,7 +379,7 @@ defmodule Exonerate.Context do
 
     updated_call = Tools.call(updated_resource, updated_pointer, ctx)
 
-    rest = build_filter(context, updated_resource, updated_pointer, ctx)
+    rest = build_filter(local_schema, updated_resource, updated_pointer, ctx)
 
     if updated_call === this_call do
       rest
