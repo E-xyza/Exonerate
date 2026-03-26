@@ -41,22 +41,28 @@ defmodule Exonerate.Declaration do
   ]
 
   @doc """
-  Creates a new declaration from resource, pointer, and options.
+  Creates a new declaration from resource, pointer, and options/context.
   """
   @spec new(String.t(), JsonPtr.t(), keyword | Exonerate.CompilationContext.t()) :: t()
-  def new(resource, pointer, opts) do
-    name = Exonerate.Tools.call(resource, pointer, opts)
+  def new(resource, pointer, ctx_or_opts) do
+    name = Exonerate.Tools.call(resource, pointer, ctx_or_opts)
 
     %__MODULE__{
       name: name,
       resource: resource,
       pointer: pointer,
-      opts: opts,
+      opts: normalize_opts(ctx_or_opts),
       return_type: nil,
       dependencies: [],
       degeneracy: :unknown
     }
   end
+
+  defp normalize_opts(%Exonerate.CompilationContext{} = ctx) do
+    Exonerate.CompilationContext.to_opts(ctx)
+  end
+
+  defp normalize_opts(opts) when is_list(opts), do: opts
 
   @doc """
   Determines the return type based on tracking mode.

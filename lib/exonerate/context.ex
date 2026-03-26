@@ -2,6 +2,11 @@ defmodule Exonerate.Context do
   @moduledoc false
 
   # a context is the representation of "parsing json at a given location"
+  #
+  # Naming conventions:
+  # - `context` = the JSON schema content (a map)
+  # - `ctx` = CompilationContext struct (used internally)
+  # - `opts` = keyword list (only at macro boundaries in quote blocks)
 
   alias Exonerate.Cache
   alias Exonerate.Combining
@@ -31,15 +36,15 @@ defmodule Exonerate.Context do
 
       # Phase 1: Register declaration with degeneracy info
       decl =
-        Declaration.new(resource, pointer, opts)
+        Declaration.new(resource, pointer, ctx)
         |> Declaration.with_degeneracy(Degeneracy.class(context))
 
       Cache.register_declaration(caller.module, decl)
 
       # Phase 2: Generate code
       context
-      |> build_filter(resource, pointer, opts)
-      |> Tools.maybe_dump(caller, opts)
+      |> build_filter(resource, pointer, ctx)
+      |> Tools.maybe_dump(caller, ctx)
     else
       []
     end
@@ -70,11 +75,11 @@ defmodule Exonerate.Context do
       Enum.any?(@array_seen_filters, &is_map_key(context, &1))
   end
 
-  defp build_filter(true, resource, pointer, opts) do
-    call = Tools.call(resource, pointer, opts)
+  defp build_filter(true, resource, pointer, ctx) do
+    call = Tools.call(resource, pointer, ctx)
 
     result =
-      case opts[:tracked] do
+      case ctx.tracked do
         :object ->
           quote do
             {:ok, MapSet.new()}
@@ -95,8 +100,8 @@ defmodule Exonerate.Context do
     end
   end
 
-  defp build_filter(false, resource, pointer, opts) do
-    call = Tools.call(resource, pointer, opts)
+  defp build_filter(false, resource, pointer, ctx) do
+    call = Tools.call(resource, pointer, ctx)
 
     quote do
       @compile {:inline, [{unquote(call), 2}]}
@@ -108,56 +113,56 @@ defmodule Exonerate.Context do
   end
 
   # metadata
-  defp build_filter(context = %{"title" => _}, resource, pointer, opts) do
+  defp build_filter(context = %{"title" => _}, resource, pointer, ctx) do
     context
     |> Map.delete("title")
-    |> build_filter(resource, pointer, opts)
+    |> build_filter(resource, pointer, ctx)
   end
 
-  defp build_filter(context = %{"description" => _}, resource, pointer, opts) do
+  defp build_filter(context = %{"description" => _}, resource, pointer, ctx) do
     context
     |> Map.delete("description")
-    |> build_filter(resource, pointer, opts)
+    |> build_filter(resource, pointer, ctx)
   end
 
-  defp build_filter(context = %{"examples" => _}, resource, pointer, opts) do
+  defp build_filter(context = %{"examples" => _}, resource, pointer, ctx) do
     context
     |> Map.delete("examples")
-    |> build_filter(resource, pointer, opts)
+    |> build_filter(resource, pointer, ctx)
   end
 
-  defp build_filter(context = %{"default" => _}, resource, pointer, opts) do
+  defp build_filter(context = %{"default" => _}, resource, pointer, ctx) do
     context
     |> Map.delete("default")
-    |> build_filter(resource, pointer, opts)
+    |> build_filter(resource, pointer, ctx)
   end
 
   # ID-swapping
-  defp build_filter(context = %{"id" => id}, resource, pointer, opts) do
+  defp build_filter(context = %{"id" => id}, resource, pointer, ctx) do
     context
     |> Map.delete("id")
-    |> id_swap_with(id, resource, pointer, opts)
+    |> id_swap_with(id, resource, pointer, ctx)
   end
 
-  defp build_filter(context = %{"$id" => id}, resource, pointer, opts) do
+  defp build_filter(context = %{"$id" => id}, resource, pointer, ctx) do
     context
     |> Map.delete("$id")
-    |> id_swap_with(id, resource, pointer, opts)
+    |> id_swap_with(id, resource, pointer, ctx)
   end
 
   # intercept consts
-  defp build_filter(context = %{"const" => const}, resource, pointer, opts) do
+  defp build_filter(context = %{"const" => const}, resource, pointer, ctx) do
     const_pointer = JsonPtr.join(pointer, "const")
 
     rest_filter =
       context
       |> Map.delete("const")
-      |> build_filter(resource, pointer, Keyword.merge(opts, type: Type.of(const)))
+      |> build_filter(resource, pointer, CompilationContext.merge(ctx, type: Type.of(const)))
 
     const = Macro.escape(const)
 
     quote do
-      defp unquote(Tools.call(resource, pointer, opts))(content, path)
+      defp unquote(Tools.call(resource, pointer, ctx))(content, path)
            when content != unquote(const) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(resource), unquote(const_pointer), path)
@@ -168,7 +173,7 @@ defmodule Exonerate.Context do
   end
 
   # intercept enums
-  defp build_filter(context = %{"enum" => enum}, resource, pointer, opts) do
+  defp build_filter(context = %{"enum" => enum}, resource, pointer, ctx) do
     enum_pointer = JsonPtr.join(pointer, "enum")
 
     types =
@@ -179,12 +184,12 @@ defmodule Exonerate.Context do
     rest_filter =
       context
       |> Map.delete("enum")
-      |> build_filter(resource, pointer, Keyword.merge(opts, type: types))
+      |> build_filter(resource, pointer, CompilationContext.merge(ctx, type: types))
 
     values = Macro.escape(enum)
 
     quote do
-      defp unquote(Tools.call(resource, pointer, opts))(content, path)
+      defp unquote(Tools.call(resource, pointer, ctx))(content, path)
            when content not in unquote(values) do
         require Exonerate.Tools
         Exonerate.Tools.mismatch(content, unquote(resource), unquote(enum_pointer), path)
@@ -197,13 +202,15 @@ defmodule Exonerate.Context do
   @all_types Type.all()
 
   # NB: context should always contain a type field as per Degeneracy.canonicalize/2 called from Tools.subschema/3
-  defp build_filter(context = %{"type" => types}, resource, pointer, opts) do
+  defp build_filter(context = %{"type" => types}, resource, pointer, ctx) do
     # condition the bindings
     filtered_types =
-      opts
-      |> Keyword.get(:only, @all_types)
-      |> List.wrap()
+      ctx
+      |> CompilationContext.get_only(@all_types)
       |> MapSet.new()
+
+    # Convert to opts for macro boundaries
+    opts = CompilationContext.to_opts(ctx)
 
     {filters, accessories} =
       types
@@ -226,10 +233,9 @@ defmodule Exonerate.Context do
     # Pass type constraint to combining schemas to avoid Dialyzer warnings
     # See: https://github.com/E-xyza/Exonerate/issues/85
     # Intersect with existing :only constraint to accumulate type restrictions
-    existing_only = opts |> Keyword.get(:only, @all_types) |> List.wrap() |> MapSet.new()
     current_types = types |> List.wrap() |> MapSet.new()
-    new_only = MapSet.intersection(existing_only, current_types) |> MapSet.to_list()
-    combining_opts = Keyword.put(opts, :only, new_only)
+    combining_ctx = CompilationContext.constrain_types(ctx, MapSet.to_list(current_types))
+    combining_opts = CompilationContext.to_opts(combining_ctx)
 
     # Check if we need to generate tracked versions of combining filters
     needs_object_tracking = needs_object_tracking?(context)
@@ -253,13 +259,16 @@ defmodule Exonerate.Context do
       end ++
         List.wrap(
           if is_map_key(context, "not") do
+            not_ctx = CompilationContext.with_tracked(combining_ctx, nil)
+            not_opts = CompilationContext.to_opts(not_ctx)
+
             quote do
               require Exonerate.Combining.Not
 
               Exonerate.Combining.Not.filter(
                 unquote(resource),
                 unquote(JsonPtr.join(pointer, "not")),
-                unquote(Keyword.delete(combining_opts, :tracked))
+                unquote(not_opts)
               )
             end
           end
@@ -270,10 +279,12 @@ defmodule Exonerate.Context do
     tracked_object_combining =
       if needs_object_tracking do
         # For object tracking, we constrain :only to "object" and set :tracked to :object
-        tracked_object_opts =
-          combining_opts
-          |> Keyword.put(:tracked, :object)
-          |> Keyword.put(:only, ["object"])
+        tracked_object_ctx =
+          combining_ctx
+          |> CompilationContext.with_tracked(:object)
+          |> CompilationContext.constrain_types(["object"])
+
+        tracked_object_opts = CompilationContext.to_opts(tracked_object_ctx)
 
         for filter <- @object_seen_filters, is_map_key(context, filter) do
           combining_module = Map.fetch!(@object_combining_modules, filter)
@@ -298,10 +309,12 @@ defmodule Exonerate.Context do
     tracked_array_combining =
       if needs_array_tracking do
         # For array tracking, we constrain :only to "array" and set :tracked to :array
-        tracked_array_opts =
-          combining_opts
-          |> Keyword.put(:tracked, :array)
-          |> Keyword.put(:only, ["array"])
+        tracked_array_ctx =
+          combining_ctx
+          |> CompilationContext.with_tracked(:array)
+          |> CompilationContext.constrain_types(["array"])
+
+        tracked_array_opts = CompilationContext.to_opts(tracked_array_ctx)
 
         for filter <- @array_seen_filters, is_map_key(context, filter) do
           combining_module = Map.fetch!(@combining_modules, filter)
@@ -331,12 +344,14 @@ defmodule Exonerate.Context do
     end
   end
 
+  # fallthrough still receives opts from quote blocks (macro boundary)
   defmacro fallthrough(resource, pointer, opts) do
     type_failure_pointer = JsonPtr.join(pointer, "type")
+    ctx = CompilationContext.from_opts(opts)
 
     Tools.maybe_dump(
       quote do
-        defp unquote(Tools.call(resource, pointer, opts))(content, path) do
+        defp unquote(Tools.call(resource, pointer, ctx))(content, path) do
           require Exonerate.Tools
 
           Exonerate.Tools.mismatch(
@@ -348,12 +363,12 @@ defmodule Exonerate.Context do
         end
       end,
       __CALLER__,
-      opts
+      ctx
     )
   end
 
-  defp id_swap_with(context, id, resource, pointer, opts) do
-    this_call = Tools.call(resource, pointer, opts)
+  defp id_swap_with(context, id, resource, pointer, ctx) do
+    this_call = Tools.call(resource, pointer, ctx)
 
     updated_resource =
       id
@@ -362,9 +377,9 @@ defmodule Exonerate.Context do
 
     updated_pointer = JsonPtr.from_path("/")
 
-    updated_call = Tools.call(updated_resource, updated_pointer, opts)
+    updated_call = Tools.call(updated_resource, updated_pointer, ctx)
 
-    rest = build_filter(context, updated_resource, updated_pointer, opts)
+    rest = build_filter(context, updated_resource, updated_pointer, ctx)
 
     if updated_call === this_call do
       rest

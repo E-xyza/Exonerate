@@ -110,7 +110,13 @@ defmodule Exonerate.Tools do
 
   defp scrub_macros(other), do: other
 
-  def maybe_dump(macro, env, opts) do
+  def maybe_dump(macro, env, %CompilationContext{dump: dump}) do
+    macro
+    |> evaluate_internal_macros(env)
+    |> __MODULE__.inspect(dump)
+  end
+
+  def maybe_dump(macro, env, opts) when is_list(opts) do
     macro
     |> evaluate_internal_macros(env)
     |> __MODULE__.inspect(Keyword.get(opts, :dump))
