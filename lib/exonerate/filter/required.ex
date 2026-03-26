@@ -11,27 +11,42 @@ defmodule Exonerate.Filter.Required do
   end
 
   defp build_filter(required_list, resource, pointer, opts) do
+    with_clauses = build_with_clauses(required_list, resource, pointer)
+
     quote do
       defp unquote(Tools.call(resource, pointer, opts))(object, path) do
-        unquote(required_list)
-        |> Enum.reduce_while({:ok, 0}, fn
-          required_field, {:ok, index} when is_map_key(object, required_field) ->
-            {:cont, {:ok, index + 1}}
-
-          required_field, {:ok, index} ->
-            require Exonerate.Tools
-
-            {:halt,
-             {Exonerate.Tools.mismatch(
-                object,
-                unquote(resource),
-                {unquote(pointer), "#{index}"},
-                path,
-                required: Path.join(path, required_field)
-              ), []}}
-        end)
-        |> elem(0)
+        unquote(with_clauses)
       end
     end
+  end
+
+  defp build_with_clauses(required_list, resource, pointer) do
+    clauses =
+      required_list
+      |> Enum.with_index()
+      |> Enum.map(fn {field, index} ->
+        error =
+          quote do
+            require Exonerate.Tools
+
+            Exonerate.Tools.mismatch(
+              object,
+              unquote(resource),
+              {unquote(pointer), unquote("#{index}")},
+              path,
+              required: Path.join(path, unquote(field))
+            )
+          end
+
+        {:<-, [],
+         [
+           :ok,
+           quote do
+             if is_map_key(object, unquote(field)), do: :ok, else: unquote(error)
+           end
+         ]}
+      end)
+
+    {:with, [], clauses ++ [[do: :ok]]}
   end
 end
