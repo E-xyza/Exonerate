@@ -177,33 +177,10 @@ defmodule Exonerate.Context do
   defp normalize_only(type) when is_binary(type), do: [type]
 
   # ============================================================================
-  # Filter Macros
+  # Module Attributes (shared between Phase 1 and Phase 2)
   # ============================================================================
 
-  defmacro filter(resource, pointer, opts) do
-    caller = __CALLER__
-    ctx = __MODULE__.from_opts(opts)
-    call = Tools.call(resource, pointer, ctx)
-
-    if Cache.register_context(caller.module, call) do
-      local_schema = Tools.subschema(caller, resource, pointer)
-
-      # Phase 1: Register declaration with degeneracy info
-      decl =
-        Declaration.new(resource, pointer, ctx)
-        |> Declaration.with_degeneracy(Degeneracy.class(local_schema))
-
-      Cache.register_declaration(caller.module, decl)
-
-      # Phase 2: Generate code
-      local_schema
-      |> build_filter(resource, pointer, ctx)
-      |> Tools.maybe_dump(caller, ctx)
-    else
-      []
-    end
-  end
-
+  @all_types Type.all()
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
   @seen_filters @combining_filters -- ["not"]
@@ -215,18 +192,271 @@ defmodule Exonerate.Context do
                               Exonerate.Filter.DependentSchemas
                             )
 
-  # Object tracking detection - mirrors Type.Object.needs_seen?
+  # Object/array tracking detection filters
   @object_seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
+  @array_seen_filters ~w(allOf anyOf if oneOf $ref)
+
   defp needs_object_tracking?(local_schema) do
     is_map_key(local_schema, "unevaluatedProperties") and
       Enum.any?(@object_seen_filters, &is_map_key(local_schema, &1))
   end
 
-  # Array tracking detection - mirrors Type.Array.needs_combining_seen?
-  @array_seen_filters ~w(allOf anyOf if oneOf $ref)
   defp needs_array_tracking?(local_schema) do
     is_map_key(local_schema, "unevaluatedItems") and
       Enum.any?(@array_seen_filters, &is_map_key(local_schema, &1))
+  end
+
+  # ============================================================================
+  # Phase 1: Declaration Collection
+  # ============================================================================
+
+  @doc """
+  Collects all declarations by walking the schema structure.
+
+  This is Phase 1 of the two-phase compilation. It must be called before
+  any code generation macros are invoked.
+  """
+  @spec collect_declarations(module(), String.t(), JsonPtr.t(), keyword()) :: :ok
+  def collect_declarations(module, resource, pointer, opts) do
+    ctx = from_opts(opts)
+    local_schema = Cache.fetch_schema!(module, resource) |> JsonPtr.resolve_json!(pointer)
+    do_collect_declarations(module, resource, pointer, ctx, local_schema)
+    :ok
+  end
+
+  defp do_collect_declarations(module, resource, pointer, ctx, local_schema) do
+    call = Tools.call(resource, pointer, ctx)
+
+    # Only process if declaration not already collected
+    # Note: We use has_declaration? here, not register_context, because
+    # Phase 2's filter macro needs register_context for its own deduplication
+    unless Cache.has_declaration?(module, call) do
+      # Register the declaration
+      decl =
+        Declaration.new(resource, pointer, ctx)
+        |> Declaration.with_degeneracy(Degeneracy.class(local_schema))
+
+      Cache.register_declaration(module, decl)
+
+      # Recursively collect from nested schemas
+      collect_nested_declarations(module, resource, pointer, ctx, local_schema)
+    end
+  end
+
+  defp collect_nested_declarations(_module, _resource, _pointer, _ctx, local_schema)
+       when is_boolean(local_schema),
+       do: :ok
+
+  defp collect_nested_declarations(module, resource, pointer, ctx, local_schema)
+       when is_map(local_schema) do
+    # Get types from schema
+    types = Map.get(local_schema, "type", @all_types) |> List.wrap()
+
+    # Collect from type-specific schemas
+    collect_type_declarations(module, resource, pointer, ctx, local_schema, types)
+
+    # Collect from combining schemas
+    collect_combining_declarations(module, resource, pointer, ctx, local_schema, types)
+  end
+
+  defp collect_type_declarations(module, resource, pointer, ctx, local_schema, types) do
+    # Object type declarations
+    if "object" in types do
+      collect_object_declarations(module, resource, pointer, ctx, local_schema)
+    end
+
+    # Array type declarations
+    if "array" in types do
+      collect_array_declarations(module, resource, pointer, ctx, local_schema)
+    end
+  end
+
+  defp collect_object_declarations(module, resource, pointer, ctx, local_schema) do
+    # properties
+    if props = local_schema["properties"] do
+      for {key, schema} <- props do
+        prop_pointer = JsonPtr.join(pointer, ["properties", key])
+        do_collect_declarations(module, resource, prop_pointer, scrub(ctx), schema)
+      end
+    end
+
+    # patternProperties
+    if pattern_props = local_schema["patternProperties"] do
+      for {pattern, schema} <- pattern_props do
+        pp_pointer = JsonPtr.join(pointer, ["patternProperties", pattern])
+        do_collect_declarations(module, resource, pp_pointer, scrub(ctx), schema)
+      end
+    end
+
+    # additionalProperties
+    if add_props = local_schema["additionalProperties"] do
+      ap_pointer = JsonPtr.join(pointer, "additionalProperties")
+      do_collect_declarations(module, resource, ap_pointer, scrub(ctx), add_props)
+    end
+
+    # unevaluatedProperties
+    if uneval_props = local_schema["unevaluatedProperties"] do
+      up_pointer = JsonPtr.join(pointer, "unevaluatedProperties")
+      do_collect_declarations(module, resource, up_pointer, scrub(ctx), uneval_props)
+    end
+
+    # propertyNames
+    if prop_names = local_schema["propertyNames"] do
+      pn_pointer = JsonPtr.join(pointer, "propertyNames")
+      do_collect_declarations(module, resource, pn_pointer, scrub(ctx), prop_names)
+    end
+
+    # dependentSchemas
+    if dep_schemas = local_schema["dependentSchemas"] do
+      for {key, schema} <- dep_schemas do
+        ds_pointer = JsonPtr.join(pointer, ["dependentSchemas", key])
+        do_collect_declarations(module, resource, ds_pointer, scrub(ctx), schema)
+      end
+    end
+  end
+
+  defp collect_array_declarations(module, resource, pointer, ctx, local_schema) do
+    # items (could be schema or array of schemas in older drafts)
+    case local_schema["items"] do
+      items when is_map(items) or is_boolean(items) ->
+        items_pointer = JsonPtr.join(pointer, "items")
+        do_collect_declarations(module, resource, items_pointer, scrub(ctx), items)
+
+      items when is_list(items) ->
+        for {schema, index} <- Enum.with_index(items) do
+          item_pointer = JsonPtr.join(pointer, ["items", "#{index}"])
+          do_collect_declarations(module, resource, item_pointer, scrub(ctx), schema)
+        end
+
+      nil ->
+        :ok
+    end
+
+    # prefixItems
+    if prefix_items = local_schema["prefixItems"] do
+      for {schema, index} <- Enum.with_index(prefix_items) do
+        pi_pointer = JsonPtr.join(pointer, ["prefixItems", "#{index}"])
+        do_collect_declarations(module, resource, pi_pointer, scrub(ctx), schema)
+      end
+    end
+
+    # additionalItems
+    if add_items = local_schema["additionalItems"] do
+      ai_pointer = JsonPtr.join(pointer, "additionalItems")
+      do_collect_declarations(module, resource, ai_pointer, scrub(ctx), add_items)
+    end
+
+    # unevaluatedItems
+    if uneval_items = local_schema["unevaluatedItems"] do
+      ui_pointer = JsonPtr.join(pointer, "unevaluatedItems")
+      do_collect_declarations(module, resource, ui_pointer, scrub(ctx), uneval_items)
+    end
+
+    # contains
+    if contains = local_schema["contains"] do
+      c_pointer = JsonPtr.join(pointer, "contains")
+      do_collect_declarations(module, resource, c_pointer, scrub(ctx), contains)
+    end
+  end
+
+  defp collect_combining_declarations(module, resource, pointer, ctx, local_schema, types) do
+    # Calculate type constraints for combining schemas
+    current_types = MapSet.new(types)
+    combining_ctx = constrain_types(ctx, MapSet.to_list(current_types))
+
+    # Collect untracked combining declarations
+    for filter <- @combining_filters, schema = local_schema[filter] do
+      collect_combining_filter(module, resource, pointer, combining_ctx, filter, schema)
+    end
+
+    # Collect tracked object combining declarations if needed
+    if needs_object_tracking?(local_schema) do
+      tracked_ctx =
+        combining_ctx
+        |> with_tracked(:object)
+        |> constrain_types(["object"])
+
+      for filter <- @combining_filters, filter != "not", schema = local_schema[filter] do
+        collect_combining_filter(module, resource, pointer, tracked_ctx, filter, schema)
+      end
+    end
+
+    # Collect tracked array combining declarations if needed
+    if needs_array_tracking?(local_schema) do
+      tracked_ctx =
+        combining_ctx
+        |> with_tracked(:array)
+        |> constrain_types(["array"])
+
+      for filter <- @combining_filters, filter != "not", schema = local_schema[filter] do
+        collect_combining_filter(module, resource, pointer, tracked_ctx, filter, schema)
+      end
+    end
+  end
+
+  defp collect_combining_filter(module, resource, pointer, ctx, filter, schema) do
+    filter_pointer = JsonPtr.join(pointer, filter)
+
+    case filter do
+      f when f in ["allOf", "anyOf", "oneOf"] ->
+        # Register the combining filter itself
+        do_collect_declarations(module, resource, filter_pointer, ctx, true)
+
+        # Collect from each item
+        for {item_schema, index} <- Enum.with_index(schema) do
+          item_pointer = JsonPtr.join(filter_pointer, "#{index}")
+          do_collect_declarations(module, resource, item_pointer, ctx, item_schema)
+        end
+
+      "if" ->
+        # Register if filter
+        do_collect_declarations(module, resource, filter_pointer, ctx, schema)
+
+        # then
+        if then_schema = Cache.fetch_schema!(module, resource) |> JsonPtr.resolve_json!(pointer) |> Map.get("then") do
+          then_pointer = JsonPtr.join(pointer, "then")
+          do_collect_declarations(module, resource, then_pointer, ctx, then_schema)
+        end
+
+        # else
+        if else_schema = Cache.fetch_schema!(module, resource) |> JsonPtr.resolve_json!(pointer) |> Map.get("else") do
+          else_pointer = JsonPtr.join(pointer, "else")
+          do_collect_declarations(module, resource, else_pointer, ctx, else_schema)
+        end
+
+      "not" ->
+        # not filter doesn't track
+        not_ctx = with_tracked(ctx, nil)
+        do_collect_declarations(module, resource, filter_pointer, not_ctx, schema)
+
+      "$ref" ->
+        # Register the ref declaration (the actual resolution happens during code gen)
+        do_collect_declarations(module, resource, filter_pointer, ctx, true)
+
+      _ ->
+        :ok
+    end
+  end
+
+  # ============================================================================
+  # Phase 2: Code Generation (Filter Macros)
+  # ============================================================================
+
+  defmacro filter(resource, pointer, opts) do
+    caller = __CALLER__
+    ctx = __MODULE__.from_opts(opts)
+    call = Tools.call(resource, pointer, ctx)
+
+    if Cache.register_context(caller.module, call) do
+      local_schema = Tools.subschema(caller, resource, pointer)
+
+      # Generate code (declarations were already collected in Phase 1)
+      local_schema
+      |> build_filter(resource, pointer, ctx)
+      |> Tools.maybe_dump(caller, ctx)
+    else
+      []
+    end
   end
 
   defp build_filter(true, resource, pointer, ctx) do
@@ -352,8 +582,6 @@ defmodule Exonerate.Context do
       unquote(rest_filter)
     end
   end
-
-  @all_types Type.all()
 
   # NB: local_schema should always contain a type field as per Degeneracy.canonicalize/2 called from Tools.subschema/3
   defp build_filter(local_schema = %{"type" => types}, resource, pointer, ctx) do

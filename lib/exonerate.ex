@@ -516,6 +516,10 @@ defmodule Exonerate do
         resource_uri
       end
 
+    # Phase 1: Collect all declarations before generating code
+    Exonerate.Context.collect_declarations(caller.module, resource, root_pointer, opts)
+
+    # Phase 2: Generate code (all declarations are now known)
     schema_fn = Metadata.schema(schema_string, type, function_name, opts)
 
     call = Tools.call(resource, root_pointer, opts)
