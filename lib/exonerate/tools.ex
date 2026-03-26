@@ -2,6 +2,7 @@ defmodule Exonerate.Tools do
   @moduledoc false
 
   alias Exonerate.Cache
+  alias Exonerate.CompilationContext
   alias Exonerate.Type
 
   # GENERAL-USE MACROS
@@ -161,18 +162,29 @@ defmodule Exonerate.Tools do
     |> JsonPtr.resolve_json!(JsonPtr.backtrack!(pointer))
   end
 
-  @spec call(String.t(), JsonPtr.t(), Keyword.t()) :: atom
-  @spec call(String.t(), JsonPtr.t(), atom, Keyword.t()) :: atom
+  @spec call(String.t(), JsonPtr.t(), Keyword.t() | CompilationContext.t()) :: atom
+  @spec call(String.t(), JsonPtr.t(), atom, Keyword.t() | CompilationContext.t()) :: atom
   def call(resource, pointer, suffix \\ nil, opts) when is_binary(resource) do
+    {tracked, dump} = extract_call_opts(opts)
+
     resource
     |> URI.parse()
     |> uri_merge(JsonPtr.to_uri(pointer))
     |> to_string
     |> append_suffix(suffix)
-    |> append_tracked(opts[:tracked])
+    |> append_tracked(tracked)
     |> adjust_length
-    |> escape_debug_names(opts)
+    |> escape_debug_names(dump)
     |> String.to_atom()
+  end
+
+  # Extract tracked and dump options from either keyword list or CompilationContext
+  defp extract_call_opts(%CompilationContext{tracked: tracked, dump: dump}) do
+    {tracked, dump}
+  end
+
+  defp extract_call_opts(opts) when is_list(opts) do
+    {opts[:tracked], opts[:dump]}
   end
 
   defp append_suffix(path, nil), do: path
@@ -197,8 +209,8 @@ defmodule Exonerate.Tools do
     IO.iodata_to_binary([first, "..", middle, "..", last])
   end
 
-  defp escape_debug_names(name, opts) do
-    if opts[:dump] do
+  defp escape_debug_names(name, dump) do
+    if dump do
       name
       |> String.replace(~r/exonerate:\/\/[A-F0-9]{64}/, "entrypoint")
       |> String.replace("#", "at")

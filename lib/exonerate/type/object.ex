@@ -184,9 +184,9 @@ defmodule Exonerate.Type.Object do
   end
 
   defp build_accessories(context, name, pointer, opts) do
+    # Note: tracked combining filter accessories are now generated centrally in Context.build_filter
     iterator_accessory(context, name, pointer, opts) ++
-      filter_accessories(context, name, pointer, opts) ++
-      tracked_accessories(context, name, pointer, opts)
+      filter_accessories(context, name, pointer, opts)
   end
 
   defp iterator_accessory(context, name, pointer, opts) do
@@ -227,26 +227,4 @@ defmodule Exonerate.Type.Object do
     end
   end
 
-  @combining_modules Map.put(
-                       Combining.modules(),
-                       "dependentSchemas",
-                       Exonerate.Filter.DependentSchemas
-                     )
-
-  defp tracked_accessories(context, name, pointer, opts) do
-    List.wrap(
-      if needs_seen?(context) do
-        for filter <- @seen_filters, is_map_key(context, filter) do
-          module = @combining_modules[filter]
-          pointer = JsonPtr.join(pointer, filter)
-          opts = Keyword.merge(opts, tracked: :object, only: "object")
-
-          quote do
-            require unquote(module)
-            unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
-          end
-        end
-      end
-    )
-  end
 end

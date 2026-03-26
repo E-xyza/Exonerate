@@ -13,7 +13,7 @@ defmodule Exonerate.Remote do
   alias Exonerate.Tools
   alias Exonerate.Schema
 
-  @spec ensure_resource_loaded!(URI.t(), Env.t(), keyword) :: URI.t()
+  @spec ensure_resource_loaded!(URI.t(), Macro.Env.t(), keyword) :: URI.t()
   @doc false
   # Ensures the resource represented by the URI exists in the cache.
   #
@@ -95,7 +95,7 @@ defmodule Exonerate.Remote do
           |> path_for(opts)
           |> File.write!(body)
 
-          load_cache(caller, resource, opts)
+          load_cache(caller, uri, opts)
         else
           Schema.ingest(body, caller, resource, opts)
         end

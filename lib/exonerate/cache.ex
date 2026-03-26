@@ -227,6 +227,54 @@ defmodule Exonerate.Cache do
     end
   end
 
+  # DECLARATIONS
+  # Support for two-phase compilation: collect declarations before generating code
+
+  alias Exonerate.Declaration
+
+  @doc """
+  Registers a declaration for a function that will be generated.
+  """
+  @spec register_declaration(module, Declaration.t()) :: :ok
+  def register_declaration(module, %Declaration{name: name} = decl) do
+    :ets.insert(get_table(), {{:declaration, module, name}, decl})
+    :ok
+  end
+
+  @doc """
+  Fetches a declaration by its function name.
+  """
+  @spec fetch_declaration(module, atom) :: {:ok, Declaration.t()} | :error
+  def fetch_declaration(module, name) when is_atom(name) do
+    case :ets.lookup(get_table(), {:declaration, module, name}) do
+      [] -> :error
+      [{{:declaration, ^module, ^name}, decl}] -> {:ok, decl}
+    end
+  end
+
+  @doc """
+  Checks if a declaration exists for the given function name.
+  """
+  @spec has_declaration?(module, atom) :: boolean
+  def has_declaration?(module, name) when is_atom(name) do
+    case :ets.lookup(get_table(), {:declaration, module, name}) do
+      [] -> false
+      [_] -> true
+    end
+  end
+
+  defmatchspecp get_all_declarations_ms(module) do
+    {{:declaration, ^module, _name}, decl} -> decl
+  end
+
+  @doc """
+  Returns all declarations registered for a module.
+  """
+  @spec all_declarations(module) :: [Declaration.t()]
+  def all_declarations(module) do
+    :ets.select(get_table(), get_all_declarations_ms(module))
+  end
+
   @all MatchSpec.fun2ms(fn any -> any end)
   def dump do
     :ets.select(get_table(), @all)
@@ -235,5 +283,10 @@ defmodule Exonerate.Cache do
   @refs MatchSpec.fun2ms(fn result = {{:ref, _}, _} -> result end)
   def dump(:refs) do
     :ets.select(get_table(), @refs)
+  end
+
+  @decls MatchSpec.fun2ms(fn result = {{:declaration, _, _}, _} -> result end)
+  def dump(:declarations) do
+    :ets.select(get_table(), @decls)
   end
 end

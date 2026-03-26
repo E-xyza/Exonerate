@@ -7,7 +7,6 @@ defmodule Exonerate.Type.Array do
   alias Exonerate.Tools
   alias Exonerate.Type.Array.Iterator
 
-  @combining_modules Combining.modules()
   @combining_filters Combining.filters()
 
   @seen_filters ~w(allOf anyOf if oneOf $ref)
@@ -248,10 +247,8 @@ defmodule Exonerate.Type.Array do
   defp build_accessories(context, _, _, _) when trivial(context), do: []
 
   defp build_accessories(context, resource, pointer, opts) do
-    combining_opts = combining_opts(context, opts)
-
-    build_tracked_filters(context, resource, pointer, combining_opts) ++
-      build_iterator(context, resource, pointer, opts)
+    # Note: tracked combining filter accessories are now generated centrally in Context.build_filter
+    build_iterator(context, resource, pointer, opts)
   end
 
   def needs_combining_seen?(context) do
@@ -260,33 +257,6 @@ defmodule Exonerate.Type.Array do
 
   def needs_seen_tracking?(context, opts) do
     needs_combining_seen?(context) or opts[:tracked] === :array
-  end
-
-  # appends special options to the passed otions of combining functions.
-  defp combining_opts(context, opts) do
-    if needs_seen_tracking?(context, opts) do
-      Keyword.merge(opts, only: ["array"], tracked: :array)
-    else
-      opts
-    end
-  end
-
-  defp build_tracked_filters(context, resource, pointer, opts) do
-    # if we're tracked, then we need to rebuild all the filters, with the
-    # tracked appendage.
-    List.wrap(
-      if needs_seen_tracking?(context, opts) do
-        for filter <- @seen_filters, is_map_key(context, filter) do
-          module = @combining_modules[filter]
-          pointer = JsonPtr.join(pointer, filter)
-
-          quote do
-            require unquote(module)
-            unquote(module).filter(unquote(resource), unquote(pointer), unquote(opts))
-          end
-        end
-      end
-    )
   end
 
   defp build_iterator(context, resource, pointer, opts) do

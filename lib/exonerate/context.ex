@@ -5,6 +5,7 @@ defmodule Exonerate.Context do
 
   alias Exonerate.Cache
   alias Exonerate.Combining
+  alias Exonerate.CompilationContext
   alias Exonerate.Tools
   alias Exonerate.Type
 
@@ -16,9 +17,7 @@ defmodule Exonerate.Context do
   - :tracked
   - :seen
   """
-  def scrub_opts(opts) do
-    Keyword.drop(opts, ~w(only tracked seen)a)
-  end
+  defdelegate scrub_opts(opts), to: CompilationContext
 
   defmacro filter(resource, pointer, opts) do
     caller = __CALLER__
@@ -37,6 +36,27 @@ defmodule Exonerate.Context do
   @combining_modules Combining.modules()
   @combining_filters Combining.filters()
   @seen_filters @combining_filters -- ["not"]
+
+  # Object tracking needs extended modules that include dependentSchemas
+  @object_combining_modules Map.put(
+                              @combining_modules,
+                              "dependentSchemas",
+                              Exonerate.Filter.DependentSchemas
+                            )
+
+  # Object tracking detection - mirrors Type.Object.needs_seen?
+  @object_seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
+  defp needs_object_tracking?(context) do
+    is_map_key(context, "unevaluatedProperties") and
+      Enum.any?(@object_seen_filters, &is_map_key(context, &1))
+  end
+
+  # Array tracking detection - mirrors Type.Array.needs_combining_seen?
+  @array_seen_filters ~w(allOf anyOf if oneOf $ref)
+  defp needs_array_tracking?(context) do
+    is_map_key(context, "unevaluatedItems") and
+      Enum.any?(@array_seen_filters, &is_map_key(context, &1))
+  end
 
   defp build_filter(true, resource, pointer, opts) do
     call = Tools.call(resource, pointer, opts)
@@ -199,6 +219,11 @@ defmodule Exonerate.Context do
     new_only = MapSet.intersection(existing_only, current_types) |> MapSet.to_list()
     combining_opts = Keyword.put(opts, :only, new_only)
 
+    # Check if we need to generate tracked versions of combining filters
+    needs_object_tracking = needs_object_tracking?(context)
+    needs_array_tracking = needs_array_tracking?(context)
+
+    # Generate untracked combining filters (standard behavior)
     combining =
       for filter <- @seen_filters, is_map_key(context, filter) do
         combining_module = Map.fetch!(@combining_modules, filter)
@@ -228,10 +253,68 @@ defmodule Exonerate.Context do
           end
         )
 
+    # Generate tracked object combining filters when unevaluatedProperties is present
+    # This centralizes the tracked filter generation that was previously in Type.Object.tracked_accessories
+    tracked_object_combining =
+      if needs_object_tracking do
+        # For object tracking, we constrain :only to "object" and set :tracked to :object
+        tracked_object_opts =
+          combining_opts
+          |> Keyword.put(:tracked, :object)
+          |> Keyword.put(:only, ["object"])
+
+        for filter <- @object_seen_filters, is_map_key(context, filter) do
+          combining_module = Map.fetch!(@object_combining_modules, filter)
+          combining_pointer = JsonPtr.join(pointer, filter)
+
+          quote do
+            require unquote(combining_module)
+
+            unquote(combining_module).filter(
+              unquote(resource),
+              unquote(combining_pointer),
+              unquote(tracked_object_opts)
+            )
+          end
+        end
+      else
+        []
+      end
+
+    # Generate tracked array combining filters when unevaluatedItems is present
+    # This centralizes the tracked filter generation that was previously in Type.Array.build_tracked_filters
+    tracked_array_combining =
+      if needs_array_tracking do
+        # For array tracking, we constrain :only to "array" and set :tracked to :array
+        tracked_array_opts =
+          combining_opts
+          |> Keyword.put(:tracked, :array)
+          |> Keyword.put(:only, ["array"])
+
+        for filter <- @array_seen_filters, is_map_key(context, filter) do
+          combining_module = Map.fetch!(@combining_modules, filter)
+          combining_pointer = JsonPtr.join(pointer, filter)
+
+          quote do
+            require unquote(combining_module)
+
+            unquote(combining_module).filter(
+              unquote(resource),
+              unquote(combining_pointer),
+              unquote(tracked_array_opts)
+            )
+          end
+        end
+      else
+        []
+      end
+
     quote do
       unquote(filters)
       Exonerate.Context.fallthrough(unquote(resource), unquote(pointer), unquote(opts))
       unquote(combining)
+      unquote(tracked_object_combining)
+      unquote(tracked_array_combining)
       unquote(accessories)
     end
   end

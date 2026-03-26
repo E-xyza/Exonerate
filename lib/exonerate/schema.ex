@@ -20,7 +20,12 @@ defmodule Exonerate.Schema do
     |> cache_assignments(caller, resource, opts)
   end
 
-  defp cache_assignments(schema, caller, resource, opts, seen \\ MapSet.new()) do
+  defp cache_assignments(schema, caller, resource, opts) do
+    cache_assignments(schema, caller, resource, opts, MapSet.new())
+  end
+
+  @dialyzer {:nowarn_function, cache_assignments: 5}
+  defp cache_assignments(schema, caller, resource, opts, seen) do
     schema
     |> Id.prescan(caller.module, resource, opts)
     |> ref_prescan(caller, resource, opts)
@@ -33,7 +38,7 @@ defmodule Exonerate.Schema do
       new_seen = MapSet.put(seen_so_far, pointer)
       new_opts = Keyword.replace(opts, :entrypoint, JsonPtr.to_path(pointer))
       cache_assignments(schema, caller, resource, new_opts, new_seen)
-      Cache.all_ref_pointers(caller.module, resource)
+      new_seen
     end)
 
     schema

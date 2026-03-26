@@ -164,7 +164,7 @@ defmodule Exonerate.Type.Object.Tracked do
   end
 
   defp build_accessories(context, name, pointer, opts) do
-    # TODO: check the logic on this.
+    # Note: tracked combining filter accessories are now generated centrally in Context.build_filter
 
     cond do
       Map.delete(context, "type") in @empty_map_only ->
@@ -173,14 +173,11 @@ defmodule Exonerate.Type.Object.Tracked do
       is_map_key(context, "unevaluatedProperties") or
           is_map_key(context, "additionalProperties") ->
         opts = Keyword.delete(opts, :tracked)
-
-        filter_accessories(context, name, pointer, opts) ++
-          tracked_accessories(context, name, pointer, opts)
+        filter_accessories(context, name, pointer, opts)
 
       true ->
         iterator_accessory(context, name, pointer, opts) ++
-          filter_accessories(context, name, pointer, opts) ++
-          tracked_accessories(context, name, pointer, opts)
+          filter_accessories(context, name, pointer, opts)
     end
   end
 
@@ -222,22 +219,4 @@ defmodule Exonerate.Type.Object.Tracked do
     end
   end
 
-  @combining_modules Map.put(
-                       Combining.modules(),
-                       "dependentSchemas",
-                       Exonerate.Filter.DependentSchemas
-                     )
-
-  defp tracked_accessories(context, name, pointer, opts) do
-    for filter <- @seen_filters, is_map_key(context, filter) do
-      module = @combining_modules[filter]
-      pointer = JsonPtr.join(pointer, filter)
-      opts = Keyword.merge(opts, tracked: :object, only: "object")
-
-      quote do
-        require unquote(module)
-        unquote(module).filter(unquote(name), unquote(pointer), unquote(opts))
-      end
-    end
-  end
 end
