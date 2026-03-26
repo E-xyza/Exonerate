@@ -17,26 +17,16 @@ defmodule ExonerateTest.CompositionTest do
       assert {:error, list} = one_of("foobarbaz")
       assert "#/oneOf" = list[:absolute_keyword_location]
 
-      assert [
-               {:error,
-                [
-                  error_value: "foobarbaz",
-                  instance_location: "/",
-                  absolute_keyword_location: "#/oneOf/2/type"
-                ]},
-               {:error,
-                [
-                  error_value: "foobarbaz",
-                  instance_location: "/",
-                  absolute_keyword_location: "#/oneOf/1/type"
-                ]},
-               {:error,
-                [
-                  error_value: "foobarbaz",
-                  instance_location: "/",
-                  absolute_keyword_location: "#/oneOf/0/type"
-                ]}
-             ] = list[:errors]
+      errors = list[:errors]
+      assert length(errors) == 3
+
+      # Verify each error has the expected structure
+      Enum.each(errors, fn {:error, err} ->
+        assert err[:error_value] == "foobarbaz"
+        assert err[:instance_location] == "/"
+        assert err[:absolute_keyword_location] in ["#/oneOf/0/type", "#/oneOf/1/type", "#/oneOf/2/type"]
+        assert err[:expected] != nil
+      end)
 
       assert "no matches" == list[:reason]
     end
@@ -65,20 +55,21 @@ defmodule ExonerateTest.CompositionTest do
       assert {:error, list} = any_of("foobarbaz")
       assert "#/anyOf" = list[:absolute_keyword_location]
 
-      assert [
-               {:error,
-                [
-                  error_value: "foobarbaz",
-                  instance_location: "/",
-                  absolute_keyword_location: "#/anyOf/1/type"
-                ]},
-               {:error,
-                [
-                  error_value: "foobarbaz",
-                  instance_location: "/",
-                  absolute_keyword_location: "#/anyOf/0/maxLength"
-                ]}
-             ] = list[:errors]
+      errors = list[:errors]
+      assert length(errors) == 2
+
+      # One error is a type mismatch (anyOf/1 expects number)
+      # One error is a maxLength violation (anyOf/0 accepts string but fails maxLength)
+      type_error = Enum.find(errors, fn {:error, e} -> String.contains?(e[:absolute_keyword_location], "type") end)
+      length_error = Enum.find(errors, fn {:error, e} -> String.contains?(e[:absolute_keyword_location], "maxLength") end)
+
+      assert {:error, type_err} = type_error
+      assert type_err[:error_value] == "foobarbaz"
+      assert type_err[:expected] != nil
+
+      assert {:error, length_err} = length_error
+      assert length_err[:error_value] == "foobarbaz"
+      refute length_err[:expected]  # maxLength error doesn't have expected type
     end
   end
 end

@@ -21,6 +21,7 @@ defmodule ExonerateTest.RelativeRefTest do
     assert [
              absolute_keyword_location: "#/type",
              error_value: ["baz"],
+             expected: ["integer", "string"],
              instance_location: "/bar",
              ref_trace: ["/properties/bar/$ref"]
            ] = Enum.sort(error)

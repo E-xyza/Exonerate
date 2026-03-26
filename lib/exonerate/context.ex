@@ -716,9 +716,12 @@ defmodule Exonerate.Context do
         []
       end
 
+    # Get the expected types for error reporting
+    expected_types = types |> List.wrap()
+
     quote do
       unquote(filters)
-      Exonerate.Context.fallthrough(unquote(resource), unquote(pointer), unquote(opts))
+      Exonerate.Context.fallthrough(unquote(resource), unquote(pointer), unquote(opts), unquote(expected_types))
       unquote(combining)
       unquote(tracked_object_combining)
       unquote(tracked_array_combining)
@@ -727,9 +730,16 @@ defmodule Exonerate.Context do
   end
 
   # fallthrough still receives opts from quote blocks (macro boundary)
-  defmacro fallthrough(resource, pointer, opts) do
+  defmacro fallthrough(resource, pointer, opts, expected_types) do
     type_failure_pointer = JsonPtr.join(pointer, "type")
     ctx = __MODULE__.from_opts(opts)
+
+    # Format expected types for error message
+    expected =
+      case expected_types do
+        [single] -> single
+        multiple -> multiple
+      end
 
     Tools.maybe_dump(
       quote do
@@ -740,7 +750,8 @@ defmodule Exonerate.Context do
             content,
             unquote(resource),
             unquote(type_failure_pointer),
-            path
+            path,
+            expected: unquote(expected)
           )
         end
       end,

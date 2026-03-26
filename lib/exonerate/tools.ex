@@ -25,7 +25,7 @@ defmodule Exonerate.Tools do
         end
     ]
 
-    extras = Keyword.take(opts, ~w(reason errors matches required)a)
+    extras = Keyword.take(opts, ~w(reason errors matches required expected)a)
 
     quote bind_quoted: [error_params: primary ++ absolute_keyword_location ++ extras] do
       {:error, error_params}
@@ -40,7 +40,7 @@ defmodule Exonerate.Tools do
         "#{resource_pointer_to_uri(resource, keyword_pointer, trim: true)}"
     ]
 
-    extras = Keyword.take(opts, ~w(reason errors matches required)a)
+    extras = Keyword.take(opts, ~w(reason errors matches required expected)a)
 
     quote bind_quoted: [error_params: primary ++ absolute_keyword_location ++ extras] do
       {:error, error_params}

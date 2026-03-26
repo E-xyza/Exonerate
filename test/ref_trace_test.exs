@@ -21,6 +21,7 @@ defmodule ExonerateTest.RefTraceTest do
     assert [
              absolute_keyword_location: "#/properties/foo/type",
              error_value: "baz",
+             expected: "integer",
              instance_location: "/bar",
              ref_trace: ["/properties/bar/$ref"]
            ] = Enum.sort(error)
@@ -42,6 +43,7 @@ defmodule ExonerateTest.RefTraceTest do
     assert [
              absolute_keyword_location: "#/properties/foo/type",
              error_value: "quux",
+             expected: "integer",
              instance_location: "/baz",
              ref_trace: [
                "/properties/baz/$ref",
