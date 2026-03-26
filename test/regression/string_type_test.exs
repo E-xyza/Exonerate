@@ -26,6 +26,6 @@ defmodule ExonerateTest.Regression.NestedStringTypeTest do
   """)
 
   test "regression passes" do
-    assert :ok = validate_api(%{"version" => "1.1"} )
+    assert :ok = validate_api(%{"version" => "1.1"})
   end
 end

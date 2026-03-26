@@ -276,6 +276,7 @@ defmodule Exonerate.Degeneracy do
 
   def class(context = %{"type" => t}) do
     types = List.wrap(t)
+
     if Enum.sort(types) == @all_types do
       context
       |> Map.delete("type")

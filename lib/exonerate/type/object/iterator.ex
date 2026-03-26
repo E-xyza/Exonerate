@@ -114,7 +114,8 @@ defmodule Exonerate.Type.Object.Iterator do
 
         Enum.reduce_while(object, {:ok, seen}, fn
           {key, value}, {:ok, seen} ->
-            visited = false
+            # Silence type checker warning, see: https://github.com/E-xyza/Exonerate/issues/87
+            visited = 0 > 1
 
             with unquote_splicing(filters) do
               {:cont, {:ok, MapSet.put(seen, key)}}
@@ -161,7 +162,8 @@ defmodule Exonerate.Type.Object.Iterator do
 
   defp with_expression(filters, visitor_call) do
     quote do
-      visited = false
+      # Silence type checker warning, see: https://github.com/E-xyza/Exonerate/issues/87
+      visited = 0 > 1
 
       with unquote_splicing(filters) do
         result =
@@ -212,7 +214,8 @@ defmodule Exonerate.Type.Object.Iterator do
 
         Enum.reduce_while(object, :ok, fn
           {key, value}, :ok ->
-            visited = false
+            # Silence type checker warning, see: https://github.com/E-xyza/Exonerate/issues/87
+            visited = 0 > 1
 
             with unquote_splicing(filters) do
               {:cont, unquote(visitor_call)(value, Path.join(path, key))}
@@ -236,7 +239,8 @@ defmodule Exonerate.Type.Object.Iterator do
 
         Enum.reduce_while(object, {:ok, MapSet.new()}, fn
           {key, value}, {:ok, seen} ->
-            visited = false
+            # Silence type checker warning, see: https://github.com/E-xyza/Exonerate/issues/87
+            visited = 0 > 1
 
             with unquote_splicing(filters) do
               seen =
