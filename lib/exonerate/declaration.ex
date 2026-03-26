@@ -24,7 +24,7 @@ defmodule Exonerate.Declaration do
           name: atom | nil,
           resource: String.t() | nil,
           pointer: JsonPtr.t() | nil,
-          opts: keyword | Exonerate.CompilationContext.t() | nil,
+          opts: keyword | Exonerate.Context.t() | nil,
           return_type: return_type | nil,
           dependencies: [atom] | nil,
           degeneracy: :ok | :error | :unknown | nil
@@ -43,7 +43,7 @@ defmodule Exonerate.Declaration do
   @doc """
   Creates a new declaration from resource, pointer, and options/context.
   """
-  @spec new(String.t(), JsonPtr.t(), keyword | Exonerate.CompilationContext.t()) :: t()
+  @spec new(String.t(), JsonPtr.t(), keyword | Exonerate.Context.t()) :: t()
   def new(resource, pointer, ctx_or_opts) do
     name = Exonerate.Tools.call(resource, pointer, ctx_or_opts)
 
@@ -58,8 +58,8 @@ defmodule Exonerate.Declaration do
     }
   end
 
-  defp normalize_opts(%Exonerate.CompilationContext{} = ctx) do
-    Exonerate.CompilationContext.to_opts(ctx)
+  defp normalize_opts(%Exonerate.Context{} = ctx) do
+    Exonerate.Context.to_opts(ctx)
   end
 
   defp normalize_opts(opts) when is_list(opts), do: opts
@@ -76,7 +76,7 @@ defmodule Exonerate.Declaration do
     end
   end
 
-  def infer_return_type(%__MODULE__{opts: %Exonerate.CompilationContext{tracked: tracked}}) do
+  def infer_return_type(%__MODULE__{opts: %Exonerate.Context{tracked: tracked}}) do
     case tracked do
       :object -> :ok_mapset
       :array -> :ok_integer

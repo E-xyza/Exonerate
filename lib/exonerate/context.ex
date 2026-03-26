@@ -1,34 +1,188 @@
 defmodule Exonerate.Context do
-  @moduledoc false
+  @moduledoc """
+  Compilation context for JSON Schema validation.
 
-  # a context is the representation of "parsing json at a given location"
-  #
-  # Naming conventions:
-  # - `local_schema` = the JSON schema content at current pointer (a map)
-  # - `ctx` = CompilationContext struct (used internally)
-  # - `opts` = keyword list (only at macro boundaries in quote blocks)
+  This module provides both the struct for tracking compilation state and
+  the macros for generating validation code.
+
+  ## Struct Fields
+
+  - `:resource` - Current resource URI (String.t())
+  - `:pointer` - Current JSON pointer (JsonPtr.t())
+  - `:caller` - Caller environment (Macro.Env.t())
+  - `:only` - Type constraints for combining schemas ([String.t()] | nil)
+  - `:tracked` - Tracking mode for unevaluated properties/items (:object | :array | nil)
+  - `:seen` - Seen property tracking (MapSet.t() | nil)
+  - `:entrypoint` - Original entrypoint pointer (JsonPtr.t())
+  - `:dump` - Debug dump mode (boolean)
+  - `:decoders` - Decoder configuration (list)
+  - `:encoding` - Encoding type (String.t())
+  - `:draft` - JSON Schema draft version (atom)
+  - `:format` - Format validation mode (atom | keyword | boolean)
+
+  ## Naming Conventions
+
+  - `local_schema` = the JSON schema content at current pointer (a map)
+  - `ctx` = Context struct (used internally)
+  - `opts` = keyword list (only at macro boundaries in quote blocks)
+  """
 
   alias Exonerate.Cache
   alias Exonerate.Combining
-  alias Exonerate.CompilationContext
   alias Exonerate.Declaration
   alias Exonerate.Degeneracy
   alias Exonerate.Tools
   alias Exonerate.Type
 
-  @doc """
-  scrubs an options keyword prior to entry into a non-combining context.  The following
-  keywords should be scrubbed:
+  # ============================================================================
+  # Struct Definition
+  # ============================================================================
 
+  @type t :: %__MODULE__{
+          resource: String.t() | nil,
+          pointer: JsonPtr.t() | nil,
+          caller: Macro.Env.t() | nil,
+          only: [String.t()] | nil,
+          tracked: :object | :array | nil,
+          seen: MapSet.t() | nil,
+          entrypoint: JsonPtr.t() | nil,
+          dump: boolean | nil,
+          decoders: list | nil,
+          encoding: String.t() | nil,
+          draft: atom | nil,
+          format: atom | keyword | boolean | nil
+        }
+
+  defstruct [
+    :resource,
+    :pointer,
+    :caller,
+    :only,
+    :tracked,
+    :seen,
+    :entrypoint,
+    :dump,
+    :decoders,
+    :encoding,
+    :draft,
+    :format
+  ]
+
+  # ============================================================================
+  # Struct Functions
+  # ============================================================================
+
+  @doc """
+  Creates a new Context from keyword options.
+  """
+  @spec from_opts(keyword) :: t()
+  def from_opts(opts) when is_list(opts) do
+    %__MODULE__{
+      resource: Keyword.get(opts, :resource),
+      pointer: Keyword.get(opts, :pointer),
+      caller: Keyword.get(opts, :caller),
+      only: normalize_only(Keyword.get(opts, :only)),
+      tracked: Keyword.get(opts, :tracked),
+      seen: Keyword.get(opts, :seen),
+      entrypoint: Keyword.get(opts, :entrypoint),
+      dump: Keyword.get(opts, :dump),
+      decoders: Keyword.get(opts, :decoders),
+      encoding: Keyword.get(opts, :encoding),
+      draft: Keyword.get(opts, :draft),
+      format: Keyword.get(opts, :format)
+    }
+  end
+
+  @doc """
+  Converts a Context to keyword options.
+  """
+  @spec to_opts(t()) :: keyword
+  def to_opts(%__MODULE__{} = ctx) do
+    ctx
+    |> Map.from_struct()
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Keyword.new()
+  end
+
+  @doc """
+  Merges keyword options into an existing Context.
+  """
+  @spec merge(t(), keyword) :: t()
+  def merge(%__MODULE__{} = ctx, opts) when is_list(opts) do
+    opts_map =
+      opts
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Map.new()
+      |> Map.update(:only, nil, &normalize_only/1)
+
+    struct(ctx, opts_map)
+  end
+
+  @doc """
+  Scrubs combining-specific options from the context.
+
+  The following fields are cleared:
   - :only
   - :tracked
   - :seen
   """
-  defdelegate scrub_opts(opts), to: CompilationContext
+  @spec scrub(t()) :: t()
+  def scrub(%__MODULE__{} = ctx) do
+    %{ctx | only: nil, tracked: nil, seen: nil}
+  end
+
+  @doc """
+  Scrubs combining-specific options from keyword opts.
+  """
+  @spec scrub_opts(keyword) :: keyword
+  def scrub_opts(opts) when is_list(opts) do
+    Keyword.drop(opts, ~w(only tracked seen)a)
+  end
+
+  @doc """
+  Updates the type constraint (:only) by intersecting with new types.
+
+  This accumulates type restrictions through combining schemas.
+  """
+  @spec constrain_types(t(), [String.t()] | String.t()) :: t()
+  def constrain_types(%__MODULE__{only: nil} = ctx, types) do
+    %{ctx | only: List.wrap(types)}
+  end
+
+  def constrain_types(%__MODULE__{only: existing} = ctx, types) do
+    existing_set = MapSet.new(existing)
+    new_set = types |> List.wrap() |> MapSet.new()
+    intersection = MapSet.intersection(existing_set, new_set) |> MapSet.to_list()
+    %{ctx | only: intersection}
+  end
+
+  @doc """
+  Sets the tracked mode for the context.
+  """
+  @spec with_tracked(t(), :object | :array | nil) :: t()
+  def with_tracked(%__MODULE__{} = ctx, tracked) do
+    %{ctx | tracked: tracked}
+  end
+
+  @doc """
+  Returns the type constraints as a list, or a default list if not set.
+  """
+  @spec get_only(t(), [String.t()]) :: [String.t()]
+  def get_only(%__MODULE__{only: nil}, default), do: default
+  def get_only(%__MODULE__{only: only}, _default), do: only
+
+  # Normalizes :only to always be a list or nil
+  defp normalize_only(nil), do: nil
+  defp normalize_only(types) when is_list(types), do: types
+  defp normalize_only(type) when is_binary(type), do: [type]
+
+  # ============================================================================
+  # Filter Macros
+  # ============================================================================
 
   defmacro filter(resource, pointer, opts) do
     caller = __CALLER__
-    ctx = CompilationContext.from_opts(opts)
+    ctx = __MODULE__.from_opts(opts)
     call = Tools.call(resource, pointer, ctx)
 
     if Cache.register_context(caller.module, call) do
@@ -157,7 +311,7 @@ defmodule Exonerate.Context do
     rest_filter =
       local_schema
       |> Map.delete("const")
-      |> build_filter(resource, pointer, CompilationContext.merge(ctx, type: Type.of(const)))
+      |> build_filter(resource, pointer, __MODULE__.merge(ctx, type: Type.of(const)))
 
     const = Macro.escape(const)
 
@@ -184,7 +338,7 @@ defmodule Exonerate.Context do
     rest_filter =
       local_schema
       |> Map.delete("enum")
-      |> build_filter(resource, pointer, CompilationContext.merge(ctx, type: types))
+      |> build_filter(resource, pointer, __MODULE__.merge(ctx, type: types))
 
     values = Macro.escape(enum)
 
@@ -206,11 +360,11 @@ defmodule Exonerate.Context do
     # condition the bindings
     filtered_types =
       ctx
-      |> CompilationContext.get_only(@all_types)
+      |> __MODULE__.get_only(@all_types)
       |> MapSet.new()
 
     # Convert to opts for macro boundaries
-    opts = CompilationContext.to_opts(ctx)
+    opts = __MODULE__.to_opts(ctx)
 
     {filters, accessories} =
       types
@@ -234,8 +388,8 @@ defmodule Exonerate.Context do
     # See: https://github.com/E-xyza/Exonerate/issues/85
     # Intersect with existing :only constraint to accumulate type restrictions
     current_types = types |> List.wrap() |> MapSet.new()
-    combining_ctx = CompilationContext.constrain_types(ctx, MapSet.to_list(current_types))
-    combining_opts = CompilationContext.to_opts(combining_ctx)
+    combining_ctx = __MODULE__.constrain_types(ctx, MapSet.to_list(current_types))
+    combining_opts = __MODULE__.to_opts(combining_ctx)
 
     # Check if we need to generate tracked versions of combining filters
     needs_object_tracking = needs_object_tracking?(local_schema)
@@ -259,8 +413,8 @@ defmodule Exonerate.Context do
       end ++
         List.wrap(
           if is_map_key(local_schema, "not") do
-            not_ctx = CompilationContext.with_tracked(combining_ctx, nil)
-            not_opts = CompilationContext.to_opts(not_ctx)
+            not_ctx = __MODULE__.with_tracked(combining_ctx, nil)
+            not_opts = __MODULE__.to_opts(not_ctx)
 
             quote do
               require Exonerate.Combining.Not
@@ -281,10 +435,10 @@ defmodule Exonerate.Context do
         # For object tracking, we constrain :only to "object" and set :tracked to :object
         tracked_object_ctx =
           combining_ctx
-          |> CompilationContext.with_tracked(:object)
-          |> CompilationContext.constrain_types(["object"])
+          |> __MODULE__.with_tracked(:object)
+          |> __MODULE__.constrain_types(["object"])
 
-        tracked_object_opts = CompilationContext.to_opts(tracked_object_ctx)
+        tracked_object_opts = __MODULE__.to_opts(tracked_object_ctx)
 
         for filter <- @object_seen_filters, is_map_key(local_schema, filter) do
           combining_module = Map.fetch!(@object_combining_modules, filter)
@@ -311,10 +465,10 @@ defmodule Exonerate.Context do
         # For array tracking, we constrain :only to "array" and set :tracked to :array
         tracked_array_ctx =
           combining_ctx
-          |> CompilationContext.with_tracked(:array)
-          |> CompilationContext.constrain_types(["array"])
+          |> __MODULE__.with_tracked(:array)
+          |> __MODULE__.constrain_types(["array"])
 
-        tracked_array_opts = CompilationContext.to_opts(tracked_array_ctx)
+        tracked_array_opts = __MODULE__.to_opts(tracked_array_ctx)
 
         for filter <- @array_seen_filters, is_map_key(local_schema, filter) do
           combining_module = Map.fetch!(@combining_modules, filter)
@@ -347,7 +501,7 @@ defmodule Exonerate.Context do
   # fallthrough still receives opts from quote blocks (macro boundary)
   defmacro fallthrough(resource, pointer, opts) do
     type_failure_pointer = JsonPtr.join(pointer, "type")
-    ctx = CompilationContext.from_opts(opts)
+    ctx = __MODULE__.from_opts(opts)
 
     Tools.maybe_dump(
       quote do

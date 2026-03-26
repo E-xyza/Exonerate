@@ -2,7 +2,7 @@ defmodule Exonerate.Tools do
   @moduledoc false
 
   alias Exonerate.Cache
-  alias Exonerate.CompilationContext
+  alias Exonerate.Context
   alias Exonerate.Type
 
   # GENERAL-USE MACROS
@@ -110,7 +110,7 @@ defmodule Exonerate.Tools do
 
   defp scrub_macros(other), do: other
 
-  def maybe_dump(macro, env, %CompilationContext{dump: dump}) do
+  def maybe_dump(macro, env, %Context{dump: dump}) do
     macro
     |> evaluate_internal_macros(env)
     |> __MODULE__.inspect(dump)
@@ -168,8 +168,8 @@ defmodule Exonerate.Tools do
     |> JsonPtr.resolve_json!(JsonPtr.backtrack!(pointer))
   end
 
-  @spec call(String.t(), JsonPtr.t(), Keyword.t() | CompilationContext.t()) :: atom
-  @spec call(String.t(), JsonPtr.t(), atom, Keyword.t() | CompilationContext.t()) :: atom
+  @spec call(String.t(), JsonPtr.t(), Keyword.t() | Context.t()) :: atom
+  @spec call(String.t(), JsonPtr.t(), atom, Keyword.t() | Context.t()) :: atom
   def call(resource, pointer, suffix \\ nil, opts) when is_binary(resource) do
     {tracked, dump} = extract_call_opts(opts)
 
@@ -184,8 +184,8 @@ defmodule Exonerate.Tools do
     |> String.to_atom()
   end
 
-  # Extract tracked and dump options from either keyword list or CompilationContext
-  defp extract_call_opts(%CompilationContext{tracked: tracked, dump: dump}) do
+  # Extract tracked and dump options from either keyword list or Context
+  defp extract_call_opts(%Context{tracked: tracked, dump: dump}) do
     {tracked, dump}
   end
 
