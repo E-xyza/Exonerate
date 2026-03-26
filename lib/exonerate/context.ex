@@ -6,6 +6,8 @@ defmodule Exonerate.Context do
   alias Exonerate.Cache
   alias Exonerate.Combining
   alias Exonerate.CompilationContext
+  alias Exonerate.Declaration
+  alias Exonerate.Degeneracy
   alias Exonerate.Tools
   alias Exonerate.Type
 
@@ -21,11 +23,21 @@ defmodule Exonerate.Context do
 
   defmacro filter(resource, pointer, opts) do
     caller = __CALLER__
-    call = Tools.call(resource, pointer, opts)
+    ctx = CompilationContext.from_opts(opts)
+    call = Tools.call(resource, pointer, ctx)
 
     if Cache.register_context(caller.module, call) do
-      caller
-      |> Tools.subschema(resource, pointer)
+      context = Tools.subschema(caller, resource, pointer)
+
+      # Phase 1: Register declaration with degeneracy info
+      decl =
+        Declaration.new(resource, pointer, opts)
+        |> Declaration.with_degeneracy(Degeneracy.class(context))
+
+      Cache.register_declaration(caller.module, decl)
+
+      # Phase 2: Generate code
+      context
       |> build_filter(resource, pointer, opts)
       |> Tools.maybe_dump(caller, opts)
     else

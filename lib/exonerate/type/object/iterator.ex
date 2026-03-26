@@ -252,7 +252,6 @@ defmodule Exonerate.Type.Object.Iterator do
 
               {:cont, {:ok, seen}}
             else
-              true -> {:cont, {:ok, MapSet.put(seen, key)}}
               Exonerate.Tools.error_match(error) -> {:halt, error}
             end
 
