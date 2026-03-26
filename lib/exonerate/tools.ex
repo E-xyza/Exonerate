@@ -66,6 +66,55 @@ defmodule Exonerate.Tools do
     macro
   end
 
+  # this macro exists to take "only" lists and turn them into proper typespecs
+  def spec_from_only([single]), do: spec_for(single)
+
+  def spec_from_only([head | rest]) do
+    quote do
+      unquote(spec_for(head)) | unquote(spec_from_only(rest))
+    end
+  end
+
+  defp spec_for("string") do
+    quote do
+      String.t()
+    end
+  end
+
+  defp spec_for("integer") do
+    quote do
+      integer()
+    end
+  end
+
+  defp spec_for("number") do
+    quote do
+      number()
+    end
+  end
+
+  defp spec_for("object") do
+    quote do
+      %{optional(String.t()) => Exonerate.Type.json()}
+    end
+  end
+
+  defp spec_for("array") do
+    quote do
+      [Exonerate.Type.json()]
+    end
+  end
+
+  defp spec_for("boolean") do
+    quote do
+      boolean()
+    end
+  end
+
+  defp spec_for("null") do
+    nil
+  end
+
   # this macro exists to trap error outputs (in case and with matching blocks)
   # as the pattern `error = {:error, _}` in test environment for safety, but to
   # elide that into the single `error` variable in other environments for

@@ -392,6 +392,10 @@ defmodule Exonerate do
 
     call = Tools.call(resource, root_pointer, opts)
 
+    # Extract types from root schema for @spec generation
+    root_schema = JsonPtr.resolve_json!(schema, root_pointer)
+    input_typespec = build_input_typespec(root_schema)
+
     Tools.maybe_dump(
       quote do
         require Exonerate.Metadata
@@ -406,6 +410,7 @@ defmodule Exonerate do
           unquote(opts)
         )
 
+        @spec unquote(function_name)(unquote(input_typespec)) :: :ok | {:error, list()}
         unquote(type)(unquote(function_name)(data), do: unquote(call)(data, "/"))
 
         require Exonerate.Context
@@ -415,6 +420,22 @@ defmodule Exonerate do
       opts
     )
   end
+
+  defp build_input_typespec(root_schema) when is_map(root_schema) do
+    case Map.get(root_schema, "type") do
+      nil ->
+        # No type constraint - accept any JSON
+        quote(do: Exonerate.Type.json())
+
+      types when is_list(types) ->
+        Tools.spec_from_only(types)
+
+      type when is_binary(type) ->
+        Tools.spec_from_only([type])
+    end
+  end
+
+  defp build_input_typespec(_), do: quote(do: Exonerate.Type.json())
 
   defp set_content_type(opts, path) do
     # need to support "encoding" option for backwards compatibility
