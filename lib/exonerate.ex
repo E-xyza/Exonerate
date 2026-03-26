@@ -178,16 +178,53 @@ defmodule Exonerate do
 
   ### Extra options
 
-  - `:encoding`: specifies the content-type of the provided schema string
-    literal. Defaults to `application/json` if the file extension is `.json`,
-    and `application/yaml` if the file extension is `.yaml`  If `:encoding`
-    is unspecified and the file extension is unrecognized, Exonerate will
-    not be able to compile.
-  - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples.
-    This is used to determine the content-type of the schema if the file
-    extension is unrecognized.  E.g. `[{".html", "text/html"}]`.  The mappings
-    `{".json", "application/json"}` and `{".yaml", "application/yaml"}` are not
-    overrideable.
+  - `:content_type`: specifies the MIME type used to parse the *schema definition
+    itself* (not the data being validated at runtime). This tells Exonerate how
+    to decode the schema string into an Elixir map. Supported values:
+    - `"application/json"` (default for `.json` files) - parse schema as JSON
+    - `"application/yaml"` (default for `.yaml` files) - parse schema as YAML
+      (requires the `yaml_elixir` dependency)
+
+    > ### Important distinction {: .info}
+    >
+    > This option controls how the *schema file* is parsed at compile time, not
+    > how validated data is parsed at runtime. The generated validation function
+    > always works on already-decoded Elixir terms (maps, lists, strings, etc.).
+
+    #### Example: YAML schema
+
+    ```elixir
+    # Using a YAML-formatted schema file
+    Exonerate.function_from_file(:def, :validate, "schema.yaml")
+    # content_type is auto-detected from .yaml extension
+
+    # Using a YAML string directly
+    Exonerate.function_from_string(:def, :validate, \"\"\"
+    type: object
+    properties:
+      name:
+        type: string
+    \"\"\", content_type: "application/yaml")
+    ```
+
+  - `:mimetype_mapping`: a proplist of `{<extension>, <mimetype>}` tuples that
+    maps file extensions to their content type. Use this when working with
+    non-standard file extensions.
+
+    #### Example
+
+    ```elixir
+    # Parse .schema files as JSON
+    Exonerate.function_from_file(
+      :def,
+      :validate,
+      "types.schema",
+      mimetype_mapping: [{".schema", "application/json"}]
+    )
+    ```
+
+    The built-in mappings `{".json", "application/json"}` and
+    `{".yaml", "application/yaml"}` cannot be overridden.
   """
   defmacro register_resource(schema, name, opts \\ []) do
     schema = Macro.expand(schema, __CALLER__)
@@ -257,7 +294,7 @@ defmodule Exonerate do
     opts =
       opts
       |> Macro.expand_literals(__CALLER__)
-      |> set_encoding(path)
+      |> set_content_type(path)
       |> Tools.set_decoders()
 
     # prewalk the schema text
@@ -376,14 +413,14 @@ defmodule Exonerate do
     )
   end
 
-  defp set_encoding(opts, path) do
-    # need to support "content_type" option for backwards compatibility
-    Keyword.put_new_lazy(opts, :encoding, fn ->
-      if content_type = Keyword.get(opts, :content_type) do
-        IO.warn("the `:content_type` option is deprecated.  use `:encoding` instead")
-        content_type
+  defp set_content_type(opts, path) do
+    # need to support "encoding" option for backwards compatibility
+    Keyword.put_new_lazy(opts, :content_type, fn ->
+      if encoding = Keyword.get(opts, :encoding) do
+        IO.warn("the `:encoding` option is deprecated.  use `:content_type` instead")
+        encoding
       else
-        Tools.encoding_from_extension(path, opts)
+        Tools.content_type_from_extension(path, opts)
       end
     end)
   end
@@ -392,7 +429,17 @@ defmodule Exonerate do
     opts
     |> Macro.expand(caller)
     |> Macro.expand_literals(caller)
-    |> Keyword.put_new(:encoding, "application/json")
+    |> handle_encoding_deprecation()
+    |> Keyword.put_new(:content_type, "application/json")
     |> Tools.set_decoders()
+  end
+
+  defp handle_encoding_deprecation(opts) do
+    if encoding = Keyword.get(opts, :encoding) do
+      IO.warn("the `:encoding` option is deprecated.  use `:content_type` instead")
+      Keyword.put_new(opts, :content_type, encoding)
+    else
+      opts
+    end
   end
 end

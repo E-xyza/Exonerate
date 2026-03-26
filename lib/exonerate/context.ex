@@ -16,7 +16,7 @@ defmodule Exonerate.Context do
   - `:entrypoint` - Original entrypoint pointer (JsonPtr.t())
   - `:dump` - Debug dump mode (boolean)
   - `:decoders` - Decoder configuration (list)
-  - `:encoding` - Encoding type (String.t())
+  - `:content_type` - Content type / MIME type (String.t())
   - `:draft` - JSON Schema draft version (atom)
   - `:format` - Format validation mode (atom | keyword | boolean)
 
@@ -48,7 +48,7 @@ defmodule Exonerate.Context do
           entrypoint: JsonPtr.t() | nil,
           dump: boolean | nil,
           decoders: list | nil,
-          encoding: String.t() | nil,
+          content_type: String.t() | nil,
           draft: atom | nil,
           format: atom | keyword | boolean | nil
         }
@@ -63,7 +63,7 @@ defmodule Exonerate.Context do
     :entrypoint,
     :dump,
     :decoders,
-    :encoding,
+    :content_type,
     :draft,
     :format
   ]
@@ -87,7 +87,7 @@ defmodule Exonerate.Context do
       entrypoint: Keyword.get(opts, :entrypoint),
       dump: Keyword.get(opts, :dump),
       decoders: Keyword.get(opts, :decoders),
-      encoding: Keyword.get(opts, :encoding),
+      content_type: Keyword.get(opts, :content_type),
       draft: Keyword.get(opts, :draft),
       format: Keyword.get(opts, :format)
     }

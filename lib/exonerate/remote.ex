@@ -84,11 +84,11 @@ defmodule Exonerate.Remote do
         guard_fetch!(proxied_uri, opts)
         ensure_priv_directory!(opts)
 
-        {body, encoding} = remote_fetch_adapter.fetch_remote!(proxied_uri, opts)
+        {body, content_type} = remote_fetch_adapter.fetch_remote!(proxied_uri, opts)
 
-        encoding = encoding || Tools.encoding_from_extension(proxied_uri, opts)
+        content_type = content_type || Tools.content_type_from_extension(proxied_uri, opts)
 
-        opts = Keyword.put(opts, :encoding, encoding)
+        opts = Keyword.put(opts, :content_type, content_type)
 
         if Keyword.get(opts, :cache, true) do
           uri
