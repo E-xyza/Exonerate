@@ -58,9 +58,12 @@ defmodule Exonerate.Remote do
 
   defp load_cache(caller, uri = %{scheme: "file"}, opts) do
     resource = Tools.uri_to_resource(uri)
+    path = uri.path
 
-    case File.read(uri.path) do
+    case File.read(path) do
       {:ok, binary} ->
+        # Decompress if .gz extension and update content_type based on actual extension
+        {binary, opts} = maybe_decompress_file(binary, path, opts)
         Schema.ingest(binary, caller, resource, opts)
 
       error ->
@@ -152,10 +155,31 @@ defmodule Exonerate.Remote do
           nil
       end
 
+    # Check for gzip content-encoding and decompress if needed
+    body =
+      case headers["content-encoding"] do
+        ["gzip" | _] -> :zlib.gunzip(body)
+        _ -> body
+      end
+
     {body, content_type}
   end
 
   # utilities
+
+  defp maybe_decompress_file(binary, path, opts) do
+    if String.ends_with?(path, ".gz") do
+      # Decompress and determine content_type from the underlying extension
+      decompressed = :zlib.gunzip(binary)
+      # Strip .gz to get the actual file extension (e.g., .json.gz -> .json)
+      actual_path = String.replace_suffix(path, ".gz", "")
+      content_type = Tools.content_type_from_extension(actual_path, opts)
+      opts = Keyword.put(opts, :content_type, content_type)
+      {decompressed, opts}
+    else
+      {binary, opts}
+    end
+  end
 
   defp maybe_proxy(uri, opts) do
     if proxy_mapping = opts[:proxy] do

@@ -290,11 +290,15 @@ defmodule Exonerate do
   defmacro function_from_file(type, function_name, path, opts \\ [])
 
   defmacro function_from_file(type, function_name, path, opts) do
+    # Read and potentially decompress the file
+    {schema_string, actual_path} = read_and_decompress(path)
+
     # expand literals (aliases) in ast.
+    # Use actual_path (with .gz stripped) for content_type detection
     opts =
       opts
       |> Macro.expand_literals(__CALLER__)
-      |> set_content_type(path)
+      |> set_content_type(actual_path)
       |> Tools.set_decoders()
 
     # prewalk the schema text
@@ -305,7 +309,6 @@ defmodule Exonerate do
     opts = Keyword.put(opts, :draft, draft)
 
     function_resource = to_string(%URI{scheme: "file", host: "", path: Path.absname(path)})
-    schema_string = File.read!(path)
 
     # set decoder options for the schema
 
@@ -440,6 +443,19 @@ defmodule Exonerate do
       Keyword.put_new(opts, :content_type, encoding)
     else
       opts
+    end
+  end
+
+  defp read_and_decompress(path) do
+    binary = File.read!(path)
+
+    if String.ends_with?(path, ".gz") do
+      decompressed = :zlib.gunzip(binary)
+      # Strip .gz to get actual extension for content_type detection
+      actual_path = String.replace_suffix(path, ".gz", "")
+      {decompressed, actual_path}
+    else
+      {binary, path}
     end
   end
 end
