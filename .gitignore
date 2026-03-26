@@ -19,3 +19,6 @@ automated
 
 # don't commit schemas fetched for testing
 /priv
+
+# crash dumps
+erl_crash.dump
