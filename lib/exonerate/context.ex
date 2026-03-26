@@ -191,6 +191,14 @@ defmodule Exonerate.Context do
       end)
       |> Enum.unzip()
 
+    # Pass type constraint to combining schemas to avoid Dialyzer warnings
+    # See: https://github.com/E-xyza/Exonerate/issues/85
+    # Intersect with existing :only constraint to accumulate type restrictions
+    existing_only = opts |> Keyword.get(:only, @all_types) |> List.wrap() |> MapSet.new()
+    current_types = types |> List.wrap() |> MapSet.new()
+    new_only = MapSet.intersection(existing_only, current_types) |> MapSet.to_list()
+    combining_opts = Keyword.put(opts, :only, new_only)
+
     combining =
       for filter <- @seen_filters, is_map_key(context, filter) do
         combining_module = Map.fetch!(@combining_modules, filter)
@@ -202,7 +210,7 @@ defmodule Exonerate.Context do
           unquote(combining_module).filter(
             unquote(resource),
             unquote(combining_pointer),
-            unquote(opts)
+            unquote(combining_opts)
           )
         end
       end ++
@@ -214,7 +222,7 @@ defmodule Exonerate.Context do
               Exonerate.Combining.Not.filter(
                 unquote(resource),
                 unquote(JsonPtr.join(pointer, "not")),
-                unquote(Keyword.delete(opts, :tracked))
+                unquote(Keyword.delete(combining_opts, :tracked))
               )
             end
           end
