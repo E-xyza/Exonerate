@@ -31,6 +31,10 @@ defmodule Exonerate.MixProject do
       ],
       test_coverage: [
         ignore_modules: [SchemaModule, ExonerateTest.Automate, Exonerate.Cache.Resource]
+      ],
+      escript: [
+        main_module: Exonerate.Bowtie.Harness,
+        name: "exonerate_bowtie"
       ]
     ]
   end
@@ -38,7 +42,7 @@ defmodule Exonerate.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :crypto]
     ]
   end
 
