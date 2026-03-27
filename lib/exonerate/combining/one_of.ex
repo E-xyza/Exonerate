@@ -45,105 +45,145 @@ defmodule Exonerate.Combining.OneOf do
     end
   end
 
+  # For tracked modes, we must evaluate ALL branches to ensure exactly one matches
   defp build_tracked(calls, resource, pointer, opts) do
-    lambdas = Enum.map(calls, &to_lambda/1)
     call = Tools.call(resource, pointer, opts)
+    result_vars = Enum.with_index(calls, fn _, i -> Macro.var(:"result_#{i}", __MODULE__) end)
+
+    # Generate: result_0 = call_0(data, path)
+    assignments =
+      Enum.zip(calls, result_vars)
+      |> Enum.map(fn {subcall, var} ->
+        quote do
+          unquote(var) = unquote(subcall)(data, path)
+        end
+      end)
+
+    check_expr = build_tracked_check_expr(result_vars, resource, pointer)
 
     quote do
       defp unquote(call)(data, path) do
         require Exonerate.Tools
-
-        unquote(lambdas)
-        |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
-             reason: "no matches"
-           ), 0},
-          fn
-            fun, {{:error, opts}, index} ->
-              case fun.(data, path) do
-                ok = {:ok, _seen} ->
-                  {:cont, {ok, index, index + 1}}
-
-                Exonerate.Tools.error_match(error) ->
-                  {:cont,
-                   {{:error, Keyword.update(opts, :errors, [error], &[error | &1])}, index + 1}}
-              end
-
-            fun, {ok = {:ok, _seen}, last, index} ->
-              case fun.(data, path) do
-                {:ok, _} ->
-                  matches =
-                    Enum.map([last, index], fn slot ->
-                      "/" <> Path.join(unquote(pointer) ++ ["#{slot}"])
-                    end)
-
-                  {:halt,
-                   {Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
-                      matches: matches,
-                      reason: "multiple matches"
-                    )}}
-
-                Exonerate.Tools.error_match(error) ->
-                  {:cont, {ok, last, index}}
-              end
-          end
-        )
-        |> elem(0)
+        unquote_splicing(assignments)
+        unquote(check_expr)
       end
     end
   end
 
+  defp build_tracked_check_expr(result_vars, resource, pointer) do
+    # Build a list of {result_var, index} tuples
+    indexed_vars = Enum.with_index(result_vars)
+
+    quote do
+      # Collect all results with their indices
+      results = unquote(build_results_list(indexed_vars))
+
+      # Separate successes and failures
+      {successes, failures} =
+        Enum.split_with(results, fn {result, _idx} ->
+          match?({:ok, _}, result)
+        end)
+
+      case successes do
+        [{ok = {:ok, _seen}, _idx}] ->
+          # Exactly one match - success
+          ok
+
+        [] ->
+          # No matches - collect all errors
+          errors = Enum.map(failures, fn {{:error, _} = err, _idx} -> err end)
+
+          Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
+            reason: "no matches",
+            errors: errors
+          )
+
+        multiple ->
+          # Multiple matches
+          matches =
+            Enum.map(multiple, fn {_, idx} ->
+              "/" <> Path.join(unquote(pointer) ++ ["#{idx}"])
+            end)
+
+          Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
+            matches: matches,
+            reason: "multiple matches"
+          )
+      end
+    end
+  end
+
+  defp build_results_list(indexed_vars) do
+    elements =
+      Enum.map(indexed_vars, fn {var, idx} ->
+        quote do: {unquote(var), unquote(idx)}
+      end)
+
+    quote do: unquote(elements)
+  end
+
+  # For untracked mode, we also must evaluate ALL branches to ensure exactly one matches
   defp build_untracked(calls, resource, pointer, opts) do
-    lambdas = Enum.map(calls, &to_lambda/1)
     call = Tools.call(resource, pointer, opts)
+    result_vars = Enum.with_index(calls, fn _, i -> Macro.var(:"result_#{i}", __MODULE__) end)
+
+    # Generate: result_0 = call_0(data, path)
+    assignments =
+      Enum.zip(calls, result_vars)
+      |> Enum.map(fn {subcall, var} ->
+        quote do
+          unquote(var) = unquote(subcall)(data, path)
+        end
+      end)
+
+    check_expr = build_untracked_check_expr(result_vars, resource, pointer)
 
     quote do
       defp unquote(call)(data, path) do
         require Exonerate.Tools
-
-        unquote(lambdas)
-        |> Enum.reduce_while(
-          {Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
-             reason: "no matches"
-           ), 0},
-          fn
-            fun, {{:error, opts}, index} ->
-              case fun.(data, path) do
-                :ok ->
-                  {:cont, {:ok, index, index + 1}}
-
-                Exonerate.Tools.error_match(error) ->
-                  {:cont,
-                   {{:error, Keyword.update(opts, :errors, [error], &[error | &1])}, index + 1}}
-              end
-
-            fun, {:ok, last, index} ->
-              case fun.(data, path) do
-                :ok ->
-                  matches =
-                    Enum.map([last, index], fn slot ->
-                      "/" <> Path.join(unquote(pointer) ++ ["#{slot}"])
-                    end)
-
-                  {:halt,
-                   {Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
-                      matches: matches,
-                      reason: "multiple matches"
-                    )}}
-
-                Exonerate.Tools.error_match(error) ->
-                  {:cont, {:ok, last, index}}
-              end
-          end
-        )
-        |> elem(0)
+        unquote_splicing(assignments)
+        unquote(check_expr)
       end
     end
   end
 
-  defp to_lambda(call) do
+  defp build_untracked_check_expr(result_vars, resource, pointer) do
+    indexed_vars = Enum.with_index(result_vars)
+
     quote do
-      &(unquote({call, [], Elixir}) / 2)
+      results = unquote(build_results_list(indexed_vars))
+
+      {successes, failures} =
+        Enum.split_with(results, fn {result, _idx} ->
+          result == :ok
+        end)
+
+      case successes do
+        [{:ok, _idx}] ->
+          # Exactly one match - success
+          :ok
+
+        [] ->
+          # No matches - collect all errors
+          errors = Enum.map(failures, fn {err, _idx} -> err end)
+
+          Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
+            reason: "no matches",
+            errors: errors
+          )
+
+        multiple ->
+          # Multiple matches
+          matches =
+            Enum.map(multiple, fn {_, idx} ->
+              "/" <> Path.join(unquote(pointer) ++ ["#{idx}"])
+            end)
+
+          Exonerate.Tools.mismatch(data, unquote(resource), unquote(pointer), path,
+            matches: matches,
+            reason: "multiple matches"
+          )
+      end
     end
   end
 

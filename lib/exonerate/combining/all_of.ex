@@ -26,99 +26,104 @@ defmodule Exonerate.Combining.AllOf do
   end
 
   defp build_filter({calls, contexts}, resource, pointer, opts) do
-    lambdas = Enum.map(calls, &to_lambda/1)
     call = Tools.call(resource, pointer, opts)
 
     case opts[:tracked] do
       :object ->
-        build_tracked_object(call, lambdas, contexts)
+        build_tracked_object(call, calls, contexts)
 
       :array ->
-        build_tracked_array(call, lambdas, contexts)
+        build_tracked_array(call, calls, contexts)
 
       nil ->
-        build_untracked(call, lambdas, contexts)
+        build_untracked(call, calls, contexts)
     end
   end
 
-  defp build_tracked_object(call, lambdas, contexts) do
+  # Build a with-chain for tracked object mode
+  # Each call returns {:ok, seen_set}, we union them all
+  defp build_tracked_object(call, calls, contexts) do
+    seen_vars = Enum.with_index(calls, fn _, i -> Macro.var(:"seen_#{i}", __MODULE__) end)
+
+    with_clauses =
+      Enum.zip(calls, seen_vars)
+      |> Enum.map(fn {subcall, seen_var} ->
+        quote do
+          {:ok, unquote(seen_var)} <- unquote(subcall)(data, path)
+        end
+      end)
+
+    union_expr = build_union_expr(seen_vars)
+
     quote do
       defp unquote(call)(data, path) do
-        require Exonerate.Tools
-
-        Enum.reduce_while(
-          unquote(lambdas),
-          {:ok, MapSet.new()},
-          fn
-            fun, {:ok, seen} ->
-              case fun.(data, path) do
-                {:ok, new_seen} ->
-                  {:cont, {:ok, MapSet.union(seen, new_seen)}}
-
-                Exonerate.Tools.error_match(error) ->
-                  {:halt, error}
-              end
-          end
-        )
+        with unquote_splicing(with_clauses) do
+          {:ok, unquote(union_expr)}
+        end
       end
 
       unquote(contexts)
     end
   end
 
-  defp build_tracked_array(call, lambdas, contexts) do
+  defp build_union_expr([single]), do: single
+  defp build_union_expr([first | rest]) do
+    Enum.reduce(rest, first, fn var, acc ->
+      quote do: MapSet.union(unquote(acc), unquote(var))
+    end)
+  end
+
+  # Build a with-chain for tracked array mode
+  # Each call returns {:ok, index}, we take the max
+  defp build_tracked_array(call, calls, contexts) do
+    index_vars = Enum.with_index(calls, fn _, i -> Macro.var(:"idx_#{i}", __MODULE__) end)
+
+    with_clauses =
+      Enum.zip(calls, index_vars)
+      |> Enum.map(fn {subcall, idx_var} ->
+        quote do
+          {:ok, unquote(idx_var)} <- unquote(subcall)(data, path)
+        end
+      end)
+
+    max_expr = build_max_expr(index_vars)
+
     quote do
       defp unquote(call)(data, path) do
-        require Exonerate.Tools
-
-        Enum.reduce_while(
-          unquote(lambdas),
-          {:ok, 0},
-          fn
-            fun, {:ok, first_unseen_index} ->
-              case fun.(data, path) do
-                {:ok, new_index} ->
-                  {:cont, {:ok, max(first_unseen_index, new_index)}}
-
-                Exonerate.Tools.error_match(error) ->
-                  {:halt, error}
-              end
-          end
-        )
+        with unquote_splicing(with_clauses) do
+          {:ok, unquote(max_expr)}
+        end
       end
 
       unquote(contexts)
     end
   end
 
-  defp build_untracked(call, lambdas, contexts) do
+  defp build_max_expr([single]), do: single
+  defp build_max_expr([first | rest]) do
+    Enum.reduce(rest, first, fn var, acc ->
+      quote do: max(unquote(acc), unquote(var))
+    end)
+  end
+
+  # Build a with-chain for untracked mode
+  # Each call returns :ok, we just need all to succeed
+  defp build_untracked(call, calls, contexts) do
+    with_clauses =
+      Enum.map(calls, fn subcall ->
+        quote do
+          :ok <- unquote(subcall)(data, path)
+        end
+      end)
+
     quote do
       defp unquote(call)(data, path) do
-        require Exonerate.Tools
-
-        Enum.reduce_while(
-          unquote(lambdas),
-          :ok,
-          fn
-            fun, :ok ->
-              case fun.(data, path) do
-                :ok ->
-                  {:cont, :ok}
-
-                Exonerate.Tools.error_match(error) ->
-                  {:halt, error}
-              end
-          end
-        )
+        with unquote_splicing(with_clauses) do
+          :ok
+        end
       end
 
       unquote(contexts)
-    end
-  end
-
-  defp to_lambda(call) do
-    quote do
-      &(unquote({call, [], Elixir}) / 2)
     end
   end
 
