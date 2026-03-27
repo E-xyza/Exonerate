@@ -452,8 +452,8 @@ defmodule Exonerate.Tools do
     end
   end
 
-  def uri_merge(_base, %{path: "." <> _rest = path}) do
-    %URI{scheme: "file", host: "", path: Path.absname(path)}
+  def uri_merge(_base, %{path: "." <> _rest = path} = target) do
+    %URI{scheme: "file", host: "", path: Path.absname(path), fragment: target.fragment}
   end
 
   def uri_merge(base, rel) do
