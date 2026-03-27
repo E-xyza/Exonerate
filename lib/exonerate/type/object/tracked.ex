@@ -2,16 +2,11 @@ defmodule Exonerate.Type.Object.Tracked do
   @moduledoc false
 
   alias Exonerate.Combining
+  alias Exonerate.Modules
   alias Exonerate.Tools
   alias Exonerate.Type.Object.Iterator
 
-  @modules %{
-    "minProperties" => Exonerate.Filter.MinProperties,
-    "maxProperties" => Exonerate.Filter.MaxProperties,
-    "required" => Exonerate.Filter.Required,
-    "dependencies" => Exonerate.Filter.Dependencies,
-    "dependentRequired" => Exonerate.Filter.DependentRequired
-  }
+  @modules Modules.object_outer_modules() |> Map.delete("dependentSchemas")
 
   @outer_filters Map.keys(@modules)
 
@@ -198,7 +193,7 @@ defmodule Exonerate.Type.Object.Tracked do
     )
   end
 
-  @outer_modules Map.put(@modules, "dependentSchemas", Exonerate.Filter.DependentSchemas)
+  @outer_modules Modules.object_outer_modules()
 
   defp filter_accessories(context, name, pointer, opts) do
     filters =

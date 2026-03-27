@@ -1,23 +1,10 @@
 defmodule Exonerate.Filter.Format do
   @moduledoc false
 
+  alias Exonerate.Modules
   alias Exonerate.Tools
 
-  @format_filters %{
-    "duration" => Exonerate.Formats.Duration,
-    "email" => Exonerate.Formats.Email,
-    "idn-email" => Exonerate.Formats.IdnEmail,
-    "hostname" => Exonerate.Formats.Hostname,
-    "idn-hostname" => Exonerate.Formats.IdnHostname,
-    "uri" => Exonerate.Formats.Uri,
-    "uri-reference" => Exonerate.Formats.UriReference,
-    "iri" => Exonerate.Formats.Iri,
-    "iri-reference" => Exonerate.Formats.IriReference,
-    "uri-template" => Exonerate.Formats.UriTemplate,
-    "json-pointer" => Exonerate.Formats.JsonPointer,
-    "relative-json-pointer" => Exonerate.Formats.RelativeJsonPointer,
-    "regex" => Exonerate.Formats.Regex
-  }
+  @format_filters Modules.format_modules()
 
   defmacro filter(resource, pointer, opts) do
     __CALLER__
@@ -26,8 +13,7 @@ defmodule Exonerate.Filter.Format do
     |> Tools.maybe_dump(__CALLER__, opts)
   end
 
-  @default_filters Map.keys(@format_filters) ++
-                     ~w(date-time date-time-utc date-time-tz date time ipv4 ipv6 uuid)
+  @default_filters Modules.builtin_formats()
 
   def should_format?(format, resource, pointer, opts) do
     format_opts = format_opts(opts)

@@ -1,4 +1,4 @@
-defmodule Exonerate.Filter.DependentSchemas do
+defmodule Exonerate.Combining.DependentSchemas do
   @moduledoc false
 
   # NB "dependentSchemas" is just a repackaging of "dependencies" except only permitting the

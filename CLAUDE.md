@@ -86,8 +86,7 @@ Errors return structured tuples with JSON pointer locations:
 ### Optional
 - `pegasus` - Parsing (for format validators)
 - `req`/`finch` - HTTP client (for remote schemas)
-- `yaml_elixir` - YAML support
-- `idna` - IDN hostname validation
+- `yamerl` - YAML support
 
 ## Common Tasks
 

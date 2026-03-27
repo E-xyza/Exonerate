@@ -1,25 +1,17 @@
 defmodule Exonerate.Type.Object.Iterator do
   @moduledoc false
 
+  alias Exonerate.Modules
   alias Exonerate.Tools
   alias Exonerate.Type.Object
 
-  # Note that we don't need
-
-  @iterator_modules %{
-    "properties" => Exonerate.Filter.Properties,
-    "propertyNames" => Exonerate.Filter.PropertyNames,
-    "patternProperties" => Exonerate.Filter.PatternProperties
-  }
+  @iterator_modules Modules.object_iterator_modules()
 
   @iterators Map.keys(@iterator_modules)
 
   @visited ["properties", "patternProperties"]
 
-  @finalizer_modules %{
-    "additionalProperties" => Exonerate.Filter.AdditionalProperties,
-    "unevaluatedProperties" => Exonerate.Filter.UnevaluatedProperties
-  }
+  @finalizer_modules Modules.object_finalizer_modules()
 
   @finalizers Map.keys(@finalizer_modules)
 

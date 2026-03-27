@@ -1,6 +1,8 @@
 defmodule Exonerate.Type do
   @moduledoc false
 
+  alias Exonerate.Modules
+
   @type json ::
           %{optional(String.t()) => json}
           | list(json)
@@ -9,15 +11,11 @@ defmodule Exonerate.Type do
           | boolean
           | nil
 
-  @module Map.new(
-            ~w(string integer number object array boolean null),
-            &{&1, Module.concat(Elixir.Exonerate.Type, String.capitalize(&1))}
-          )
+  @doc "Returns the module for a JSON type."
+  defdelegate module(type), to: Modules, as: :type
 
-  def module(type), do: @module[type]
-
-  @all Map.keys(@module)
-  def all, do: @all
+  @doc "Returns all type names."
+  defdelegate all(), to: Modules, as: :all_types
 
   @spec of(json) :: String.t()
   def of(json) when is_binary(json), do: "string"

@@ -56,12 +56,12 @@ defmodule Exonerate.MixProject do
       {:pegasus, "~> 0.2.4", optional: true},
       {:req, "~> 0.5", optional: true},
       {:finch, "~> 0.19", optional: true},
-      {:yaml_elixir, "~> 2.11", optional: true},
-      {:idna, "~> 6.1.1", optional: true},
+      {:yamerl, "~> 0.10", optional: true},
       {:decimal, "~> 2.0", optional: true},
       # dev tools
       {:ex_doc, "~> 0.35", only: :dev},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       # test
       {:bandit, "~> 1.6", only: [:test, :bench]},
       {:tzdata, "~> 1.1", only: :test},

@@ -321,7 +321,7 @@ defmodule Exonerate.Tools do
       |> if(&(!List.keymember?(&1, "application/json", 0)), &[{"application/json", Jason} | &1])
       |> if(
         &(!List.keymember?(&1, "application/yaml", 0)),
-        &[{"application/yaml", YamlElixir} | &1]
+        &[{"application/yaml", :yamerl} | &1]
       )
     end)
   end
@@ -336,13 +336,63 @@ defmodule Exonerate.Tools do
       {_, Jason} ->
         Jason.decode!(string)
 
-      {_, YamlElixir} ->
-        YamlElixir.read_from_string!(string)
+      {_, :yamerl} ->
+        decode_yaml!(string)
 
       {_, {module, function}} ->
         apply(module, function, [string])
     end
   end
+
+  # Decode YAML using yamerl directly
+  # yamerl returns charlists and proplists, so we convert to binaries and maps
+  defp decode_yaml!(string) do
+    :yamerl_constr.string(to_charlist(string))
+    |> case do
+      [document] -> convert_yaml_value(document)
+      documents -> Enum.map(documents, &convert_yaml_value/1)
+    end
+  end
+
+  # Convert yamerl values to Elixir-friendly format
+  defp convert_yaml_value(value) when is_list(value) do
+    cond do
+      # Empty list
+      value == [] ->
+        []
+
+      # Charlist (string) - all elements are integers in valid char range
+      is_charlist?(value) ->
+        to_string(value)
+
+      # Proplist (map) - first element is a tuple with string/atom key
+      match?([{key, _} | _] when is_list(key) or is_atom(key), value) ->
+        Map.new(value, fn {k, v} ->
+          {convert_yaml_key(k), convert_yaml_value(v)}
+        end)
+
+      # Regular list (array)
+      true ->
+        Enum.map(value, &convert_yaml_value/1)
+    end
+  end
+
+  defp convert_yaml_value(value) when is_binary(value), do: value
+  defp convert_yaml_value(value) when is_number(value), do: value
+  defp convert_yaml_value(value) when is_boolean(value), do: value
+  defp convert_yaml_value(:null), do: nil
+  defp convert_yaml_value(nil), do: nil
+  defp convert_yaml_value(value) when is_atom(value), do: Atom.to_string(value)
+
+  # Check if a list is a charlist (string of integers)
+  defp is_charlist?([]), do: false
+  defp is_charlist?(list) when is_list(list), do: List.ascii_printable?(list)
+  defp is_charlist?(_), do: false
+
+  # Convert yamerl charlist keys to binary strings
+  defp convert_yaml_key(key) when is_list(key), do: to_string(key)
+  defp convert_yaml_key(key) when is_atom(key), do: Atom.to_string(key)
+  defp convert_yaml_key(key) when is_binary(key), do: key
 
   # URI tools
   @spec uri_to_resource(URI.t()) :: String.t()

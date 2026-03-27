@@ -31,6 +31,7 @@ defmodule Exonerate.Context do
   alias Exonerate.Combining
   alias Exonerate.Declaration
   alias Exonerate.Degeneracy
+  alias Exonerate.Modules
   alias Exonerate.Tools
   alias Exonerate.Type
 
@@ -186,11 +187,7 @@ defmodule Exonerate.Context do
   @seen_filters @combining_filters -- ["not"]
 
   # Object tracking needs extended modules that include dependentSchemas
-  @object_combining_modules Map.put(
-                              @combining_modules,
-                              "dependentSchemas",
-                              Exonerate.Filter.DependentSchemas
-                            )
+  @object_combining_modules Map.put(@combining_modules, "dependentSchemas", Modules.combining("dependentSchemas"))
 
   # Object/array tracking detection filters
   @object_seen_filters ~w(allOf anyOf if oneOf dependentSchemas $ref)
@@ -591,14 +588,50 @@ defmodule Exonerate.Context do
       |> __MODULE__.get_only(@all_types)
       |> MapSet.new()
 
+    # Calculate the type intersection
+    schema_types = types |> List.wrap() |> MapSet.new()
+    type_intersection = MapSet.intersection(schema_types, filtered_types)
+
+    # Optimization: In tracked mode, if the schema's types don't intersect with the
+    # tracked type constraint (:only), skip validation and return empty tracked result.
+    # This schema can never match the tracked type, so it won't contribute to seen properties.
+    # See: https://github.com/E-xyza/Exonerate/issues/20
+    if ctx.tracked && MapSet.size(type_intersection) == 0 do
+      build_tracked_passthrough(resource, pointer, ctx)
+    else
+      build_type_filter(local_schema, resource, pointer, ctx, type_intersection, filtered_types)
+    end
+  end
+
+  # Generate a passthrough for tracked mode when types don't intersect
+  defp build_tracked_passthrough(resource, pointer, ctx) do
+    call = Tools.call(resource, pointer, ctx)
+
+    result =
+      case ctx.tracked do
+        :object ->
+          quote do
+            {:ok, MapSet.new()}
+          end
+
+        :array ->
+          {:ok, 0}
+      end
+
+    quote do
+      @compile {:inline, [{unquote(call), 2}]}
+      defp unquote(call)(_content, _path), do: unquote(result)
+    end
+  end
+
+  defp build_type_filter(local_schema, resource, pointer, ctx, type_intersection, _filtered_types) do
+    types = local_schema["type"]
+
     # Convert to opts for macro boundaries
     opts = __MODULE__.to_opts(ctx)
 
     {filters, accessories} =
-      types
-      |> List.wrap()
-      |> MapSet.new()
-      |> MapSet.intersection(filtered_types)
+      type_intersection
       |> Enum.map(fn type ->
         module = Type.module(type)
 

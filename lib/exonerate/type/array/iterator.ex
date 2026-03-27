@@ -8,24 +8,14 @@ defmodule Exonerate.Type.Array.Iterator do
   # the looping terminates when a passing result is found, this only applies
   # when the only filters are "minItems" and "contains" filters.
 
+  alias Exonerate.Modules
   alias Exonerate.Tools
   alias Exonerate.Type
 
   alias Exonerate.Type.Array.FindIterator
   alias Exonerate.Type.Array.FilterIterator
 
-  @modules %{
-    "items" => Exonerate.Filter.Items,
-    "contains" => Exonerate.Filter.Contains,
-    "uniqueItems" => Exonerate.Filter.UniqueItems,
-    "minItems" => Exonerate.Filter.MinItems,
-    "maxItems" => Exonerate.Filter.MaxItems,
-    "additionalItems" => Exonerate.Filter.AdditionalItems,
-    "prefixItems" => Exonerate.Filter.PrefixItems,
-    "maxContains" => Exonerate.Filter.MaxContains,
-    "minContains" => Exonerate.Filter.MinContains,
-    "unevaluatedItems" => Exonerate.Filter.UnevaluatedItems
-  }
+  @modules Modules.array_modules()
 
   @context_filters ~w(items contains additionalItems prefixItems unevaluatedItems)
 

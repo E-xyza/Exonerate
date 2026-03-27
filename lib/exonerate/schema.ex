@@ -31,15 +31,17 @@ defmodule Exonerate.Schema do
     |> ref_prescan(caller, resource, opts)
 
     # recursively jump into references and go ahead run cache assignments on them.
-    caller.module
-    |> Cache.all_ref_pointers(resource)
-    |> Enum.reject(&(&1 in seen))
-    |> Enum.reduce(seen, fn pointer, seen_so_far ->
-      new_seen = MapSet.put(seen_so_far, pointer)
-      new_opts = Keyword.replace(opts, :entrypoint, JsonPtr.to_path(pointer))
-      cache_assignments(schema, caller, resource, new_opts, new_seen)
-      new_seen
-    end)
+    # The reduce tracks seen pointers to prevent infinite recursion; final value unused.
+    _seen =
+      caller.module
+      |> Cache.all_ref_pointers(resource)
+      |> Enum.reject(&(&1 in seen))
+      |> Enum.reduce(seen, fn pointer, seen_so_far ->
+        new_seen = MapSet.put(seen_so_far, pointer)
+        new_opts = Keyword.replace(opts, :entrypoint, JsonPtr.to_path(pointer))
+        cache_assignments(schema, caller, resource, new_opts, new_seen)
+        new_seen
+      end)
 
     schema
   end

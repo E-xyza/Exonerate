@@ -10,6 +10,7 @@ defmodule Exonerate.Formats.IdnHostname do
   """
 
   alias Exonerate.Cache
+  alias Exonerate.Formats.Punycode
 
   @doc """
   Creates a parser `~idn-hostname/1`.
@@ -19,10 +20,6 @@ defmodule Exonerate.Formats.IdnHostname do
 
   The function will only be created once per module, and it is safe to call
   the macro more than once.
-
-  > ### Warning {: .warning}
-  >
-  > this function generates code that requires the `:idna` library.
 
   ## Options:
   - `:name` (atom): the name of the function to create.  Defaults to
@@ -92,11 +89,11 @@ defmodule Exonerate.Formats.IdnHostname do
 
             this_size ->
               try do
-                unicode = :punycode.decode(String.to_charlist(segment))
+                unicode = Punycode.decode(String.to_charlist(segment))
 
                 {:cont, {:ok, [List.to_string(unicode) | so_far], size_so_far + this_size}}
-              catch
-                _, what ->
+              rescue
+                _ ->
                   {:halt, {:error, "invalid punycode content: #{segment}"}}
               end
           end
@@ -108,12 +105,11 @@ defmodule Exonerate.Formats.IdnHostname do
             if unquote(:"~idn-hostname:all-ascii?")(full_string) do
               byte_size(full_string)
             else
-              # this is inefficient, we could do this in a single pass also without actually
-              # performing a full decode.
+              # Calculate punycode encoded length
               full_string
               |> String.to_charlist()
-              |> :punycode.encode()
-              |> Enum.count()
+              |> Punycode.encode()
+              |> length()
             end
 
           case string_size do

@@ -104,12 +104,12 @@ defmodule Exonerate do
     should be a string that matches the `content-type` of the schema. `<decoder>`
     should be one of the following:
     - `Jason` (default) for json parsing
-    - `YamlElixir` for yaml parsing
+    - `:yamerl` for yaml parsing (requires the `yamerl` dependency)
     - `{module, function}` for custom parsing; the function should accept a
       string and return json term, raising if the string is not valid input
       for the decoder.
 
-    Defaults to `[{"application/json", Jason}, {"application/yaml", YamlElixir}]`.
+    Defaults to `[{"application/json", Jason}, {"application/yaml", :yamerl}]`.
     Tuples specified in this option will override or add to the defaults.
 
   - `:draft`: specifies any special draft information.  Defaults to `"2020"`,
@@ -183,7 +183,7 @@ defmodule Exonerate do
     to decode the schema string into an Elixir map. Supported values:
     - `"application/json"` (default for `.json` files) - parse schema as JSON
     - `"application/yaml"` (default for `.yaml` files) - parse schema as YAML
-      (requires the `yaml_elixir` dependency)
+      (requires the `yamerl` dependency)
 
     > ### Important distinction {: .info}
     >

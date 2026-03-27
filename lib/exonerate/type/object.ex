@@ -3,21 +3,16 @@ defmodule Exonerate.Type.Object do
 
   @behaviour Exonerate.Type
 
-  alias Exonerate.Tools
   alias Exonerate.Combining
+  alias Exonerate.Modules
+  alias Exonerate.Tools
   alias Exonerate.Type.Object.Iterator
 
-  @modules %{
-    "minProperties" => Exonerate.Filter.MinProperties,
-    "maxProperties" => Exonerate.Filter.MaxProperties,
-    "required" => Exonerate.Filter.Required,
-    "dependencies" => Exonerate.Filter.Dependencies,
-    "dependentRequired" => Exonerate.Filter.DependentRequired
-  }
+  @modules Modules.object_outer_modules() |> Map.delete("dependentSchemas")
 
   @outer_filters Map.keys(@modules)
 
-  @combining_filters Combining.filters() ++ ["dependentSchemas"]
+  @combining_filters Modules.combining_filters() ++ ["dependentSchemas"]
 
   defmacro filter(resource, pointer, opts) do
     if opts[:tracked] do
@@ -206,7 +201,7 @@ defmodule Exonerate.Type.Object do
     )
   end
 
-  @outer_modules Map.put(@modules, "dependentSchemas", Exonerate.Filter.DependentSchemas)
+  @outer_modules Modules.object_outer_modules()
 
   defp filter_accessories(context, name, pointer, opts) do
     filters =

@@ -2,27 +2,28 @@ defmodule Exonerate.Combining do
   @moduledoc false
 
   alias Exonerate.Cache
+  alias Exonerate.Modules
   alias Exonerate.Tools
   alias Exonerate.Type.Array
 
-  @modules %{
-    "anyOf" => Exonerate.Combining.AnyOf,
-    "allOf" => Exonerate.Combining.AllOf,
-    "oneOf" => Exonerate.Combining.OneOf,
-    "not" => Exonerate.Combining.Not,
-    "$ref" => Exonerate.Combining.Ref,
-    "if" => Exonerate.Combining.If
-  }
+  # Note: This module exposes the "standard" combining filters (excluding dependentSchemas).
+  # For the full combining modules map including dependentSchemas, use Exonerate.Modules.
 
-  @filters Map.keys(@modules)
+  @doc "Returns the standard combining filter modules map (excludes dependentSchemas)."
+  def modules do
+    # Return standard combining modules without dependentSchemas
+    Modules.combining_filters()
+    |> Map.new(&{&1, Modules.combining(&1)})
+  end
 
-  def merge(map), do: Map.merge(map, @modules)
+  @doc "Returns the standard combining filter names."
+  defdelegate filters(), to: Modules, as: :combining_filters
 
-  def modules, do: @modules
+  @doc "Returns true if the filter is a combining filter."
+  defdelegate filter?(filter), to: Modules, as: :combining?
 
-  def filters, do: @filters
-
-  def filter?(filter), do: is_map_key(@modules, filter)
+  @doc "Merges the combining modules into the given map."
+  def merge(map), do: Map.merge(map, modules())
 
   # TODO: refactor this.
   def adjust("not"), do: ["not", ":entrypoint"]
