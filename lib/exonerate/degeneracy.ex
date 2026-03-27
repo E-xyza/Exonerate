@@ -217,6 +217,8 @@ defmodule Exonerate.Degeneracy do
     |> update("additionalItems", &canonicalize(&1, opts))
     |> update("additionalProperties", &canonicalize(&1, opts))
     |> update("contains", &canonicalize(&1, opts))
+    |> update("definitions", &canonicalize_object(&1, opts))
+    |> update("$defs", &canonicalize_object(&1, opts))
     |> update("dependencies", &canonicalize_dependencies(&1, opts))
     |> update("dependentSchemas", &canonicalize_object(&1, opts))
     |> update("items", &canonicalize_items(&1, opts))
