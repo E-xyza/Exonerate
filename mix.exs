@@ -31,10 +31,6 @@ defmodule Exonerate.MixProject do
       ],
       test_coverage: [
         ignore_modules: [SchemaModule, ExonerateTest.Automate, Exonerate.Cache.Resource]
-      ],
-      escript: [
-        main_module: Exonerate.Bowtie.Harness,
-        name: "exonerate_bowtie"
       ]
     ]
   end
@@ -55,9 +51,9 @@ defmodule Exonerate.MixProject do
     [
       {:match_spec, "~> 0.3.1"},
       {:json_ptr, "~> 1.0"},
-      {:jason, "~> 1.4"},
+      {:jason, "~> 1.4", optional: true},
       # optional dependencies
-      {:pegasus, "~> 0.2.4", optional: true},
+      {:pegasus, "~> 1.0", optional: true},
       {:req, "~> 0.5", optional: true},
       {:finch, "~> 0.19", optional: true},
       {:yamerl, "~> 0.10", optional: true},

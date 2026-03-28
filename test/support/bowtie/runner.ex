@@ -3,6 +3,8 @@ defmodule Exonerate.Bowtie.Runner do
   Handles dynamic schema compilation and validation for Bowtie test cases.
   """
 
+  @json if Code.ensure_loaded?(JSON) and function_exported?(JSON, :encode!, 1), do: JSON, else: Jason
+
   @doc """
   Run validation tests against a schema.
 
@@ -70,7 +72,7 @@ defmodule Exonerate.Bowtie.Runner do
   end
 
   defp compile_schema(module_name, schema, opts) do
-    schema_json = Jason.encode!(schema)
+    schema_json = @json.encode!(schema)
 
     # Build the module AST
     module_ast =

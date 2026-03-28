@@ -10,6 +10,8 @@ defmodule Exonerate.Bowtie.Harness do
 
   alias Exonerate.Bowtie.Runner
 
+  @json if Code.ensure_loaded?(JSON) and function_exported?(JSON, :decode, 1), do: JSON, else: @json
+
   @version 1
 
   @doc """
@@ -49,12 +51,12 @@ defmodule Exonerate.Bowtie.Harness do
   defp handle_line("", state), do: {:continue, state}
 
   defp handle_line(line, state) do
-    case Jason.decode(line) do
+    case @json.decode(line) do
       {:ok, command} ->
         handle_command(command, state)
 
       {:error, reason} ->
-        IO.puts(:stderr, "JSON parse error: #{inspect(reason)}")
+        IO.puts(:stderr, "@json parse error: #{inspect(reason)}")
         {:continue, state}
     end
   end
@@ -131,7 +133,7 @@ defmodule Exonerate.Bowtie.Harness do
   end
 
   defp write_response(response) do
-    IO.puts(Jason.encode!(response))
+    IO.puts(@json.encode!(response))
   end
 
   defp exonerate_version do

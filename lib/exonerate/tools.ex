@@ -1,6 +1,8 @@
 defmodule Exonerate.Tools do
   @moduledoc false
 
+  @json if Code.ensure_loaded?(JSON) and function_exported?(JSON, :decode!, 1), do: JSON, else: Jason
+
   alias Exonerate.Cache
   alias Exonerate.Context
   alias Exonerate.Type
@@ -318,7 +320,7 @@ defmodule Exonerate.Tools do
     |> Keyword.put_new(:decoders, [])
     |> Keyword.update!(:decoders, fn decoders ->
       decoders
-      |> if(&(!List.keymember?(&1, "application/json", 0)), &[{"application/json", Jason} | &1])
+      |> if(&(!List.keymember?(&1, "application/json", 0)), &[{"application/json", @json} | &1])
       |> if(
         &(!List.keymember?(&1, "application/yaml", 0)),
         &[{"application/yaml", :yamerl} | &1]
@@ -333,8 +335,8 @@ defmodule Exonerate.Tools do
     |> Keyword.fetch!(:decoders)
     |> List.keyfind(content_type, 0)
     |> case do
-      {_, Jason} ->
-        Jason.decode!(string)
+      {_, decoder} when decoder in [JSON, Jason] ->
+        decoder.decode!(string)
 
       {_, :yamerl} ->
         decode_yaml!(string)
