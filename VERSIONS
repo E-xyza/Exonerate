@@ -63,3 +63,37 @@
 
 # 1.1.3
 - fixes bug in degeneracy calculations
+
+# 1.2.0
+
+## New Features
+- adds single-pass optimization for allOf combining filters with property-only sub-schemas
+  - when allOf contains 2+ sub-schemas that only have properties/patternProperties,
+    consolidates validation into a single iteration pass instead of once per sub-schema
+  - reduces iteration complexity from O(N×M) to O(M) where N = sub-schemas, M = properties
+- adds decimal mode for precise numeric validation
+- adds support for gzip compressed schema files
+- adds Bowtie test harness integration
+- generates narrowed @spec based on schema type constraints
+- adds expected type to type mismatch errors
+
+## Performance
+- eliminates lambdas in combining filters for better performance
+- refactors compile-time architecture for consistent combining filter handling
+- implements two-phase compilation for consistent function naming
+
+## Bug Fixes
+- fixes typing warnings in anyOf and decimal mode
+- fixes schemas with id/$id failing when using $ref to definitions
+- fixes relative file $ref with fragment losing the fragment
+- propagates type constraints to combining schemas (fixes #85)
+- fixes type checker warnings for visited = false (fixes #87)
+- fixes relative path refs support
+
+## Breaking Changes
+- reverts `:encoding` option back to `:content_type` (`:encoding` is now deprecated)
+  - this reverses the change made in 1.1.0
+  - `:encoding` still works but emits a deprecation warning
+- decimal mode changes numeric validation behavior
+  - when enabled, numbers are validated using Decimal for precise comparisons
+  - this may cause different validation results for edge cases involving floating point

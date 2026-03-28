@@ -19,7 +19,7 @@ defmodule ExonerateTest.Regression.NestedRefTest do
     two:
       type: string
     """,
-    encoding: "application/yaml",
+    content_type: "application/yaml",
     entrypoint: "/schema"
   )
 end

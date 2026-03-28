@@ -10,6 +10,6 @@ defmodule ExonerateTest.RefNotFoundRoot do
       foo:
         $ref: "#/definitions/foo"
     """,
-    encoding: "application/yaml"
+    content_type: "application/yaml"
   )
 end

@@ -16,7 +16,7 @@ defmodule ExonerateTest.SuperlongTest do
       also:
         $ref: http://thisisaverylonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglongid/#properties/thisisaverylonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglongkey
     """,
-    encoding: "application/yaml"
+    content_type: "application/yaml"
   )
 
   test "superlong" do
