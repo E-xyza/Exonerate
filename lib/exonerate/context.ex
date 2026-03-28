@@ -51,7 +51,8 @@ defmodule Exonerate.Context do
           decoders: list | nil,
           content_type: String.t() | nil,
           draft: atom | nil,
-          format: atom | keyword | boolean | nil
+          format: atom | keyword | boolean | nil,
+          decimal: :all | keyword | nil
         }
 
   defstruct [
@@ -66,7 +67,8 @@ defmodule Exonerate.Context do
     :decoders,
     :content_type,
     :draft,
-    :format
+    :format,
+    :decimal
   ]
 
   # ============================================================================
@@ -90,7 +92,8 @@ defmodule Exonerate.Context do
       decoders: Keyword.get(opts, :decoders),
       content_type: Keyword.get(opts, :content_type),
       draft: Keyword.get(opts, :draft),
-      format: Keyword.get(opts, :format)
+      format: Keyword.get(opts, :format),
+      decimal: Keyword.get(opts, :decimal)
     }
   end
 
@@ -110,13 +113,10 @@ defmodule Exonerate.Context do
   """
   @spec merge(t(), keyword) :: t()
   def merge(%__MODULE__{} = ctx, opts) when is_list(opts) do
-    opts_map =
-      opts
-      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-      |> Map.new()
-      |> Map.update(:only, nil, &normalize_only/1)
-
-    struct(ctx, opts_map)
+    opts
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Keyword.update(:only, nil, &normalize_only/1)
+    |> then(&struct(ctx, &1))
   end
 
   @doc """
