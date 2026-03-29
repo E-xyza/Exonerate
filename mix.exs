@@ -4,7 +4,7 @@ defmodule Exonerate.MixProject do
   def project do
     [
       app: :exonerate,
-      version: "1.2.0",
+      version: "1.2.1",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -49,7 +49,7 @@ defmodule Exonerate.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:match_spec, "~> 0.3.1"},
+      {:match_spec, "~> 1.0"},
       {:json_ptr, "~> 1.0"},
       {:jason, "~> 1.4", optional: true},
       # optional dependencies

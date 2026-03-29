@@ -97,3 +97,8 @@
 - decimal mode changes numeric validation behavior
   - when enabled, numbers are validated using Decimal for precise comparisons
   - this may cause different validation results for edge cases involving floating point
+
+# 1.2.1
+- updates to match_spec 1.0.0
+- makes Jason optional, preferring built-in JSON module (Elixir 1.18+)
+- moves Bowtie test harness to test/support
