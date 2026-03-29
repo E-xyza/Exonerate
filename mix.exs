@@ -27,7 +27,8 @@ defmodule Exonerate.MixProject do
         bench_lib: :bench,
         gpt4_helper: :bench,
         gpt_fetch: :bench,
-        find_by_resource: :test
+        find_by_resource: :test,
+        "bowtie.harness": :test
       ],
       test_coverage: [
         ignore_modules: [SchemaModule, ExonerateTest.Automate, Exonerate.Cache.Resource]
