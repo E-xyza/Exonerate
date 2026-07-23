@@ -45,6 +45,8 @@ defmodule Exonerate.Filter.UniqueItems do
     end
   end
 
+  defp build_filter(_, _, _, _), do: []
+
   defmacro next_unique(resource, pointer, unique_items, item, _opts) do
     # TODO: let this be generalizable to xor_filter
     __CALLER__
@@ -63,6 +65,4 @@ defmodule Exonerate.Filter.UniqueItems do
         []
     end
   end
-
-  defp build_filter(_, _, _, _), do: []
 end

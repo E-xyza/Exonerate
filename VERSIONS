@@ -102,3 +102,13 @@
 - updates to match_spec 1.0.0
 - makes Jason optional, preferring built-in JSON module (Elixir 1.18+)
 - moves Bowtie test harness to test/support
+
+# 1.2.2
+- Elixir 1.20 type-checker cleanliness (compiles with --warnings-as-errors):
+  - mark generated object-iterator functions `generated: true` so unreachable
+    error clauses in infallible-filter schemas aren't flagged redundant
+  - drop a redundant `is_list/1` guard in the format filter
+  - remove a dead `is_charlist?([])` clause (empty list handled by the caller)
+  - group `build_filter/4` clauses in the uniqueItems filter
+- move `preferred_cli_env` into `def cli` (Mix deprecation)
+- update stale README error-tuple examples (now include `expected:`)

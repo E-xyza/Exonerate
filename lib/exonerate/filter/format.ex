@@ -271,8 +271,8 @@ defmodule Exonerate.Filter.Format do
     opts = Keyword.get(opts, :format)
 
     if is_list(opts) do
-      types = List.wrap(if is_list(opts), do: opts[:types])
-      pointers = List.wrap(if is_list(opts), do: opts[:at])
+      types = List.wrap(opts[:types])
+      pointers = List.wrap(opts[:at])
 
       uri =
         pointer
