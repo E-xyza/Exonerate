@@ -100,7 +100,12 @@ defmodule Exonerate.Type.Object.Iterator do
           ]
         end
 
-    quote do
+    # generated: true — for some schemas every filter is provably infallible, so
+    # the error-handling clauses are unreachable for that specialization and the
+    # Elixir (>= 1.20) type checker flags them redundant. They are still needed
+    # for fallible schemas, so mark the generated code as compiler-generated to
+    # suppress the false-positive warning. See E-xyza/Exonerate#87.
+    quote generated: true do
       defp unquote(call)(object, path, seen) do
         require Exonerate.Tools
 
@@ -124,7 +129,7 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defp build_seen(call, visitor_call, filters, _) do
-    quote do
+    quote generated: true do
       defp unquote(call)(object, path, seen) do
         require Exonerate.Tools
 
@@ -200,7 +205,10 @@ defmodule Exonerate.Type.Object.Iterator do
         end
       end
 
-    quote do
+    # generated: true — see build_seen/4 above: error clauses are unreachable for
+    # infallible-filter schemas but needed otherwise; suppress the type checker's
+    # false-positive redundancy warning. See E-xyza/Exonerate#87.
+    quote generated: true do
       defp unquote(call)(object, path) do
         require Exonerate.Tools
 
@@ -225,7 +233,9 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defp build_tracked(call, filters) do
-    quote do
+    # generated: true — see build_seen/4: suppress the type checker's
+    # false-positive redundant-error-clause warning. See E-xyza/Exonerate#87.
+    quote generated: true do
       defp unquote(call)(object, path) do
         require Exonerate.Tools
 
@@ -255,7 +265,9 @@ defmodule Exonerate.Type.Object.Iterator do
   end
 
   defp build_trivial(call, filters) do
-    quote do
+    # generated: true — see build_seen/4: suppress the type checker's
+    # false-positive redundant-error-clause warning. See E-xyza/Exonerate#87.
+    quote generated: true do
       defp unquote(call)(object, path) do
         require Exonerate.Tools
 

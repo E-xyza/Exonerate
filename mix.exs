@@ -4,7 +4,7 @@ defmodule Exonerate.MixProject do
   def project do
     [
       app: :exonerate,
-      version: "1.2.1",
+      version: "1.2.2",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -23,15 +23,20 @@ defmodule Exonerate.MixProject do
         extras: ["guides/formatting.md"],
         groups_for_extras: [Guides: ~r/guides\/.*/]
       ],
-      preferred_cli_env: [
+      test_coverage: [
+        ignore_modules: [SchemaModule, ExonerateTest.Automate, Exonerate.Cache.Resource]
+      ]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
         bench_lib: :bench,
         gpt4_helper: :bench,
         gpt_fetch: :bench,
         find_by_resource: :test,
         "bowtie.harness": :test
-      ],
-      test_coverage: [
-        ignore_modules: [SchemaModule, ExonerateTest.Automate, Exonerate.Cache.Resource]
       ]
     ]
   end

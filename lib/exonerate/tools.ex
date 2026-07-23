@@ -386,8 +386,9 @@ defmodule Exonerate.Tools do
   defp convert_yaml_value(nil), do: nil
   defp convert_yaml_value(value) when is_atom(value), do: Atom.to_string(value)
 
-  # Check if a list is a charlist (string of integers)
-  defp is_charlist?([]), do: false
+  # Check if a list is a charlist (string of integers). The empty-list case is
+  # handled by the caller's cond (value == []) before this is reached, so no []
+  # clause here (it would be dead code).
   defp is_charlist?(list) when is_list(list), do: List.ascii_printable?(list)
   defp is_charlist?(_), do: false
 
