@@ -63,9 +63,7 @@ defmodule Exonerate.MixProject do
       {:req, "~> 0.5", optional: true},
       {:finch, "~> 0.19", optional: true},
       {:yamerl, "~> 0.10", optional: true},
-      # decimal 3.x fixes CVE-2026-32686/CVE-2026-97853; poison/xema/jason still
-      # declare `~> 2.0`, hence the override (applies only to this project).
-      {:decimal, "~> 3.0", optional: true, override: true},
+      {:decimal, "~> 3.0", optional: true},
       # dev tools
       {:ex_doc, "~> 0.35", only: :dev},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false},
@@ -73,7 +71,6 @@ defmodule Exonerate.MixProject do
       # test
       {:bandit, "~> 1.6", only: [:test, :bench]},
       {:tzdata, "~> 1.1", only: :test},
-      {:poison, "~> 6.0", only: :test},
       # benchmarking tools
       {:ex_json_schema, "~> 0.10", only: :bench},
       {:json_xema, "~> 0.6", only: :bench},

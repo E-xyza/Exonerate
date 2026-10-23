@@ -40,17 +40,17 @@ defmodule ExonerateTest.DecoderTest do
 
   Exonerate.function_from_string(
     :defp,
-    :poison,
+    :jason_mfa,
     """
     {"foo": {"bar": {"type": "string"}}}
     """,
     entrypoint: "/foo/bar",
-    decoders: [{"application/json", {Poison, :decode!}}]
+    decoders: [{"application/json", {Jason, :decode!}}]
   )
 
-  test "poison" do
-    assert :ok = poison("bar")
-    assert {:error, _} = poison(42)
+  test "jason_mfa" do
+    assert :ok = jason_mfa("bar")
+    assert {:error, _} = jason_mfa(42)
   end
 
   alias ExonerateTest.Custom
