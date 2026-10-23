@@ -112,3 +112,12 @@
   - group `build_filter/4` clauses in the uniqueItems filter
 - move `preferred_cli_env` into `def cli` (Mix deprecation)
 - update stale README error-tuple examples (now include `expected:`)
+
+# 1.2.3
+- dependency security updates (`mix hex.audit` now clean):
+  - bandit, plug, mint, hpax, req, finch, tzdata and friends bumped to patched releases
+  - decimal constraint widened to `~> 2.0 or ~> 3.0` (3.x fixes CVE-2026-32686 and
+    CVE-2026-97853); `override: true` is set locally because poison/xema/jason still
+    declare `~> 2.0`
+  - stale hackney (and its transitive deps) removed from the lockfile; tzdata 1.2 uses
+    httpc by default

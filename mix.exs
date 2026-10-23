@@ -4,7 +4,7 @@ defmodule Exonerate.MixProject do
   def project do
     [
       app: :exonerate,
-      version: "1.2.2",
+      version: "1.2.3",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -63,7 +63,9 @@ defmodule Exonerate.MixProject do
       {:req, "~> 0.5", optional: true},
       {:finch, "~> 0.19", optional: true},
       {:yamerl, "~> 0.10", optional: true},
-      {:decimal, "~> 2.0", optional: true},
+      # override: decimal 3.x fixes CVE-2026-32686/CVE-2026-97853; poison/xema/jason
+      # still declare `~> 2.0`. Override only applies to this project, not consumers.
+      {:decimal, "~> 2.0 or ~> 3.0", optional: true, override: true},
       # dev tools
       {:ex_doc, "~> 0.35", only: :dev},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false},
