@@ -12,7 +12,8 @@ permissions:
 jobs:
   test:
     name: Test (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
-    runs-on: ubuntu-latest
+    # OTP 25 builds are not published for ubuntu-latest (26.04); pin that row.
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
 
     strategy:
       fail-fast: false
@@ -20,6 +21,7 @@ jobs:
         include:
           - elixir: "1.14"
             otp: "25"
+            os: ubuntu-22.04
           - elixir: "1.15"
             otp: "26"
           - elixir: "1.16"

@@ -10,7 +10,9 @@ defmodule Exonerate.Bowtie.Harness do
 
   alias Exonerate.Bowtie.Runner
 
-  @json if Code.ensure_loaded?(JSON) and function_exported?(JSON, :decode, 1), do: JSON, else: @json
+  @json if Code.ensure_loaded?(JSON) and function_exported?(JSON, :decode, 1),
+          do: JSON,
+          else: Jason
 
   @version 1
 
@@ -56,7 +58,7 @@ defmodule Exonerate.Bowtie.Harness do
         handle_command(command, state)
 
       {:error, reason} ->
-        IO.puts(:stderr, "@json parse error: #{inspect(reason)}")
+        IO.puts(:stderr, "JSON parse error: #{inspect(reason)}")
         {:continue, state}
     end
   end
