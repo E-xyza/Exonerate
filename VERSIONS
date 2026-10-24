@@ -125,3 +125,5 @@
 ## Breaking Changes
 - decimal mode now requires decimal `~> 3.0`; projects pinned to decimal 2.x must
   upgrade (3.x narrows default precision/exponent limits to decimal128 values)
+- minimum Elixir version raised from 1.14 to 1.15 (security-patched test deps such as
+  hpax 1.1 no longer compile on 1.14)

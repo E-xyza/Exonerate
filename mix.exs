@@ -5,7 +5,7 @@ defmodule Exonerate.MixProject do
     [
       app: :exonerate,
       version: "1.3.0",
-      elixir: "~> 1.14",
+      elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
